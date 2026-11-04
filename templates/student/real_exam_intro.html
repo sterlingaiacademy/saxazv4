@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Real Exam Rules - {{ paper.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8 pb-32 pt-12">
+  <!-- Header -->
+  <div class="text-center space-y-4">
+    <div class="w-20 h-20 mx-auto rounded-3xl bg-primary/10 flex items-center justify-center shadow-[0_4px_40px_rgba(var(--p),0.15)] mb-4">
+      <span class="text-primary"><svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></span>
+    </div>
+    <h2 class="text-xs font-bold text-primary tracking-[0.2em] uppercase flex items-center justify-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+      Exam Instructions
+    </h2>
+    <h1 class="text-4xl md:text-5xl font-extrabold text-base-content">
+      {{ paper.title }}
+    </h1>
+    <p class="text-base-content/60 text-lg max-w-2xl mx-auto">This is a formal, time-bound examination. Please review the instructions carefully before beginning.</p>
+  </div>
+
+  <!-- Rules Section -->
+  <div class="bg-base-100 border border-base-content/10 rounded-[2rem] overflow-hidden shadow-xl mt-12 relative">
+    <div class="p-8 md:p-12 space-y-8 relative z-10">
+      <h3 class="text-2xl font-bold text-base-content border-b border-base-200 pb-4">Exam Guidelines</h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Rule 1 -->
+        <div class="flex gap-4">
+          <div class="w-12 h-12 rounded-xl bg-base-200 flex items-center justify-center text-base-content shrink-0 border border-base-300 shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div>
+            <h4 class="font-bold text-lg text-base-content mb-1">Time Limit</h4>
+            <p class="text-base-content/60 text-sm">You have exactly <strong>{{ total_minutes }} minutes</strong> ({{ total_seconds }} seconds) to complete this exam.</p>
+          </div>
+        </div>
+
+        <!-- Rule 2 -->
+        <div class="flex gap-4">
+          <div class="w-12 h-12 rounded-xl bg-error/10 flex items-center justify-center text-error shrink-0 border border-error/20 shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div>
+            <h4 class="font-bold text-lg text-error mb-1">Strict Testing Environment</h4>
+            <p class="text-base-content/60 text-sm">Stay on this page. Switching tabs or minimizing the browser is strictly prohibited. Your exam will be <strong>terminated immediately</strong> on the very first violation.</p>
+          </div>
+        </div>
+
+        <!-- Rule 3 -->
+        <div class="flex gap-4">
+          <div class="w-12 h-12 rounded-xl bg-warning/10 flex items-center justify-center text-warning shrink-0 border border-warning/20 shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div>
+            <h4 class="font-bold text-lg text-warning mb-1">Time Extensions</h4>
+            <p class="text-base-content/60 text-sm">If needed, you can use your accumulated XP to purchase 5 extra minutes during the exam (limited to one use).</p>
+          </div>
+        </div>
+
+        <!-- Rule 4 -->
+        <div class="flex gap-4">
+          <div class="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center text-success shrink-0 border border-success/20 shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          </div>
+          <div>
+            <h4 class="font-bold text-lg text-success mb-1">Final Grading</h4>
+            <p class="text-base-content/60 text-sm">Submit your exam when finished. Your answers will be reviewed and graded based only on correct/incorrect results.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="flex flex-col md:flex-row justify-center items-center gap-6 pt-6">
+    <a href="/student/chapters/{{ paper.chapter_id }}" class="btn btn-ghost text-base-content/60 hover:text-base-content rounded-full px-8 font-medium">
+      Cancel & Return
+    </a>
+    <form method="POST" action="/student/real-exams/{{ paper.id }}/start">
+      <button type="submit" class="btn btn-primary rounded-full px-12 font-bold text-white shadow-lg hover:shadow-xl transition-all hover:scale-105 text-lg border-none">
+        Start Exam Now
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

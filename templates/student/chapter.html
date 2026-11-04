@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+
+{% block title %}{{ chapter.name }} — SAXAZ Chapter Studio{% endblock %}
+{% block topbar_title %}<span>{{ chapter.name }}</span>{% endblock %}
+
+{% block content %}
+<script>window.SAXAZ_SUBJECT_ID = {{ chapter.subject_id }};</script>
+
+<div class="max-w-7xl mx-auto space-y-6 pb-24" x-data="chapterStudio()">
+
+  <!-- 1. TOP KINETIC CHAPTER COMMAND HEADER -->
+  <div class="v2-obsidian-hero p-5 sm:p-8 relative v2-enter">
+    <div class="absolute -right-10 -bottom-10 w-44 h-44 rounded-full border-[12px] border-[#f8b000]/15 v2-anim-spin-slow pointer-events-none"></div>
+
+    <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+      <div class="space-y-3 max-w-3xl">
+        <div class="flex flex-wrap items-center gap-2">
+          <a href="/student/subjects/{{ chapter.subject_id }}"
+             class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-black bg-white/10 hover:bg-[#f8b000] text-white hover:text-[#111111] transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            <span>Back to Subject</span>
+          </a>
+          <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-[#f8b000] text-[#111111]">
+            4-Stage Learning Pipeline
+          </span>
+        </div>
+
+        <h1 class="text-2xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
+          {{ chapter.name }}
+        </h1>
+
+        <p class="text-xs sm:text-sm text-white/75 font-medium leading-relaxed max-w-2xl">
+          {{ chapter.description or "Master the core concepts, watch real-world applications, review smart modules, and test yourself in the exam arena." }}
+        </p>
+      </div>
+
+      <!-- Right Actions: AI Voice Briefing + Direct Exam Jump -->
+      <div class="flex flex-wrap sm:flex-nowrap items-center gap-3 shrink-0">
+        <button type="button"
+                @click="toggleSpeech()"
+                class="v2-btn-gold px-5 py-3 text-xs sm:text-sm">
+          <template x-if="!isSpeaking">
+            <span class="inline-flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
+              <span>Voice Briefing</span>
+            </span>
+          </template>
+          <template x-if="isSpeaking">
+            <span class="inline-flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-[#111111] animate-ping"></span>
+              <span>Stop Briefing</span>
+            </span>
+          </template>
+        </button>
+
+        <a href="/student/chapters/{{ chapter.id }}/exams"
+           class="px-5 py-3 rounded-full bg-white text-[#111111] hover:bg-[#f8b000] font-black text-xs sm:text-sm border-2 border-white transition-all inline-flex items-center gap-2">
+          <span>Exam Arena ({{ available_exams|length }})</span>
+          <span>&rarr;</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. INTERACTIVE 4-STAGE PIPELINE SWITCHER -->
+  <div class="v2-stage-pipeline v2-enter v2-delay-1">
+    <button type="button"
+            @click="switchStage('video')"
+            class="v2-stage-pill"
+            :class="stage === 'video' ? 'active' : ''">
+      <span class="v2-stage-step-num">01</span>
+      <span>Concept &amp; Real-Life Videos</span>
+    </button>
+
+    <button type="button"
+            @click="switchStage('modules')"
+            class="v2-stage-pill"
+            :class="stage === 'modules' ? 'active' : ''">
+      <span class="v2-stage-step-num">02</span>
+      <span>Study Modules ({{ chapter.content|length }})</span>
+    </button>
+
+    <button type="button"
+            @click="switchStage('exams')"
+            class="v2-stage-pill"
+            :class="stage === 'exams' ? 'active' : ''">
+      <span class="v2-stage-step-num">03</span>
+      <span>Practice &amp; Exams ({{ available_exams|length }})</span>
+    </button>
+
+    <button type="button"
+            @click="switchStage('copilot')"
+            class="v2-stage-pill"
+            :class="stage === 'copilot' ? 'active' : ''">
+      <span class="v2-stage-step-num">04</span>
+      <span>AI Chapter Co-Pilot</span>
+    </button>
+  </div>
+
+  <!-- =========================================================================
+       STAGE 01: CONCEPT & REAL-LIFE VIDEO STUDIO
+       ========================================================================= -->
+  <div x-show="stage === 'video'"
+       x-transition.opacity.duration.250ms
+       class="space-y-6 v2-enter v2-delay-2">
+
+    <!-- Video Mode Selector Pills -->
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="inline-flex items-center gap-2 p-1.5 rounded-2xl bg-[#111111] text-white border-2 border-[#111111]">
+        <button type="button"
+                @click="switchVideoTab('concept')"
+                :class="videoTab === 'concept' ? 'bg-[#f8b000] text-[#111111]' : 'text-white/75 hover:text-white'"
+                class="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2">
+          <span>🎬 Concept Video</span>
+        </button>
+        <button type="button"
+                @click="switchVideoTab('reallife')"
+                :class="videoTab === 'reallife' ? 'bg-[#f8b000] text-[#111111]' : 'text-white/75 hover:text-white'"
+                class="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2">
+          <span>🌍 Real-Life Application</span>
+        </button>
+      </div>
+
+      <button type="button"
+              @click="switchStage('modules')"
+              class="v2-btn-black px-5 py-2.5 text-xs">
+        <span>Next: Study Modules</span>
+        <span>&rarr;</span>
+      </button>
+    </div>
+
+    <!-- Concept Video Theatre -->
+    <div x-show="videoTab === 'concept'" class="v2-bento-card overflow-hidden bg-[#111111] p-3 sm:p-5">
+      {% if chapter.video_description_url %}
+        <div class="w-full rounded-2xl overflow-hidden border-2 border-[#f8b000]/40 bg-black" style="aspect-ratio: 16/9;">
+          <div class="w-full h-full" data-saxaz-video="{{ chapter.video_description_url | video_vault_token }}"></div>
+        </div>
+      {% else %}
+        <div class="py-16 px-4 text-center text-white space-y-3">
+          <div class="w-16 h-16 rounded-2xl bg-[#f8b000] text-[#111111] flex items-center justify-center mx-auto text-2xl font-black">🎬</div>
+          <h3 class="text-xl font-black">Concept Video Coming Soon</h3>
+          <p class="text-xs text-white/60 max-w-md mx-auto">Continue to Stage 02 to explore the study modules or launch the Exam Arena directly.</p>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Real Life Application Video Theatre -->
+    <div x-show="videoTab === 'reallife'" style="display: none;" class="v2-bento-card overflow-hidden bg-[#111111] p-3 sm:p-5">
+      {% if chapter.real_life_url %}
+        <div class="w-full rounded-2xl overflow-hidden border-2 border-[#f8b000]/40 bg-black" style="aspect-ratio: 16/9;">
+          <div class="w-full h-full" data-saxaz-video="{{ chapter.real_life_url | video_vault_token }}"></div>
+        </div>
+      {% else %}
+        <div class="py-16 px-4 text-center text-white space-y-3">
+          <div class="w-16 h-16 rounded-2xl bg-[#f8b000] text-[#111111] flex items-center justify-center mx-auto text-2xl font-black">🌍</div>
+          <h3 class="text-xl font-black">Real-Life Application Video Coming Soon</h3>
+          <p class="text-xs text-white/60 max-w-md mx-auto">Ask your AI Co-Pilot in Stage 04 for real-world examples of {{ chapter.name }}!</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       STAGE 02: INTERACTIVE STUDY MODULES & NOTES
+       ========================================================================= -->
+  <div x-show="stage === 'modules'"
+       style="display: none;"
+       x-transition.opacity.duration.250ms
+       class="space-y-5">
+    <div class="flex items-center justify-between">
+      <h2 class="text-xl sm:text-2xl font-black text-[#111111]">Chapter Study Modules</h2>
+      <button type="button" @click="switchStage('exams')" class="v2-btn-gold px-5 py-2 text-xs">
+        <span>Proceed to Stage 03: Exams</span>
+        <span>&rarr;</span>
+      </button>
+    </div>
+
+    {% if chapter.content %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+      {% for item in chapter.content %}
+      <a href="/student/content/{{ item.id }}"
+         class="v2-bento-card v2-spotlight-card p-5 flex flex-col justify-between gap-4 group">
+        <div class="flex items-center justify-between gap-2">
+          <span class="w-9 h-9 rounded-xl bg-[#111111] text-[#f8b000] font-mono-num font-black text-xs flex items-center justify-center">
+            0{{ loop.index }}
+          </span>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-[#fffbeb] text-[#111111] border border-[#111111]">
+              {{ item.type }}
+            </span>
+            {% if item.id in completed_content_ids %}
+            <span class="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-black" title="Completed">✓</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <h3 class="text-lg font-black text-[#111111] group-hover:text-amber-600 transition-colors line-clamp-2">
+            {{ item.title }}
+          </h3>
+          <p class="text-xs font-bold text-gray-500">Click to open interactive viewer &rarr;</p>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="v2-bento-card p-10 text-center space-y-3">
+      <div class="w-14 h-14 rounded-2xl bg-[#fffbeb] border-2 border-[#111111] flex items-center justify-center mx-auto text-2xl">📑</div>
+      <h3 class="text-lg font-black text-[#111111]">No separate module files in this chapter</h3>
+      <p class="text-xs font-bold text-gray-500">Jump straight to Stage 03 to practice chapter exams!</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- =========================================================================
+       STAGE 03: PRACTICE & EXAM ARENA
+       ========================================================================= -->
+  <div x-show="stage === 'exams'"
+       style="display: none;"
+       x-transition.opacity.duration.250ms
+       class="space-y-5">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div>
+        <h2 class="text-xl sm:text-2xl font-black text-[#111111]">Chapter Practice &amp; Mock Exams</h2>
+        <p class="text-xs font-bold text-gray-500">Select any exam below or launch the full chapter exam hub.</p>
+      </div>
+      <a href="/student/chapters/{{ chapter.id }}/exams" class="v2-btn-black px-5 py-2.5 text-xs">
+        <span>Open Full Chapter Exam Arena</span>
+        <span>&rarr;</span>
+      </a>
+    </div>
+
+    {% if available_exams %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+      {% for ex in available_exams %}
+      <div class="v2-bento-card v2-spotlight-card p-5 sm:p-6 flex flex-col justify-between gap-4">
+        <div class="flex items-start justify-between gap-3">
+          <div class="space-y-1">
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-[#f8b000] text-[#111111] border border-[#111111]">
+              {{ ex.exam_mode | default('Practice Arena') }}
+            </span>
+            <h3 class="text-lg sm:text-xl font-black text-[#111111] mt-1">{{ ex.title }}</h3>
+          </div>
+          {% if ex.best_pct is defined and ex.best_pct is not none %}
+          <div class="px-3 py-1 rounded-xl bg-[#111111] text-[#f8b000] font-mono-num text-xs font-black">
+            Best: {{ ex.best_pct }}%
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-gray-100">
+          <div class="text-xs font-extrabold text-gray-500">
+            Instant AI grading &amp; step-by-step solutions
+          </div>
+          <form action="/student/exams/{{ ex.id }}/start" method="POST">
+            <button type="submit" class="v2-btn-gold px-5 py-2 text-xs">
+              <span>Start Exam</span>
+              <span>&rarr;</span>
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="v2-bento-card p-10 text-center space-y-3">
+      <h3 class="text-lg font-black text-[#111111]">No practice exams published for this chapter yet</h3>
+      <a href="/student/chapters/{{ chapter.id }}/exams" class="v2-btn-gold px-5 py-2 text-xs">Check Exam Hub</a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- =========================================================================
+       STAGE 04: AI CHAPTER CO-PILOT LAUNCHPAD
+       ========================================================================= -->
+  <div x-show="stage === 'copilot'"
+       style="display: none;"
+       x-transition.opacity.duration.250ms
+       class="v2-bento-card p-6 sm:p-8 space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="space-y-1">
+        <span class="px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-[#111111] text-[#f8b000]">AI Co-Pilot</span>
+        <h2 class="text-2xl font-black text-[#111111]">Master "{{ chapter.name }}" with AI</h2>
+        <p class="text-xs sm:text-sm font-bold text-gray-500">Pick a 1-click prompt below to launch your Split-Screen AI Tutor &amp; Smart Scratchpad.</p>
+      </div>
+      <a href="/student/tutor?subject_id={{ chapter.subject_id }}" class="v2-btn-black px-5 py-3 text-xs shrink-0">
+        <span>Open Full AI Co-Pilot Studio</span>
+        <span>&rarr;</span>
+      </a>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <a href="/student/tutor?subject_id={{ chapter.subject_id }}&ask={{ ('Explain the chapter ' ~ chapter.name ~ ' in simple bullet points with examples.') | urlencode }}&autosend=1"
+         class="p-4 rounded-2xl bg-[#fffbeb] border-2 border-[#111111] shadow-[0_4px_0_#111111] hover:-translate-y-1 transition-all space-y-2">
+        <div class="text-xs font-black uppercase text-amber-700">⚡ Concept Summary</div>
+        <div class="text-sm font-black text-[#111111]">"Explain {{ chapter.name }} in simple bullet points"</div>
+      </a>
+
+      <a href="/student/tutor?subject_id={{ chapter.subject_id }}&ask={{ ('Draw a clear labeled diagram on the scratchpad for ' ~ chapter.name) | urlencode }}&autosend=1"
+         class="p-4 rounded-2xl bg-[#fffbeb] border-2 border-[#111111] shadow-[0_4px_0_#111111] hover:-translate-y-1 transition-all space-y-2">
+        <div class="text-xs font-black uppercase text-amber-700">🎨 Visual Blueprint</div>
+        <div class="text-sm font-black text-[#111111]">"Draw a labeled diagram on the Scratchpad for {{ chapter.name }}"</div>
+      </a>
+
+      <a href="/student/tutor?subject_id={{ chapter.subject_id }}&ask={{ ('Quiz me with 5 rapid-fire exam questions from ' ~ chapter.name) | urlencode }}&autosend=1"
+         class="p-4 rounded-2xl bg-[#fffbeb] border-2 border-[#111111] shadow-[0_4px_0_#111111] hover:-translate-y-1 transition-all space-y-2">
+        <div class="text-xs font-black uppercase text-amber-700">🎯 Rapid-Fire Quiz</div>
+        <div class="text-sm font-black text-[#111111]">"Quiz me with 5 rapid-fire questions from {{ chapter.name }}"</div>
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('chapterStudio', () => ({
+      stage: 'video',
+      videoTab: 'concept',
+      isSpeaking: false,
+      currentAudio: null,
+      description: {{ (chapter.description or ("Welcome to " ~ chapter.name ~ ". Choose any stage in the pipeline to begin.")) | tojson | safe }},
+
+      switchStage(newStage) {
+        if (this.stage === 'video' && newStage !== 'video') {
+          window.SaxazVideoVault?.pauseAll();
+        }
+        this.stage = newStage;
+      },
+
+      switchVideoTab(tab) {
+        window.SaxazVideoVault?.pauseAll();
+        this.videoTab = tab;
+      },
+
+      async toggleSpeech() {
+        if (this.isSpeaking && this.currentAudio) {
+          this.currentAudio.pause();
+          this.isSpeaking = false;
+          this.currentAudio = null;
+          return;
+        }
+        this.isSpeaking = true;
+        try {
+          const response = await fetch('/api/tts/prepare', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: this.description })
+          });
+          if (response.ok) {
+            const data = await response.json();
+            this.currentAudio = new Audio('/api/tts/stream/' + data.audio_id);
+            this.currentAudio.onended = () => { this.isSpeaking = false; };
+            this.currentAudio.onerror = () => { this.isSpeaking = false; };
+            this.currentAudio.play();
+          } else {
+            this.isSpeaking = false;
+          }
+        } catch (e) {
+          this.isSpeaking = false;
+        }
+      }
+    }));
+  });
+</script>
+{% endblock %}

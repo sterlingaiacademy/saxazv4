@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="w-full max-w-[1400px] mx-auto space-y-8 pb-20">
+
+  <!-- Top Navigation & Breadcrumb -->
+  <div class="flex items-center justify-between gap-4 flex-wrap pt-2">
+    <div class="flex items-center gap-2 text-xs sm:text-sm font-black uppercase tracking-wider text-base-content/60">
+      <a href="/admin/digi-library" class="hover:text-secondary transition-colors">Digi-Library Books</a>
+      <span>/</span>
+      <span class="text-base-content/80">{{ bank.book_title }}</span>
+      <span>/</span>
+      <span class="text-base-content/80">{{ bank.subject_name }}</span>
+      <span>/</span>
+      <span class="text-secondary">{{ bank.title }}</span>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <a href="/student/digi-library/banks/{{ bank.id }}" class="tactile-btn btn btn-sm btn-secondary text-white rounded-xl font-black gap-2 border-none shadow-[0_3px_0_0_#1D4ED8]">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Preview Student Learning Studio
+      </a>
+      <a href="/admin/digi-library" class="btn btn-ghost border border-base-300 btn-sm rounded-xl font-bold">
+        ← Back to Books
+      </a>
+    </div>
+  </div>
+
+  <!-- Sleek Chapter Studio Header -->
+  <div class="brilliant-card bg-base-100 rounded-3xl p-6 sm:p-8">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div class="space-y-1.5">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="px-3 py-1 rounded-full bg-primary/15 border border-primary/30 text-amber-700 text-[11px] font-black uppercase tracking-widest">
+            {{ bank.book_title }} &bull; {{ bank.subject_name }}
+          </span>
+          <span class="px-3 py-1 rounded-full bg-secondary/15 border border-secondary/30 text-secondary text-[11px] font-black uppercase tracking-widest">
+            Ordered Q&amp;As + Video + AI Tutor + Scratchpad
+          </span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-black text-base-content tracking-tight">{{ bank.title }}</h1>
+        {% if bank.description %}
+          <p class="text-sm text-base-content/65 font-medium">{{ bank.description }}</p>
+        {% endif %}
+      </div>
+      <div class="bg-base-200/70 px-5 py-3 rounded-2xl border-2 border-base-300 text-center shrink-0">
+        <div class="text-2xl font-black text-base-content">{{ bank.questions|length }}</div>
+        <div class="text-[10px] font-black uppercase tracking-widest text-base-content/60">Ordered Study Q&amp;As</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Questions Section (Bulk Upload + Manual Entry) -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+    <!-- Left 5 Cols: Bulk AI Upload (File OR Paste Text) -->
+    <div class="lg:col-span-5 brilliant-card bg-base-100 rounded-3xl p-6 space-y-5"
+         x-data="{ uploadMode: 'file' }">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-secondary/15 border-2 border-secondary/30 text-secondary flex items-center justify-center font-black shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+        </div>
+        <div>
+          <h2 class="text-lg sm:text-xl font-black text-base-content tracking-tight">Bulk Upload Chapter Q&amp;As</h2>
+          <p class="text-xs text-base-content/60 font-medium">Import an entire chapter of ordered Questions &amp; Answers via File or Text Paste.</p>
+        </div>
+      </div>
+
+      <!-- Mode Switcher: File vs Paste Text -->
+      <div class="flex p-1 bg-base-200 rounded-2xl border border-base-300">
+        <button type="button" @click="uploadMode = 'file'"
+                class="flex-1 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all"
+                :class="uploadMode === 'file' ? 'bg-base-100 text-base-content shadow-xs' : 'text-base-content/50'">
+          Upload File (.pdf/.docx/.xlsx)
+        </button>
+        <button type="button" @click="uploadMode = 'paste'"
+                class="flex-1 py-2 text-xs font-black uppercase tracking-wider rounded-xl transition-all"
+                :class="uploadMode === 'paste' ? 'bg-base-100 text-base-content shadow-xs' : 'text-base-content/50'">
+          Paste Ordered Q&amp;As
+        </button>
+      </div>
+
+      <form hx-post="/admin/digi-library/banks/{{ bank.id }}/upload-questions"
+            hx-target="#digi-questions-list"
+            hx-swap="beforeend"
+            hx-encoding="multipart/form-data"
+            hx-indicator="#digi-upload-spinner"
+            @htmx:after-request="if(event.detail.successful) $el.reset()"
+            class="space-y-4">
+        <div class="form-control">
+          <label class="label py-1"><span class="label-text text-xs font-black uppercase tracking-wider text-base-content/70">Chapter Question Format</span></label>
+          <select name="question_type" class="select select-bordered select-sm w-full bg-base-200/50 border-2 border-base-300 rounded-xl font-bold">
+            <option value="CUSTOM">Auto-Detect / Mixed Chapter Q&amp;As (Recommended)</option>
+            <option value="SHORT_ANSWER">Short / Descriptive Study Q&amp;As</option>
+            <option value="LONG_ANSWER">Detailed Study Q&amp;As</option>
+            <option value="MCQ">Multiple Choice Questions (MCQ)</option>
+            <option value="ASSERTION_REASON">Assertion &amp; Reason</option>
+            <option value="NUMERICAL">Numerical / Math Problems</option>
+          </select>
+        </div>
+
+        <div class="form-control" x-show="uploadMode === 'file'">
+          <label class="label py-1"><span class="label-text text-xs font-black uppercase tracking-wider text-base-content/70">Select Document (.pdf, .docx, .xlsx, .txt)</span></label>
+          <input type="file" name="file" accept=".pdf,.docx,.xlsx,.txt" class="file-input file-input-bordered file-input-sm w-full bg-base-200/50 border-2 border-base-300 rounded-xl" />
+          <span class="text-[11px] text-base-content/50 font-medium mt-1.5">Supports large multi-page chapters — preserves exact question order.</span>
+        </div>
+
+        <div class="form-control" x-show="uploadMode === 'paste'" style="display: none;">
+          <label class="label py-1"><span class="label-text text-xs font-black uppercase tracking-wider text-base-content/70">Paste Questions &amp; Answers in Order</span></label>
+          <textarea name="raw_text" rows="7" placeholder="Q1. What is photosynthesis?&#10;Ans: The process by which green plants make food...&#10;&#10;Q2. ..." class="textarea textarea-bordered w-full bg-base-200/50 border-2 border-base-300 rounded-xl text-xs font-medium"></textarea>
+        </div>
+
+        <button type="submit" class="tactile-btn btn btn-secondary w-full rounded-2xl font-black text-white gap-2 shadow-[0_4px_0_0_#1D4ED8] border-none">
+          <span id="digi-upload-spinner" class="htmx-indicator loading loading-spinner loading-xs"></span>
+          <span>Extract &amp; Append Ordered Q&amp;As</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Right 7 Cols: Manual Study Q&A + Rich YouTube Video Card -->
+    <div class="lg:col-span-7 brilliant-card bg-base-100 rounded-3xl p-6"
+         x-data="{
+           qType: 'CUSTOM',
+           videoSource: 'youtube',
+           assertionText: '',
+           reasonText: '',
+           arAnswer: 'A. Both A and R are true and R is the correct explanation of A',
+           arOptions: JSON.stringify([
+             'Both A and R are true and R is the correct explanation of A',
+             'Both A and R are true but R is NOT the correct explanation of A',
+             'A is true but R is false',
+             'A is false but R is true'
+           ]),
+           syncAR() {
+             if (this.qType === 'ASSERTION_REASON') {
+               this.$refs.qTextInput.value = `Assertion (A): ${this.assertionText}\nReason (R): ${this.reasonText}`;
+               this.$refs.mAnsInput.value = this.arAnswer;
+             }
+           }
+         }">
+      <h2 class="text-lg sm:text-xl font-black text-base-content mb-4 flex items-center gap-2.5">
+        <span class="w-9 h-9 rounded-xl bg-primary/20 border-2 border-primary/40 text-secondary flex items-center justify-center font-black">+</span>
+        Add Single Study Question, Answer &amp; Explanation Video
+      </h2>
+
+      <form hx-post="/admin/digi-library/banks/{{ bank.id }}/questions"
+            hx-target="#digi-questions-list"
+            hx-swap="beforeend"
+            hx-encoding="multipart/form-data"
+            @submit="syncAR()"
+            @htmx:after-request="if(event.detail.successful) { $el.reset(); assertionText=''; reasonText=''; window.dispatchEvent(new CustomEvent('reset-new-digi-yt')); }"
+            class="space-y-4">
+
+        <div class="form-control">
+          <label class="label py-1"><span class="label-text text-xs font-black uppercase tracking-wider text-base-content/70">Question Type</span></label>
+          <select name="question_type" x-model="qType" class="select select-bordered select-sm w-full bg-base-200/50 border-2 border-base-300 rounded-xl font-bold">
+            <option value="CUSTOM">General / Descriptive Study Question</option>
+            <option value="SHORT_ANSWER">Short Answer</option>
+            <option value="LONG_ANSWER">Detailed Answer</option>
+            <option value="MCQ">Multiple Choice Question (MCQ)</option>
+            <option value="ASSERTION_REASON">Assertion &amp; Reason</option>
+            <option value="NUMERICAL">Numerical / Calculation Problem</option>
+          </select>
+        </div>
+
+        <!-- Standard Question Text -->
+        <div x-show="qType !== 'ASSERTION_REASON'" class="form-control">
+          <label class="label py-1"><span class="label-text text-xs font-black uppercase tracking-wider text-base-content/70">Question Text *</span></label>
+          <textarea name="question_text" x-ref="qTextInput" rows="3" placeholder="Enter the study question..." class="textarea textarea-bordered w-full bg-base-200/40 border-2 border-base-300 rounded-xl text-sm font-medium" :required="qType !== 'ASSERTION_REASON'"></textarea>
+        </div>
+
+        <!-- Assertion & Reason Builder -->
+        <div x-show="qType === 'ASSERTION_REASON'" style="display: none;" class="space-y-3 bg-base-200/50 p-4 rounded-2xl border-2 border-base-300">
+          <div>
+            <label class="label py-0.5"><span class="label-text text-xs font-bold">Assertion (A) *</span></label>
+            <textarea x-model="assertionText" @input="syncAR()" rows="2" placeholder="Enter Assertion statement..." class="textarea textarea-bordered w-full bg-base-100 rounded-xl text-sm"></textarea>
+          </div>
+          <div>
+            <label class="label py-0.5"><span class="label-text text-xs font-bold">Reason (R) *</span></label>
+            <textarea x-model="reasonText" @input="syncAR()" rows="2" placeholder="Enter Reason statement..." class="textarea textarea-bordered w-full bg-base-100 rounded-xl text-sm"></textarea>
+          </div>
+          <div>
+            <label class="label py-0.5"><span class="label-text text-xs font-bold">Correct Option *</span></label>
+            <select x-model="arAnswer" @change="syncAR()" class="select select-bordered select-sm w-full bg-base-100 rounded-xl">
+              <option value="A. Both A and R are true and R is the correct explanation of A">A. Both A and R are true and R is the correct explanation of A</option>
+              <option value="B. Both A and R are true but R is NOT the correct explanation of A">B. Both A and R are true but R is NOT the correct explanation of A</option>
+              <option value="C. A is true but R is false">C. A is true but R is false</option>
+              <option value="D. A is false but R is true">D. A is false but R is true</option>
+            </select>
+          </div>
+          <template x-if="qType === 'ASSERTION_REASON'">
+            <input type="hidden" name="options" :value="arOptions" />
+          </template>
+        </div>
+
+        <!-- MCQ Options -->
+        <div x-show="qType === 'MCQ'" style="display: none;" class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-base-200/50 p-4 rounded-2xl border-2 border-base-300">
+          <div>
+            <label class="label py-0.5"><span class="label-text text-xs font-bold">Option A</span></label>
+            <input type="text" name="option_a" placeholder="Option A text" class="input input-bordered input-sm w-full bg-base-100 rounded-xl" />
+          </div>
+          <div>
+            <label class="label py-0.5"><span class="label-text text-xs font-bold">Option B</span></label>
+            <input type="text" name="option_b" placeholder="Option B text" class="input input-bordered input-sm w-full bg-base-100 rounded-xl" />
+          </div>
+          <div>
+            <label class="label py-0.5"><span class="label-text text-xs font-bold">Option C</span></label>
+            <input type="text" name="option_c" placeholder="Option C text" class="input input-bordered input-sm w-full bg-base-100 rounded-xl" />
+          </div>
+          <div>
+            <label class="label py-0.5"><span class="label-text text-xs font-bold">Option D</span></label>
+            <input type="text" name="option_d" placeholder="Option D text" class="input input-bordered input-sm w-full bg-base-100 rounded-xl" />
+          </div>
+        </div>
+
+        <!-- Model Answer -->
+        <div x-show="qType !== 'ASSERTION_REASON'" class="form-control">
+          <label class="label py-1">
+            <span class="label-text text-xs font-black uppercase tracking-wider text-success" x-text="qType === 'MCQ' ? 'Correct Option & Explanation *' : 'Complete Study Answer / Explanation *'"></span>
+          </label>
+          <textarea name="model_answer" x-ref="mAnsInput" rows="3" placeholder="Enter the model answer and step-by-step explanation..." class="textarea textarea-bordered w-full bg-base-200/40 border-2 border-base-300 rounded-xl text-sm font-medium" :required="qType !== 'ASSERTION_REASON'"></textarea>
+        </div>
+
+        <!-- Optional Question & Answer Images -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          <div class="form-control">
+            <label class="label py-0.5"><span class="label-text text-xs font-bold">Question Diagram / Image (Optional)</span></label>
+            <input type="file" name="image" accept="image/*" class="file-input file-input-bordered file-input-xs w-full bg-base-100 rounded-xl" />
+          </div>
+          <div class="form-control">
+            <label class="label py-0.5"><span class="label-text text-xs font-bold">Answer Diagram / Image (Optional)</span></label>
+            <input type="file" name="answer_image" accept="image/*" class="file-input file-input-bordered file-input-xs w-full bg-base-100 rounded-xl" />
+          </div>
+        </div>
+
+        <!-- Explanation Video with Instant YouTube Card Preview -->
+        <div class="bg-base-200/50 p-4 rounded-2xl border-2 border-base-300 space-y-3"
+             x-data="youtubeLinkCard()"
+             @reset-new-digi-yt.window="clearVideo(false)">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-black uppercase tracking-wider text-base-content/70 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+              Attached Explanation Video (Optional)
+            </span>
+            <select name="video_source" x-model="videoSource" class="select select-bordered select-xs bg-base-100 rounded-lg font-bold">
+              <option value="youtube">YouTube Link</option>
+              <option value="upload">Upload Video File</option>
+              <option value="none">No Video</option>
+            </select>
+          </div>
+
+          <div x-show="videoSource === 'youtube'" class="space-y-2">
+            <input type="hidden" name="video_url" :value="url" />
+            <div x-show="editing || !videoId">
+              <input type="text"
+                     x-ref="urlInput"
+                     x-model="url"
+                     @input="onInput()"
+                     @paste="setTimeout(() => onInput(), 50)"
+                     placeholder="Paste YouTube URL (https://www.youtube.com/watch?v=...) — forms a card automatically"
+                     class="input input-bordered input-sm w-full bg-base-100 rounded-xl font-semibold" />
+            </div>
+
+            <!-- Rich YouTube Card Preview -->
+            <div x-show="videoId && !editing" style="display: none;" class="relative bg-base-100 border-2 border-base-300 rounded-2xl overflow-hidden shadow-xs">
+              <div class="flex flex-col sm:flex-row items-center gap-3 p-3 pr-12">
+                <div class="relative w-full sm:w-36 aspect-video bg-black rounded-xl overflow-hidden shrink-0 cursor-pointer" @click="playing = !playing">
+                  <template x-if="!playing">
+                    <div class="w-full h-full relative">
+                      <img :src="thumbUrl" class="w-full h-full object-cover" alt="YouTube thumbnail" />
+                      <div class="absolute inset-0 bg-black/25 flex items-center justify-center">
+                        <div class="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center shadow">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+                  <template x-if="playing">
+                    <iframe :src="embedUrl" class="w-full h-full" frameborder="0" allowfullscreen></iframe>
+                  </template>
+                </div>
+                <div class="flex-1 min-w-0 space-y-1">
+                  <span class="px-2 py-0.5 rounded bg-red-500/10 text-red-500 font-black text-[10px] uppercase tracking-wider">YouTube Attached</span>
+                  <h4 class="text-sm font-black text-base-content line-clamp-1" x-text="loadingTitle ? 'Fetching video title...' : (title || 'YouTube Video')"></h4>
+                  <p class="text-[11px] font-mono text-base-content/50 truncate" x-text="url"></p>
+                  <button type="button" @click="startEdit()" class="btn btn-xs btn-ghost border border-base-300 rounded-lg font-bold mt-1">Modify Link</button>
+                </div>
+                <button type="button" @click="clearVideo(false)" title="Delete Video" class="absolute top-2.5 right-2.5 w-8 h-8 rounded-xl bg-error/10 hover:bg-error text-error hover:text-white flex items-center justify-center transition-all">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div x-show="videoSource === 'upload'" style="display: none;">
+            <input type="file" name="video_file" accept="video/*" class="file-input file-input-bordered file-input-sm w-full bg-base-100 rounded-xl" />
+          </div>
+        </div>
+
+        <button type="submit" class="tactile-btn btn btn-primary w-full rounded-2xl font-black text-primary-content border-2 border-amber-500 shadow-[0_4px_0_0_#D97706]">
+          + Add Study Question &amp; Answer to Chapter
+        </button>
+      </form>
+    </div>
+
+  </div>
+
+  <!-- Ordered Questions List in this Chapter -->
+  <div class="space-y-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-xl sm:text-2xl font-black text-base-content tracking-tight">Ordered Chapter Questions &amp; Answers</h2>
+        <p class="text-xs text-base-content/60 font-medium">Students study these questions in exact sequence with the AI Tutor, Scratchpad &amp; Diagram Trainer.</p>
+      </div>
+      <span class="badge badge-lg bg-primary/15 text-amber-700 border-primary/30 font-black">{{ bank.questions|length }} Q&amp;A{% if bank.questions|length != 1 %}s{% endif %}</span>
+    </div>
+
+    <div id="digi-questions-list" class="space-y-4">
+      {% for q in bank.questions %}
+        {% set q_order_num = loop.index %}
+        {% include "admin/partials/digi_question_item.html" %}
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - SAXAZ{% endblock %}
+{% block topbar_title %}Admin Control Center{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-8 pb-20 font-sans" x-data="{ show: false }" x-init="setTimeout(() => show = true, 50)">
+  
+  <!-- Sleek Admin Control Center Header -->
+  <div class="brilliant-card bg-base-100 rounded-3xl p-6 md:p-8 relative overflow-hidden"
+     x-show="show" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 translate-y-6" x-transition:enter-end="opacity-100 translate-y-0">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div class="space-y-2.5 max-w-2xl">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-primary/15 border border-primary/30 text-amber-700 text-xs font-black uppercase tracking-widest">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+          Admin Console Active
+        </div>
+        <h1 class="text-2xl md:text-4xl font-black text-base-content tracking-tight leading-tight">
+          Welcome back, {{ user.name }}
+        </h1>
+        <p class="text-base-content/65 font-medium text-sm md:text-base leading-relaxed">
+          Manage the SAXAZ learning universe—build class curriculums, publish Labour India Digi-Library books, and monitor student performance in real time.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap gap-3 shrink-0">
+        <a href="/admin/digi-library" class="btn btn-primary text-primary-content rounded-2xl px-6 font-black shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+          Digi-Library Studio
+        </a>
+        <a href="/admin/curriculum" class="btn btn-secondary text-white rounded-2xl px-6 font-black shadow-sm">
+          Curriculum Builder
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tactile Quick Stats -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-5"
+     x-show="show" x-transition:enter="transition ease-out duration-500 delay-100" x-transition:enter-start="opacity-0 translate-y-6" x-transition:enter-end="opacity-100 translate-y-0">
+    <div class="brilliant-card bg-base-100 rounded-3xl p-6 flex items-center gap-4">
+      <div class="w-14 h-14 rounded-2xl bg-amber-500/15 text-amber-600 border-2 border-amber-500/25 flex items-center justify-center shrink-0 shadow-xs">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+      </div>
+      <div>
+        <div class="text-[11px] text-base-content/50 uppercase tracking-widest font-black">Students</div>
+        <h3 class="text-3xl font-black text-base-content leading-tight">{{ stats.students_count }}</h3>
+      </div>
+    </div>
+
+    <div class="brilliant-card bg-base-100 rounded-3xl p-6 flex items-center gap-4">
+      <div class="w-14 h-14 rounded-2xl bg-indigo-500/15 text-indigo-600 border-2 border-indigo-500/25 flex items-center justify-center shrink-0 shadow-xs">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" /></svg>
+      </div>
+      <div>
+        <div class="text-[11px] text-base-content/50 uppercase tracking-widest font-black">Live Classes</div>
+        <h3 class="text-3xl font-black text-base-content leading-tight">{{ stats.classes_count }}</h3>
+      </div>
+    </div>
+
+    <div class="brilliant-card bg-base-100 rounded-3xl p-6 flex items-center gap-4">
+      <div class="w-14 h-14 rounded-2xl bg-emerald-500/15 text-emerald-600 border-2 border-emerald-500/25 flex items-center justify-center shrink-0 shadow-xs">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+      </div>
+      <div>
+        <div class="text-[11px] text-base-content/50 uppercase tracking-widest font-black">Exams Graded</div>
+        <h3 class="text-3xl font-black text-base-content leading-tight">{{ stats.completed_exams_count }}</h3>
+      </div>
+    </div>
+
+    <div class="brilliant-card bg-base-100 rounded-3xl p-6 flex items-center gap-4">
+      <div class="w-14 h-14 rounded-2xl bg-purple-500/15 text-purple-600 border-2 border-purple-500/25 flex items-center justify-center shrink-0 shadow-xs">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+      </div>
+      <div>
+        <div class="text-[11px] text-base-content/50 uppercase tracking-widest font-black">AI Engine</div>
+        <h3 class="text-3xl font-black text-emerald-600 leading-tight">100%</h3>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 Tactile Action Modules -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6"
+     x-show="show" x-transition:enter="transition ease-out duration-500 delay-200" x-transition:enter-start="opacity-0 translate-y-6" x-transition:enter-end="opacity-100 translate-y-0">
+    
+    <!-- Curriculum & Exams Builder -->
+    <a href="/admin/curriculum" class="group block relative brilliant-card bg-base-100 rounded-3xl p-6 sm:p-8 overflow-hidden flex flex-col justify-between">
+      <div class="relative z-10">
+        <div class="w-14 h-14 rounded-2xl bg-amber-500/15 border-2 border-amber-500/25 text-amber-600 flex items-center justify-center mb-6 shadow-xs group-hover:scale-105 transition-transform">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+        </div>
+        
+        <span class="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-700 text-[10px] font-black uppercase tracking-widest">Mock & Real Exams</span>
+        <h2 class="text-2xl font-black text-base-content mt-2 mb-2.5 tracking-tight group-hover:text-amber-600 transition-colors">Curriculum & Exams</h2>
+        <p class="text-sm text-base-content/65 font-medium leading-relaxed mb-6">
+          Structure classes, subjects, chapters, YouTube video cards, and randomized Mock & Real Exam question banks.
+        </p>
+      </div>
+        
+      <div class="relative z-10 inline-flex items-center gap-2 text-amber-600 font-black text-sm pt-4 border-t border-base-200">
+        Open Curriculum Builder
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transform group-hover:translate-x-1.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+      </div>
+    </a>
+
+    <!-- Digi-Library Book Studio -->
+    <a href="/admin/digi-library" class="group block relative brilliant-card bg-base-100 rounded-3xl p-6 sm:p-8 overflow-hidden flex flex-col justify-between">
+      <div class="relative z-10">
+        <div class="w-14 h-14 rounded-2xl bg-indigo-500/15 border-2 border-indigo-500/25 text-indigo-600 flex items-center justify-center mb-6 shadow-xs group-hover:scale-105 transition-transform">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+        </div>
+        
+        <span class="px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-700 text-[10px] font-black uppercase tracking-widest">Labour India Editions</span>
+        <h2 class="text-2xl font-black text-base-content mt-2 mb-2.5 tracking-tight group-hover:text-indigo-600 transition-colors">Digi-Library Studio</h2>
+        <p class="text-sm text-base-content/65 font-medium leading-relaxed mb-6">
+          Build multi-subject Labour India books with ordered chapters, bulk Q&A upload, explanation videos, and AI Tutor learning.
+        </p>
+      </div>
+        
+      <div class="relative z-10 inline-flex items-center gap-2 text-indigo-600 font-black text-sm pt-4 border-t border-base-200">
+        Open Book Studio
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transform group-hover:translate-x-1.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+      </div>
+    </a>
+
+    <!-- Analytics Dashboard -->
+    <a href="/admin/analytics" class="group block relative brilliant-card bg-base-100 rounded-3xl p-6 sm:p-8 overflow-hidden flex flex-col justify-between">
+      <div class="relative z-10">
+        <div class="w-14 h-14 rounded-2xl bg-emerald-500/15 border-2 border-emerald-500/25 text-emerald-600 flex items-center justify-center mb-6 shadow-xs group-hover:scale-105 transition-transform">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" /></svg>
+        </div>
+        
+        <span class="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-700 text-[10px] font-black uppercase tracking-widest">Student Reports</span>
+        <h2 class="text-2xl font-black text-base-content mt-2 mb-2.5 tracking-tight group-hover:text-emerald-600 transition-colors">Analytics & Insights</h2>
+        <p class="text-sm text-base-content/65 font-medium leading-relaxed mb-6">
+          Monitor student engagement, track chapter completion, and inspect AI-graded exam attempts and scratchpad diagrams.
+        </p>
+      </div>
+        
+      <div class="relative z-10 inline-flex items-center gap-2 text-emerald-600 font-black text-sm pt-4 border-t border-base-200">
+        View Student Analytics
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transform group-hover:translate-x-1.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+      </div>
+    </a>
+  </div>
+</div>
+{% endblock %}

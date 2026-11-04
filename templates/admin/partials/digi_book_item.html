@@ -1,0 +1,139 @@
+<div id="digi-book-{{ book.id }}"
+     x-data="{ open: {{ 'true' if start_open else 'false' }}, editing: false }"
+     class="brilliant-card bg-base-100 rounded-3xl overflow-hidden transition-all">
+
+  <!-- Book Header -->
+  <div class="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-base-100 hover:bg-base-200/30 transition-colors">
+    <div class="flex items-center gap-4 cursor-pointer flex-1 min-w-0" @click="open = !open">
+      {% if book.thumbnail_url %}
+        <img src="{{ book.thumbnail_url }}" alt="{{ book.title }}" class="w-20 sm:w-24 h-auto object-contain rounded-2xl shadow-md border-2 border-base-300 bg-base-200/40 shrink-0" />
+      {% else %}
+        <div class="w-16 h-20 rounded-2xl bg-primary/20 border-2 border-primary/40 text-secondary flex flex-col items-center justify-center font-black shrink-0 shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          <span class="text-[9px] uppercase tracking-widest mt-0.5">BOOK</span>
+        </div>
+      {% endif %}
+
+      <div class="min-w-0 flex-1">
+        <div class="flex items-center gap-2 flex-wrap mb-1.5">
+          <span class="badge badge-sm font-black uppercase tracking-wider {{ 'badge-success text-white' if book.status == 'published' else 'badge-warning' }}">
+            {{ book.status }}
+          </span>
+          <span class="badge badge-sm bg-secondary/10 text-secondary border-secondary/20 font-black">{{ book.class_name or 'All Classes' }}</span>
+          <span class="badge badge-sm badge-ghost font-black">{{ book.subjects|length }} Ordered Subject{% if book.subjects|length != 1 %}s{% endif %}</span>
+        </div>
+        <h2 class="text-xl sm:text-2xl font-black text-base-content tracking-tight truncate">{{ book.title }}</h2>
+        {% if book.description %}
+          <p class="text-xs sm:text-sm text-base-content/60 font-medium truncate mt-0.5">{{ book.description }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex flex-wrap items-center gap-2 shrink-0">
+      <a href="/student/digi-library/books/{{ book.id }}"
+         class="btn btn-xs sm:btn-sm btn-ghost border border-base-300 rounded-xl font-bold gap-1.5">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+        View Book
+      </a>
+
+      <button type="button"
+              hx-post="/admin/digi-library/books/{{ book.id }}/toggle-status"
+              hx-target="#digi-book-{{ book.id }}"
+              hx-swap="outerHTML"
+              class="btn btn-xs sm:btn-sm rounded-xl font-black {{ 'btn-outline btn-warning' if book.status == 'published' else 'btn-success text-white' }}">
+        {{ 'Unpublish' if book.status == 'published' else 'Publish' }}
+      </button>
+
+      <button type="button" @click="editing = !editing" class="btn btn-xs sm:btn-sm btn-ghost border border-base-300 rounded-xl font-bold">
+        Edit Book
+      </button>
+
+      <button type="button"
+              hx-delete="/admin/digi-library/books/{{ book.id }}"
+              hx-target="#digi-book-{{ book.id }}"
+              hx-swap="outerHTML"
+              hx-confirm="Delete '{{ book.title }}' and all its subjects & chapters?"
+              class="btn btn-xs sm:btn-sm btn-ghost text-error hover:bg-error/10 rounded-xl font-bold">
+        Delete
+      </button>
+
+      <button type="button" @click="open = !open" class="btn btn-sm btn-circle btn-ghost border border-base-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Inline Edit Book Form -->
+  <div x-show="editing" x-collapse style="display: none;" class="px-6 py-5 bg-base-200/70 border-t-2 border-base-300">
+    <form hx-post="/admin/digi-library/books/{{ book.id }}/edit"
+          hx-target="#digi-book-{{ book.id }}"
+          hx-swap="outerHTML"
+          hx-encoding="multipart/form-data"
+          class="space-y-3">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div>
+          <label class="label py-0.5"><span class="label-text text-xs font-black uppercase">Book Title</span></label>
+          <input type="text" name="title" value="{{ book.title }}" class="input input-bordered input-sm w-full bg-base-100 rounded-xl font-bold" required />
+        </div>
+        <div>
+          <label class="label py-0.5"><span class="label-text text-xs font-black uppercase">Class Filter</span></label>
+          <select name="class_id" class="select select-bordered select-sm w-full bg-base-100 rounded-xl font-bold">
+            <option value="">All Classes (Public)</option>
+            {% if classes %}
+              {% for cls in classes %}
+                <option value="{{ cls.id }}" {% if book.class_id == cls.id %}selected{% endif %}>{{ cls.name }}</option>
+              {% endfor %}
+            {% endif %}
+          </select>
+        </div>
+        <div>
+          <label class="label py-0.5"><span class="label-text text-xs font-black uppercase">Replace Cover Photo</span></label>
+          <input type="file" name="thumbnail" accept="image/*" class="file-input file-input-bordered file-input-sm w-full bg-base-100 rounded-xl" />
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <input type="text" name="description" value="{{ book.description or '' }}" placeholder="Book description..." class="input input-bordered input-sm flex-1 bg-base-100 rounded-xl" />
+        <button type="button" @click="editing = false" class="btn btn-ghost btn-sm rounded-xl font-bold">Cancel</button>
+        <button type="submit" class="btn btn-primary btn-sm rounded-xl font-black text-primary-content px-6">Save Book</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Book Body: Subjects List (in Book Order) + Add Subject Form -->
+  <div x-show="open" x-collapse style="display: none;" class="p-5 sm:p-6 bg-base-200/40 border-t-2 border-base-300 space-y-5">
+    <!-- Add Subject inside this Book -->
+    <form hx-post="/admin/digi-library/books/{{ book.id }}/subjects"
+          hx-target="#digi-subjects-list-{{ book.id }}"
+          hx-swap="beforeend"
+          hx-encoding="multipart/form-data"
+          @htmx:after-request="if(event.detail.successful) $el.reset()"
+          class="bg-base-100 p-4 sm:p-5 rounded-2xl border-2 border-base-300 shadow-sm flex flex-col md:flex-row items-stretch md:items-end gap-3">
+      <div class="flex-1">
+        <label class="label py-0.5"><span class="label-text text-xs font-black uppercase tracking-wider text-base-content/70">Add Subject in Book Sequence *</span></label>
+        <input type="text" name="name" class="input input-bordered input-sm w-full bg-base-200/40 border-2 border-base-300 rounded-xl font-bold" required />
+      </div>
+      <div class="flex-1">
+        <label class="label py-0.5"><span class="label-text text-xs font-black uppercase tracking-wider text-base-content/70">Subject Notes (Optional)</span></label>
+        <input type="text" name="description" class="input input-bordered input-sm w-full bg-base-200/40 border-2 border-base-300 rounded-xl" />
+      </div>
+      <div class="md:w-52">
+        <label class="label py-0.5"><span class="label-text text-xs font-black uppercase tracking-wider text-base-content/70">Subject Icon (Optional)</span></label>
+        <input type="file" name="thumbnail" accept="image/*" class="file-input file-input-bordered file-input-sm w-full bg-base-200/40 rounded-xl" />
+      </div>
+      <button type="submit" class="tactile-btn btn btn-secondary btn-sm h-10 rounded-xl font-black text-white px-6 shadow-[0_3px_0_0_#1D4ED8] border-none">
+        + Add Subject
+      </button>
+    </form>
+
+    <!-- Ordered Subjects Container -->
+    <div id="digi-subjects-list-{{ book.id }}" class="space-y-5">
+      {% for subject in book.subjects %}
+        {% set subject_order_num = loop.index %}
+        {% set start_open = false %}
+        {% include "admin/partials/digi_subject_item.html" %}
+      {% endfor %}
+    </div>
+  </div>
+
+</div>

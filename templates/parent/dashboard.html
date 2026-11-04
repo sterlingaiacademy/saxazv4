@@ -1,0 +1,406 @@
+{% extends "base.html" %}
+
+{% block title %}Parent Portal - SAXAZ{% endblock %}
+{% block topbar_title %}Parent Analytics Portal{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-8 pb-20">
+  
+  <!-- CLEAN HEADER BAR -->
+  <div class="brilliant-card bg-base-100 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+    <div class="space-y-2">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 text-amber-700 border border-amber-500/30 text-xs font-black uppercase tracking-widest">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+        Parent Insights Hub
+      </div>
+      <h1 class="text-2xl sm:text-4xl font-black text-base-content tracking-tight">Parent Portal</h1>
+      <p class="text-base-content/65 font-bold text-sm sm:text-base">
+        Real-time learning trajectory &amp; exam analytics for <span class="underline decoration-2 underline-offset-4 font-black text-base-content">{{ user.name }}</span>
+      </p>
+    </div>
+    <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto sm:justify-end">
+      <a href="/student/dashboard" class="btn bg-base-200 hover:bg-base-300 text-base-content border-2 border-base-300 rounded-2xl px-4 font-black shadow-2xs tactile-btn btn-sm sm:btn-md">
+        Student View
+      </a>
+      <a href="/parent/settings" class="btn btn-primary text-primary-content rounded-2xl px-5 font-black shadow-md tactile-btn btn-sm sm:btn-md">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+        Settings
+      </a>
+      <a href="/logout" class="btn btn-error text-white border-none rounded-2xl px-4 font-black shadow-2xs tactile-btn btn-sm sm:btn-md">Logout</a>
+    </div>
+  </div>
+  
+  <!-- AI Weekly Progress Summary (Tactile Card) -->
+  <div class="brilliant-card bg-gradient-to-br from-amber-500/10 via-base-100 to-indigo-500/5 p-6 sm:p-8 relative overflow-hidden" 
+       x-data="{ 
+         loading: false,
+         playing: false,
+         audio: null,
+         ttsMode: '{{ user.parent_tts_mode or 'manual' }}',
+         ttsVoice: '{{ user.parent_tts_voice or 'af_bella' }}',
+         ttsEngine: '{{ user.parent_tts_engine or 'kokoro' }}',
+         
+         init() {
+           if (this.ttsMode === 'auto') {
+             setTimeout(() => { this.playTTS(); }, 1000);
+           }
+         },
+         
+         async playTTS(textOverride = null) {
+           if (this.playing && this.audio) {
+             this.audio.pause();
+             this.playing = false;
+             return;
+           }
+           
+           const text = textOverride || this.$refs.summaryText.innerText;
+           if (!text || text.trim() === '') return;
+           
+           this.playing = true;
+           try {
+             const response = await fetch('/api/tts/prepare', {
+               method: 'POST',
+               headers: {'Content-Type': 'application/json'},
+               body: JSON.stringify({ text: text.trim(), voice: this.ttsVoice, engine: this.ttsEngine })
+             });
+             
+             if (response.ok) {
+               const data = await response.json();
+               const url = '/api/tts/stream/' + data.audio_id;
+               this.audio = new Audio(url);
+               this.audio.onended = () => { this.playing = false; };
+               this.audio.onerror = () => { this.playing = false; };
+               this.audio.play();
+             } else {
+               this.playing = false;
+             }
+           } catch (e) {
+             console.error('TTS error:', e);
+             this.playing = false;
+           }
+         }
+       }">
+    <div class="relative z-10 flex flex-col sm:flex-row items-start gap-5">
+      <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-primary text-slate-900 flex items-center justify-center shrink-0 border-2 border-amber-600/30 shadow-md">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+      </div>
+      <div class="w-full">
+        <div class="flex flex-wrap items-center justify-between gap-2 w-full mb-3">
+          <span class="px-3 py-1 rounded-full bg-amber-500/15 text-amber-800 border border-amber-500/30 text-xs font-black tracking-widest uppercase">
+            AI Advisor Progress Summary
+          </span>
+          <div class="flex items-center gap-2">
+            <button x-show="ttsMode !== 'off'" class="btn btn-xs sm:btn-sm btn-primary text-slate-900 border border-amber-600/30 rounded-xl px-4 font-black tactile-btn" title="Read Aloud" @click="playTTS()">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" x-show="!playing"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" x-show="playing" style="display:none;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" /></svg>
+              <span x-text="playing ? 'Stop Audio' : 'Listen'"></span>
+            </button>
+            <button class="btn btn-xs sm:btn-sm bg-base-100 hover:bg-base-200 text-base-content border-2 border-base-300 rounded-xl px-4 font-black tactile-btn" title="Refresh Summary" @click="loading = true; fetch('/parent/api/refresh-summary', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({type: 'main'})}).then(r => r.json()).then(d => { if(d.summary) { $refs.summaryText.innerHTML = d.summary; if(ttsMode === 'auto') { setTimeout(() => playTTS(), 500); } } loading = false; })" :class="{ 'opacity-50 pointer-events-none': loading }">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" :class="{ 'animate-spin': loading }" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+              Refresh
+            </button>
+          </div>
+        </div>
+        <p class="text-base sm:text-xl text-base-content leading-relaxed font-bold ai-summary-text" x-ref="summaryText">{{ summary|safe }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Stats (3D Tactile Cards) -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="brilliant-card bg-base-100 p-6 flex items-center gap-4">
+      <div class="w-14 h-14 rounded-2xl bg-amber-500/15 text-amber-600 flex items-center justify-center text-2xl border-2 border-amber-500/25 shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>
+      </div>
+      <div>
+        <div class="text-xs text-base-content/50 uppercase tracking-widest font-black">Study Time</div>
+        <div class="text-3xl font-black text-base-content">{{ analytics.time_spent }}</div>
+      </div>
+    </div>
+    
+    <div class="brilliant-card bg-base-100 p-6 flex items-center gap-4">
+      <div class="w-14 h-14 rounded-2xl bg-indigo-500/15 text-indigo-600 flex items-center justify-center text-2xl border-2 border-indigo-500/25 shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      </div>
+      <div>
+        <div class="text-xs text-base-content/50 uppercase tracking-widest font-black">Syllabus Mastery</div>
+        <div class="text-3xl font-black text-base-content">{{ analytics.completion_percent }}%</div>
+      </div>
+    </div>
+    
+    <div class="brilliant-card bg-base-100 p-6 flex items-center gap-4">
+      <div class="w-14 h-14 rounded-2xl bg-emerald-500/15 text-emerald-600 flex items-center justify-center text-2xl border-2 border-emerald-500/25 shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+      </div>
+      <div>
+        <div class="text-xs text-base-content/50 uppercase tracking-widest font-black">Active Streak</div>
+        <div class="text-3xl font-black text-base-content">{{ analytics.streak_days }} Days</div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Visual Analytics Charts -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="brilliant-card bg-base-100 p-6 sm:p-8 flex flex-col justify-between">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-black text-base-content flex items-center gap-2">
+          <span class="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-700 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg>
+          </span>
+          Subject Study Breakdown
+        </h3>
+        <span class="flex items-center gap-1.5 text-[11px] font-black text-emerald-700 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/25">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          Live Tracked
+        </span>
+      </div>
+
+      <!-- Pie Chart Display -->
+      <div class="relative h-64 w-full flex items-center justify-center py-2">
+        <canvas id="progressChart"></canvas>
+      </div>
+
+      <!-- Subject Time & Progress Breakdown Badges -->
+      <div id="subjectTimeLegend" class="mt-4 pt-3 border-t-2 border-base-200 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+        {% for sub in subjects %}
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-base-200/60 border border-base-300">
+          <div class="flex items-center gap-2 truncate max-w-[150px]">
+            <span class="w-3 h-3 rounded-full shrink-0" style="background-color: {% if loop.index0 == 0 %}#F4AA00{% elif loop.index0 == 1 %}#3B82F6{% elif loop.index0 == 2 %}#10B981{% elif loop.index0 == 3 %}#8B5CF6{% elif loop.index0 == 4 %}#F97316{% elif loop.index0 == 5 %}#EC4899{% else %}#14B8A6{% endif %};"></span>
+            <span class="font-black text-base-content truncate">{{ sub.name }}</span>
+          </div>
+          <span class="font-black text-base-content bg-base-100 px-2.5 py-0.5 rounded-lg border border-base-300 text-[11px] shrink-0">
+            {{ sub.time_studied_str if sub.seconds_studied else (sub.progress_pct ~ '%') }}
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="brilliant-card bg-base-100 p-6 sm:p-8">
+      <h3 class="text-lg font-black text-base-content mb-4 flex items-center gap-2">
+        <span class="w-8 h-8 rounded-xl bg-indigo-500/15 text-indigo-600 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" /></svg>
+        </span>
+        Recent Exam Score Trajectory
+      </h3>
+      <div class="relative h-72 w-full">
+        <canvas id="examTrendChart"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Mock vs Real Exams Deep-Dive Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Mock Exams Card -->
+    <a href="/parent/mock-exams" class="group relative brilliant-card bg-gradient-to-br from-amber-500/10 via-base-100 to-base-100 p-6 sm:p-8 overflow-hidden flex flex-col justify-between min-h-[210px]">
+      <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-28 h-28 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+      </div>
+      <div class="relative z-10">
+        <div class="flex items-start justify-between gap-3 mb-5">
+          <div class="w-14 h-14 bg-amber-500 text-slate-900 rounded-2xl flex items-center justify-center shadow-md border-2 border-amber-600/30 group-hover:scale-105 transition-transform">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          </div>
+          {% if analytics.mock_tutor_total_uses and analytics.mock_tutor_total_uses > 0 %}
+            <span class="px-3 py-1 rounded-full bg-rose-500/15 text-rose-600 border border-rose-500/30 text-xs font-black">
+              ⚠️ AI Tutor Used {{ analytics.mock_tutor_total_uses }}x ({{ analytics.mock_tutor_questions_count }} Qs)
+            </span>
+          {% else %}
+            <span class="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-600 border border-emerald-500/30 text-xs font-black">
+              ✓ 0 AI Tutor Uses
+            </span>
+          {% endif %}
+        </div>
+        <h2 class="text-2xl font-black text-base-content mb-2 group-hover:text-amber-700 transition-colors">Mock Exams Analytics</h2>
+        <p class="text-sm font-medium text-base-content/65 max-w-[90%]">Track practice habits, question retries, AI Tutor assistance / cheating log, and persistence over time.</p>
+      </div>
+      <div class="relative z-10 mt-6 pt-4 border-t border-base-200 flex items-center text-amber-700 font-black text-sm">
+        Explore Mock Exam &amp; Tutor Log <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 ml-2 group-hover:translate-x-1.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+      </div>
+    </a>
+    
+    <!-- Real Exams Card -->
+    <a href="/parent/real-exams" class="group relative brilliant-card bg-gradient-to-br from-emerald-500/10 via-base-100 to-base-100 p-6 sm:p-8 overflow-hidden flex flex-col justify-between min-h-[210px]">
+      <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-28 h-28 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+      </div>
+      <div class="relative z-10">
+        <div class="w-14 h-14 bg-emerald-500/20 text-emerald-600 rounded-2xl flex items-center justify-center mb-5 shadow-2xs border-2 border-emerald-500/30 group-hover:scale-105 transition-transform">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+        </div>
+        <h2 class="text-2xl font-black text-base-content mb-2 group-hover:text-emerald-700 transition-colors">Real Exams Analytics</h2>
+        <p class="text-sm font-medium text-base-content/65 max-w-[85%]">Deep dive into timed test scores, accuracy reports, time management, and XP usage strategy.</p>
+      </div>
+      <div class="relative z-10 mt-6 pt-4 border-t border-base-200 flex items-center text-emerald-700 font-black text-sm">
+        Explore Real Exam Reports <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 ml-2 group-hover:translate-x-1.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+      </div>
+    </a>
+  </div>
+  
+  <!-- Recent Activity -->
+  <div class="brilliant-card bg-base-100 p-6 sm:p-8">
+    <h2 class="text-2xl font-black text-base-content mb-6 flex items-center gap-2.5">
+      <span class="w-10 h-10 rounded-xl bg-primary/20 text-amber-700 flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+      </span>
+      Recent Learning Activity
+    </h2>
+    
+    {% if analytics.recent_activity %}
+      <div class="space-y-4">
+        {% for item in analytics.recent_activity %}
+        <div class="flex gap-4 items-start p-4 rounded-2xl bg-base-200/50 border-2 border-base-200 hover:border-primary/40 transition-colors">
+          <div class="mt-0.5 shrink-0">
+            {% if item.type == 'exam' %}
+              <div class="w-12 h-12 rounded-2xl {% if item.exam_type == 'mock' %}bg-amber-500/15 text-amber-700 border-amber-500/30{% else %}bg-emerald-500/15 text-emerald-700 border-emerald-500/30{% endif %} border-2 flex items-center justify-center shadow-xs">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
+              </div>
+            {% else %}
+              <div class="w-12 h-12 rounded-2xl bg-indigo-500/15 text-indigo-600 border-2 border-indigo-500/30 flex items-center justify-center shadow-xs">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              </div>
+            {% endif %}
+          </div>
+          <div class="flex-1 min-w-0">
+            <h4 class="font-black text-base-content text-base sm:text-lg leading-snug">
+              {% if item.type == 'exam' %}
+                Completed {% if item.exam_type == 'mock' %}Mock{% else %}Real{% endif %} Exam: {{ item.name }}
+              {% else %}
+                Studied Chapter Lesson: {{ item.name }}
+              {% endif %}
+            </h4>
+            <div class="text-xs sm:text-sm text-base-content/60 font-bold mt-1">
+              {{ item.details }} &bull; <span class="uppercase tracking-wider text-primary font-black">{{ item.timestamp[:10] }}</span>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="text-center py-10 text-base-content/50 font-bold bg-base-200/50 rounded-2xl border-2 border-dashed border-base-300">
+        No recent activity recorded yet.
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // 1. Subject Progress & Study Time (Pie Chart)
+    const rawSubjects = {{ subjects | tojson | safe }} || [];
+    const colorPalette = ['#F4AA00', '#3B82F6', '#10B981', '#8B5CF6', '#F97316', '#EC4899', '#14B8A6', '#64748B'];
+    
+    let subjectLabels = [];
+    let subjectData = [];
+    let subjectColors = [];
+    let subjectStudyMins = [];
+    let subjectProgressPcts = [];
+    
+    let totalStudiedSeconds = 0;
+    rawSubjects.forEach((sub, idx) => {
+      subjectLabels.push(sub.name);
+      const secs = sub.seconds_studied || 0;
+      totalStudiedSeconds += secs;
+      const mins = Math.max(sub.minutes_studied || (secs / 60), 0);
+      subjectStudyMins.push(mins);
+      subjectProgressPcts.push(sub.progress_pct || 0);
+      subjectColors.push(colorPalette[idx % colorPalette.length]);
+    });
+
+    if (totalStudiedSeconds === 0) {
+      subjectData = rawSubjects.map(s => Math.max(s.progress_pct || 1, 1));
+    } else {
+      subjectData = subjectStudyMins.map(m => Math.max(m, 0.1));
+    }
+
+    let progressPieChart = null;
+
+    if (document.getElementById('progressChart')) {
+      const ctxProgress = document.getElementById('progressChart').getContext('2d');
+      progressPieChart = new Chart(ctxProgress, {
+        type: 'pie',
+        data: {
+          labels: subjectLabels.length ? subjectLabels : ['No Subjects'],
+          datasets: [{
+            data: subjectData.length ? subjectData : [1],
+            backgroundColor: subjectColors.length ? subjectColors : ['#F4AA00'],
+            borderWidth: 2,
+            borderColor: '#ffffff',
+            hoverOffset: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                boxWidth: 12,
+                font: { family: 'Outfit', weight: 'bold', size: 11 },
+                padding: 12
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const idx = context.dataIndex;
+                  const sub = rawSubjects[idx];
+                  if (!sub) return context.label;
+                  const timeStr = sub.time_studied_str || '0 mins';
+                  const pct = sub.progress_pct || 0;
+                  return ` ${sub.name}: ${timeStr} studied (${pct}% syllabus done)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // 2. Exam Trend Line Chart
+    if (document.getElementById('examTrendChart')) {
+      const rawAllExams = {{ analytics.all_exams | tojson | safe }};
+      
+      let examLabels = [];
+      let examScores = [];
+      
+      if (rawAllExams && rawAllExams.length > 0) {
+        const slicedExams = rawAllExams.slice(0, 10).reverse();
+        examLabels = slicedExams.map(e => e.title);
+        examScores = slicedExams.map(e => (e.total_marks_awarded / Math.max(e.total_max_marks, 1) * 100).toFixed(1));
+      }
+
+      const ctxTrend = document.getElementById('examTrendChart').getContext('2d');
+      new Chart(ctxTrend, {
+        type: 'line',
+        data: {
+          labels: examLabels.length ? examLabels : ['No Data'],
+          datasets: [{
+            label: 'Score (%)',
+            data: examScores.length ? examScores : [0],
+            borderColor: '#6366f1',
+            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+            borderWidth: 3,
+            tension: 0.4,
+            fill: true,
+            pointBackgroundColor: '#6366f1',
+            pointRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true, max: 100 }
+          },
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

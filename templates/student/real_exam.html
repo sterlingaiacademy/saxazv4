@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block title %}Real Exam - {{ paper.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-8 pb-32 pt-8 relative" x-data="realExamApp()">
+  
+  <!-- Top Bar: Timer, XP, Store -->
+  <div class="sticky top-2 sm:top-4 z-50 bg-base-100/95 backdrop-blur-xl border border-error/20 rounded-2xl p-2.5 sm:p-4 shadow-[0_4px_30px_rgba(248,113,113,0.15)] flex justify-between items-center gap-2 sm:gap-4">
+    <!-- Timer -->
+    <div class="flex items-center gap-2.5 sm:gap-4 shrink-0">
+      <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-error/20 flex items-center justify-center text-error shadow-[0_0_15px_rgba(248,113,113,0.3)]">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+      </div>
+      <div>
+        <div class="text-[9px] sm:text-[10px] font-bold text-error uppercase tracking-widest leading-none mb-0.5">Time Left</div>
+        <div class="text-xl sm:text-3xl font-bold text-base-content font-mono leading-tight" :class="{'text-error animate-pulse': timeLeft <= 60}" x-text="formatTime(timeLeft)"></div>
+      </div>
+    </div>
+
+    <!-- Zero Tolerance Warning -->
+    <div class="hidden md:flex items-center gap-2 bg-error/15 text-error px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-error/30 font-bold text-xs sm:text-sm shadow-sm">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-error shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span>Anti-Cheat: Zero Tolerance</span>
+    </div>
+
+    <!-- XP & Store -->
+    <div class="flex items-center gap-2 sm:gap-4 shrink-0">
+      <div class="flex flex-col items-end">
+        <div class="text-[9px] sm:text-[10px] font-bold text-warning uppercase tracking-widest leading-none mb-0.5">XP</div>
+        <div class="text-sm sm:text-xl font-bold text-warning leading-tight">{{ current_xp }}</div>
+      </div>
+      <button @click="buyTime()" 
+          class="btn btn-warning btn-xs sm:btn-sm rounded-xl font-bold shadow-[0_0_15px_rgba(251,191,36,0.3)] hover:shadow-[0_0_25px_rgba(251,191,36,0.5)]"
+          :disabled="hasPurchased || currentXp < 10 || isPurchasing"
+          :class="{'opacity-50 cursor-not-allowed': hasPurchased || currentXp < 10}">
+        <span x-show="!isPurchasing">
+          <span x-show="!hasPurchased"><span class="sm:hidden">+5m</span><span class="hidden sm:inline">Buy +5 Mins (10 XP)</span></span>
+          <span x-show="hasPurchased"><span class="sm:hidden">Bought</span><span class="hidden sm:inline">Time Purchased</span></span>
+        </span>
+        <span x-show="isPurchasing" class="loading loading-spinner loading-xs"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Form -->
+  <form id="examForm" method="POST" action="/student/real-exams/attempts/{{ attempt.id }}/submit" @submit.prevent="submitExam()" class="space-y-12">
+    <input type="hidden" name="tab_switch_count" :value="warnings">
+    <input type="hidden" name="cheated_questions" :value="JSON.stringify(cheatedQuestions)">
+    
+    <div class="text-center space-y-2 py-4">
+      <h1 class="text-3xl font-bold text-base-content">{{ paper.title }}</h1>
+      <p class="text-base-content/50">Total Questions: {{ total_questions }} | Anti-Cheat is Active.</p>
+    </div>
+
+    <!-- Modules and Questions -->
+    {% for module in paper.modules %}
+      <div class="bg-base-100 rounded-3xl border border-base-300 shadow-sm p-6 md:p-8 space-y-8">
+        <div class="border-b border-base-200 pb-4">
+          <h2 class="text-2xl font-bold text-base-content">{{ module.name }}</h2>
+          <p class="text-primary text-sm font-bold uppercase tracking-wider mt-1">{{ module.mark_value }} Marks per Question</p>
+        </div>
+        
+        {% for q in module.questions %}
+          <div class="space-y-4 question-container transition-all duration-500 rounded-2xl p-4 border border-transparent" 
+             :class="{'opacity-60 scale-[0.98]': activeQuestion && activeQuestion !== {{ q.id }}, 'bg-base-200 shadow-[0_0_40px_rgba(var(--fallback-p, 87, 13, 248), 0.15)] border-primary/20 scale-100 z-10 relative': activeQuestion === {{ q.id }}}"
+             data-id="{{ q.id }}" @click="activeQuestion = {{ q.id }}">
+            <div class="flex gap-4 items-start">
+              <div class="w-8 h-8 rounded-full bg-base-content/10 flex items-center justify-center font-bold text-base-content/50 shrink-0 mt-1">
+                {{ loop.index }}
+              </div>
+              <div class="flex-1">
+                <h3 class="text-lg text-base-content font-medium whitespace-pre-wrap">{{ q.question_text }}</h3>
+                {% if q.media_url %}
+                <div class="mt-4 rounded-2xl overflow-hidden border border-base-content/10 bg-base-100 p-2 text-center">
+                  <img src="{{ q.media_url }}" class="max-h-64 mx-auto object-contain rounded-xl" alt="Question Image">
+                </div>
+                {% endif %}
+                {% set q_type = q.question_type or module.question_type or 'LONG_ANSWER' %}
+                <div class="mt-4">
+                  {% if q_type in ['MCQ', 'ASSERTION_REASON'] and q.options %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10 p-2">
+                      {% set parsed_opts = q.options | parse_json %}
+                      {% set letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] %}
+                      {% for opt in parsed_opts %}
+                      <label class="flex items-center gap-4 p-4 rounded-xl border border-base-content/10 bg-base-200 cursor-pointer hover:bg-base-300 hover:border-primary/50 transition-all group/opt">
+                        <input type="radio" name="q_{{ q.id }}" value="{{ letters[loop.index0] }}. {{ opt }}" @focus="activeQuestion = {{ q.id }}" class="radio radio-primary radio-sm shadow-inner">
+                        <span class="text-lg font-medium text-base-content leading-relaxed">{{ letters[loop.index0] }}. {{ opt }}</span>
+                      </label>
+                      {% endfor %}
+                    </div>
+                  {% else %}
+                    <textarea name="q_{{ q.id }}" 
+                         @focus="activeQuestion = {{ q.id }}"
+                         class="textarea w-full bg-base-100/50 border-base-300 focus:border-primary text-base-content resize-y min-h-[120px] rounded-xl text-lg transition-colors focus:ring-2 focus:ring-primary/20" 
+                         placeholder="Type your answer here..."></textarea>
+                    
+                    <!-- Hidden Drawing Input -->
+                    <input type="hidden" :name="'drawing_' + {{ q.id }}" :value="attachedDrawings[{{ q.id }}] || ''">
+
+                    <!-- Answer Attachment Helper: Open Scratchpad -->
+                    <div class="flex items-center justify-between gap-3 flex-wrap relative z-10 px-1 pt-1.5">
+                      <button type="button" 
+                              @click="activeQuestion = {{ q.id }}; document.getElementById('scratchpad-dock-btn')?.click()"
+                              class="btn btn-xs rounded-xl font-bold bg-base-200 hover:bg-base-300 text-base-content border border-base-content/15 flex items-center gap-1.5 shadow-2xs cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                        <span>Open Scratchpad for Q{{ loop.index }}</span>
+                      </button>
+                      <span class="text-[11px] text-base-content/50 font-medium hidden sm:inline">Use scratchpad to sketch diagrams, formulas, or calculations</span>
+                    </div>
+
+                    <!-- Attached Scratchpad Drawing Preview -->
+                    <template x-if="attachedDrawings[{{ q.id }}]">
+                      <div class="mt-3 p-3.5 bg-base-200/90 rounded-2xl border border-primary/30 flex items-center justify-between gap-4 shadow-sm relative z-10 transition-all">
+                        <div class="flex items-center gap-3.5">
+                          <div class="w-16 h-14 rounded-xl overflow-hidden border border-base-content/15 bg-white shadow-xs shrink-0 flex items-center justify-center p-1">
+                            <img :src="attachedDrawings[{{ q.id }}]" alt="Attached Drawing" class="max-h-full max-w-full object-contain">
+                          </div>
+                          <div>
+                            <div class="flex items-center gap-2">
+                              <span class="badge badge-sm badge-primary font-bold">Attached Drawing</span>
+                              <span class="text-[11px] text-base-content/60 font-mono">Scratchpad Sketch</span>
+                            </div>
+                            <p class="text-xs text-base-content/75 font-medium mt-1 leading-snug">Your handwritten work/diagram will be evaluated by the AI along with your text.</p>
+                          </div>
+                        </div>
+                        <button type="button" 
+                                @click="delete attachedDrawings[{{ q.id }}]; attachedDrawings = Object.assign({}, attachedDrawings)" 
+                                class="btn btn-sm btn-ghost btn-circle text-error/70 hover:text-error hover:bg-error/10 shrink-0" 
+                                title="Remove attached drawing">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>
+                      </div>
+                    </template>
+                  {% endif %}
+                </div>
+                <div x-show="cheatedQuestions.includes({{ q.id }})" style="display: none;" class="mt-2 text-error text-sm font-bold flex items-center gap-1.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-error shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  Violation recorded for this question. Zero marks will be awarded.
+                </div>
+              </div>
+            </div>
+          </div>
+          {% if not loop.last %}<hr class="border-base-content/5">{% endif %}
+        {% endfor %}
+      </div>
+    {% endfor %}
+
+    <!-- Submit Section -->
+    <div class="flex justify-center pt-8 px-4">
+      <button type="submit" class="btn btn-error btn-md sm:btn-lg rounded-full w-full sm:w-auto px-8 sm:px-16 font-extrabold text-white shadow-[0_0_30px_rgba(248,113,113,0.4)] hover:shadow-[0_0_50px_rgba(248,113,113,0.7)] transition-all">
+        Submit Exam for Grading
+      </button>
+    </div>
+  </form>
+  
+  <!-- Grading Overlay -->
+  <div x-show="isSubmitting" style="display: none;" class="fixed inset-0 z-[100] bg-base-100/95 backdrop-blur-md flex flex-col items-center justify-center p-4">
+    <div class="w-32 h-32 relative flex items-center justify-center">
+      <div class="absolute inset-0 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+      <span class="text-4xl text-primary"><svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg></span>
+    </div>
+    <h2 class="text-2xl font-bold text-base-content mt-8 mb-2">The System is Grading Your Exam</h2>
+    <p class="text-base-content/50 text-center max-w-md">The system is currently analyzing all your answers. This usually takes 5-15 seconds. Please wait...</p>
+  </div>
+
+
+
+</div>
+
+<script>
+function realExamApp() {
+  return {
+    timeLeft: {{ total_seconds }},
+    warnings: 0,
+    cheatedQuestions: [],
+    activeQuestion: null,
+    attachedDrawings: {},
+    currentXp: {{ current_xp }},
+    hasPurchased: {{ 'true' if has_purchased else 'false' }},
+    isPurchasing: false,
+    isSubmitting: false,
+    timerInterval: null,
+    
+    init() {
+      // Listen for attached drawings from scratchpad
+      window.addEventListener('scratchpad-attach-drawing', (e) => {
+        if (e.detail && e.detail.dataUrl) {
+          const qId = this.activeQuestion || {{ paper.modules[0].questions[0].id if paper.modules and paper.modules[0].questions else 'null' }};
+          if (qId) {
+            this.attachedDrawings[qId] = e.detail.dataUrl;
+            this.attachedDrawings = Object.assign({}, this.attachedDrawings);
+          }
+        }
+      });
+
+      // Start Timer
+      this.timerInterval = setInterval(() => {
+        if (this.timeLeft > 0) {
+          this.timeLeft--;
+        } else {
+          clearInterval(this.timerInterval);
+          this.autoSubmit();
+        }
+      }, 1000);
+
+      // Anti-cheat visibility tracking with debounced focus check
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden && !this.isSubmitting) {
+          this.handleCheating();
+        }
+      });
+      window.addEventListener("blur", () => {
+        setTimeout(() => {
+          if (!this.isSubmitting && (document.hidden || !document.hasFocus())) {
+            this.handleCheating();
+          }
+        }, 200);
+      });
+    },
+    
+    formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    },
+    
+    async handleCheating() {
+      if (this.isSubmitting) return;
+      this.isSubmitting = true; // Prevent further triggers
+      clearInterval(this.timerInterval);
+      try {
+        await fetch(`/student/real-exams/attempts/{{ attempt.id }}/cheat_fail`, {
+          method: 'POST'
+        });
+      } catch (e) {
+        console.error(e);
+      }
+      window.location.href = "/student/real-exams/caught";
+    },
+    
+    async buyTime() {
+      if (this.hasPurchased || this.currentXp < 10 || this.isPurchasing) return;
+      
+      this.isPurchasing = true;
+      try {
+        const response = await fetch(`/student/real-exams/attempts/{{ attempt.id }}/buy-time`, {
+          method: 'POST'
+        });
+        const data = await response.json();
+        if (data.success) {
+          this.timeLeft += data.added_seconds;
+          this.currentXp = data.new_xp;
+          this.hasPurchased = true;
+        } else {
+          console.warn("Time purchase failed:", data.error);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        this.isPurchasing = false;
+      }
+    },
+    
+    submitExam() {
+      this.isSubmitting = true;
+      clearInterval(this.timerInterval);
+      
+      // Allow Alpine to render the loading screen, then submit form
+      setTimeout(() => {
+        document.getElementById('examForm').submit();
+      }, 100);
+    },
+    
+    autoSubmit() {
+      this.isSubmitting = true;
+      this.submitExam();
+    }
+  }
+}
+</script>
+<!-- Include Math Tools Partial (Calculator and Symbol Picker) -->
+{% include 'student/partials/math_tools.html' %}
+<!-- Include Digital Scratchpad Partial (Touch & Mouse Drawing Canvas) -->
+{% include 'student/partials/scratchpad.html' %}
+{% endblock %}
+
+

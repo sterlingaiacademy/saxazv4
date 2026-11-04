@@ -1,0 +1,1905 @@
+{% extends "base.html" %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
+
+<div class="w-full transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pb-32" 
+     :style="(showQuestionGrid || showMiniTutor) && isDesktop ? 'padding-right: 450px;' : ''" 
+     x-data="examWizard()">
+  
+  <!-- Initial Loading State -->
+  <div x-show="!isReady" class="flex flex-col items-center justify-center min-h-[50vh] space-y-6">
+    <span class="loading loading-spinner loading-lg text-primary"></span>
+    <h2 class="text-2xl font-bold animate-pulse text-base-content/80">Loading Exam...</h2>
+  </div>
+
+  <!-- Exam UI (Only show when ready) -->
+  <div x-show="isReady" style="display: none;" 
+       class="w-full transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] space-y-8 pt-2 sm:pt-3"
+       :class="(showQuestionGrid || showMiniTutor) && isDesktop ? 'max-w-3xl ml-0 lg:ml-auto mr-auto lg:mr-4' : 'max-w-4xl mx-auto'">
+    
+    <!-- Centered Back Navigation Button -->
+    <div class="flex justify-center mb-6">
+      {% if is_digi_library or paper.is_digi_library %}
+      <a href="/student/digi-library/subjects/{{ paper.subject_id }}" 
+         class="inline-flex items-center gap-2.5 px-6 py-2.5 rounded-full font-bold text-sm tracking-wide transition-all duration-300 shadow-md hover:shadow-lg active:scale-95 border backdrop-blur-md bg-base-100/90 text-base-content border-base-content/20 hover:border-primary/50 hover:bg-base-200/90 group cursor-pointer">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary transition-transform group-hover:-translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        <span>Back to {{ paper.subject_name or 'Question Banks' }}</span>
+      </a>
+      {% else %}
+      <a href="/student/chapters/{{ paper.chapter_id }}/exams" 
+         class="inline-flex items-center gap-2.5 px-6 py-2.5 rounded-full font-bold text-sm tracking-wide transition-all duration-300 shadow-md hover:shadow-lg active:scale-95 border backdrop-blur-md bg-base-100/90 text-base-content border-base-content/20 hover:border-primary/50 hover:bg-base-200/90 group cursor-pointer">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary transition-transform group-hover:-translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        <span>Back to Exams</span>
+      </a>
+      {% endif %}
+    </div>
+
+    <!-- Header & Progress -->
+    <div class="space-y-4">
+      <div class="flex justify-between items-end gap-4">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-base-content mb-1">{{ paper.title }}</h1>
+          <p class="text-xs sm:text-sm text-primary font-bold tracking-widest uppercase flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            {% if is_digi_library or paper.is_digi_library %}Question Bank Practice{% else %}Practice Exam{% endif %}
+          </p>
+        </div>
+        <div class="text-right flex flex-col items-end shrink-0">
+          <div class="text-2xl font-black text-base-content" x-text="`${progressPercentage.toFixed(0)}%`"></div>
+          <div class="text-[10px] sm:text-xs uppercase tracking-widest text-base-content/60 font-semibold">Completed</div>
+        </div>
+      </div>
+      
+      <div class="flex items-center justify-between gap-1.5 sm:gap-2 relative w-full px-2 sm:px-4 h-11 py-1.5 mt-2 overflow-x-auto overflow-y-hidden hover-scrollbar" x-ref="beadsScrollContainer">
+        <!-- Connecting Line -->
+        <div class="absolute left-4 sm:left-6 right-4 sm:right-6 top-1/2 -translate-y-1/2 h-1.5 bg-base-300 z-0 rounded-full pointer-events-none"></div>
+        <div class="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 h-1.5 bg-primary z-0 rounded-full transition-all duration-700 shadow-[0_0_10px_rgba(var(--p),0.5)] pointer-events-none" :style="`width: calc(${progressPercentage}% - 2rem)`"></div>
+        
+        <!-- Dots -->
+        <template x-for="q in flatQuestions" :key="q.id">
+          <div class="w-3.5 h-3.5 sm:w-5 sm:h-5 shrink-0 rounded-full z-10 transition-all duration-500 relative cursor-pointer hover:scale-125"
+             :class="q.statusColor"
+             @click="goToQuestion(q.moduleIdx, q.questionIdx)"
+             :title="`Module ${q.moduleIdx+1}, Question ${q.questionIdx+1}`">
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- Floating +50 XP Celebration Badge -->
+    <div x-show="showXpBadge" 
+         x-transition:enter="transition ease-out duration-500" 
+         x-transition:enter-start="opacity-0 translate-y-8 scale-75" 
+         x-transition:enter-end="opacity-100 -translate-y-2 scale-105" 
+         x-transition:leave="transition ease-in duration-600" 
+         x-transition:leave-start="opacity-100 -translate-y-2 scale-105" 
+         x-transition:leave-end="opacity-0 -translate-y-16 scale-90" 
+         class="fixed top-20 right-1/2 translate-x-1/2 z-[110] pointer-events-none flex items-center gap-2 bg-gradient-to-r from-amber-400 via-orange-500 to-amber-500 text-white font-black px-5 py-2.5 rounded-full shadow-[0_12px_35px_rgba(245,158,11,0.55)] border-2 border-white/60 apple-popup !mt-0"
+         style="display: none;">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-yellow-200 animate-pulse" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
+      </svg>
+      <span class="text-lg tracking-tight">+50 XP</span>
+    </div>
+
+    <!-- Mobile Backdrop (Dismiss palette on tap outside on mobile screens) -->
+    <div x-show="showQuestionGrid" 
+         class="lg:hidden fixed inset-0 z-[115] bg-black/50 backdrop-blur-xs select-none !mt-0"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         @click="showQuestionGrid = false"
+         style="display: none;"></div>
+
+    <!-- Right-Side Question Palette Drawer -->
+    <aside x-show="showQuestionGrid" 
+           class="question-palette-drawer fixed right-0 z-[120] bg-base-100 border-l border-base-content/10 shadow-[-15px_0_45px_rgba(0,0,0,0.18)] flex flex-col overflow-hidden select-none !mt-0"
+           x-transition:enter="transition ease-out duration-300"
+           x-transition:enter-start="opacity-0 translate-x-full"
+           x-transition:enter-end="opacity-100 translate-x-0"
+           x-transition:leave="transition ease-in duration-250"
+           x-transition:leave-start="opacity-100 translate-x-0"
+           x-transition:leave-end="opacity-0 translate-x-full"
+           style="display: none;">
+      
+      <!-- Drawer Header -->
+      <div class="px-5 py-4 bg-base-200/80 border-b border-base-content/10 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center text-primary font-bold shadow-xs">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </div>
+          <div>
+            <h3 class="text-base font-extrabold text-base-content leading-tight">Question Palette</h3>
+            <p class="text-xs text-base-content/60 font-medium mt-0.5" x-text="`${totalAnswered} of ${totalQuestions} Completed`"></p>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-2">
+          <button @click="showQuestionGrid = false" 
+                  class="btn btn-sm btn-circle btn-ghost text-base-content/60 hover:text-base-content hover:bg-base-200"
+                  title="Close Question Palette">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter Tabs & Search -->
+      <div class="px-4 pt-3 pb-2.5 bg-base-200/40 border-b border-base-content/5 space-y-2.5 shrink-0">
+        <!-- Quick Filter Pills -->
+        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs font-bold">
+          <button type="button" @click="paletteFilter = 'all'" 
+                  class="px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                  :class="paletteFilter === 'all' ? 'bg-primary text-black font-extrabold shadow-xs' : 'bg-base-200/80 text-base-content/70 hover:bg-base-200 hover:text-base-content'">
+            <span>All</span>
+            <span class="badge badge-xs" :class="paletteFilter === 'all' ? 'badge-neutral text-white' : 'badge-ghost'" x-text="totalQuestions"></span>
+          </button>
+
+          <button type="button" @click="paletteFilter = 'wrong'" 
+                  class="px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                  :class="paletteFilter === 'wrong' ? 'bg-error text-white font-extrabold shadow-xs' : 'bg-base-200/80 text-base-content/70 hover:bg-base-200 hover:text-base-content'">
+            <span class="w-2 h-2 rounded-full bg-error" :class="paletteFilter === 'wrong' ? 'bg-white' : ''"></span>
+            <span>Needs Review</span>
+            <span class="badge badge-xs" :class="paletteFilter === 'wrong' ? 'badge-neutral text-white' : 'badge-error text-white'" x-text="wrongQuestionsCount"></span>
+          </button>
+
+          <button type="button" @click="paletteFilter = 'mastered'" 
+                  class="px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                  :class="paletteFilter === 'mastered' ? 'bg-success text-white font-extrabold shadow-xs' : 'bg-base-200/80 text-base-content/70 hover:bg-base-200 hover:text-base-content'">
+            <span class="w-2 h-2 rounded-full bg-success" :class="paletteFilter === 'mastered' ? 'bg-white' : ''"></span>
+            <span>Mastered</span>
+            <span class="badge badge-xs" :class="paletteFilter === 'mastered' ? 'badge-neutral text-white' : 'badge-success text-white'" x-text="masteredQuestionsCount"></span>
+          </button>
+
+          <button type="button" @click="paletteFilter = 'unvisited'" 
+                  class="px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                  :class="paletteFilter === 'unvisited' ? 'bg-base-content text-base-100 font-extrabold shadow-xs' : 'bg-base-200/80 text-base-content/70 hover:bg-base-200 hover:text-base-content'">
+            <span>Unvisited</span>
+            <span class="badge badge-xs badge-ghost" x-text="unvisitedQuestionsCount"></span>
+          </button>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="relative">
+          <input type="text" 
+                 x-model="paletteSearch" 
+                 placeholder="Search question text..." 
+                 class="input input-xs w-full pl-7 pr-6 rounded-lg bg-base-100 border-base-content/15 text-xs text-base-content placeholder:text-base-content/40 focus:outline-none focus:border-primary">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-base-content/40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <button x-show="paletteSearch.length > 0" @click="paletteSearch = ''" class="absolute right-2 top-1/2 -translate-y-1/2 text-base-content/40 hover:text-base-content">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Scrollable Question Cards List -->
+      <div class="p-4 overflow-y-auto flex-1 space-y-5">
+        <template x-for="(mod, mIdx) in paper.modules" :key="mod.id || mIdx">
+          <div class="space-y-2.5" x-show="hasVisibleQuestions(mod)">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-primary flex items-center justify-between px-1">
+              <span class="truncate" x-text="`Module ${mIdx + 1}: ${mod.name}`"></span>
+              <span class="badge badge-xs badge-ghost font-mono" x-text="`${mod.questions.length} Qs`"></span>
+            </h4>
+            
+            <div class="space-y-2">
+              <template x-for="(q, qIdx) in mod.questions" :key="q.id">
+                <div x-show="isQuestionVisible(q)">
+                  <button @click="goToQuestion(mIdx, qIdx); if(!isDesktop) showQuestionGrid = false"
+                          type="button"
+                          class="w-full p-3 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex flex-col gap-1.5 relative group shadow-2xs hover:shadow-md"
+                          :class="{
+                            'ring-2 ring-primary ring-offset-2 ring-offset-base-100 border-primary bg-primary/10 shadow-sm': currentModuleIdx === mIdx && currentQuestionIdx === qIdx,
+                            'border-success/30 bg-success/5 hover:bg-success/10': feedbacks[q.id]?.is_correct && !(currentModuleIdx === mIdx && currentQuestionIdx === qIdx),
+                            'border-error/30 bg-error/5 hover:bg-error/10': feedbacks[q.id] && !feedbacks[q.id]?.is_correct && !(currentModuleIdx === mIdx && currentQuestionIdx === qIdx),
+                            'border-base-content/10 bg-base-100 hover:bg-base-200/80': !feedbacks[q.id] && !(currentModuleIdx === mIdx && currentQuestionIdx === qIdx)
+                          }">
+                    <div class="flex items-center justify-between gap-2">
+                      <div class="flex items-center gap-2">
+                        <!-- Number Badge -->
+                        <span class="w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center shrink-0 shadow-2xs"
+                              :class="{
+                                'bg-primary text-black': currentModuleIdx === mIdx && currentQuestionIdx === qIdx,
+                                'bg-success text-white': feedbacks[q.id]?.is_correct && !(currentModuleIdx === mIdx && currentQuestionIdx === qIdx),
+                                'bg-error text-white': feedbacks[q.id] && !feedbacks[q.id]?.is_correct && !(currentModuleIdx === mIdx && currentQuestionIdx === qIdx),
+                                'bg-base-200 text-base-content': !feedbacks[q.id] && !(currentModuleIdx === mIdx && currentQuestionIdx === qIdx)
+                              }" x-text="`Q${qIdx + 1}`"></span>
+                        
+                        <!-- Status Pill -->
+                        <span x-show="feedbacks[q.id]?.is_correct" class="badge badge-xs badge-success text-white font-bold">Mastered</span>
+                        <span x-show="feedbacks[q.id] && !feedbacks[q.id]?.is_correct" class="badge badge-xs badge-error text-white font-bold">Needs Review</span>
+                        <span x-show="currentModuleIdx === mIdx && currentQuestionIdx === qIdx && !feedbacks[q.id]" class="badge badge-xs badge-primary text-black font-bold">Current</span>
+                        <span x-show="!feedbacks[q.id] && !(currentModuleIdx === mIdx && currentQuestionIdx === qIdx)" class="badge badge-xs badge-ghost text-base-content/60 font-medium">Unvisited</span>
+                      </div>
+
+                      <div class="flex items-center gap-2 shrink-0">
+                        <span x-show="!paper.is_digi_library" class="text-[11px] font-mono text-base-content/60 font-semibold" x-text="`${q.max_marks || mod.mark_value || 1} M`"></span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-base-content/40 group-hover:text-primary group-hover:translate-x-0.5 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+                      </div>
+                    </div>
+
+                    <!-- Question preview text -->
+                    <p class="text-xs text-base-content/80 font-medium line-clamp-2 leading-snug group-hover:text-base-content transition-colors" x-text="q.question_text"></p>
+                  </button>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Drawer Footer with Quick Action -->
+      <div class="p-3.5 bg-base-200/60 border-t border-base-content/10 flex items-center justify-between shrink-0 text-xs">
+        <span class="text-base-content/60 font-medium text-[11px]">Click any question card to jump</span>
+        <button @click="showQuestionGrid = false" class="btn btn-xs btn-outline rounded-lg font-bold">
+          Close
+        </button>
+      </div>
+    </aside>
+
+    <!-- Mobile Backdrop for Mini AI Tutor -->
+    <div x-show="showMiniTutor" 
+         class="lg:hidden fixed inset-0 z-[125] bg-black/50 backdrop-blur-xs select-none !mt-0"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         @click="closeMiniTutor()"
+         style="display: none;"></div>
+
+    <!-- Right-Side Mini AI Tutor Slide-Over Drawer -->
+    <aside x-show="showMiniTutor" 
+           class="mini-tutor-drawer fixed right-0 z-[130] bg-base-100 border-l border-base-content/10 shadow-[-15px_0_45px_rgba(0,0,0,0.22)] flex flex-col overflow-hidden select-none !mt-0"
+           x-transition:enter="transition ease-out duration-300"
+           x-transition:enter-start="opacity-0 translate-x-full"
+           x-transition:enter-end="opacity-100 translate-x-0"
+           x-transition:leave="transition ease-in duration-250"
+           x-transition:leave-start="opacity-100 translate-x-0"
+           x-transition:leave-end="opacity-0 translate-x-full"
+           style="display: none;">
+      
+      <!-- Drawer Header -->
+      <div class="px-5 py-3.5 bg-base-200/90 backdrop-blur-md border-b border-base-content/10 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <!-- Animated Avatar Container -->
+          <div class="relative w-11 h-11 rounded-2xl overflow-hidden bg-primary/10 border-2 border-primary/30 shadow-xs flex-shrink-0">
+            <img :src="`/static/images/avatars/${tutorName}_${miniTutorEmotion}.png`" 
+                 :class="'tutor-emotion-' + miniTutorEmotion"
+                 class="w-full h-full object-cover scale-110 transition-all duration-300" 
+                 :alt="tutorDisplayName + ' Avatar'"
+                 :onerror="`this.src='/static/images/avatars/${tutorName || 'bella'}_base.png'`" />
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-sm font-extrabold text-base-content leading-tight capitalize" x-text="tutorDisplayName"></h3>
+              <!-- Emotion Status Pill -->
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-2xs"
+                    :class="{
+                      'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200': miniTutorEmotion === 'base',
+                      'bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-200': miniTutorEmotion === 'thinking',
+                      'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-200': miniTutorEmotion === 'talking',
+                      'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200': miniTutorEmotion === 'laughing',
+                      'bg-purple-100 text-purple-800 dark:bg-purple-900/60 dark:text-purple-200': miniTutorEmotion === 'serious',
+                      'bg-rose-100 text-rose-800 dark:bg-rose-900/60 dark:text-rose-200': miniTutorEmotion === 'angry'
+                    }">
+                <span class="w-1.5 h-1.5 rounded-full animate-pulse"
+                      :class="{
+                        'bg-gray-500': miniTutorEmotion === 'base',
+                        'bg-blue-500': miniTutorEmotion === 'thinking',
+                        'bg-emerald-500': miniTutorEmotion === 'talking',
+                        'bg-amber-500': miniTutorEmotion === 'laughing',
+                        'bg-purple-500': miniTutorEmotion === 'serious',
+                        'bg-rose-500': miniTutorEmotion === 'angry'
+                      }"></span>
+                <span x-text="miniTutorEmotion"></span>
+              </span>
+            </div>
+            <p class="text-[11px] text-base-content/60 font-medium">In-Exam AI Learning Assistant</p>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-1.5">
+          <!-- Scratchpad Canvas Trigger -->
+          <button type="button" @click="window.dispatchEvent(new CustomEvent('toggle-scratchpad'))" 
+                  class="btn btn-sm btn-circle btn-ghost text-amber-600 hover:bg-amber-100 dark:hover:bg-amber-900/40" 
+                  title="Open Digital Scratchpad">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+          </button>
+
+          <!-- Voice Output Toggle -->
+          <button type="button" @click="miniTutorVoiceEnabled = !miniTutorVoiceEnabled" 
+                  class="btn btn-sm btn-circle btn-ghost" 
+                  :class="miniTutorVoiceEnabled ? 'text-primary bg-primary/10' : 'text-base-content/50 hover:text-base-content'"
+                  :title="miniTutorVoiceEnabled ? 'Voice Output ON' : 'Voice Output OFF'">
+            <svg x-show="miniTutorVoiceEnabled" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            <svg x-show="!miniTutorVoiceEnabled" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+          </button>
+          
+          <!-- Close Button -->
+          <button @click="closeMiniTutor()" 
+                  class="btn btn-sm btn-circle btn-ghost text-base-content/60 hover:text-base-content hover:bg-base-200"
+                  title="Close Mini Tutor (Keep Exam Open)">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Question Context Bar -->
+      <div class="px-4 py-2.5 bg-primary/5 border-b border-base-content/5 flex items-center justify-between gap-3 shrink-0">
+        <div class="flex items-center gap-2 overflow-hidden text-xs">
+          <span class="badge badge-primary badge-xs text-[10px] font-black uppercase tracking-wider py-1 shrink-0" x-text="`Q${currentFlatQuestionNumber}`"></span>
+          <span class="font-medium text-base-content/80 truncate text-[11px]" x-text="currentQuestion.question_text"></span>
+        </div>
+        <span x-show="!paper.is_digi_library" class="text-[10px] font-bold text-primary shrink-0 uppercase tracking-wider" x-text="`${currentQuestion.max_marks} Mark${currentQuestion.max_marks == 1 ? '' : 's'}`"></span>
+      </div>
+
+      <!-- Messages Scroll Area -->
+      <div class="flex-1 p-4 overflow-y-auto space-y-4 text-sm" id="mini-tutor-chat-container">
+        <!-- Messages Loop -->
+        <template x-for="(msg, index) in miniTutorMessages" :key="index">
+          <div class="flex items-end gap-2.5" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
+            <!-- Assistant Avatar -->
+            <template x-if="msg.role === 'assistant'">
+              <div class="w-7 h-7 rounded-full border border-base-300 overflow-hidden flex-shrink-0 shadow-xs bg-base-100">
+                <img :src="`/static/images/avatars/${tutorName}_base.png`" class="w-full h-full object-cover scale-110" :onerror="`this.src='/static/images/avatars/${tutorName || 'bella'}_base.png'`" />
+              </div>
+            </template>
+            
+            <!-- Message Bubble -->
+            <div class="px-4 py-2.5 rounded-2xl max-w-[85%] shadow-xs leading-relaxed prose prose-sm max-w-none prose-p:my-0.5 prose-pre:my-1 text-[13px]"
+                 :class="msg.role === 'user' ? 'bg-primary text-primary-content rounded-br-xs font-medium' : 'bg-base-200 text-base-content rounded-bl-xs font-normal'">
+              <template x-if="msg.image">
+                <div class="mb-2 rounded-xl overflow-hidden border border-white/25 bg-white shadow-xs not-prose">
+                  <img :src="msg.image" alt="Scratchpad Drawing" class="max-h-36 w-auto object-contain mx-auto" />
+                </div>
+              </template>
+              <div x-html="msg.role === 'assistant' ? renderMiniTutorMarkdown(msg.content) : escapeMiniTutorHtml(msg.content)"></div>
+              
+              <!-- Attached Educational Diagram Card -->
+              <template x-if="msg.diagram">
+                <div class="mt-2.5 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-2 text-amber-950 dark:text-amber-200 not-prose">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <span class="text-sm shrink-0">📐</span>
+                    <span class="font-extrabold text-[11px] truncate" x-text="msg.diagramTitle || 'Diagram'"></span>
+                  </div>
+                  <button type="button" @click="window.dispatchEvent(new CustomEvent('tutor-draw-diagram', { detail: { diagram: msg.diagram, title: msg.diagramTitle } }))" class="btn btn-xs btn-warning text-black font-black uppercase tracking-wider rounded-lg shrink-0 shadow-2xs">
+                    View
+                  </button>
+                </div>
+              </template>
+            </div>
+          </div>
+        </template>
+
+        <!-- Typing Indicator -->
+        <div class="flex items-end gap-2.5" x-show="miniTutorGenerating && !miniTutorCurrentAiText" style="display: none;">
+          <div class="w-7 h-7 rounded-full border border-base-300 overflow-hidden flex-shrink-0 shadow-xs bg-base-100">
+            <img :src="`/static/images/avatars/${tutorName}_thinking.png`" class="w-full h-full object-cover scale-110 tutor-emotion-thinking" :onerror="`this.src='/static/images/avatars/${tutorName || 'bella'}_base.png'`" />
+          </div>
+          <div class="bg-base-200 px-4 py-3 rounded-2xl rounded-bl-xs flex gap-1 shadow-xs">
+            <div class="w-2 h-2 bg-base-content/40 rounded-full animate-bounce"></div>
+            <div class="w-2 h-2 bg-base-content/40 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+            <div class="w-2 h-2 bg-base-content/40 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+          </div>
+        </div>
+
+        <!-- Streaming Bubble -->
+        <div class="flex items-end gap-2.5" x-show="miniTutorGenerating && miniTutorCurrentAiText" style="display: none;">
+          <div class="w-7 h-7 rounded-full border border-base-300 overflow-hidden flex-shrink-0 shadow-xs bg-base-100">
+            <img :src="`/static/images/avatars/${tutorName}_${miniTutorEmotion}.png`" :class="'tutor-emotion-' + miniTutorEmotion" class="w-full h-full object-cover scale-110" :onerror="`this.src='/static/images/avatars/${tutorName || 'bella'}_base.png'`" />
+          </div>
+          <div class="px-4 py-2.5 rounded-2xl rounded-bl-xs max-w-[85%] shadow-xs bg-base-200 text-base-content text-[13px] leading-relaxed prose prose-sm max-w-none prose-p:my-0.5 prose-pre:my-1"
+               x-html="renderMiniTutorMarkdown(miniTutorCurrentAiText) + '<span class=\'inline-block w-1.5 h-3 ml-1 bg-primary animate-pulse\'></span>'">
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Chips -->
+      <div class="px-3.5 py-2 bg-base-200/40 border-t border-base-content/5 flex items-center gap-1.5 overflow-x-auto overflow-y-hidden hover-scrollbar shrink-0">
+        <template x-for="q in miniTutorQuickQuestions" :key="q">
+          <button type="button" @click="askMiniTutorQuick(q)" 
+                  class="btn btn-xs rounded-full btn-outline border-base-content/15 hover:bg-primary/10 hover:border-primary/40 hover:text-primary text-[11px] whitespace-nowrap font-medium transition-all"
+                  :disabled="miniTutorGenerating"
+                  x-text="q">
+          </button>
+        </template>
+      </div>
+
+      <!-- Input Area -->
+      <div class="p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-base-100 border-t border-base-content/10 shrink-0">
+        <form @submit.prevent="sendMiniTutorMessage" class="flex items-center gap-2">
+          <!-- Voice Input Button (STT) -->
+          <button type="button" @click="toggleMiniTutorListening" 
+                  class="btn btn-sm btn-circle border-none shadow-xs flex-shrink-0 transition-all duration-300"
+                  :class="miniTutorListening ? 'bg-error text-white ring-4 ring-error/30 animate-pulse' : 'bg-base-200 text-base-content/70 hover:bg-base-300 hover:text-base-content'"
+                  :title="miniTutorListening ? 'Listening... click to stop' : 'Click to speak (Voice STT)'">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+          </button>
+
+          <!-- Text Input -->
+          <input type="text" x-model="miniTutorInput" 
+                 placeholder="Ask your tutor for a hint or explanation..." 
+                 class="input input-sm input-bordered flex-1 min-w-0 rounded-full text-xs font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 bg-base-100" 
+                 :disabled="miniTutorGenerating" />
+
+          <!-- Send Button -->
+          <button type="submit" 
+                  class="btn btn-sm btn-circle btn-primary shadow-xs flex-shrink-0" 
+                  :disabled="!miniTutorInput.trim() || miniTutorGenerating">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 transform rotate-90 translate-y-[1px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+          </button>
+        </form>
+      </div>
+
+    </aside>
+
+    <!-- Question View -->
+    <div x-show="!isModuleComplete" x-transition.opacity.duration.400ms>
+      <div class="relative w-full mt-4">
+        <!-- Background Glow -->
+        <div class="absolute -inset-0.5 bg-gradient-to-r from-primary to-secondary rounded-[2rem] sm:rounded-[2.5rem] blur-lg opacity-20 transition-opacity duration-500"></div>
+        
+        <div class="card bg-base-100 rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl border border-base-content/10 overflow-visible relative z-10">
+          
+          <!-- Top Ribbon: Module Name -->
+          <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-secondary px-4 sm:px-6 py-1.5 rounded-full shadow-lg border border-white/20 max-w-[88%] truncate whitespace-nowrap text-center">
+            <span class="text-white font-bold tracking-wider uppercase text-xs" x-text="currentModule.name"></span>
+          </div>
+          
+          <div class="card-body p-4 sm:p-6 md:p-8 space-y-5 sm:space-y-6 mt-4">
+            
+            <!-- Question Header -->
+            <div class="flex items-start gap-3 sm:gap-4 relative">
+              <!-- Number box -->
+              <div class="relative z-10 w-9 h-9 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-base-200 flex items-center justify-center font-black text-base sm:text-xl flex-shrink-0 border border-base-content/10 shadow-inner mt-0.5 sm:mt-1">
+                <span class="bg-clip-text text-transparent bg-gradient-to-br from-primary to-secondary" x-text="currentQuestionIdx + 1"></span>
+              </div>
+              
+              <div class="flex-1 space-y-2 relative z-10 min-w-0">
+                <div class="flex flex-col sm:flex-row justify-between items-start gap-2.5 sm:gap-4">
+                  <h3 class="text-base sm:text-xl font-bold leading-relaxed text-base-content flex-1" x-text="currentQuestion.question_text"></h3>
+                  <div class="flex items-center gap-1.5 sm:gap-2 self-end sm:self-start shrink-0">
+                    <button @click="openMiniTutor()" 
+                            type="button" 
+                            class="btn btn-circle btn-ghost btn-sm text-base-content/70 hover:text-primary hover:bg-primary/10 transition-colors tooltip tooltip-bottom" 
+                            data-tip="Ask Tutor" 
+                            title="Ask Tutor about this question">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </button>
+                    <button @click="showQuestionGrid = !showQuestionGrid" 
+                            type="button" 
+                            class="btn btn-circle btn-ghost btn-sm text-base-content/70 hover:text-primary hover:bg-primary/10 transition-colors tooltip tooltip-bottom" 
+                            data-tip="Question Palette" 
+                            title="Question Palette">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    </button>
+                    <button x-show="ttsMode !== 'off'" @click="speak(currentQuestion.question_text)" class="btn btn-circle btn-ghost btn-sm text-primary hover:bg-primary/20 transition-colors tooltip tooltip-bottom" data-tip="Read Question Aloud" :disabled="isSpeaking">
+                      <!-- Default Icon -->
+                      <svg x-show="!isSpeaking" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clip-rule="evenodd" /></svg>
+                      <!-- Loading Icon -->
+                      <span x-show="isSpeaking" class="loading loading-ring loading-sm" style="display: none;"></span>
+                    </button>
+                    <div x-show="!paper.is_digi_library" class="badge badge-outline border-base-content/20 px-2.5 py-2.5 sm:px-3 sm:py-3 rounded-lg font-bold text-xs sm:text-sm whitespace-nowrap bg-base-200" x-text="`${currentQuestion.max_marks} Mark${currentQuestion.max_marks == 1 ? '' : 's'}`"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Question Media (if any) -->
+            <template x-if="currentQuestion.media_url">
+              <div class="mt-4 sm:mt-6 rounded-2xl overflow-hidden border border-base-content/10 bg-base-300/30 p-2 text-center">
+                <img :src="currentQuestion.media_url" class="max-h-64 mx-auto object-contain rounded-xl" alt="Question image">
+              </div>
+            </template>
+
+            <!-- Answer Input Area -->
+            <div class="relative group">
+              <!-- Focus glow -->
+              <div class="absolute -inset-0.5 bg-gradient-to-r from-primary to-secondary rounded-2xl blur opacity-0 group-focus-within:opacity-20 transition duration-500"></div>
+              
+              <template x-if="(currentQuestion.question_type || currentModule.question_type) === 'MCQ' || (currentQuestion.question_type || currentModule.question_type) === 'ASSERTION_REASON'">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 relative z-10 p-1 sm:p-2">
+                  <template x-for="(opt, idx) in parsedOptions" :key="idx">
+                    <label class="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border border-base-content/10 bg-base-200 cursor-pointer hover:bg-base-300 hover:border-primary/50 transition-all group/opt"
+                        :class="{'border-primary bg-primary/10 shadow-[0_0_15px_rgba(var(--p),0.2)]': answerText === (String.fromCharCode(65 + idx) + '. ' + opt)}">
+                      <input type="radio" name="mcq_answer" :value="String.fromCharCode(65 + idx) + '. ' + opt" x-model="answerText" class="radio radio-primary radio-sm shadow-inner shrink-0" :disabled="feedback !== null || isGrading">
+                      <span class="text-sm sm:text-lg font-medium text-base-content leading-relaxed" x-text="String.fromCharCode(65 + idx) + '. ' + opt"></span>
+                    </label>
+                  </template>
+                </div>
+              </template>
+              
+              <template x-if="(currentQuestion.question_type || currentModule.question_type) !== 'MCQ' && (currentQuestion.question_type || currentModule.question_type) !== 'ASSERTION_REASON'">
+                <div class="space-y-2">
+                  <textarea x-model="answerText" 
+                       :disabled="feedback !== null || isGrading"
+                       class="textarea w-full h-32 text-base sm:text-lg bg-base-200 border border-base-content/10 focus:border-transparent rounded-2xl p-4 sm:p-6 transition-all shadow-inner placeholder:text-base-content/40 resize-none relative z-10 text-base-content leading-relaxed disabled:bg-base-200 disabled:opacity-70 disabled:cursor-not-allowed disabled:text-base-content" 
+                       placeholder="Start typing your answer here..."></textarea>
+                  
+                  <!-- Answer Attachment Helpers: Scratchpad & Notebook Photo -->
+                  <div class="flex items-center justify-between gap-3 flex-wrap relative z-10 px-1" x-show="!feedback">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <!-- Open Scratchpad -->
+                      <button type="button" 
+                              onclick="document.getElementById('scratchpad-dock-btn')?.click()"
+                              class="btn btn-xs rounded-xl font-bold bg-base-200 hover:bg-base-300 text-base-content border border-base-content/15 flex items-center gap-1.5 shadow-2xs cursor-pointer">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                        <span>Open Scratchpad</span>
+                      </button>
+
+                      <!-- Snap/Upload Notebook Photo -->
+                      <input type="file" accept="image/*" capture="environment" class="hidden" x-ref="photoInput" @change="handlePhotoUpload($event)">
+                      <button type="button" 
+                              @click="$refs.photoInput.click()"
+                              class="btn btn-xs rounded-xl font-bold bg-base-200 hover:bg-base-300 text-base-content border border-base-content/15 flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                              title="Take a photo of your notebook or upload a drawing">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        <span>Snap / Upload Photo</span>
+                      </button>
+                    </div>
+
+                    <span class="text-[11px] text-base-content/50 font-medium hidden sm:inline">Draw or photograph calculations &amp; diagrams</span>
+                  </div>
+                </div>
+              </template>
+            </div>
+
+            <!-- Attached Drawing Preview -->
+            <template x-if="attachedDrawing">
+              <div class="p-3 sm:p-4 rounded-2xl bg-base-200/90 border border-primary/40 flex items-center justify-between gap-3 sm:gap-4 shadow-sm relative z-10 transition-all">
+                <div class="flex items-center gap-3 sm:gap-3.5 min-w-0">
+                  <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border border-base-content/15 bg-white shadow-xs shrink-0 flex items-center justify-center p-1">
+                    <img :src="attachedDrawing" alt="Attached Drawing" class="max-h-full max-w-full object-contain">
+                  </div>
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="badge badge-sm badge-primary font-bold">Attached Drawing</span>
+                      <span class="text-[11px] text-base-content/60 font-mono">Scratchpad Sketch</span>
+                    </div>
+                    <p class="text-xs text-base-content/80 font-medium mt-1 leading-snug">Your handwritten work/diagram will be evaluated by the AI evaluator along with your written answer.</p>
+                  </div>
+                </div>
+                <button x-show="!feedback && !isGrading" 
+                        @click="attachedDrawing = null" 
+                        type="button"
+                        class="btn btn-sm btn-ghost btn-circle text-error/70 hover:text-error hover:bg-error/10 shrink-0" 
+                        title="Remove attached drawing">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+              </div>
+            </template>
+
+            <!-- Feedback Section -->
+            <div x-show="feedback" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" class="relative z-10 flex flex-col md:flex-row gap-4 sm:gap-6 items-stretch md:items-start mt-6 sm:mt-8">
+              <!-- Teacher Avatar was here, moved inside card -->
+              
+              <div class="flex-1 rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-6 border-2 relative overflow-hidden brilliant-card bubble-tail"
+                 :class="feedback?.is_correct ? 'bg-success/10 border-success/30 shadow-[0_0_20px_rgba(34,197,94,0.1)]' : 'bg-warning/10 border-warning/30 shadow-[0_0_20px_rgba(251,189,35,0.1)]'">
+                
+                <!-- Decorative accent line -->
+                <div class="absolute top-0 left-0 w-full h-1"
+                   :class="feedback?.is_correct ? 'bg-gradient-to-r from-success/0 via-success to-success/0' : 'bg-gradient-to-r from-warning/0 via-warning to-warning/0'"></div>
+                
+                <div class="flex flex-col mb-4">
+                  <div class="flex flex-wrap sm:flex-nowrap justify-between items-start gap-3 sm:gap-4">
+                    <!-- Title and Teacher Avatar -->
+                    <div class="flex items-center gap-3 sm:gap-4 min-w-0">
+                      <div class="w-12 h-12 sm:w-16 sm:h-16 shrink-0 relative z-20">
+                        <img :src="`/static/images/avatars/${tutorName}_${currentEmotion}.png`" 
+                           alt="Teacher" 
+                           class="w-full h-full object-cover rounded-2xl shadow-md border-2 bg-base-200 transition-all duration-300"
+                           :class="[
+                             feedback?.is_correct ? 'border-success/30 shadow-success/10' : 'border-warning/30 shadow-warning/10',
+                             'tutor-emotion-' + currentEmotion
+                           ]"
+                           :onerror="`this.src='/static/images/avatars/${tutorName || 'bella'}_base.png'`" />
+                        
+                        <!-- Status Badge (Check/X) -->
+                        <div class="absolute -bottom-1.5 -right-1.5 sm:-bottom-2 sm:-right-2 w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-white shadow-sm border-2 border-base-100"
+                           :class="feedback?.is_correct ? 'bg-success' : 'bg-warning'">
+                          <svg x-show="feedback?.is_correct" xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                          <svg x-show="!feedback?.is_correct" xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </div>
+                        
+                        <!-- Speaking Indicator -->
+                        <div x-show="isSpeaking" class="absolute -top-2 -right-2 flex gap-1 bg-white px-1.5 py-1 rounded-full shadow-md border border-gray-100">
+                          <span class="w-1 h-1 bg-primary rounded-full animate-ping" style="animation-duration: 1s; animation-delay: 0s"></span>
+                          <span class="w-1 h-1 bg-primary rounded-full animate-ping" style="animation-duration: 1s; animation-delay: 0.2s"></span>
+                          <span class="w-1 h-1 bg-primary rounded-full animate-ping" style="animation-duration: 1s; animation-delay: 0.4s"></span>
+                        </div>
+                      </div>
+                      <div class="min-w-0">
+                        <h4 class="text-base sm:text-xl font-black uppercase tracking-wide leading-tight"
+                          :class="feedback?.is_correct ? 'text-success' : 'text-warning'"
+                          x-text="paper.is_digi_library ? (feedback?.is_correct ? 'Correct Answer' : 'Wrong Answer') : (feedback?.is_correct ? 'Excellent Answer' : 'Room for Improvement')"></h4>
+                        <div class="text-[11px] sm:text-xs font-bold text-base-content/50 uppercase tracking-widest mt-0.5" x-text="paper.is_digi_library ? (feedback?.is_correct ? 'Well Done' : 'Review Concept') : (feedback?.is_correct ? 'Perfect Score' : 'Needs Work')"></div>
+                      </div>
+                    </div>
+                    
+                    <!-- Score / Status Badge -->
+                    <div class="flex flex-col items-end shrink-0 ml-auto sm:ml-0">
+                      <template x-if="!paper.is_digi_library">
+                        <div class="flex items-baseline gap-1 bg-base-100 px-3.5 py-1.5 sm:px-5 sm:py-2.5 rounded-2xl shadow-sm border"
+                           :class="feedback?.is_correct ? 'shadow-[0_4px_10px_rgba(34,197,94,0.1)] border-success/20' : 'shadow-[0_4px_10px_rgba(251,189,35,0.1)] border-warning/20'">
+                          <span class="text-2xl sm:text-3xl font-black" :class="feedback?.is_correct ? 'text-success' : 'text-warning'" x-text="feedback?.marks"></span>
+                          <span class="text-base-content/50 font-bold text-xs sm:text-sm" x-text="`/ ${feedback?.max_marks} Mark${feedback?.max_marks == 1 ? '' : 's'}`"></span>
+                        </div>
+                      </template>
+                      <template x-if="paper.is_digi_library">
+                        <div class="flex items-center gap-2 bg-base-100 px-4 py-2 sm:px-5 sm:py-2.5 rounded-2xl shadow-sm border"
+                           :class="feedback?.is_correct ? 'shadow-[0_4px_10px_rgba(34,197,94,0.1)] border-success/30 text-success' : 'shadow-[0_4px_10px_rgba(251,189,35,0.1)] border-error/30 text-error'">
+                          <svg x-show="feedback?.is_correct" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                          <svg x-show="!feedback?.is_correct" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                          <span class="text-lg sm:text-xl font-black uppercase tracking-wider" x-text="feedback?.is_correct ? 'Correct' : 'Wrong'"></span>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="prose max-w-none mb-5 sm:mb-6">
+                  <p class="text-base sm:text-lg leading-relaxed text-base-content/80 font-medium" x-text="feedback?.feedback"></p>
+                </div>
+                
+                <!-- Ideal Answer Section -->
+                <div class="mb-5 sm:mb-6 mt-4 bg-base-200/50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-base-content/10 shadow-inner" x-show="feedback?.ideal_answer">
+                  <h5 class="text-sm font-black uppercase tracking-wider text-primary mb-2 sm:mb-3 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                    Correct Answer
+                  </h5>
+                  <p class="text-sm sm:text-base text-base-content/80 leading-relaxed italic" x-text="feedback?.ideal_answer"></p>
+                  <template x-if="currentQuestion?.answer_media_url || feedback?.answer_media_url">
+                    <div class="mt-3 rounded-2xl overflow-hidden border border-base-content/10 bg-base-100/60 p-2 text-center">
+                      <img :src="currentQuestion?.answer_media_url || feedback?.answer_media_url" class="max-h-60 mx-auto object-contain rounded-xl" alt="Correct Answer image">
+                    </div>
+                  </template>
+                </div>
+
+                <!-- Video Explanation -->
+                <div x-show="currentFeedbackVideo" class="mb-5 sm:mb-6 mt-4">
+                  <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <h5 class="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-primary">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      Video Explanation
+                    </h5>
+                    
+                    <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap" x-show="feedbackVideos.length > 1" style="display: none;">
+                      <template x-for="v in feedbackVideos" :key="v.id">
+                        <button @click="selectFeedbackVideo(v)" 
+                            class="btn btn-xs rounded-full transition-all font-bold"
+                            :class="currentFeedbackVideo?.id === v.id ? 'bg-[#f8b000] hover:bg-[#e5a200] text-[#151515] border-[#d49600]' : 'btn-outline border-base-content/20 text-base-content/70'">
+                          <span x-text="v.label"></span>
+                        </button>
+                      </template>
+                    </div>
+                  </div>
+                  
+                  <template x-if="currentFeedbackVideo?.type === 'youtube' || (currentFeedbackVideo?.url || '').startsWith('vtok_')">
+                    <div class="relative w-full aspect-video rounded-2xl overflow-hidden shadow-lg border border-base-content/10 bg-black">
+                      <div class="w-full h-full" :data-saxaz-video="currentFeedbackVideo?.url"></div>
+                    </div>
+                  </template>
+                  
+                  <template x-if="currentFeedbackVideo?.type !== 'youtube' && !(currentFeedbackVideo?.url || '').startsWith('vtok_') && currentFeedbackVideo?.url">
+                    <div class="relative w-full aspect-video rounded-2xl overflow-hidden shadow-lg border border-base-content/10 bg-black">
+                      <video class="w-full h-full object-contain" controls controlsList="nodownload" oncontextmenu="return false;" :src="currentFeedbackVideo?.url"></video>
+                    </div>
+                  </template>
+                </div>
+
+                
+                <!-- Why CTA Button -->
+                <div x-show="!explanation" class="mb-4 flex items-center gap-2.5 sm:gap-3 flex-wrap">
+                  <button @click.prevent.stop="askWhy()" class="btn rounded-full transition-all hover:-translate-y-1 border-none px-4 sm:px-6" 
+                      :class="feedback?.is_correct ? 'bg-success text-success-content shadow-[0_8px_16px_rgba(34,197,94,0.2)] hover:shadow-[0_12px_24px_rgba(34,197,94,0.4)]' : 'bg-warning text-warning-content shadow-[0_8px_16px_rgba(251,189,35,0.2)] hover:shadow-[0_12px_24px_rgba(251,189,35,0.4)]'">
+                    <span x-show="!loadingWhy" class="flex items-center gap-2 text-sm sm:text-base font-bold">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z" /></svg>
+                      <span x-text="feedback?.is_correct ? 'Explain Why I am Right' : 'Explain Why I am Wrong'"></span>
+                    </span>
+                    <span x-show="loadingWhy" class="loading loading-spinner loading-sm"></span>
+                    <span x-show="loadingWhy" class="text-sm sm:text-base font-bold">Generating Analysis...</span>
+                  </button>
+                </div>
+                
+                <!-- Detailed Explanation from Why -->
+                <div x-show="explanation" x-transition class="mt-5 sm:mt-6 bg-base-100 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border shadow-sm relative z-10" :class="feedback?.is_correct ? 'border-success/30 shadow-[0_4px_20px_rgba(34,197,94,0.05)]' : 'border-warning/30 shadow-[0_4px_20px_rgba(251,189,35,0.05)]'">
+                  <h5 class="text-sm font-black uppercase tracking-widest mb-3 sm:mb-4 flex items-center gap-2" :class="feedback?.is_correct ? 'text-success' : 'text-warning'">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> 
+                    Deep Dive Analysis
+                  </h5>
+                  <div class="prose prose-sm sm:prose-base prose-p:leading-relaxed max-w-none text-base-content/90" x-html="explanation ? explanation.replace(/\n/g, '<br/>') : ''"></div>
+                </div>
+                
+
+              </div>
+            </div>
+
+            <!-- Actions Area -->
+            <div class="pt-2 flex justify-end items-center relative z-10 gap-3">
+              <template x-if="!feedback">
+                <button class="btn btn-primary w-full sm:w-auto rounded-full px-8 border-none shadow-[0_0_20px_rgba(var(--p),0.5)] group transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(var(--p),0.7)] text-base font-bold disabled:bg-base-300 disabled:text-base-content/40 disabled:shadow-none disabled:transform-none text-[#1a1a1a]"
+                    @click="submitAnswer()"
+                    :disabled="(!answerText.trim() && !attachedDrawing) || isGrading">
+                  <span x-show="isGrading" class="loading loading-spinner loading-sm"></span>
+                  <span x-text="isGrading ? 'Analyzing...' : 'Submit Answer'"></span>
+                  <svg x-show="!isGrading" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                </button>
+              </template>
+              <template x-if="feedback">
+                <div class="flex gap-2.5 sm:gap-3 w-full justify-end flex-wrap">
+                  <button x-show="ttsMode === 'manual' && pendingTTS" class="btn btn-outline border-primary text-primary hover:bg-primary hover:text-base-100 rounded-full px-5 sm:px-6 w-full sm:w-auto shadow-sm transition-all hover:scale-105 text-sm sm:text-base font-bold flex gap-2 items-center justify-center"
+                      @click="speak(pendingTTS); pendingTTS = null;">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                    </svg>
+                    Play Audio
+                  </button>
+                  <button class="btn btn-outline border-base-content/20 text-base-content hover:bg-base-content hover:text-base-100 rounded-full px-5 sm:px-8 flex-1 sm:flex-none shadow-sm transition-all hover:scale-105 text-sm sm:text-base font-bold"
+                      @click="tryAgain()">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    Try Again
+                  </button>
+                  <button class="btn btn-secondary text-[#1a1a1a] rounded-full px-5 sm:px-8 flex-1 sm:flex-none border-none shadow-[0_0_20px_rgba(var(--s),0.4)] group transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(var(--s),0.6)] text-sm sm:text-base font-bold"
+                      @click="nextQuestion()">
+                    Continue <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
+                  </button>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Module Complete Screen -->
+    <div x-show="isModuleComplete" x-transition.opacity.duration.500ms style="display: none;">
+      <div class="card bg-base-100 shadow-2xl border border-base-content/10 text-center py-16 px-6">
+        <div class="max-w-md mx-auto space-y-8">
+          <div class="w-24 h-24 mx-auto bg-gradient-to-br from-success to-primary rounded-full flex items-center justify-center text-5xl shadow-[0_0_40px_rgba(34,197,94,0.4)] animate-bounce text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-[1em] h-[1em] inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12v0c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"/><path d="m22 13-.82-.33c-.86-.39-1.87.15-2.15 1.07v0a1.96 1.96 0 0 1-2.52 1.36l-1.49-.54c-.81-.29-1.7.2-1.84 1.06L13 17"/></svg>
+          </div>
+          <div>
+            <h2 class="text-3xl font-black mb-3 text-base-content">Module Completed!</h2>
+            <p class="text-xl text-base-content/70">You have successfully finished the <span class="text-primary font-bold" x-text="currentModule.name"></span> module.</p>
+          </div>
+          
+          <template x-if="!isLastModule">
+            <button class="btn btn-primary text-[#1a1a1a] btn-lg w-full rounded-2xl shadow-[0_0_20px_rgba(var(--p),0.5)]" @click="nextModule()">
+              Proceed to Next Module
+            </button>
+          </template>
+          
+          <template x-if="isLastModule">
+            <button class="btn btn-success btn-lg w-full rounded-2xl shadow-[0_0_20px_rgba(34,197,94,0.5)] text-white" @click="finishExam()" :disabled="isFinishing">
+              <span x-show="isFinishing" class="loading loading-spinner"></span>
+              <span x-text="isFinishing ? 'Finalizing...' : 'Finish Exam & View Final Report'"></span>
+            </button>
+          </template>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+  Alpine.data('examWizard', () => ({
+    paper: {{ paper_json | safe }},
+    attemptId: null,
+    
+    tutorName: '{{ tutor_name }}' || 'bella',
+    
+    // Mini AI Tutor State
+    showMiniTutor: false,
+    miniTutorEmotion: 'base',
+    miniTutorMessages: [],
+    miniTutorInput: '',
+    miniTutorGenerating: false,
+    miniTutorCurrentAiText: '',
+    miniTutorVoiceEnabled: false,
+    miniTutorAudioQueue: [],
+    miniTutorPlayingAudio: false,
+    miniTutorPreparingAudio: false,
+    miniTutorSentenceBuffer: '',
+    miniTutorCurrentAudio: null,
+    miniTutorListening: false,
+    miniTutorRecognition: null,
+    miniTutorQuickQuestions: [
+      "Can you give me a hint?",
+      "Explain the concept simply",
+      "What formula or rule applies here?",
+      "Can you break this down step-by-step?"
+    ],
+    
+    currentModuleIdx: 0,
+    currentQuestionIdx: 0,
+    
+    answerText: '',
+    isGrading: false,
+    isSpeaking: false,
+    ttsStatus: null, // null, 'generating', 'playing'
+    ttsMode: '{{ user.tts_mode or "auto" }}',
+    pendingTTS: null,
+    feedback: null,
+    isModuleComplete: false,
+    isReady: false,
+    isFinishing: false,
+    loadingWhy: false,
+    explanation: null,
+    error: null,
+    
+    feedbackVideos: [],
+    currentFeedbackVideo: null,
+    
+    feedbacks: {},
+    showXpBadge: false,
+    xpTimeout: null,
+    showQuestionGrid: false,
+    attachedDrawing: null,
+    isDesktop: window.innerWidth >= 1024,
+    
+    // Palette Filter & Search State
+    paletteFilter: 'all',
+    paletteSearch: '',
+
+    get wrongQuestionsCount() {
+      return Object.values(this.feedbacks).filter(f => f && !f.is_correct).length;
+    },
+
+    get masteredQuestionsCount() {
+      return Object.values(this.feedbacks).filter(f => f && f.is_correct).length;
+    },
+
+    get unvisitedQuestionsCount() {
+      return Math.max(0, this.totalQuestions - this.totalAnswered);
+    },
+
+    isQuestionVisible(q) {
+      if (!q) return false;
+      if (this.paletteFilter === 'wrong') {
+        if (!this.feedbacks[q.id] || this.feedbacks[q.id].is_correct) return false;
+      } else if (this.paletteFilter === 'mastered') {
+        if (!this.feedbacks[q.id]?.is_correct) return false;
+      } else if (this.paletteFilter === 'unvisited') {
+        if (this.feedbacks[q.id]) return false;
+      }
+      if (this.paletteSearch.trim()) {
+        const s = this.paletteSearch.toLowerCase().trim();
+        if (!((q.question_text || '').toLowerCase().includes(s))) return false;
+      }
+      return true;
+    },
+
+    hasVisibleQuestions(mod) {
+      if (!mod || !mod.questions) return false;
+      return mod.questions.some(q => this.isQuestionVisible(q));
+    },
+
+    handlePhotoUpload(e) {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        alert('Please choose an image file.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (loadEvt) => {
+        this.attachedDrawing = loadEvt.target.result;
+        if (!this.answerText.trim()) {
+          this.answerText = '[See Attached Work / Diagram]';
+        }
+      };
+      reader.readAsDataURL(file);
+    },
+    
+    triggerXpCelebration() {
+      this.showXpBadge = true;
+      if (this.xpTimeout) clearTimeout(this.xpTimeout);
+      this.xpTimeout = setTimeout(() => {
+        this.showXpBadge = false;
+      }, 2200);
+    },
+    
+    get currentEmotion() {
+      if (this.isSpeaking) return 'talking';
+      if (this.loadingWhy || this.isGrading) return 'thinking';
+      if (this.feedback) return this.feedback.is_correct ? 'laughing' : 'serious';
+      return 'base';
+    },
+
+    get tutorDisplayName() {
+      const names = {
+        'bella': 'Bella (The Biologist)',
+        'sarah': 'Sarah (The Scientist)',
+        'adam': 'Adam (The Astronaut)',
+        'michael': 'Michael (The Mathematician)'
+      };
+      return names[this.tutorName] || (this.tutorName ? (this.tutorName.charAt(0).toUpperCase() + this.tutorName.slice(1)) : 'Bella');
+    },
+    
+    get totalQuestions() {
+      return this.paper.modules.reduce((sum, mod) => sum + mod.questions.length, 0);
+    },
+    
+    get totalAnswered() {
+      return Object.keys(this.feedbacks).length;
+    },
+
+    get progressPercentage() {
+      return (this.totalAnswered / this.totalQuestions) * 100;
+    },
+    
+    get flatQuestions() {
+      let idx = 0;
+      const flat = [];
+      const colors = ['bg-primary', 'bg-secondary', 'bg-accent', 'bg-info', 'bg-[oklch(var(--wa))]'];
+      
+      this.paper.modules.forEach((mod, mIdx) => {
+        const baseColor = colors[mIdx % colors.length];
+        mod.questions.forEach((q, qIdx) => {
+          const f = this.feedbacks[q.id];
+          let statusColor = '';
+          
+          if (f) {
+            statusColor = f.is_correct ? 'bg-success shadow-[0_0_10px_rgba(34,197,94,0.5)] border-none' : 'bg-error shadow-[0_0_10px_rgba(248,113,113,0.5)] border-none';
+          } else if (this.currentModuleIdx === mIdx && this.currentQuestionIdx === qIdx) {
+            statusColor = 'bg-white border-[4px] border-primary scale-125 shadow-[0_0_15px_rgba(var(--p),0.5)]';
+          } else {
+            statusColor = `${baseColor} opacity-40 border border-base-content/20`;
+          }
+          
+          flat.push({
+            globalIdx: idx++,
+            moduleIdx: mIdx,
+            questionIdx: qIdx,
+            id: q.id,
+            statusColor: statusColor,
+            isCurrent: this.currentModuleIdx === mIdx && this.currentQuestionIdx === qIdx
+          });
+        });
+      });
+      return flat;
+    },
+    
+    get currentModule() {
+      return this.paper.modules[this.currentModuleIdx];
+    },
+    
+    get currentQuestion() {
+      return this.currentModule.questions[this.currentQuestionIdx];
+    },
+
+    get currentFlatQuestionNumber() {
+      let num = 0;
+      for (let m = 0; m < this.paper.modules.length; m++) {
+        const qs = this.paper.modules[m].questions || [];
+        if (m < this.currentModuleIdx) {
+          num += qs.length;
+        } else if (m === this.currentModuleIdx) {
+          num += this.currentQuestionIdx + 1;
+          break;
+        }
+      }
+      return num || (this.currentQuestionIdx + 1);
+    },
+    
+    get parsedOptions() {
+      if (!this.currentQuestion || !this.currentQuestion.options) return [];
+      try {
+        let optsStr = this.currentQuestion.options;
+        optsStr = optsStr.replace(/,\s*([\]}])/g, '$1');
+        return JSON.parse(optsStr);
+      } catch(e) {
+        console.error("Error parsing options:", e);
+        return [];
+      }
+    },
+    
+    get isLastModule() {
+      return this.currentModuleIdx === this.paper.modules.length - 1;
+    },
+    async init() {
+      // Preload all 4 characters and all 6 emotions for zero-flicker animation
+      try {
+          const params = new URLSearchParams(window.location.search);
+          const targetQId = params.get('question_id');
+          if (targetQId && this.paper && Array.isArray(this.paper.modules)) {
+              for (let m = 0; m < this.paper.modules.length; m++) {
+                  const qs = this.paper.modules[m].questions || [];
+                  const qIdx = qs.findIndex(q => String(q.id) === String(targetQId));
+                  if (qIdx >= 0) {
+                      this.currentModuleIdx = m;
+                      this.currentQuestionIdx = qIdx;
+                      break;
+                  }
+              }
+          }
+      } catch (e) {}
+      const tutors = ['bella', 'sarah', 'adam', 'michael'];
+      const emotions = ['base', 'thinking', 'talking', 'laughing', 'serious', 'angry'];
+      tutors.forEach(t => {
+        emotions.forEach(emo => {
+          const img = new Image();
+          img.src = `/static/images/avatars/${t}_${emo}.png`;
+        });
+      });
+
+      // Listen for attached drawings from scratchpad
+      window.addEventListener('scratchpad-attach-drawing', (e) => {
+        if (e.detail && e.detail.dataUrl) {
+          this.attachedDrawing = e.detail.dataUrl;
+          if (!this.answerText.trim()) {
+            this.answerText = '[See Attached Work / Diagram]';
+          }
+        }
+      });
+
+      // Listen for drawings sent from scratchpad to Mini Tutor
+      window.addEventListener('scratchpad-send-to-tutor', (e) => {
+        const detail = e.detail || {};
+        if (detail.dataUrl) {
+          this.showMiniTutor = true;
+          this.showQuestionGrid = false;
+          this.miniTutorPendingImage = detail.dataUrl;
+          this.miniTutorPendingMeta = {
+            traceMode: Boolean(detail.traceMode),
+            blueprintTitle: detail.blueprintTitle || '',
+            hasUserStrokes: Boolean(detail.hasUserStrokes),
+            hasTutorBlueprint: Boolean(detail.hasTutorBlueprint)
+          };
+          if (!this.miniTutorInput || !this.miniTutorInput.trim()) {
+            const bpName = detail.blueprintTitle || 'diagram';
+            if (detail.traceMode && detail.hasUserStrokes) {
+              this.miniTutorInput = `I practiced tracing the ${bpName} in Trace Mode! Can you inspect my traced strokes?`;
+            } else {
+              this.miniTutorInput = 'Can you check my scratchpad work and give me a hint?';
+            }
+          }
+          if (detail.autoSend && !this.miniTutorGenerating) {
+            this.$nextTick(() => this.sendMiniTutorMessage());
+          }
+        }
+      });
+      
+      // Dynamic docking shift watcher for dock buttons
+      this.$watch('showQuestionGrid', (val) => {
+        if (val) this.showMiniTutor = false;
+        document.body.classList.toggle('question-palette-open', Boolean(val));
+      });
+
+      this.$watch('showMiniTutor', (val) => {
+        if (val) this.showQuestionGrid = false;
+        document.body.classList.toggle('mini-tutor-open', Boolean(val));
+      });
+
+      // Update desktop state on resize for smooth shifting
+      window.addEventListener('resize', () => {
+        this.isDesktop = window.innerWidth >= 1024;
+        document.body.classList.toggle('question-palette-open', Boolean(this.showQuestionGrid));
+        document.body.classList.toggle('mini-tutor-open', Boolean(this.showMiniTutor));
+      });
+
+      try {
+        // Initialize attempt on backend
+        const startUrl = this.paper.is_digi_library
+          ? `/student/digi-library/banks/${this.paper.id}/start`
+          : `/student/exams/${this.paper.id}/start`;
+        const response = await fetch(startUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+        if (data.success) {
+          this.attemptId = data.attempt_id;
+          this.isReady = true;
+          setTimeout(() => window.SFX?.playStart(), 100);
+        } else {
+          alert('Error starting session.');
+        }
+      } catch (e) {
+        alert('Network error starting session.');
+        console.error(e);
+      }
+    },
+    
+    async submitAnswer() {
+      if ((!this.answerText.trim() && !this.attachedDrawing) || this.isGrading) return;
+      
+      this.isGrading = true;
+      window.SFX?.playSubmit();
+      setTimeout(() => window.SFX?.startTyping(), 400); // Delay typing sound slightly after ker-chunk
+      
+      try {
+        const formData = new FormData();
+        formData.append('answer', this.answerText.trim() || '[See Attached Work / Diagram]');
+        if (this.attachedDrawing) {
+          formData.append('drawing', this.attachedDrawing);
+        }
+        
+        const gradeUrl = this.paper.is_digi_library
+          ? `/student/digi-library/attempts/${this.attemptId}/grade/${this.currentQuestion.id}`
+          : `/student/attempts/${this.attemptId}/grade/${this.currentQuestion.id}`;
+        const response = await fetch(gradeUrl, {
+          method: 'POST',
+          body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          data._savedAnswerText = this.answerText;
+          data._savedAttachedDrawing = this.attachedDrawing;
+          this.feedbacks[this.currentQuestion.id] = data;
+          this.feedback = data;
+          this.initFeedbackVideos(data);
+          
+          window.SFX?.stopTyping();
+          if (data.is_correct) {
+            window.SFX?.playSuccess();
+            if (!this.paper.is_digi_library && (data.marks / (data.max_marks || 1)) >= 0.75) {
+              this.triggerXpCelebration();
+            }
+          } else {
+            window.SFX?.playError();
+          }
+          
+          // Trigger TTS for Feedback and Ideal Answer
+          let ttsText = this.paper.is_digi_library
+            ? `${data.is_correct ? 'Correct!' : 'Wrong.'} ${data.feedback}`
+            : `You scored ${data.marks} out of ${data.max_marks}. ${data.feedback}`;
+          if (data.ideal_answer) {
+            ttsText += ` The ideal answer is: ${data.ideal_answer}`;
+          }
+          if (this.ttsMode === 'auto') {
+            this.speak(ttsText);
+          } else if (this.ttsMode === 'manual') {
+            this.pendingTTS = ttsText;
+          }
+          
+        } else {
+          alert('Error grading answer.');
+        }
+      } catch (e) {
+        window.SFX?.stopTyping();
+        alert('Network error during grading.');
+        console.error(e);
+      } finally {
+        this.isGrading = false;
+        window.SFX?.stopTyping();
+      }
+    },
+    
+    async speak(text) {
+      if (this.currentAudio) {
+        this.currentAudio.pause();
+        this.currentAudio = null;
+      }
+      
+      this.isSpeaking = true;
+      this.ttsStatus = 'generating';
+      try {
+        const response = await fetch('/api/tts/prepare', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ text: text })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const url = '/api/tts/stream/' + data.audio_id;
+          this.currentAudio = new Audio(url);
+          this.currentAudio.onended = () => { this.isSpeaking = false; this.ttsStatus = null; };
+          this.currentAudio.onpause = () => { this.isSpeaking = false; this.ttsStatus = null; };
+          
+          this.currentAudio.onplay = () => { this.ttsStatus = 'playing'; };
+          
+          this.currentAudio.play().catch(e => {
+            console.error('Audio playback failed', e);
+            this.isSpeaking = false;
+            this.ttsStatus = null;
+          });
+        } else {
+          console.error('TTS failed:', await response.text());
+          this.isSpeaking = false;
+          this.ttsStatus = null;
+        }
+      } catch (e) {
+        console.error('TTS error:', e);
+        this.isSpeaking = false;
+        this.ttsStatus = null;
+      }
+    },
+    
+    tryAgain() {
+      if (this.currentAudio) {
+        this.currentAudio.pause();
+        this.ttsStatus = null;
+      }
+      this.pendingTTS = null;
+      this.feedback = null;
+      this.feedbackVideos = [];
+      this.currentFeedbackVideo = null;
+      this.explanation = null;
+      this.error = null;
+      this.answerText = '';
+      this.attachedDrawing = null;
+      delete this.feedbacks[this.currentQuestion.id];
+    },
+    
+    goToQuestion(mIdx, qIdx) {
+      if (this.currentAudio) {
+        this.currentAudio.pause();
+        this.ttsStatus = null;
+      }
+      this.pendingTTS = null;
+      this.explanation = null;
+      this.error = null;
+      
+      this.currentModuleIdx = mIdx;
+      this.currentQuestionIdx = qIdx;
+      this.isModuleComplete = false;
+      
+      const f = this.feedbacks[this.currentQuestion.id];
+      if (f) {
+        this.feedback = f;
+        this.answerText = f._savedAnswerText || '';
+        this.attachedDrawing = f._savedAttachedDrawing || null;
+        this.initFeedbackVideos(f);
+      } else {
+        this.feedback = null;
+        this.answerText = '';
+        this.attachedDrawing = null;
+        this.feedbackVideos = [];
+        this.currentFeedbackVideo = null;
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+    
+    nextQuestion() {
+      if (this.currentAudio) {
+        this.currentAudio.pause();
+        this.ttsStatus = null;
+      }
+      this.pendingTTS = null;
+      this.explanation = null;
+      this.error = null;
+      
+      if (this.currentQuestionIdx < this.currentModule.questions.length - 1) {
+        this.currentQuestionIdx++;
+        const f = this.feedbacks[this.currentQuestion.id];
+        if (f) {
+          this.feedback = f;
+          this.answerText = f._savedAnswerText || '';
+          this.attachedDrawing = f._savedAttachedDrawing || null;
+          this.initFeedbackVideos(f);
+        } else {
+          this.feedback = null;
+          this.answerText = '';
+          this.attachedDrawing = null;
+          this.feedbackVideos = [];
+          this.currentFeedbackVideo = null;
+        }
+      } else {
+        this.feedback = null;
+        this.answerText = '';
+        this.attachedDrawing = null;
+        this.feedbackVideos = [];
+        this.currentFeedbackVideo = null;
+        this.isModuleComplete = true;
+        // If last module, complete the exam
+        if (this.currentModuleIdx === this.paper.modules.length - 1) {
+          this.finishExam();
+        } else {
+          window.SFX?.playSwoosh();
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    },
+    
+    nextModule() {
+      if (this.currentAudio) {
+        this.currentAudio.pause();
+        this.ttsStatus = null;
+      }
+      this.currentModuleIdx++;
+      this.currentQuestionIdx = 0;
+      this.isModuleComplete = false;
+      const f = this.feedbacks[this.currentQuestion.id];
+      if (f) {
+        this.feedback = f;
+        this.answerText = f._savedAnswerText || '';
+        this.attachedDrawing = f._savedAttachedDrawing || null;
+        this.initFeedbackVideos(f);
+      } else {
+        this.feedback = null;
+        this.answerText = '';
+        this.attachedDrawing = null;
+        this.feedbackVideos = [];
+        this.currentFeedbackVideo = null;
+      }
+      window.SFX?.playSwoosh();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+    
+
+    getYoutubeEmbedUrl(url) {
+      if (!url) return '';
+      const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+      const match = url.match(regex);
+      if (match && match[1]) {
+        return `https://www.youtube.com/embed/${match[1]}`;
+      }
+      return url;
+    },
+    async finishExam() {
+      if (this.isFinishing) return;
+      this.isFinishing = true;
+      document.body.classList.remove('question-palette-open');
+      window.SFX?.playFinish();
+      
+      try {
+        const finishUrl = this.paper.is_digi_library
+          ? `/student/digi-library/attempts/${this.attemptId}/finish`
+          : `/student/attempts/${this.attemptId}/finish`;
+        const response = await fetch(finishUrl, {
+          method: 'POST'
+        });
+        const data = await response.json();
+        if (data.success) {
+          // Delay redirect to let the finish sound play
+          setTimeout(() => {
+            window.location.href = data.redirect;
+          }, 1200);
+        }
+      } catch (e) {
+        alert('Network error finishing session.');
+        console.error(e);
+        this.isFinishing = false;
+      }
+    },
+    
+    initFeedbackVideos(data) {
+      if (!data.explanation_video_url) {
+        this.feedbackVideos = [];
+        this.currentFeedbackVideo = null;
+        return;
+      }
+      
+      let vids = [{
+        id: 'default',
+        label: 'Default',
+        url: data.explanation_video_url,
+        type: data.explanation_video_type,
+        category: 'Primary'
+      }];
+      
+      if (data.additional_videos && data.additional_videos.length > 0) {
+        vids = vids.concat(data.additional_videos);
+      }
+      
+      this.feedbackVideos = vids;
+      this.currentFeedbackVideo = vids[0];
+      try { localStorage.removeItem('preferred_video_lang'); } catch (e) {}
+    },
+    
+    selectFeedbackVideo(v) {
+      this.currentFeedbackVideo = v;
+    },
+
+    async askWhy() {
+      if (this.loadingWhy || !this.feedback) return;
+      this.loadingWhy = true;
+      this.error = null;
+      try {
+        const res = await fetch('/student/exams/ask_why', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            question_text: this.currentQuestion.question_text,
+            student_answer: this.answerText,
+            correct_answer: this.feedback.ideal_answer || "N/A"
+          })
+        });
+        const data = await res.json();
+        this.explanation = data.explanation;
+      } catch (e) {
+        this.error = 'Failed to get explanation.';
+      } finally {
+        this.loadingWhy = false;
+      }
+    },
+
+    openMiniTutor(initialPrompt = null) {
+      this.showMiniTutor = true;
+      this.showQuestionGrid = false;
+      this.initMiniTutorSpeech();
+      
+      // Auto-seed welcoming greeting if no messages yet, or update if only greeting exists
+      const qNum = this.currentFlatQuestionNumber;
+      const greetingMsg = `Hello! I'm **${this.tutorDisplayName}**. I'm right here with you while you take your exam. We're on **Question ${qNum}**. How can I assist you with this problem?`;
+      if (this.miniTutorMessages.length === 0) {
+        this.miniTutorMessages.push({
+          role: 'assistant',
+          content: greetingMsg
+        });
+      } else if (this.miniTutorMessages.length === 1 && this.miniTutorMessages[0].role === 'assistant') {
+        this.miniTutorMessages[0].content = greetingMsg;
+      }
+      
+      if (initialPrompt) {
+        this.miniTutorInput = initialPrompt;
+        this.$nextTick(() => {
+          this.sendMiniTutorMessage();
+        });
+      }
+      this.scrollMiniTutorToBottom();
+    },
+
+    closeMiniTutor() {
+      this.showMiniTutor = false;
+      if (this.miniTutorCurrentAudio) {
+        try { this.miniTutorCurrentAudio.pause(); } catch(e) {}
+        this.miniTutorCurrentAudio = null;
+      }
+      this.miniTutorPlayingAudio = false;
+      this.miniTutorAudioQueue = [];
+      this.miniTutorEmotion = 'base';
+      if (this.miniTutorListening && this.miniTutorRecognition) {
+        try { this.miniTutorRecognition.stop(); } catch(e) {}
+        this.miniTutorListening = false;
+      }
+    },
+
+    initMiniTutorSpeech() {
+      if (this.miniTutorRecognition) return;
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        try {
+          this.miniTutorRecognition = new SpeechRecognition();
+          this.miniTutorRecognition.continuous = false;
+          this.miniTutorRecognition.interimResults = true;
+          this.miniTutorRecognition.lang = 'en-US';
+          this.miniTutorRecognition.onresult = (e) => {
+            const transcript = Array.from(e.results).map(r => r[0].transcript).join('');
+            this.miniTutorInput = transcript;
+          };
+          this.miniTutorRecognition.onend = () => {
+            this.miniTutorListening = false;
+          };
+          this.miniTutorRecognition.onerror = (e) => {
+            console.warn('Mini tutor speech error:', e);
+            this.miniTutorListening = false;
+          };
+        } catch(err) {
+          console.warn('Mini tutor speech init failed:', err);
+        }
+      }
+    },
+
+    toggleMiniTutorListening() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alert('Voice speech recognition is not supported in this browser. Try Chrome or Edge.');
+        return;
+      }
+      if (!this.miniTutorRecognition) {
+        this.initMiniTutorSpeech();
+      }
+      if (this.miniTutorListening) {
+        try { this.miniTutorRecognition.stop(); } catch(e) {}
+        this.miniTutorListening = false;
+      } else {
+        try {
+          this.miniTutorRecognition.start();
+          this.miniTutorListening = true;
+        } catch(e) {
+          console.error('Speech start error:', e);
+          this.miniTutorListening = false;
+        }
+      }
+    },
+
+    askMiniTutorQuick(question) {
+      if (this.miniTutorGenerating) return;
+      this.miniTutorInput = question;
+      this.sendMiniTutorMessage();
+    },
+
+    escapeMiniTutorHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    },
+
+    renderMiniTutorMarkdown(text) {
+      if (typeof DOMPurify !== 'undefined' && typeof marked !== 'undefined') {
+        return DOMPurify.sanitize(marked.parse(text || ''));
+      }
+      return this.escapeMiniTutorHtml(text || '');
+    },
+
+    scrollMiniTutorToBottom() {
+      setTimeout(() => {
+        const el = document.getElementById('mini-tutor-chat-container');
+        if (el) el.scrollTop = el.scrollHeight;
+      }, 50);
+    },
+
+    async sendMiniTutorMessage() {
+      const question = (this.miniTutorInput || '').trim() || (this.miniTutorPendingImage ? 'Can you check my scratchpad drawing?' : '');
+      if (!question || this.miniTutorGenerating) return;
+
+      if (this.miniTutorCurrentAudio) {
+        try { this.miniTutorCurrentAudio.pause(); } catch(e) {}
+        this.miniTutorCurrentAudio = null;
+      }
+      this.miniTutorAudioQueue = [];
+      this.miniTutorPlayingAudio = false;
+      this.miniTutorPreparingAudio = false;
+      this.miniTutorSentenceBuffer = '';
+
+      const imgToSend = this.miniTutorPendingImage || null;
+      const metaToSend = this.miniTutorPendingMeta || null;
+      this.miniTutorPendingImage = null;
+      this.miniTutorPendingMeta = null;
+
+      this.miniTutorInput = '';
+      this.miniTutorMessages.push({ role: 'user', content: question, image: imgToSend, scratchpadMeta: metaToSend });
+      this.scrollMiniTutorToBottom();
+
+      this.miniTutorGenerating = true;
+      this.miniTutorCurrentAiText = '';
+      this.miniTutorEmotion = 'thinking';
+
+      const currentQ = this.currentQuestion;
+      const flatQNum = this.currentFlatQuestionNumber;
+      const contextPrefix = `[PRACTICE CONTEXT - The student is actively practicing a question:
+Title: "${this.paper.title}"
+Question #${flatQNum}: "${currentQ?.question_text || ''}"
+Question Type: ${currentQ?.question_type || 'open'}
+${this.paper.is_digi_library ? 'Scoring Mode: Correct or Wrong only (No marks)' : `Max Marks: ${currentQ?.max_marks || 1}`}
+Student Answer: "${this.answerText || 'None submitted yet'}"
+${this.feedback ? `Evaluation: ${this.paper.is_digi_library ? (this.feedback.is_correct ? 'Correct' : 'Wrong') : `${this.feedback.marks}/${this.feedback.max_marks} marks`}. Feedback: "${this.feedback.feedback || ''}". Ideal Answer: "${this.feedback.ideal_answer || ''}"` : ''}
+CRITICAL SOCRATIC RULE: Do NOT reveal the direct answer to an unsubmitted question! Instead, give helpful clues, clarify concepts, or ask guiding questions.]`;
+
+      const payload = [];
+      payload.push({ role: 'user', content: `${contextPrefix}\n\nStudent question: ${question}` });
+      const recent = this.miniTutorMessages.slice(-6, -1);
+      for (const m of recent) {
+        payload.push({ role: m.role, content: m.content });
+      }
+      payload.push({
+        role: 'user',
+        content: question,
+        image: imgToSend,
+        scratchpad_meta: metaToSend
+      });
+
+      const examContextPayload = !this.paper.is_digi_library ? {
+        is_mock_exam: true,
+        exam_paper_id: this.paper.id,
+        attempt_id: this.attemptId,
+        question_id: currentQ?.id,
+        question_number: flatQNum,
+        module_name: this.currentModule?.name || '',
+        asked_before_submit: this.feedback === null ? 1 : 0,
+        user_message: question
+      } : null;
+
+      try {
+        const response = await fetch('/student/tutor/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: payload,
+            exam_context: examContextPayload
+          })
+        });
+
+        if (!response.ok) throw new Error('Network error');
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let done = false;
+        let rawAi = '';
+
+        let activeDiagram = null;
+        let diagramEmitted = false;
+
+        const triggerMiniTutorDraw = async (key, title) => {
+          window.dispatchEvent(new CustomEvent('tutor-draw-animated', { detail: { steps: [], title: title } }));
+          try {
+            const drawRes = await fetch('/student/tutor/generate-drawing', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ prompt: title || key })
+            });
+            if (drawRes.ok) {
+              const drawData = await drawRes.json();
+              if (drawData.steps && drawData.steps.length > 0) {
+                window.dispatchEvent(new CustomEvent('tutor-draw-animated', {
+                  detail: { steps: drawData.steps, title: drawData.title || title }
+                }));
+                return;
+              }
+            }
+          } catch (e) {}
+          window.dispatchEvent(new CustomEvent('tutor-draw-diagram', { detail: { diagram: key, title: title } }));
+        };
+
+        // Check user prompt for drawing intent (only if student didn't attach an image to inspect)
+        const lowerPrompt = question.toLowerCase();
+        if (!imgToSend && (lowerPrompt.includes('draw') || lowerPrompt.includes('diagram') || lowerPrompt.includes('sketch'))) {
+          let detectedKey = null;
+          let detectedTitle = null;
+          if (lowerPrompt.includes('convex mirror')) { detectedKey = 'convex_mirror'; detectedTitle = 'Convex Mirror Ray Diagram'; }
+          else if (lowerPrompt.includes('concave mirror')) { detectedKey = 'concave_mirror'; detectedTitle = 'Concave Mirror Ray Diagram'; }
+          else if (lowerPrompt.includes('lens')) { detectedKey = 'convex_lens'; detectedTitle = 'Convex Lens Ray Diagram'; }
+          else if (lowerPrompt.includes('refraction')) { detectedKey = 'refraction'; detectedTitle = 'Refraction Through Glass Slab'; }
+          else if (lowerPrompt.includes('reflection')) { detectedKey = 'reflection'; detectedTitle = 'Laws of Reflection Diagram'; }
+          else if (lowerPrompt.includes('triangle') || lowerPrompt.includes('pythagor')) { detectedKey = 'triangle'; detectedTitle = 'Right-Angled Triangle & Pythagoras'; }
+          else if (lowerPrompt.includes('circle')) { detectedKey = 'circle'; detectedTitle = 'Circle Geometry & Tangent'; }
+
+          if (detectedKey) {
+            activeDiagram = { key: detectedKey, title: detectedTitle };
+            diagramEmitted = true;
+            triggerMiniTutorDraw(detectedKey, detectedTitle);
+          }
+        }
+
+        while (!done) {
+          const { value, done: readerDone } = await reader.read();
+          done = readerDone;
+          if (value) {
+            const chunk = decoder.decode(value, { stream: true });
+            rawAi += chunk;
+
+            // Check for [draw:KEY]
+            if (!imgToSend) {
+              const drawRegex = /\[\s*draw\s*:\s*([^\]]+)\]/gi;
+              let drawMatch;
+              while ((drawMatch = drawRegex.exec(rawAi)) !== null) {
+                const rawTopic = drawMatch[1].trim();
+                const key = rawTopic.toLowerCase().replace(/[\s-]+/g, '_');
+                const titles = {
+                  'convex_mirror': 'Convex Mirror Ray Diagram',
+                  'concave_mirror': 'Concave Mirror Ray Diagram',
+                  'convex_lens': 'Convex Lens Ray Diagram',
+                  'reflection': 'Laws of Reflection Diagram',
+                  'refraction': 'Refraction Through Glass Slab',
+                  'triangle': 'Right-Angled Triangle & Pythagoras',
+                  'circle': 'Circle Geometry & Tangent',
+                  'board': 'Interactive Scratchpad Board'
+                };
+                const displayTitle = titles[key] || rawTopic.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                activeDiagram = { key: key, title: displayTitle };
+                if (!diagramEmitted) {
+                  diagramEmitted = true;
+                  triggerMiniTutorDraw(key, displayTitle);
+                }
+              }
+            }
+
+            // Parse emotion tags [emotion:xxx]
+            const emotionRegex = /\[\s*emotion\s*:\s*([a-zA-Z_]+)\s*\]/gi;
+            let match;
+            let lastEmo = null;
+            while ((match = emotionRegex.exec(rawAi)) !== null) {
+              const e = match[1].toLowerCase();
+              const normMap = {
+                'base': 'base', 'idle': 'base', 'calm': 'base',
+                'thinking': 'thinking', 'curious': 'thinking', 'pondering': 'thinking',
+                'talking': 'talking', 'speaking': 'talking', 'explaining': 'talking',
+                'laughing': 'laughing', 'happy': 'laughing', 'joy': 'laughing', 'excited': 'laughing',
+                'serious': 'serious', 'sad': 'serious', 'strict': 'serious',
+                'angry': 'angry', 'mad': 'angry', 'annoyed': 'angry'
+              };
+              if (normMap[e]) lastEmo = normMap[e];
+            }
+            if (lastEmo) {
+              this.miniTutorEmotion = lastEmo;
+            } else if (rawAi.length > 5) {
+              const lower = rawAi.toLowerCase();
+              if (lower.includes('yes') || lower.includes('great') || lower.includes('excellent') || lower.includes('haha') || lower.includes('awesome')) {
+                this.miniTutorEmotion = 'laughing';
+              } else if (lower.includes('no') || lower.includes('sorry') || lower.includes('actually') || lower.includes('mistake')) {
+                this.miniTutorEmotion = 'serious';
+              } else {
+                this.miniTutorEmotion = 'talking';
+              }
+            }
+
+            this.miniTutorCurrentAiText = rawAi
+              .replace(/\[\s*emotion\s*:\s*[a-zA-Z_]+\s*\]/gi, '')
+              .replace(/\[\s*draw\s*:\s*[^\]]+\]/gi, '')
+              .trimStart();
+            this.scrollMiniTutorToBottom();
+
+            if (this.miniTutorVoiceEnabled) {
+              this.miniTutorSentenceBuffer += chunk;
+              let clean = this.miniTutorSentenceBuffer
+                .replace(/\[\s*emotion\s*:\s*[a-zA-Z_]+\s*\]/gi, '')
+                .replace(/\[\s*draw\s*:\s*[^\]]+\]/gi, '');
+              const sentMatch = clean.match(/(.*?[\.\!\?])(?:\s|$)(.*)/);
+              if (sentMatch) {
+                const s = sentMatch[1].trim();
+                if (s) {
+                  this.miniTutorAudioQueue.push({ text: s, audioUrl: null, isPreparing: false, error: false });
+                  this.prepareNextMiniTutorAudio();
+                  this.processMiniTutorAudioQueue();
+                }
+                this.miniTutorSentenceBuffer = sentMatch[2] || '';
+              }
+            }
+          }
+        }
+
+        if (this.miniTutorVoiceEnabled) {
+          const cleanLeftover = this.miniTutorSentenceBuffer
+            .replace(/\[\s*emotion\s*:\s*[a-zA-Z_]+\s*\]/gi, '')
+            .replace(/\[\s*draw\s*:\s*[^\]]+\]/gi, '')
+            .trim();
+          if (cleanLeftover) {
+            this.miniTutorAudioQueue.push({ text: cleanLeftover, audioUrl: null, isPreparing: false, error: false });
+            this.prepareNextMiniTutorAudio();
+            this.processMiniTutorAudioQueue();
+          }
+          this.miniTutorSentenceBuffer = '';
+        }
+
+        this.miniTutorMessages.push({ 
+          role: 'assistant', 
+          content: (this.miniTutorCurrentAiText || '').trim() || "I'm sorry, I couldn't generate a response right now. Please try again!",
+          emotion: this.miniTutorEmotion || 'talking',
+          diagram: activeDiagram ? activeDiagram.key : null,
+          diagramTitle: activeDiagram ? activeDiagram.title : null
+        });
+        this.miniTutorCurrentAiText = '';
+        this.miniTutorGenerating = false;
+
+        if (!this.miniTutorPlayingAudio && this.miniTutorAudioQueue.length === 0) {
+          setTimeout(() => {
+            if (!this.miniTutorPlayingAudio) {
+              this.miniTutorEmotion = 'base';
+            }
+          }, 2200);
+        }
+        this.scrollMiniTutorToBottom();
+      } catch (err) {
+        console.error('Mini tutor error:', err);
+        this.miniTutorEmotion = 'serious';
+        this.miniTutorMessages.push({
+          role: 'assistant',
+          content: "I'm having trouble connecting right now. Please try again!"
+        });
+        this.miniTutorGenerating = false;
+        this.miniTutorCurrentAiText = '';
+      }
+    },
+
+    async prepareNextMiniTutorAudio() {
+      if (this.miniTutorPreparingAudio) return;
+      const item = this.miniTutorAudioQueue.find(i => !i.audioUrl && !i.isPreparing && !i.error);
+      if (!item) return;
+
+      this.miniTutorPreparingAudio = true;
+      item.isPreparing = true;
+      try {
+        const res = await fetch('/api/tts/prepare', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({text: item.text})
+        });
+        if (!res.ok) throw new Error("TTS prepare failed");
+        const data = await res.json();
+        const streamUrl = `/api/tts/stream/${data.audio_id}`;
+        item.audioUrl = streamUrl;
+        this.processMiniTutorAudioQueue();
+      } catch(e) {
+        console.error("Mini tutor TTS prepare error:", e);
+        item.error = true;
+        this.processMiniTutorAudioQueue();
+      } finally {
+        this.miniTutorPreparingAudio = false;
+        this.prepareNextMiniTutorAudio();
+      }
+    },
+
+    async processMiniTutorAudioQueue() {
+      if (this.miniTutorPlayingAudio || this.miniTutorAudioQueue.length === 0) return;
+      const item = this.miniTutorAudioQueue[0];
+      if (item.error) {
+        this.miniTutorAudioQueue.shift();
+        this.processMiniTutorAudioQueue();
+        return;
+      }
+      if (!item.audioUrl) return;
+
+      this.miniTutorPlayingAudio = true;
+      this.miniTutorEmotion = 'talking';
+      const audio = new Audio(item.audioUrl);
+      this.miniTutorCurrentAudio = audio;
+      this.miniTutorAudioQueue.shift();
+
+      audio.onended = () => {
+        this.miniTutorCurrentAudio = null;
+        this.miniTutorPlayingAudio = false;
+        if (this.miniTutorAudioQueue.length === 0 && !this.miniTutorGenerating) {
+          this.miniTutorEmotion = 'base';
+        }
+        this.processMiniTutorAudioQueue();
+      };
+      audio.onerror = () => {
+        this.miniTutorCurrentAudio = null;
+        this.miniTutorPlayingAudio = false;
+        if (this.miniTutorAudioQueue.length === 0 && !this.miniTutorGenerating) {
+          this.miniTutorEmotion = 'base';
+        }
+        this.processMiniTutorAudioQueue();
+      };
+
+      try {
+        await audio.play();
+      } catch(e) {
+        console.error("Mini tutor audio play error:", e);
+        this.miniTutorCurrentAudio = null;
+        this.miniTutorPlayingAudio = false;
+        this.processMiniTutorAudioQueue();
+      }
+    }
+  }));
+});
+</script>
+
+<style>
+.question-palette-drawer,
+.mini-tutor-drawer {
+  top: 4rem !important;
+  margin-top: 0 !important;
+  bottom: 0 !important;
+  height: calc(100dvh - 4rem) !important;
+  width: 440px;
+  max-width: 95vw;
+}
+@media (max-width: 768px) {
+  .question-palette-drawer,
+  .mini-tutor-drawer {
+    top: 0 !important;
+    margin-top: 0 !important;
+    bottom: 0 !important;
+    height: 100dvh !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+  }
+}
+.bubble-tail::before {
+  content: '';
+  position: absolute;
+  top: 2rem;
+  left: -10px;
+  width: 20px;
+  height: 20px;
+  background: inherit;
+  border-left: 2px solid inherit;
+  border-bottom: 2px solid inherit;
+  transform: rotate(45deg);
+  border-color: rgba(0,0,0,0.1);
+  z-index: -1;
+}
+</style>
+
+  <!-- Include Math Tools Partial (Calculator and Symbol Picker) -->
+  {% include 'student/partials/math_tools.html' %}
+  <!-- Include Digital Scratchpad Partial (Touch & Mouse Drawing Canvas) -->
+  {% include 'student/partials/scratchpad.html' %}
+</div>
+{% endblock %}

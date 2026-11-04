@@ -1,0 +1,382 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-8 pb-32" x-data="{ activeTab: 'material', editingChapterMeta: false }">
+
+  <!-- Breadcrumb -->
+  <div class="pt-4">
+    <a href="/admin/curriculum" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-base-100 border-2 border-base-300 text-xs font-black uppercase tracking-widest text-base-content/70 hover:text-base-content hover:border-primary transition-all shadow-sm">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+      Back to Curriculum
+    </a>
+  </div>
+
+  <!-- Sleek Chapter Studio Header Card -->
+  <div class="brilliant-card bg-base-100 rounded-3xl p-6 md:p-8 relative overflow-hidden">
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div class="space-y-2 max-w-2xl">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/15 border border-primary/30 text-amber-700 text-[11px] font-black uppercase tracking-widest">
+          <span class="w-2 h-2 rounded-full bg-primary"></span>
+          Chapter Studio &bull; Admin
+        </div>
+        <h1 class="text-2xl md:text-3xl font-black text-base-content tracking-tight leading-tight">
+          <span id="chapter-header-title">{{ chapter.name }}</span>
+        </h1>
+        <p class="text-base-content/60 text-sm font-medium">
+          Configure chapter intro videos, real-life application links, and mock/real exam papers.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3 shrink-0">
+        <button type="button" @click="editingChapterMeta = !editingChapterMeta"
+                class="btn btn-sm sm:btn-md rounded-2xl bg-base-200 hover:bg-base-300 text-base-content font-black text-xs uppercase tracking-wider border-2 border-base-300 gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+          <span x-text="editingChapterMeta ? 'Close Editor' : 'Rename / Edit Info'">Rename / Edit Info</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Inline Chapter Name & Description Editor -->
+    <div x-show="editingChapterMeta" x-transition style="display: none;" class="mt-6 pt-6 border-t-2 border-base-200 max-w-2xl">
+      <form hx-post="/admin/curriculum/chapters/{{ chapter.id }}/update-meta"
+            hx-target="#chapter-meta-feedback"
+            hx-swap="innerHTML"
+            class="space-y-4">
+        <div class="form-control">
+          <label class="label pb-1"><span class="label-text text-xs font-black uppercase tracking-wider text-base-content/70">Chapter Name</span></label>
+          <input type="text" name="name" value="{{ chapter.name }}" class="input input-bordered bg-base-200/50 border-2 border-base-300 text-base-content font-bold w-full rounded-xl" required />
+        </div>
+        <div class="form-control">
+          <label class="label pb-1"><span class="label-text text-xs font-black uppercase tracking-wider text-base-content/70">Chapter Description (Optional)</span></label>
+          <textarea name="description" class="textarea textarea-bordered bg-base-200/50 border-2 border-base-300 text-base-content w-full h-20 resize-none rounded-xl" placeholder="Brief summary shown on the chapter intro page...">{{ chapter.description or '' }}</textarea>
+        </div>
+        <div class="flex items-center gap-3">
+          <button type="submit" class="btn btn-primary btn-sm rounded-xl px-6 font-black">Save Chapter Info</button>
+          <button type="button" @click="editingChapterMeta = false" class="btn btn-ghost btn-sm rounded-xl font-bold">Cancel</button>
+          <div id="chapter-meta-feedback"></div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tactile Mode Switcher Tabs -->
+  <div class="flex p-1.5 bg-base-100 rounded-2xl border-2 border-base-300 shadow-sm w-full max-w-md">
+    <button type="button"
+            class="flex-1 py-3 px-4 text-xs sm:text-sm font-black uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2"
+            :class="activeTab === 'material' ? 'bg-primary text-primary-content shadow-sm' : 'text-base-content/60 hover:text-base-content'"
+            @click="activeTab = 'material'">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+      Intro Videos
+    </button>
+    <button type="button"
+            class="flex-1 py-3 px-4 text-xs sm:text-sm font-black uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2"
+            :class="activeTab === 'exams' ? 'bg-secondary text-white shadow-sm' : 'text-base-content/60 hover:text-base-content'"
+            @click="activeTab = 'exams'">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+      Exam Papers ({{ exam_papers|length }})
+    </button>
+  </div>
+
+  <!-- MATERIAL / INTRO VIDEOS TAB -->
+  <div x-show="activeTab === 'material'" x-transition.opacity.duration.200ms class="space-y-8">
+
+    <div class="brilliant-card bg-base-100 rounded-3xl p-6 md:p-8 relative overflow-hidden">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b-2 border-base-200">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl bg-red-500/10 border-2 border-red-500/20 flex items-center justify-center text-red-500 shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-xl md:text-2xl font-black text-base-content tracking-tight">Chapter Intro Video Links</h2>
+            <p class="text-base-content/60 text-xs sm:text-sm font-medium mt-0.5">
+              Paste a YouTube URL below — it automatically converts into a rich YouTube preview card with thumbnail, video title, and quick actions.
+            </p>
+          </div>
+        </div>
+        <div id="intro-links-feedback" class="shrink-0"></div>
+      </div>
+
+      <form hx-post="/admin/curriculum/chapters/{{ chapter.id }}/intro-links"
+            hx-target="#intro-links-feedback"
+            hx-swap="innerHTML"
+            class="space-y-8 pt-6">
+
+        <!-- 1. Video Description URL Card -->
+        <div class="space-y-3" data-initial-url="{{ (chapter.video_description_url or '') | e }}" x-data="youtubeLinkCard()">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-black uppercase tracking-widest text-base-content/70 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-lg bg-primary/20 text-amber-700 inline-flex items-center justify-center font-black">1</span>
+              Concept / Video Description Link
+            </label>
+            <span x-show="videoId && !editing" class="badge badge-success badge-sm gap-1 font-bold text-[10px] uppercase tracking-wider">
+              <span class="w-1.5 h-1.5 rounded-full bg-current"></span> Attached
+            </span>
+          </div>
+
+          <!-- Hidden or Visible Input -->
+          <input type="hidden" name="video_description_url" :value="url" />
+
+          <!-- Input Mode (shown when no valid YouTube link is set or when clicking Modify) -->
+          <div x-show="editing || !videoId" x-transition class="flex flex-col sm:flex-row gap-2">
+            <div class="relative flex-1">
+              <div class="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-red-500">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                </svg>
+              </div>
+              <input type="text"
+                     x-ref="urlInput"
+                     x-model="url"
+                     @input="onInput(); if(videoId) { $nextTick(() => $el.closest('form').requestSubmit()); }"
+                     @paste="setTimeout(() => { onInput(); if(videoId) { $el.closest('form').requestSubmit(); } }, 50)"
+                     placeholder="Paste YouTube link here (e.g. https://www.youtube.com/watch?v=...)"
+                     class="input input-bordered bg-base-200/60 border-2 border-base-300 focus:border-primary text-base-content font-semibold w-full pl-12 rounded-2xl" />
+            </div>
+            <button type="button" x-show="videoId" @click="editing = false; $el.closest('form').requestSubmit()" class="btn btn-primary rounded-2xl font-black px-6">
+              Done
+            </button>
+          </div>
+
+          <!-- YouTube Rich Preview Card -->
+          <div x-show="videoId && !editing" x-transition style="display: none;"
+               class="group relative bg-base-200/60 hover:bg-base-200 border-2 border-base-300 hover:border-primary/60 rounded-2xl overflow-hidden transition-all shadow-sm">
+            <div class="flex flex-col sm:flex-row items-stretch">
+              <!-- Thumbnail / Inline Player -->
+              <div class="relative w-full sm:w-64 aspect-video bg-black shrink-0 overflow-hidden">
+                <template x-if="!playing">
+                  <div class="w-full h-full relative cursor-pointer group/thumb" @click="playing = true">
+                    <img :src="thumbUrl" :alt="title" class="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300" />
+                    <div class="absolute inset-0 bg-black/30 group-hover/thumb:bg-black/15 transition-colors flex items-center justify-center">
+                      <div class="w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg group-hover/thumb:scale-110 transition-transform">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                      </div>
+                    </div>
+                    <span class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/80 text-white text-[10px] font-bold uppercase tracking-wider">Click to Play</span>
+                  </div>
+                </template>
+                <template x-if="playing">
+                  <iframe :src="embedUrl" class="w-full h-full" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </template>
+              </div>
+
+              <!-- Video Metadata & Controls -->
+              <div class="flex-1 p-4 sm:p-5 flex flex-col justify-between min-w-0 pr-14">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 rounded-md bg-red-500/10 text-red-500 font-black text-[10px] uppercase tracking-wider">YouTube</span>
+                    <span x-show="author" x-text="author" class="text-xs font-bold text-base-content/50 truncate"></span>
+                  </div>
+                  <h3 class="text-base sm:text-lg font-black text-base-content leading-snug line-clamp-2" x-text="loadingTitle ? 'Fetching video title...' : (title || 'YouTube Video')"></h3>
+                  <a :href="url" target="_blank" class="text-xs font-mono text-base-content/50 hover:text-secondary truncate block" x-text="url"></a>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2 pt-3 mt-2 border-t border-base-300/60">
+                  <button type="button" @click="playing = !playing" class="btn btn-xs rounded-lg font-bold gap-1.5" :class="playing ? 'btn-neutral' : 'btn-primary'">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    <span x-text="playing ? 'Close Player' : 'Watch Video'">Watch Video</span>
+                  </button>
+                  <button type="button" @click="startEdit()" class="btn btn-xs btn-ghost border border-base-300 rounded-lg font-bold gap-1.5 hover:border-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                    Modify Link
+                  </button>
+                  <a :href="url" target="_blank" class="btn btn-xs btn-ghost rounded-lg font-bold gap-1 text-base-content/60">
+                    Open on YouTube
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                  </a>
+                </div>
+              </div>
+
+              <!-- Edge Delete Button -->
+              <button type="button"
+                      @click="clearVideo(true)"
+                      title="Delete / Remove Video"
+                      class="absolute top-3 right-3 w-9 h-9 rounded-xl bg-error/10 hover:bg-error text-error hover:text-white border border-error/20 flex items-center justify-center transition-all shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Real Life Application URL Card -->
+        <div class="space-y-3" data-initial-url="{{ (chapter.real_life_url or '') | e }}" x-data="youtubeLinkCard()">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-black uppercase tracking-widest text-base-content/70 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-600 inline-flex items-center justify-center font-black">2</span>
+              Real Life Application Video Link
+            </label>
+            <span x-show="videoId && !editing" class="badge badge-success badge-sm gap-1 font-bold text-[10px] uppercase tracking-wider">
+              <span class="w-1.5 h-1.5 rounded-full bg-current"></span> Attached
+            </span>
+          </div>
+
+          <input type="hidden" name="real_life_url" :value="url" />
+
+          <!-- Input Mode -->
+          <div x-show="editing || !videoId" x-transition class="flex flex-col sm:flex-row gap-2">
+            <div class="relative flex-1">
+              <div class="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-emerald-500">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>
+                </svg>
+              </div>
+              <input type="text"
+                     x-ref="urlInput"
+                     x-model="url"
+                     @input="onInput(); if(videoId) { $nextTick(() => $el.closest('form').requestSubmit()); }"
+                     @paste="setTimeout(() => { onInput(); if(videoId) { $el.closest('form').requestSubmit(); } }, 50)"
+                     placeholder="Paste YouTube link for Real-Life Application (https://www.youtube.com/watch?v=...)"
+                     class="input input-bordered bg-base-200/60 border-2 border-base-300 focus:border-primary text-base-content font-semibold w-full pl-12 rounded-2xl" />
+            </div>
+            <button type="button" x-show="videoId" @click="editing = false; $el.closest('form').requestSubmit()" class="btn btn-primary rounded-2xl font-black px-6">
+              Done
+            </button>
+          </div>
+
+          <!-- YouTube Rich Preview Card -->
+          <div x-show="videoId && !editing" x-transition style="display: none;"
+               class="group relative bg-base-200/60 hover:bg-base-200 border-2 border-base-300 hover:border-emerald-500/60 rounded-2xl overflow-hidden transition-all shadow-sm">
+            <div class="flex flex-col sm:flex-row items-stretch">
+              <!-- Thumbnail / Inline Player -->
+              <div class="relative w-full sm:w-64 aspect-video bg-black shrink-0 overflow-hidden">
+                <template x-if="!playing">
+                  <div class="w-full h-full relative cursor-pointer group/thumb" @click="playing = true">
+                    <img :src="thumbUrl" :alt="title" class="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300" />
+                    <div class="absolute inset-0 bg-black/30 group-hover/thumb:bg-black/15 transition-colors flex items-center justify-center">
+                      <div class="w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg group-hover/thumb:scale-110 transition-transform">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                      </div>
+                    </div>
+                    <span class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/80 text-white text-[10px] font-bold uppercase tracking-wider">Click to Play</span>
+                  </div>
+                </template>
+                <template x-if="playing">
+                  <iframe :src="embedUrl" class="w-full h-full" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </template>
+              </div>
+
+              <!-- Video Metadata & Controls -->
+              <div class="flex-1 p-4 sm:p-5 flex flex-col justify-between min-w-0 pr-14">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 font-black text-[10px] uppercase tracking-wider">Real-Life Video</span>
+                    <span x-show="author" x-text="author" class="text-xs font-bold text-base-content/50 truncate"></span>
+                  </div>
+                  <h3 class="text-base sm:text-lg font-black text-base-content leading-snug line-clamp-2" x-text="loadingTitle ? 'Fetching video title...' : (title || 'YouTube Video')"></h3>
+                  <a :href="url" target="_blank" class="text-xs font-mono text-base-content/50 hover:text-secondary truncate block" x-text="url"></a>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2 pt-3 mt-2 border-t border-base-300/60">
+                  <button type="button" @click="playing = !playing" class="btn btn-xs rounded-lg font-bold gap-1.5" :class="playing ? 'btn-neutral' : 'btn-primary'">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    <span x-text="playing ? 'Close Player' : 'Watch Video'">Watch Video</span>
+                  </button>
+                  <button type="button" @click="startEdit()" class="btn btn-xs btn-ghost border border-base-300 rounded-lg font-bold gap-1.5 hover:border-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                    Modify Link
+                  </button>
+                  <a :href="url" target="_blank" class="btn btn-xs btn-ghost rounded-lg font-bold gap-1 text-base-content/60">
+                    Open on YouTube
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                  </a>
+                </div>
+              </div>
+
+              <!-- Edge Delete Button -->
+              <button type="button"
+                      @click="clearVideo(true)"
+                      title="Delete / Remove Video"
+                      class="absolute top-3 right-3 w-9 h-9 rounded-xl bg-error/10 hover:bg-error text-error hover:text-white border border-error/20 flex items-center justify-center transition-all shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-4 pt-2">
+          <button type="submit" class="tactile-btn btn btn-primary rounded-2xl px-8 font-black border-2 border-amber-500 shadow-[0_4px_0_0_#D97706]">
+            Save Video Links
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- EXAMS TAB -->
+  <div x-show="activeTab === 'exams'" x-transition.opacity.duration.200ms class="space-y-8" style="display: none;">
+    <!-- Add Exam Form -->
+    <div class="brilliant-card bg-base-100 rounded-3xl p-6 md:p-8 relative overflow-hidden" id="create-exam-form">
+      <h2 class="text-xl md:text-2xl font-black mb-6 text-base-content flex items-center gap-3">
+        <span class="w-10 h-10 rounded-xl bg-secondary/10 border-2 border-secondary/20 flex items-center justify-center text-secondary">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+        </span>
+        Create Exam Paper
+      </h2>
+      
+      <form hx-post="/admin/curriculum/chapters/{{ chapter.id }}/exams" 
+         hx-target="#exam-list-container"
+         hx-swap="beforeend"
+         x-data="{ examType: 'mock', useMock: false, mockTotal: {{ mock_total_marks | default(0) }} }"
+         class="flex flex-wrap gap-4 items-end relative z-10"
+         hx-on::after-request="if(event.detail.successful) this.reset()">
+      
+        <div class="form-control w-full md:flex-1 md:min-w-[200px]">
+          <label class="label"><span class="label-text text-base-content/70 font-black tracking-wide text-xs uppercase">Exam Title</span></label>
+          <input type="text" name="title" placeholder="e.g. End of Chapter Quiz" class="input input-bordered bg-base-200/50 border-2 border-base-300 text-base-content focus:border-secondary font-bold rounded-xl w-full" required />
+        </div>
+        
+        <div class="form-control w-full md:w-36">
+          <label class="label"><span class="label-text text-base-content/70 font-black tracking-wide text-xs uppercase">Type</span></label>
+          <select name="type" x-model="examType" class="select select-bordered bg-base-200/50 border-2 border-base-300 text-base-content focus:border-secondary font-bold rounded-xl w-full">
+            <option value="mock">Mock Test</option>
+            <option value="real">Real Exam</option>
+          </select>
+        </div>
+
+        <div class="form-control w-full md:w-32" x-cloak x-show="examType === 'mock'">
+          <label class="label" title="Informational threshold"><span class="label-text text-base-content/70 font-black tracking-wide text-xs uppercase">Threshold %</span></label>
+          <input type="number" name="unlock_threshold_percent" placeholder="e.g. 80" class="input input-bordered bg-base-200/50 border-2 border-base-300 text-base-content focus:border-secondary font-bold rounded-xl w-full" min="1" max="100" />
+        </div>
+
+        <div class="form-control w-full md:w-32" x-cloak x-show="examType === 'real'" style="display: none;">
+          <label class="label" title="Score required in Mock Exam to unlock"><span class="label-text text-base-content/70 font-black tracking-wide text-xs uppercase">Req. Mock %</span></label>
+          <input type="number" name="required_mock_percent" placeholder="e.g. 80" class="input input-bordered bg-base-200/50 border-2 border-base-300 text-base-content focus:border-secondary font-bold rounded-xl w-full" min="1" max="100" />
+        </div>
+        
+        <div class="form-control w-full md:w-32" x-cloak x-show="examType === 'real'" style="display: none;">
+          <label class="label" title="Max attempts (leave blank for unlimited)"><span class="label-text text-base-content/70 font-black tracking-wide text-xs uppercase">Max Attempts</span></label>
+          <input type="number" name="max_attempts" placeholder="Unlimited" class="input input-bordered bg-base-200/50 border-2 border-base-300 text-base-content focus:border-secondary font-bold rounded-xl w-full" min="1" />
+        </div>
+
+        <div class="form-control h-[3rem] justify-end" x-cloak x-show="examType === 'real'" style="display: none;">
+          <label class="label cursor-pointer justify-start gap-2 pb-3">
+            <input type="checkbox" name="use_mock_questions" value="1" class="checkbox checkbox-secondary" x-model="useMock" />
+            <span class="label-text text-base-content/70 font-black tracking-wide text-xs uppercase">Scramble Mock Qs</span>
+          </label>
+        </div>
+
+        <div class="form-control w-full md:w-32" x-cloak x-show="examType === 'real' && useMock" style="display: none;">
+          <label class="label"><span class="label-text text-base-content/70 font-black tracking-wide text-xs uppercase" x-text="`Target Marks (Max ${mockTotal})`">Target Marks</span></label>
+          <input type="number" name="target_marks" placeholder="e.g. 50" class="input input-bordered bg-base-200/50 border-2 border-base-300 text-base-content focus:border-secondary font-bold rounded-xl w-full" min="1" :max="mockTotal" />
+        </div>
+        
+        <div class="w-full flex justify-end md:w-auto md:ml-auto">
+          <button type="submit" class="tactile-btn btn btn-secondary w-full md:w-auto px-8 rounded-2xl font-black text-white shadow-[0_4px_0_0_#1D4ED8] border-none">Create Exam</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Exam List -->
+    <div class="space-y-6" id="exam-list-container">
+      {% for paper in exam_papers %}
+        {% include "admin/partials/exam_item.html" %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

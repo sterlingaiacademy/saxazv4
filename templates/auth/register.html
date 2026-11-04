@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="saxazlight">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+  <title>Create Account - SAXAZ</title>
+  <!-- Tailwind CSS + DaisyUI (compiled static) -->
+  <link rel="stylesheet" href="/static/css/app.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    @media (max-width: 640px) {
+      input:not([type="radio"]):not([type="checkbox"]), select, textarea {
+        font-size: 16px !important;
+      }
+    }
+    /* Dynamic Responsive Split Layout for Desktop & Mobile */
+    @media (min-width: 1024px) {
+      body.auth-split-body {
+        display: flex !important;
+        flex-direction: row !important;
+        height: 100vh !important;
+        width: 100vw !important;
+        overflow: hidden !important;
+      }
+      .auth-left-panel {
+        display: flex !important;
+        width: 55% !important;
+        height: 100vh !important;
+        position: relative !important;
+        overflow: hidden !important;
+      }
+      .auth-right-panel {
+        display: flex !important;
+        width: 45% !important;
+        height: 100vh !important;
+        overflow-y: auto !important;
+      }
+    }
+    @media (max-width: 1023px) {
+      body.auth-split-body {
+        display: flex !important;
+        flex-direction: column !important;
+        min-height: 100vh !important;
+        width: 100% !important;
+        overflow-y: auto !important;
+      }
+      .auth-left-panel {
+        display: none !important;
+      }
+      .auth-right-panel {
+        display: flex !important;
+        width: 100% !important;
+        min-height: 100vh !important;
+        overflow-y: auto !important;
+        padding-top: 3rem !important;
+        padding-bottom: 3rem !important;
+      }
+    }
+  </style>
+</head>
+<body class="auth-split-body font-sans antialiased bg-base-100 text-base-content w-full">
+
+  <!-- Left Panel (Yellow) -->
+  <div class="auth-left-panel bg-primary flex-col justify-between relative overflow-hidden px-12 pt-16">
+    
+    <!-- Top Left Brand -->
+    <div class="z-20 absolute top-10 left-12 flex items-center gap-4">
+      <div class="w-24 translate-y-1">
+        {% include "logo.html" %}
+      </div>
+      <div class="h-5 w-[2px] bg-black/20"></div>
+      <p class="text-[11px] font-bold tracking-[0.2em] text-[#1a1a1a] uppercase">Elevating Education</p>
+    </div>
+    
+    <!-- Quote Text -->
+    <div class="z-10 max-w-2xl mt-16">
+      <h1 id="carousel-quote" class="text-[3.5rem] leading-[1.05] font-black tracking-tighter text-[#1a1a1a] uppercase">
+        Education is <br>
+        what remains <br>
+        after one has <br>
+        forgotten <br>
+        <span class="text-white">what one has <br> learned in <br> school.</span>
+      </h1>
+      <div class="mt-4 w-12 h-1 bg-black"></div>
+      <p id="carousel-author" class="mt-2 text-2xl font-medium text-black">Albert Einstein</p>
+    </div>
+
+    <!-- Scientist Image -->
+    <div class="absolute bottom-0 right-[-10%] w-[85%] h-auto max-h-[85vh] object-cover object-bottom z-0 pointer-events-none">
+      <!-- Ensure image blends smoothly into yellow background, our generated image has a yellow bg so it should match -->
+      <img id="carousel-image" src="/static/images/einstein.jpg" alt="Albert Einstein" class="w-full h-full object-contain object-bottom mix-blend-multiply opacity-95 filter contrast-125 saturate-110">
+    </div>
+
+
+  </div>
+
+  <!-- Right Panel (Register Form) -->
+  <div class="auth-right-panel bg-white flex flex-col justify-center items-center px-8 sm:px-16 lg:px-24 relative z-20 overflow-y-auto">
+    
+    <div class="w-full max-w-md my-12">
+      
+      <div class="mb-8 text-left">
+        <h2 class="text-4xl font-black text-[#1a1a1a] tracking-tight mb-2 flex items-center gap-3">
+          Join 
+          <!-- SAXAZ Style Logo -->
+          <div class="w-24 md:w-32 lg:w-40 translate-y-1">
+            {% include "logo.html" %}
+          </div>
+        </h2>
+        <p class="text-base-content/60 text-sm">Create a new student or admin account</p>
+      </div>
+
+      {% if error %}
+      <div class="alert alert-error bg-red-50 text-red-700 border-red-200 mb-6 text-sm py-3 rounded-2xl shadow-sm">
+        <span>{{ error }}</span>
+      </div>
+      {% endif %}
+      
+      {% if success %}
+      <div class="alert alert-success bg-green-50 text-green-700 border-green-200 mb-6 text-sm py-3 rounded-2xl shadow-sm">
+        <span>{{ success }}</span>
+      </div>
+      {% endif %}
+
+      <form action="/register" method="POST" class="space-y-4">
+        
+        <div class="form-control w-full">
+          <label class="label pb-1"><span class="label-text text-xs font-bold text-gray-600 uppercase tracking-widest">Full Name</span></label>
+          <div class="relative flex items-center">
+            <div class="absolute left-4 flex items-center pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" /></svg>
+            </div>
+            <input type="text" name="name" placeholder="John Doe" class="input input-bordered w-full pl-12 bg-white border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary rounded-full transition-all text-sm text-gray-900 placeholder-gray-400" required>
+          </div>
+        </div>
+
+        <div class="form-control w-full">
+          <label class="label pb-1"><span class="label-text text-xs font-bold text-gray-600 uppercase tracking-widest">Email</span></label>
+          <div class="relative flex items-center">
+            <div class="absolute left-4 flex items-center pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" /><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" /></svg>
+            </div>
+            <input type="email" name="email" placeholder="john@example.com" class="input input-bordered w-full pl-12 bg-white border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary rounded-full transition-all text-sm text-gray-900 placeholder-gray-400" required>
+          </div>
+        </div>
+
+        <div class="form-control w-full" x-data="{ show: false }">
+          <label class="label pb-1"><span class="label-text text-xs font-bold text-gray-600 uppercase tracking-widest">Password</span></label>
+          <div class="relative flex items-center">
+            <div class="absolute left-4 flex items-center pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" /></svg>
+            </div>
+            <input type="password" :type="show ? 'text' : 'password'" name="password" placeholder="••••••••" class="input input-bordered w-full pl-12 pr-10 bg-white border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary rounded-full transition-all tracking-widest text-sm text-gray-900 placeholder-gray-400" required>
+            <button type="button" @click="show = !show" class="absolute right-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors focus:outline-none">
+              <svg x-show="!show" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+              <svg x-show="show" style="display:none;" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a10.05 10.05 0 011.53-3.693M15.354 8.646A9.97 9.97 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.02 10.02 0 01-2.425 4.607M15 12a3 3 0 01-3 3m0-6a3 3 0 013 3m-3-3l6-6M9 12l-6 6" /></svg>
+            </button>
+          </div>
+        </div>
+
+        <input type="hidden" name="role" value="student">
+
+        <div class="form-control w-full relative" x-data="{ open: false, selected: '', selectedText: 'Choose your class' }">
+          <label class="label pb-1"><span class="label-text text-xs font-bold text-gray-600 uppercase tracking-widest">Select Your Grade / Class</span></label>
+          <input type="hidden" name="class_id" :value="selected" required>
+          <button type="button" @click="open = !open" @click.away="open = false" 
+              class="w-full text-left pl-4 pr-4 py-3 bg-white border border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary rounded-full transition-all text-sm flex items-center gap-3"
+              :class="open ? 'border-primary ring-1 ring-primary' : ''">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" /></svg>
+            <span x-text="selectedText" class="flex-1" :class="selected === '' ? 'text-gray-400' : 'text-gray-900'"></span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+          </button>
+          
+          <div x-show="open" x-transition style="display:none;" 
+             class="absolute top-[100%] left-0 w-full mt-2 bg-white border border-base-200 rounded-2xl shadow-xl z-50 overflow-hidden py-1">
+            {% for cls in classes %}
+            <button type="button" @click="selected = '{{ cls.id }}'; selectedText = '{{ cls.name }}'; open = false"
+                class="w-full text-left px-5 py-2.5 text-sm text-gray-900 hover:bg-primary/10 hover:text-primary transition-colors flex items-center justify-between">
+              {{ cls.name }}
+              <svg x-show="selected === '{{ cls.id }}'" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+            </button>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="mt-8 pt-4">
+          <button type="submit" class="btn btn-primary w-full rounded-full text-[15px] font-bold py-3 h-auto min-h-0 text-[#1a1a1a] shadow-[0_4px_14px_0_rgba(244,170,0,0.39)] hover:shadow-[0_6px_20px_rgba(244,170,0,0.23)] hover:-translate-y-[1px] transition-all">
+            Create Account
+          </button>
+        </div>
+      </form>
+      
+      <div class="text-center mt-6 text-sm">
+        <span class="text-base-content/60">Already have an account?</span> 
+        <a href="/login" class="font-bold text-[#1a1a1a] hover:text-primary transition-colors underline decoration-2 underline-offset-2">Login</a>
+      </div>
+      
+    </div>
+    
+  </div>
+
+
+
+
+
+<style>
+  .anim-image {
+    opacity: 0;
+    transition: opacity 1.2s ease-in-out; /* Smooth crossfade for image, no movement to avoid background box issues */
+  }
+  .anim-image.active {
+    opacity: 0.95;
+  }
+  .anim-image-exit {
+    opacity: 0 !important;
+    transition: opacity 0.5s ease-out !important;
+  }
+
+  .anim-quote {
+    opacity: 0;
+    transform: translateX(-40px);
+    transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.4s; /* Quote slides in AFTER image */
+  }
+  .anim-quote.active {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  
+  .anim-author {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.6s; /* Author slides in LAST */
+  }
+  .anim-author.active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .anim-exit {
+    opacity: 0 !important;
+    transform: translateX(20px) !important;
+    transition: all 0.5s ease-out !important;
+  }
+</style>
+<script>
+  const slides = [
+    {
+      quote: "Education is <br> what remains <br> after one has <br> forgotten <br> <span class='text-white'>what one has <br> learned in <br> school.</span>",
+      author: "Albert Einstein",
+      image: "/static/images/einstein.jpg"
+    },
+    {
+      quote: "Nothing in life <br> is to be feared,<br> it is only <br> to be <br> <span class='text-white'>understood.</span>",
+      author: "Marie Curie",
+      image: "/static/images/curie.jpg"
+    },
+    {
+      quote: "The present <br> is theirs; <br> the future, <br> for which I <br> <span class='text-white'>really worked, <br> is mine.</span>",
+      author: "Nikola Tesla",
+      image: "/static/images/tesla_acc.jpg"
+    },
+    {
+      quote: "That brain <br> of mine is <br> something more <br> than merely <br> <span class='text-white'>mortal.</span>",
+      author: "Ada Lovelace",
+      image: "/static/images/lovelace.jpg"
+    },
+    {
+      quote: "It is not the <br> strongest of the <br> species that <br> survives, <br> <span class='text-white'>nor the most <br> intelligent.</span>",
+      author: "Charles Darwin",
+      image: "/static/images/darwin.jpg"
+    },
+    {
+      quote: "Science and <br> everyday life <br> cannot and <br> should not <br> <span class='text-white'>be separated.</span>",
+      author: "Rosalind Franklin",
+      image: "/static/images/franklin.jpg"
+    }
+  ];
+
+  let currentSlide = 0;
+  const quoteEl = document.getElementById('carousel-quote');
+  const authorEl = document.getElementById('carousel-author');
+  const imageEl = document.getElementById('carousel-image');
+  
+  if(quoteEl && authorEl && imageEl) {
+    quoteEl.style.transition = '';
+    authorEl.style.transition = '';
+    imageEl.style.transition = '';
+    imageEl.style.opacity = '';
+
+    quoteEl.classList.add('anim-quote', 'active');
+    authorEl.classList.add('anim-author', 'active');
+    imageEl.classList.add('anim-image', 'active');
+
+    setInterval(() => {
+      // 1. Exit animation simultaneously
+      quoteEl.classList.remove('active');
+      authorEl.classList.remove('active');
+      imageEl.classList.remove('active');
+      
+      quoteEl.classList.add('anim-exit');
+      authorEl.classList.add('anim-exit');
+      imageEl.classList.add('anim-image-exit'); // Use specific image exit class
+
+      setTimeout(() => {
+        currentSlide = (currentSlide + 1) % slides.length;
+        const slide = slides[currentSlide];
+        
+        // 2. Swap content EXACTLY in sync
+        quoteEl.innerHTML = slide.quote;
+        authorEl.textContent = slide.author;
+        imageEl.src = slide.image;
+        imageEl.alt = slide.author;
+        
+        // 3. Reset to start positions
+        quoteEl.classList.remove('anim-exit');
+        authorEl.classList.remove('anim-exit');
+        imageEl.classList.remove('anim-image-exit');
+        
+        void quoteEl.offsetWidth; // Force reflow
+        
+        // 4. Trigger enter animations
+        quoteEl.classList.add('active');
+        authorEl.classList.add('active');
+        imageEl.classList.add('active');
+      }, 550); 
+    }, 7000); 
+  }
+</script>
+</body>
+
+
+
+</html>
+
+

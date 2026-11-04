@@ -1,0 +1,27 @@
+__pycache__/
+*.pyc
+venv/
+.venv/
+node_modules/
+.env
+.git/
+.github/
+scratch/
+chemistry/
+screenshot/
+word  file/
+backups_safety/
+*.db-shm
+*.db-wal
+*.sqlite
+*.backup*
+check.db
+live.db
+verify*.db
+empty.db
+database.db
+saxaz.db
+yt-dlp.exe
+models/
+*.log
+*.zip

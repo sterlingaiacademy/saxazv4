@@ -1,0 +1,11 @@
+{% if content_items %}
+<div class="space-y-2" id="sortable-content-list">
+  {% for item in content_items %}
+  {% include "admin/partials/content_item_partial.html" %}
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-6 text-base-content/50">
+  <p>No content uploaded for this topic yet.</p>
+</div>
+{% endif %}

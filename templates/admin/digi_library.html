@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="w-full max-w-[1400px] mx-auto space-y-8 pb-20">
+  
+  <!-- Sleek Digi-Library Studio Header -->
+  <div class="brilliant-card bg-base-100 rounded-3xl p-6 md:p-8">
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+      <div class="space-y-2 max-w-3xl">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/15 border border-primary/30 text-amber-700 text-[11px] font-black uppercase tracking-widest">
+          <span class="w-2 h-2 rounded-full bg-primary"></span>
+          Labour India Digital Books &bull; Learning Studio Manager
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-black text-base-content tracking-tight">
+          Digi-Library Book &amp; Chapter Studio
+        </h1>
+        <p class="text-xs sm:text-sm text-base-content/65 font-medium leading-relaxed">
+          Create Labour India Book Editions (e.g. <strong>Labour India Edition 1</strong>), arrange <strong>Subjects</strong> in exact book order (English, Maths, Science...), add <strong>Chapters</strong> inside each subject, and bulk-upload ordered <strong>Questions, Model Answers &amp; Explanation Videos</strong> connected to the AI Tutor, Scratchpad &amp; Diagram Trainer.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3 shrink-0">
+        <a href="/student/digi-library" class="btn btn-sm sm:btn-md btn-secondary text-white rounded-2xl font-black text-xs uppercase tracking-wider gap-2 shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+          Preview Student Digi-Library
+        </a>
+      </div>
+    </div>
+
+    <!-- 3-Step Workflow Strip -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-6 pt-6 border-t-2 border-base-200">
+      <div class="bg-base-200/60 rounded-2xl p-3.5 border border-base-300 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-primary text-primary-content font-black flex items-center justify-center shrink-0 shadow-xs">1</div>
+        <div class="text-xs text-base-content">
+          <div class="font-black uppercase tracking-wider">Create Book Edition</div>
+          <div class="text-base-content/60 font-medium">Upload cover &amp; assign class (e.g. Labour India Edition 1)</div>
+        </div>
+      </div>
+      <div class="bg-base-200/60 rounded-2xl p-3.5 border border-base-300 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-secondary text-white font-black flex items-center justify-center shrink-0 shadow-xs">2</div>
+        <div class="text-xs text-base-content">
+          <div class="font-black uppercase tracking-wider">Order Subjects &amp; Chapters</div>
+          <div class="text-base-content/60 font-medium">Arrange English Ch 1–3, Maths Ch 1–3 in exact book sequence</div>
+        </div>
+      </div>
+      <div class="bg-base-200/60 rounded-2xl p-3.5 border border-base-300 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white font-black flex items-center justify-center shrink-0 shadow-xs">3</div>
+        <div class="text-xs text-base-content">
+          <div class="font-black uppercase tracking-wider">Bulk Upload Ordered Q&amp;As</div>
+          <div class="text-base-content/60 font-medium">Import PDF/DOCX/XLSX or paste Q&amp;As + attach YouTube videos</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create New Book Edition Card -->
+  <div class="brilliant-card bg-base-100 rounded-3xl p-6 sm:p-8">
+    <form hx-post="/admin/digi-library/books"
+          hx-target="#digi-books-list"
+          hx-swap="afterbegin"
+          hx-encoding="multipart/form-data"
+          @htmx:after-request="if(event.detail.successful) $el.reset()"
+          class="space-y-5">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-primary/20 border-2 border-primary/40 text-secondary flex items-center justify-center font-black">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+        </div>
+        <div>
+          <h2 class="text-lg sm:text-xl font-black text-base-content tracking-tight">Create New Labour India Book Edition</h2>
+          <p class="text-xs text-base-content/60 font-medium">Add a new book issue/edition to start adding ordered subjects and chapters.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+        <div class="md:col-span-4 form-control">
+          <label class="label py-1"><span class="label-text text-xs font-black uppercase tracking-wider text-base-content/70">Book Edition Title *</span></label>
+          <input type="text" name="title" class="input input-bordered w-full bg-base-200/50 border-2 border-base-300 focus:border-primary font-bold rounded-xl" required />
+        </div>
+
+        <div class="md:col-span-3 form-control">
+          <label class="label py-1"><span class="label-text text-xs font-black uppercase tracking-wider text-base-content/70">Assign Class</span></label>
+          <select name="class_id" class="select select-bordered w-full bg-base-200/50 border-2 border-base-300 focus:border-primary font-bold rounded-xl">
+            <option value="">All Classes (Public)</option>
+            {% for cls in classes %}
+              <option value="{{ cls.id }}">{{ cls.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="md:col-span-3 form-control">
+          <label class="label py-1"><span class="label-text text-xs font-black uppercase tracking-wider text-base-content/70">Book Cover Image</span></label>
+          <input type="file" name="thumbnail" accept="image/*" class="file-input file-input-bordered w-full bg-base-200/50 border-2 border-base-300 rounded-xl" />
+        </div>
+
+        <div class="md:col-span-2">
+          <button type="submit" class="tactile-btn btn btn-primary w-full rounded-xl font-black text-primary-content border-2 border-amber-500 shadow-[0_4px_0_0_#D97706]">
+            + Create Book
+          </button>
+        </div>
+      </div>
+
+      <div class="form-control">
+        <label class="label py-0.5"><span class="label-text text-xs font-black uppercase tracking-wider text-base-content/60">Subtitle / Edition Notes (Optional)</span></label>
+        <input type="text" name="description" class="input input-bordered input-sm w-full bg-base-200/40 border-2 border-base-300 rounded-xl font-medium" />
+      </div>
+    </form>
+  </div>
+
+  <!-- Books Hierarchy List -->
+  <div id="digi-books-list" class="space-y-8">
+    {% for book in books %}
+      {% include "admin/partials/digi_book_item.html" %}
+    {% else %}
+      <div class="brilliant-card bg-base-100 rounded-3xl p-12 text-center text-base-content/60 font-bold">
+        No Labour India books created yet. Use the form above to create your first Book Edition!
+      </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Digi-Library Studio - SAXAZ{% endblock %}
+{% block topbar_title %}Digi-Library{% endblock %}
+
+{% block content %}
+<div class="w-full max-w-[1600px] mx-auto pb-24 space-y-6"
+     x-data="{ bookQuery: '' }">
+
+  <!-- Breadcrumb + Quick Actions -->
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-2">
+      <a href="/student/dashboard" class="v2-pill bg-base-100 border border-base-300 text-base-content/70 hover:text-base-content hover:border-[#111111] transition-all">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        Study Desk
+      </a>
+      <span class="text-base-content/30 font-black">/</span>
+      <span class="v2-pill bg-[#f8b000] text-[#111111] border border-[#111111]">
+        Digi-Library Studio
+      </span>
+    </div>
+
+    <button type="button"
+            @click="$dispatch('open-v2-spotlight')"
+            class="v2-pill bg-[#111111] text-[#f8b000] border border-[#111111] hover:bg-[#f8b000] hover:text-[#111111] transition-all cursor-pointer">
+      <span>⚡ AI Book &amp; Topic Search</span>
+      <kbd class="px-1.5 py-0.5 rounded bg-white/15 text-[10px]">⌘K</kbd>
+    </button>
+  </div>
+
+  <!-- KINETIC PITCH-BLACK & GOLD DIGI-LIBRARY HERO -->
+  <div class="relative rounded-[2rem] bg-[#111111] text-white border-2 border-[#111111] shadow-[0_10px_0_0_#f8b000] p-6 sm:p-8 lg:p-10 overflow-hidden">
+    <div class="absolute -right-12 -top-12 w-64 h-64 rounded-full bg-[#f8b000]/15 blur-3xl pointer-events-none"></div>
+    <div class="v2-kinetic-ring w-56 h-56 -right-8 -bottom-16 border-[#f8b000]/20 pointer-events-none"></div>
+
+    <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      <div class="flex items-start sm:items-center gap-5 max-w-3xl">
+        <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[#f8b000] text-[#111111] flex items-center justify-center shadow-[0_5px_0_0_#c28800] shrink-0 border-2 border-white/20">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-9 h-9" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+        </div>
+        <div class="space-y-2">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="bg-[#f8b000] text-[#111111] px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest">
+              Labour India Digital Bookshelf
+            </span>
+            <span class="px-3 py-0.5 rounded-full bg-white/10 text-white/80 text-xs font-extrabold border border-white/10">
+              {{ books|length }} Interactive Edition{% if books|length != 1 %}s{% endif %}
+            </span>
+          </div>
+          <h1 class="text-2xl sm:text-4xl font-black text-white tracking-tight" style="font-family:'Space Grotesk',sans-serif;">
+            Digi-Library Interactive Shelf
+          </h1>
+          <p class="text-xs sm:text-sm text-white/75 font-medium max-w-2xl">
+            Open any Labour India Digital Edition for ordered subjects, chapter-wise Q&amp;A banks, model solutions, video walkthroughs, and instant AI explanations.
+          </p>
+        </div>
+      </div>
+
+      <!-- Live Filter Input -->
+      <div class="w-full lg:w-80 shrink-0">
+        <div class="relative">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-[#f8b000] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input type="text"
+                 x-model="bookQuery"
+                 placeholder="Filter digital books..."
+                 class="w-full pl-11 pr-9 py-3 rounded-2xl bg-white/10 border-2 border-white/15 focus:border-[#f8b000] text-white placeholder-white/45 text-xs sm:text-sm font-bold outline-none transition-all" />
+          <button type="button"
+                  x-show="bookQuery"
+                  @click="bookQuery = ''"
+                  style="display: none;"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white text-xs font-black">✕</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Books Grid -->
+  {% if books %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 v2-stagger">
+    {% for book in books %}
+    <a href="/student/digi-library/books/{{ book.id }}"
+       x-show="!bookQuery.trim() || {{ book.title | tojson | forceescape }}.toLowerCase().includes(bookQuery.toLowerCase()) || {{ (book.description or '') | tojson | forceescape }}.toLowerCase().includes(bookQuery.toLowerCase())"
+       class="group v2-spotlight-card rounded-3xl overflow-hidden flex flex-col">
+      <!-- Book Cover Photo with 3D Spine Accent -->
+      <div class="relative w-full bg-base-200/50 p-4 flex items-center justify-center border-b-2 border-[#111111]/10 overflow-hidden">
+        {% if book.thumbnail_url %}
+          <img src="{{ book.thumbnail_url }}" alt="{{ book.title }}" class="w-full h-auto object-contain rounded-2xl shadow-md group-hover:scale-[1.03] group-hover:-rotate-1 transition-transform duration-300" />
+        {% else %}
+          <div class="w-full py-12 rounded-2xl flex flex-col items-center justify-center bg-[#f8b000] text-[#111111] p-6 text-center border-2 border-[#111111] shadow-[0_6px_0_0_#111111]">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 mb-2 group-hover:scale-110 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+            <span class="text-xs font-black uppercase tracking-widest text-[#111111]">Labour India Edition</span>
+          </div>
+        {% endif %}
+        {% if book.class_name %}
+        <div class="absolute top-6 left-6 bg-[#111111] text-[#f8b000] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md border border-[#f8b000]/40">
+          {{ book.class_name }}
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Book Details -->
+      <div class="p-6 flex-1 flex flex-col justify-between space-y-4">
+        <div>
+          <h3 class="text-xl font-black text-base-content group-hover:text-[#d49600] transition-colors line-clamp-2" style="font-family:'Space Grotesk',sans-serif;">
+            {{ book.title }}
+          </h3>
+          <p class="text-xs sm:text-sm text-base-content/65 font-medium mt-1.5 line-clamp-2">
+            {{ book.description or 'Ordered subjects, chapters, study Q&As, explanation videos, and AI Tutor inside.' }}
+          </p>
+        </div>
+
+        <div class="pt-4 border-t-2 border-dashed border-base-300 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5 text-xs font-black text-base-content/75">
+            <span class="px-2.5 py-1 rounded-lg bg-base-200 text-base-content">
+              {{ book.subject_count }} Subject{% if book.subject_count != 1 %}s{% endif %}
+            </span>
+            <span class="px-2.5 py-1 rounded-lg bg-[#f8b000]/20 text-base-content">
+              {{ book.bank_count }} Chapter{% if book.bank_count != 1 %}s{% endif %}
+            </span>
+          </div>
+
+          <span class="px-3.5 py-2 rounded-xl bg-[#111111] text-[#f8b000] group-hover:bg-[#f8b000] group-hover:text-[#111111] border-2 border-[#111111] text-xs font-black uppercase tracking-wider flex items-center gap-1 transition-all">
+            <span>Open</span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+          </span>
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="v2-spotlight-card rounded-3xl p-12 text-center max-w-xl mx-auto my-8">
+    <div class="w-20 h-20 rounded-2xl bg-[#f8b000] flex items-center justify-center mx-auto mb-4 text-[#111111] border-2 border-[#111111] shadow-[0_4px_0_0_#111111]">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+      </svg>
+    </div>
+    <h3 class="text-xl font-black text-base-content mb-2">No Books in Digi-Library Yet</h3>
+    <p class="text-sm text-base-content/60 font-medium">Your instructor hasn't published any book editions yet. Check back soon!</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

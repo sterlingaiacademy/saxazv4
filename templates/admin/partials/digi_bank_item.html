@@ -1,0 +1,160 @@
+<div id="digi-bank-{{ bank.id }}"
+     x-data="{ editing: false, showBulkUpload: false, bulkMode: 'file', uploadingBulk: false }"
+     class="bg-base-100 rounded-2xl p-4 border-2 border-base-300 flex flex-col gap-3 hover:border-primary transition-all shadow-2xs">
+
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div class="flex items-center gap-3.5 min-w-0">
+      <div class="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-700 flex flex-col items-center justify-center font-black text-xs shrink-0">
+        <span class="text-[9px] uppercase tracking-wider opacity-70 leading-none">CH</span>
+        <span class="text-xs leading-tight">{{ chapter_order_num if chapter_order_num is defined else '•' }}</span>
+      </div>
+      <div class="min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <a href="/admin/digi-library/banks/{{ bank.id }}" class="font-black text-sm sm:text-base text-base-content hover:text-secondary transition-colors truncate">
+            {{ bank.title }}
+          </a>
+          <span class="badge badge-xs font-black uppercase {{ 'badge-success text-white' if bank.status == 'published' else 'badge-warning' }}">
+            {{ bank.status }}
+          </span>
+          <span class="badge badge-xs bg-secondary/10 text-secondary border-secondary/20 font-black">
+            {{ bank.question_count or 0 }} Study Q&amp;As
+          </span>
+          {% if bulk_uploaded_count is defined and bulk_uploaded_count %}
+            <span class="badge badge-xs badge-success text-white font-black">
+              +{{ bulk_uploaded_count }} Q&amp;As Uploaded ✓
+            </span>
+          {% endif %}
+        </div>
+        {% if bank.description %}
+          <p class="text-xs text-base-content/60 font-medium truncate mt-0.5">{{ bank.description }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2 shrink-0">
+      <!-- Move Chapter Up / Down inside Subject -->
+      <div class="join border border-base-300 rounded-xl bg-base-200/50" title="Reorder Chapter">
+        <button type="button"
+                hx-post="/admin/digi-library/banks/{{ bank.id }}/move"
+                hx-vals='{"direction": "up"}'
+                hx-target="#digi-subject-{{ bank.subject_id }}"
+                hx-swap="outerHTML"
+                class="btn btn-xs btn-ghost join-item px-2 font-black" title="Move Chapter Up">
+          ↑
+        </button>
+        <button type="button"
+                hx-post="/admin/digi-library/banks/{{ bank.id }}/move"
+                hx-vals='{"direction": "down"}'
+                hx-target="#digi-subject-{{ bank.subject_id }}"
+                hx-swap="outerHTML"
+                class="btn btn-xs btn-ghost join-item px-2 font-black" title="Move Chapter Down">
+          ↓
+        </button>
+      </div>
+
+      <button type="button"
+              @click="showBulkUpload = !showBulkUpload"
+              class="btn btn-xs sm:btn-sm rounded-xl font-black gap-1.5 border-2"
+              :class="showBulkUpload ? 'btn-secondary text-white border-secondary' : 'btn-ghost border-base-300 text-secondary'">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+        <span x-text="showBulkUpload ? 'Hide Bulk Upload' : '+ Bulk Upload Q&As'">+ Bulk Upload Q&amp;As</span>
+      </button>
+
+      <a href="/admin/digi-library/banks/{{ bank.id }}" class="btn btn-xs sm:btn-sm btn-primary text-primary-content rounded-xl font-black px-3.5 shadow-2xs">
+        Manage Q&amp;As &amp; Videos ({{ bank.question_count or 0 }})
+      </a>
+
+      <a href="/student/digi-library/banks/{{ bank.id }}" class="btn btn-xs sm:btn-sm btn-ghost border border-base-300 rounded-xl font-bold" title="Open Student Learning Studio">
+        Study View
+      </a>
+
+      <button type="button"
+              hx-post="/admin/digi-library/banks/{{ bank.id }}/toggle-status"
+              hx-target="#digi-bank-{{ bank.id }}"
+              hx-swap="outerHTML"
+              class="btn btn-xs btn-ghost rounded-lg font-bold">
+        {{ 'Unpublish' if bank.status == 'published' else 'Publish' }}
+      </button>
+
+      <button type="button" @click="editing = !editing" class="btn btn-xs btn-ghost rounded-lg font-bold">
+        Rename
+      </button>
+
+      <button type="button"
+              hx-delete="/admin/digi-library/banks/{{ bank.id }}"
+              hx-target="#digi-bank-{{ bank.id }}"
+              hx-swap="outerHTML"
+              hx-confirm="Delete Chapter '{{ bank.title }}' and all its questions?"
+              class="btn btn-xs btn-ghost text-error hover:bg-error/10 rounded-lg font-bold">
+        Delete
+      </button>
+    </div>
+  </div>
+
+  <!-- Bulk Upload Q&As Drawer INSIDE the Chapter -->
+  <div x-show="showBulkUpload" x-collapse style="display: none;" class="pt-3 border-t border-base-200">
+    <form hx-post="/admin/digi-library/banks/{{ bank.id }}/upload-questions"
+          hx-target="#digi-bank-{{ bank.id }}"
+          hx-swap="outerHTML"
+          hx-encoding="multipart/form-data"
+          @htmx:before-request="uploadingBulk = true"
+          @htmx:after-request="uploadingBulk = false"
+          class="bg-base-200/50 p-4 rounded-2xl border border-base-300 space-y-3">
+      <input type="hidden" name="return_card" value="1" />
+
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="text-xs font-black uppercase tracking-wider text-secondary flex items-center gap-2">
+          <span>⚡ Bulk Upload Questions &amp; Answers into "{{ bank.title }}"</span>
+        </div>
+        <div class="flex gap-1 bg-base-100 p-1 rounded-xl border border-base-300">
+          <button type="button" @click="bulkMode = 'file'" class="px-3 py-1 rounded-lg text-xs font-black transition-all" :class="bulkMode === 'file' ? 'bg-secondary text-white shadow-xs' : 'text-base-content/60'">Upload File (.pdf, .docx, .xlsx, .txt)</button>
+          <button type="button" @click="bulkMode = 'paste'" class="px-3 py-1 rounded-lg text-xs font-black transition-all" :class="bulkMode === 'paste' ? 'bg-secondary text-white shadow-xs' : 'text-base-content/60'">Paste Q&amp;A Text</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+        <div class="md:col-span-3">
+          <label class="label py-0.5"><span class="label-text text-[11px] font-black uppercase text-base-content/60">Question Format</span></label>
+          <select name="question_type" class="select select-bordered select-sm w-full bg-base-100 rounded-xl font-bold">
+            <option value="CUSTOM">Auto-Detect / Mixed Q&amp;As</option>
+            <option value="SHORT_ANSWER">Short / Descriptive Q&amp;As</option>
+            <option value="LONG_ANSWER">Detailed Study Q&amp;As</option>
+            <option value="MCQ">Multiple Choice (MCQ)</option>
+            <option value="NUMERICAL">Numerical / Math</option>
+          </select>
+        </div>
+
+        <div class="md:col-span-6" x-show="bulkMode === 'file'">
+          <label class="label py-0.5"><span class="label-text text-[11px] font-black uppercase text-base-content/60">Select Document (.pdf, .docx, .xlsx, .txt)</span></label>
+          <input type="file" name="file" accept=".pdf,.docx,.xlsx,.txt" class="file-input file-input-bordered file-input-sm w-full bg-base-100 rounded-xl" />
+        </div>
+
+        <div class="md:col-span-6" x-show="bulkMode === 'paste'" style="display: none;">
+          <label class="label py-0.5"><span class="label-text text-[11px] font-black uppercase text-base-content/60">Paste Questions &amp; Answers</span></label>
+          <textarea name="raw_text" rows="3" class="textarea textarea-bordered w-full bg-base-100 rounded-xl text-xs font-medium"></textarea>
+        </div>
+
+        <div class="md:col-span-3">
+          <button type="submit" class="tactile-btn btn btn-secondary btn-sm h-9 w-full rounded-xl font-black text-white gap-1.5 border-none" :disabled="uploadingBulk">
+            <span x-show="uploadingBulk" class="loading loading-spinner loading-xs"></span>
+            <span x-text="uploadingBulk ? 'Uploading Q&As...' : 'Import Q&As into Chapter'">Import Q&amp;As into Chapter</span>
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Inline Rename / Edit -->
+  <div x-show="editing" x-collapse style="display: none;" class="pt-3 border-t border-base-200">
+    <form hx-post="/admin/digi-library/banks/{{ bank.id }}/edit"
+          hx-target="#digi-bank-{{ bank.id }}"
+          hx-swap="outerHTML"
+          class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+      <input type="text" name="title" value="{{ bank.title }}" class="input input-bordered input-xs sm:input-sm flex-1 bg-base-100 rounded-xl font-bold" required />
+      <input type="text" name="description" value="{{ bank.description or '' }}" class="input input-bordered input-xs sm:input-sm flex-1 bg-base-100 rounded-xl" />
+      <button type="button" @click="editing = false" class="btn btn-xs sm:btn-sm btn-ghost rounded-xl font-bold">Cancel</button>
+      <button type="submit" class="btn btn-xs sm:btn-sm btn-primary text-primary-content rounded-xl font-black px-4">Save</button>
+    </form>
+  </div>
+
+</div>

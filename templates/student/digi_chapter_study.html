@@ -1,0 +1,1099 @@
+{% extends "base.html" %}
+
+{% block title %}{{ paper.title }} - Digi-Library Learning Studio{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
+
+<div class="w-full transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pb-32"
+     :style="(showQuestionGrid || showMiniTutor) && isDesktop ? 'padding-right: 450px;' : ''"
+     x-data="digiStudyStudio()">
+
+  <div class="w-full transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] space-y-6"
+       :class="(showQuestionGrid || showMiniTutor) && isDesktop ? 'max-w-4xl ml-0 lg:ml-auto mr-auto lg:mr-4' : 'max-w-5xl mx-auto'">
+
+    <!-- Top Navigation & Package Toolbar -->
+    <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+      <a href="/student/digi-library/subjects/{{ paper.subject_id }}"
+         class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-base-100 border-2 border-base-300 text-xs font-black uppercase tracking-widest text-base-content/70 hover:text-base-content hover:border-primary transition-all shadow-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        <span>Back to {{ paper.subject_name }}</span>
+      </a>
+
+      <!-- Interactive Package Quick-Launch Bar -->
+      <div class="flex flex-wrap items-center gap-2">
+        <button type="button"
+                @click="window.dispatchEvent(new CustomEvent('toggle-scratchpad'))"
+                class="tactile-btn btn btn-xs sm:btn-sm bg-base-100 hover:bg-base-200 text-base-content border-2 border-base-300 rounded-xl font-black gap-1.5 shadow-xs">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+          <span>Scratchpad &amp; Diagram Trainer</span>
+        </button>
+
+        <button type="button"
+                @click="openMiniTutor()"
+                class="tactile-btn btn btn-xs sm:btn-sm btn-primary text-primary-content border border-amber-500 rounded-xl font-black gap-1.5 shadow-[0_3px_0_0_#D97706]">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>AI Tutor</span>
+        </button>
+
+        <button type="button"
+                @click="showQuestionGrid = !showQuestionGrid; if(showQuestionGrid) showMiniTutor = false"
+                class="tactile-btn btn btn-xs sm:btn-sm bg-base-100 hover:bg-base-200 text-base-content border-2 border-base-300 rounded-xl font-black gap-1.5 shadow-xs">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <span>Chapter Index (<span x-text="questions.length"></span>)</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Sleek Chapter Learning Studio Header -->
+    <div class="brilliant-card bg-base-100 rounded-3xl p-6 sm:p-8">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-5">
+        <div class="flex items-center gap-4 sm:gap-5">
+          {% if paper.subject_thumbnail_url %}
+            <img src="{{ paper.subject_thumbnail_url }}" alt="{{ paper.subject_name }}" class="w-20 sm:w-24 h-auto object-contain rounded-2xl shadow-md border-2 border-base-300 bg-base-200/40 shrink-0" />
+          {% elif paper.book_thumbnail_url %}
+            <img src="{{ paper.book_thumbnail_url }}" alt="{{ paper.book_title }}" class="w-20 sm:w-24 h-auto object-contain rounded-2xl shadow-md border-2 border-base-300 bg-base-200/40 shrink-0" />
+          {% endif %}
+          <div class="space-y-1.5">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="px-3 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider" style="background: #f8b000; color: #151515;">
+                {{ paper.book_title }} &bull; {{ paper.subject_name }}
+              </span>
+              <span class="px-3 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider border border-base-300 bg-base-200 text-base-content">
+                Chapter Learning Studio
+              </span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-black text-base-content tracking-tight">{{ paper.title }}</h1>
+            {% if paper.description %}
+              <p class="text-xs sm:text-sm text-base-content/70 font-medium leading-relaxed whitespace-pre-line">{{ paper.description }}</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- View Mode Switcher: Interactive Card vs Full Book View -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 shrink-0 bg-base-200 p-1.5 rounded-2xl border-2 border-base-300">
+          <button type="button"
+                  @click="viewMode = 'card'"
+                  class="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5"
+                  :style="viewMode === 'card' ? 'background: #f8b000; color: #151515;' : ''"
+                  :class="viewMode === 'card' ? 'shadow-xs' : 'text-base-content/70 hover:text-base-content'">
+            <span>Focused Study Card</span>
+          </button>
+          <button type="button"
+                  @click="viewMode = 'book'"
+                  class="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5"
+                  :style="viewMode === 'book' ? 'background: #f8b000; color: #151515;' : ''"
+                  :class="viewMode === 'book' ? 'shadow-xs' : 'text-base-content/70 hover:text-base-content'">
+            <span>Full Chapter Reader</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Ordered Question Strip (in Card Mode) -->
+      <div x-show="viewMode === 'card' && questions.length > 0" class="mt-6 pt-4 border-t-2 border-base-200 flex items-center gap-2 overflow-x-auto no-scrollbar">
+        <template x-for="(q, idx) in questions" :key="q.id">
+          <button type="button"
+                  @click="goToQuestion(idx)"
+                  class="px-3 py-1.5 rounded-xl text-xs font-black shrink-0 transition-all border inline-flex items-center gap-1"
+                  :style="currentIdx === idx ? 'background: #f8b000; color: #151515; border-color: #151515;' : (studiedMap[q.id] ? 'background: rgba(248,176,0,0.22); color: #151515; border-color: #f8b000;' : '')"
+                  :class="currentIdx === idx ? 'shadow-sm scale-105' : (!studiedMap[q.id] ? 'bg-base-200 text-base-content border-base-300 hover:border-primary' : '')">
+            <span x-text="`Q${idx + 1}`"></span>
+            <svg x-show="studiedMap[q.id]" xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+        </template>
+      </div>
+    </div>
+
+    <!-- ====================================================
+         MODE 1: FOCUSED INTERACTIVE STUDY CARD (DEFAULT)
+         ==================================================== -->
+    <template x-if="viewMode === 'card' && currentQuestion">
+      <div class="brilliant-card bg-base-100 rounded-3xl p-6 sm:p-8 space-y-6">
+
+        <!-- Question Header Bar -->
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b-2 border-base-200">
+          <div class="flex items-center gap-3">
+            <span class="w-11 h-11 rounded-2xl font-black text-base flex items-center justify-center shadow-sm"
+                  style="background: #f8b000; color: #151515;"
+                  x-text="`Q${currentIdx + 1}`"></span>
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="px-2.5 py-0.5 rounded-lg text-[11px] font-black uppercase border"
+                      style="background: rgba(248,176,0,0.2); color: #151515; border-color: rgba(248,176,0,0.5);"
+                      x-text="currentQuestion.question_type || 'STUDY Q&A'"></span>
+                <span class="text-xs font-bold text-base-content/60" x-text="`Question ${currentIdx + 1} of ${questions.length}`"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Read Question Aloud -->
+            <button type="button"
+                    @click="speak(currentQuestion.question_text)"
+                    class="btn btn-xs sm:btn-sm rounded-xl font-black gap-1.5 border-2 transition-all"
+                    :style="isSpeaking ? 'background: #f8b000; color: #151515; border-color: #151515;' : ''"
+                    :class="!isSpeaking ? 'bg-base-100 hover:bg-base-200 text-base-content border-base-300' : ''"
+                    title="Listen to Question">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+              <span x-text="isSpeaking ? 'Stop Reading' : 'Read Question'"></span>
+            </button>
+
+            <!-- Self-Recall Toggle (Hides BOTH Answer & Video, stays pressed across questions) -->
+            <button type="button"
+                    @click="toggleSelfTest()"
+                    class="btn btn-xs sm:btn-sm rounded-xl font-black transition-all border-2 inline-flex items-center gap-1.5"
+                    :style="!showAnswer ? 'background: #f8b000; color: #151515; border-color: #151515;' : ''"
+                    :class="showAnswer ? 'bg-base-100 hover:bg-base-200 border-base-300 text-base-content' : 'shadow-inner'"
+                    :aria-pressed="!showAnswer">
+              <svg x-show="!showAnswer" xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+              <svg x-show="showAnswer" xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              <span>Hide Answer (Self-Test)</span>
+            </button>
+
+            <!-- Mark as Understood -->
+            <button type="button"
+                    @click="toggleStudied(currentQuestion.id)"
+                    class="btn btn-xs sm:btn-sm rounded-xl font-black gap-1.5 border-2 inline-flex items-center"
+                    :style="studiedMap[currentQuestion.id] ? 'background: #f8b000; color: #151515; border-color: #151515;' : ''"
+                    :class="!studiedMap[currentQuestion.id] ? 'bg-base-100 hover:bg-base-200 text-base-content border-base-300' : ''">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><polyline points="20 6 9 17 4 12"/></svg>
+              <span x-text="studiedMap[currentQuestion.id] ? 'Understood' : 'Mark Understood'"></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Question Text & Media -->
+        <div class="space-y-4">
+          <h2 class="text-lg sm:text-2xl font-black text-base-content leading-relaxed whitespace-pre-line" x-text="currentQuestion.question_text"></h2>
+
+          <template x-if="currentQuestion.media_url">
+            <div class="rounded-2xl overflow-hidden border-2 border-base-300 bg-base-200/40 p-3 text-center">
+              <img :src="currentQuestion.media_url" class="max-h-72 mx-auto object-contain rounded-xl" alt="Question Diagram">
+            </div>
+          </template>
+
+          <!-- MCQ Options (if present) -->
+          <template x-if="parsedOptions.length > 0">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              <template x-for="(opt, oIdx) in parsedOptions" :key="oIdx">
+                <div class="p-3.5 rounded-2xl border-2 bg-base-200/50 border-base-300 font-bold text-sm text-base-content flex items-center gap-3">
+                  <span class="w-7 h-7 rounded-lg font-black text-xs flex items-center justify-center shrink-0"
+                        style="background: #f8b000; color: #151515;"
+                        x-text="String.fromCharCode(65 + oIdx)"></span>
+                  <span x-text="opt"></span>
+                </div>
+              </template>
+            </div>
+          </template>
+        </div>
+
+        <!-- Model Answer & Explanation Card (Hidden when Self-Test is active) -->
+        <div x-show="showAnswer" x-transition class="rounded-3xl p-5 sm:p-6 space-y-4 border-2" style="background: rgba(248, 176, 0, 0.12); border-color: #f8b000;">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2 font-black text-xs sm:text-sm uppercase tracking-wider text-base-content">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" style="color: #d97706;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <span>Answer</span>
+            </div>
+
+            <button type="button"
+                    @click="speak(currentQuestion.model_answer)"
+                    class="btn btn-xs rounded-xl font-black gap-1.5 border"
+                    style="background: #f8b000; color: #151515; border-color: #151515;">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+              <span x-text="isSpeaking ? 'Stop Audio' : 'Listen to Answer'"></span>
+            </button>
+          </div>
+
+          <div class="text-base sm:text-lg font-semibold text-base-content leading-relaxed whitespace-pre-line" x-text="currentQuestion.model_answer"></div>
+
+          <template x-if="currentQuestion.answer_media_url">
+            <div class="rounded-2xl overflow-hidden border-2 border-base-300 bg-white p-3 text-center">
+              <img :src="currentQuestion.answer_media_url" class="max-h-64 mx-auto object-contain rounded-xl" alt="Answer Diagram">
+            </div>
+          </template>
+        </div>
+
+        <!-- Attached Video Explanation Player (Hidden when Self-Test is active) -->
+        <div x-show="showAnswer && currentQuestionVideos.length > 0" x-transition class="bg-base-200/60 border-2 border-base-300 rounded-3xl p-5 sm:p-6 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2 text-base-content font-black text-xs sm:text-sm uppercase tracking-wider">
+              <span class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style="background: #f8b000; color: #151515;">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              </span>
+              <span>Attached Video Lesson</span>
+            </div>
+
+            <div class="flex items-center gap-1.5 flex-wrap" x-show="currentQuestionVideos.length > 1">
+              <template x-for="v in currentQuestionVideos" :key="v.id">
+                <button type="button"
+                        @click="selectVideo(v)"
+                        class="btn btn-xs rounded-xl font-bold"
+                        :style="activeVideo?.id === v.id ? 'background: #f8b000; color: #151515;' : ''"
+                        :class="activeVideo?.id !== v.id ? 'btn-ghost border border-base-300 text-base-content' : ''">
+                  <span x-text="v.label"></span>
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <template x-if="showAnswer && activeVideo && (activeVideo.type === 'youtube' || (activeVideo.url || '').startsWith('vtok_'))">
+            <div class="relative w-full aspect-video rounded-2xl overflow-hidden shadow-lg border-2 border-base-300 bg-black">
+              <div class="w-full h-full" :data-saxaz-video="activeVideo.url"></div>
+            </div>
+          </template>
+
+          <template x-if="showAnswer && activeVideo && activeVideo.type !== 'youtube' && !(activeVideo.url || '').startsWith('vtok_') && activeVideo.url">
+            <div class="relative w-full aspect-video rounded-2xl overflow-hidden shadow-lg border-2 border-base-300 bg-black">
+              <video class="w-full h-full object-contain" controls controlsList="nodownload" oncontextmenu="return false;" :src="activeVideo.url"></video>
+            </div>
+          </template>
+        </div>
+
+        <!-- Deep-Dive AI Breakdown & Interactive Tools Row (All Custom SVG Vectors & Crisp Visible Text) -->
+        <div class="pt-2 flex flex-wrap items-center justify-between gap-3 border-t-2 border-base-200">
+          <div class="flex flex-wrap items-center gap-2.5">
+            <button type="button"
+                    @click="explainDeeper()"
+                    class="tactile-btn btn btn-sm rounded-xl font-black gap-2 border-2"
+                    style="background: #f8b000; color: #151515; border-color: #151515; box-shadow: 0 3px 0 0 #151515;">
+              <svg x-show="!loadingWhy" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+              <span x-show="!loadingWhy">Explain Concept Step-by-Step</span>
+              <span x-show="loadingWhy" class="loading loading-spinner loading-xs"></span>
+              <span x-show="loadingWhy">Generating Deep Dive...</span>
+            </button>
+
+            <button type="button"
+                    @click="openMiniTutor('Can you explain this question and answer in simple terms with an example?')"
+                    class="tactile-btn btn btn-sm rounded-xl font-black gap-2 border-2"
+                    style="background: #f8b000; color: #151515; border-color: #151515; box-shadow: 0 3px 0 0 #151515;">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path stroke-linecap="round" stroke-linejoin="round" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01"/></svg>
+              <span>Discuss with AI Tutor</span>
+            </button>
+
+            <button type="button"
+                    @click="practiceDiagramOnScratchpad()"
+                    class="tactile-btn btn btn-sm bg-base-100 hover:bg-base-200 text-base-content border-2 border-base-300 rounded-xl font-black gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+              <span>Practice on Scratchpad / Trace Diagram</span>
+            </button>
+          </div>
+
+          <!-- Prev / Next Navigation -->
+          <div class="flex items-center gap-2 ml-auto">
+            <button type="button"
+                    @click="prevQuestion()"
+                    :disabled="currentIdx === 0"
+                    class="btn btn-sm bg-base-100 hover:bg-base-200 text-base-content border-2 border-base-300 rounded-xl font-black inline-flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+              <span>Previous</span>
+            </button>
+            <button type="button"
+                    @click="nextQuestion()"
+                    :disabled="currentIdx >= questions.length - 1"
+                    class="tactile-btn btn btn-sm rounded-xl font-black px-5 border-2 inline-flex items-center gap-1"
+                    style="background: #f8b000; color: #151515; border-color: #151515;">
+              <span>Next Question</span>
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Deep Dive Explanation Result -->
+        <div x-show="showAnswer && explanationsMap[currentQuestion.id]" x-transition class="bg-base-200/80 border-2 rounded-2xl p-5 space-y-2" style="border-color: #f8b000;">
+          <div class="text-xs font-black uppercase tracking-wider text-base-content flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" style="color: #d97706;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+            <span>Step-by-Step Concept Breakdown</span>
+          </div>
+          <div class="prose prose-sm sm:prose-base max-w-none text-base-content font-medium leading-relaxed"
+               x-html="(explanationsMap[currentQuestion.id] || '').replace(/\n/g, '<br/>')"></div>
+        </div>
+
+      </div>
+    </template>
+
+    <!-- ====================================================
+         MODE 2: FULL CHAPTER BOOK READER (ALL ORDERED Q&As)
+         ==================================================== -->
+    <div x-show="viewMode === 'book'" style="display: none;" class="space-y-6">
+      <template x-for="(q, idx) in questions" :key="q.id">
+        <div class="brilliant-card bg-base-100 rounded-3xl p-6 space-y-4">
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <span class="w-10 h-10 rounded-xl font-black text-sm flex items-center justify-center" style="background: #f8b000; color: #151515;" x-text="`Q${idx + 1}`"></span>
+              <span class="px-2.5 py-0.5 rounded-lg text-[11px] font-black uppercase border" style="background: rgba(248,176,0,0.2); color: #151515; border-color: rgba(248,176,0,0.5);" x-text="q.question_type || 'STUDY Q&A'"></span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" @click="speak(q.question_text + '. Answer: ' + q.model_answer)" class="btn btn-xs bg-base-100 hover:bg-base-200 text-base-content border border-base-300 rounded-xl font-bold inline-flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                <span>Read Aloud</span>
+              </button>
+              <button type="button" @click="currentIdx = idx; openMiniTutor('Can you help me understand Question ' + (idx + 1) + '?')" class="btn btn-xs rounded-xl font-black inline-flex items-center gap-1 border" style="background: #f8b000; color: #151515; border-color: #151515;">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <span>Ask Tutor</span>
+              </button>
+              <button type="button" @click="currentIdx = idx; viewMode = 'card'" class="btn btn-xs rounded-xl font-black border" style="background: #151515; color: #f8b000; border-color: #151515;">
+                Open in Studio
+              </button>
+            </div>
+          </div>
+
+          <h3 class="text-lg font-black text-base-content whitespace-pre-line" x-text="q.question_text"></h3>
+
+          <template x-if="q.media_url">
+            <img :src="q.media_url" class="max-h-56 rounded-xl border border-base-300 p-1 bg-base-200/40" alt="Question Image" />
+          </template>
+
+          <div x-show="showAnswer" class="rounded-2xl p-4 border-2" style="background: rgba(248,176,0,0.12); border-color: #f8b000;">
+            <div class="text-[11px] font-black uppercase tracking-wider text-base-content mb-1">Answer</div>
+            <p class="text-sm sm:text-base font-semibold text-base-content whitespace-pre-line leading-relaxed" x-text="q.model_answer"></p>
+            <template x-if="q.answer_media_url">
+              <img :src="q.answer_media_url" class="max-h-48 rounded-xl border border-base-300 mt-2 p-1 bg-white" alt="Answer Image" />
+            </template>
+          </div>
+        </div>
+      </template>
+    </div>
+
+  </div>
+
+  <!-- Right-Side Chapter Question Index Drawer -->
+  <aside x-show="showQuestionGrid"
+         class="question-palette-drawer fixed right-0 z-[120] bg-base-100 border-l-2 border-base-300 shadow-[-15px_0_45px_rgba(0,0,0,0.18)] flex flex-col overflow-hidden select-none"
+         style="display: none;">
+    <div class="px-5 py-4 bg-base-200 border-b border-base-300 flex items-center justify-between shrink-0">
+      <div>
+        <h3 class="text-base font-black text-base-content">Chapter Questions Index</h3>
+        <p class="text-xs text-base-content/60 font-bold" x-text="`${Object.keys(studiedMap).length} of ${questions.length} Understood`"></p>
+      </div>
+      <button @click="showQuestionGrid = false" class="btn btn-sm btn-circle btn-ghost" title="Close Index">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="p-4 overflow-y-auto flex-1 space-y-2">
+      <template x-for="(q, qIdx) in questions" :key="q.id">
+        <button type="button"
+                @click="goToQuestion(qIdx); viewMode = 'card'; if(!isDesktop) showQuestionGrid = false"
+                class="w-full p-3 rounded-2xl border-2 text-left transition-all flex items-start gap-3"
+                :class="currentIdx === qIdx ? 'border-primary bg-primary/10' : 'border-base-300 bg-base-100 hover:bg-base-200/60'">
+          <span class="w-7 h-7 rounded-lg text-xs font-black flex items-center justify-center shrink-0 transition-colors"
+                :style="studiedMap[q.id] ? 'background: #10b981; color: #ffffff;' : 'background: #f8b000; color: #151515;'"
+                x-text="`Q${qIdx + 1}`"></span>
+          <p class="text-xs font-bold text-base-content line-clamp-2 flex-1" x-text="q.question_text"></p>
+        </button>
+      </template>
+    </div>
+  </aside>
+
+  <!-- Right-Side AI Tutor Slide-Over Drawer -->
+  <aside x-show="showMiniTutor"
+         class="mini-tutor-drawer fixed right-0 z-[130] bg-base-100 border-l-2 border-base-300 shadow-[-15px_0_45px_rgba(0,0,0,0.22)] flex flex-col overflow-hidden select-none"
+         style="display: none;">
+    <div class="px-5 py-3.5 bg-base-200/90 border-b border-base-300 flex items-center justify-between shrink-0">
+      <div class="flex items-center gap-3">
+        <div class="relative w-11 h-11 rounded-2xl overflow-hidden border-2 shrink-0" style="background: rgba(248,176,0,0.18); border-color: #f8b000;">
+          <img :src="`/static/images/avatars/${tutorName || 'bella'}_${miniTutorEmotion || 'base'}.png`"
+               class="w-full h-full object-cover scale-110"
+               onerror="this.onerror=null; this.src='/static/images/avatars/bella_base.png';" />
+        </div>
+        <div>
+          <h3 class="text-sm font-black text-base-content capitalize" x-text="tutorName"></h3>
+          <p class="text-[11px] text-base-content/60 font-bold">Chapter AI Tutor &bull; Connected to Scratchpad</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1.5">
+        <button type="button" @click="window.dispatchEvent(new CustomEvent('toggle-scratchpad'))"
+                class="btn btn-sm btn-circle btn-ghost" title="Open Scratchpad & Diagram Trainer">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+        </button>
+        <button type="button" @click="miniTutorVoiceEnabled = !miniTutorVoiceEnabled"
+                class="btn btn-sm btn-circle btn-ghost"
+                :style="miniTutorVoiceEnabled ? 'background: #f8b000; color: #151515;' : ''"
+                title="Toggle Tutor Voice">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        </button>
+        <button @click="closeMiniTutor()" class="btn btn-sm btn-circle btn-ghost" title="Close Tutor">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Active Question Context Bar -->
+    <div class="px-4 py-2.5 border-b border-base-300 flex items-center gap-2 shrink-0 text-xs" style="background: rgba(248,176,0,0.14);" x-show="currentQuestion">
+      <span class="px-2 py-0.5 rounded font-black text-[10px]" style="background: #f8b000; color: #151515;" x-text="`Q${currentIdx + 1}`"></span>
+      <span class="font-bold text-base-content truncate" x-text="currentQuestion?.question_text"></span>
+    </div>
+
+    <!-- Messages Scroll Area -->
+    <div class="flex-1 p-4 overflow-y-auto space-y-4 text-sm" id="mini-tutor-chat-container">
+      <template x-for="(msg, index) in miniTutorMessages" :key="index">
+        <div class="flex items-end gap-2.5" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
+          <template x-if="msg.role === 'assistant'">
+            <div class="w-7 h-7 rounded-full border border-base-300 overflow-hidden shrink-0 bg-base-100">
+              <img :src="`/static/images/avatars/${tutorName || 'bella'}_base.png`" class="w-full h-full object-cover scale-110" onerror="this.onerror=null; this.src='/static/images/avatars/bella_base.png';" />
+            </div>
+          </template>
+          <div class="px-4 py-2.5 rounded-2xl max-w-[85%] shadow-xs leading-relaxed text-[13px]"
+               :style="msg.role === 'user' ? 'background: #f8b000; color: #151515;' : ''"
+               :class="msg.role === 'user' ? 'font-bold' : 'bg-base-200 text-base-content'">
+            <template x-if="msg.image">
+              <div class="mb-2 rounded-xl overflow-hidden border-2 border-black/15 bg-white p-1.5">
+                <img :src="msg.image" alt="Scratchpad Drawing" class="max-h-40 w-auto object-contain mx-auto rounded-lg" />
+              </div>
+            </template>
+            <div x-html="msg.role === 'assistant' ? renderMarkdown(msg.content) : escapeHtml(msg.content)"></div>
+            <template x-if="msg.diagram">
+              <div class="mt-2.5 p-2.5 rounded-xl border flex items-center justify-between gap-2" style="background: rgba(248,176,0,0.16); border-color: #f8b000;">
+                <span class="font-black text-[11px] truncate text-base-content" x-text="msg.diagramTitle || 'Interactive Diagram'"></span>
+                <button type="button"
+                        @click="openDiagramInScratchpad(msg.diagram, msg.diagramTitle)"
+                        class="btn btn-xs font-black rounded-lg border"
+                        style="background: #f8b000; color: #151515; border-color: #151515;">
+                  Open in Scratchpad
+                </button>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+
+      <div class="flex items-end gap-2.5" x-show="miniTutorGenerating" style="display: none;">
+        <div class="w-7 h-7 rounded-full border border-base-300 overflow-hidden shrink-0 bg-base-100">
+          <img :src="`/static/images/avatars/${tutorName || 'bella'}_talking.png`" class="w-full h-full object-cover scale-110" onerror="this.onerror=null; this.src='/static/images/avatars/bella_base.png';" />
+        </div>
+        <div class="px-4 py-2.5 rounded-2xl max-w-[85%] bg-base-200 text-base-content text-[13px]">
+          <template x-if="miniTutorCurrentAiText">
+            <div x-html="renderMarkdown(miniTutorCurrentAiText)"></div>
+          </template>
+          <template x-if="!miniTutorCurrentAiText">
+            <span class="loading loading-dots loading-sm"></span>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Prompts -->
+    <div class="px-3.5 py-2 bg-base-200/50 border-t border-base-300 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
+      <template x-for="qp in ['Explain this simply', 'Give a real-life example', 'Draw a diagram on Scratchpad', 'Quiz me on this']" :key="qp">
+        <button type="button" @click="handleQuickPrompt(qp)"
+                class="btn btn-xs rounded-full bg-base-100 hover:bg-base-200 text-base-content border border-base-300 text-[11px] whitespace-nowrap font-bold"
+                :disabled="miniTutorGenerating"
+                x-text="qp"></button>
+      </template>
+    </div>
+
+    <!-- Attached Scratchpad Diagram Preview Banner (Shown when student clicks Attach in Scratchpad) -->
+    <div x-show="pendingTutorImage" x-transition class="px-3.5 py-2.5 border-t-2 flex items-center justify-between gap-2.5 shrink-0" style="background: rgba(248,176,0,0.18); border-color: #f8b000; display: none;">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <img :src="pendingTutorImage" alt="Attached Diagram" class="w-14 h-11 object-contain rounded-lg border-2 border-black/20 bg-white p-0.5 shrink-0" />
+        <div class="min-w-0">
+          <div class="text-[11px] font-black text-base-content truncate" x-text="pendingTutorMeta?.blueprintTitle ? `Attached: ${pendingTutorMeta.blueprintTitle}` : 'Scratchpad Diagram Attached'"></div>
+          <div class="text-[10px] font-bold text-base-content/70">Type a question below or click Send to review</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-1 shrink-0">
+        <button type="button"
+                @click="sendMiniTutorMessage()"
+                class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase cursor-pointer"
+                style="background: #f8b000; color: #151515; border: 1px solid #151515;">
+          Send
+        </button>
+        <button type="button"
+                @click="pendingTutorImage = null; pendingTutorMeta = null"
+                class="w-6 h-6 rounded-full flex items-center justify-center bg-base-200 hover:bg-base-300 text-base-content"
+                title="Remove attachment">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Input Bar -->
+    <div class="p-3 bg-base-100 border-t border-base-300 shrink-0">
+      <form @submit.prevent="sendMiniTutorMessage()" class="flex items-center gap-2">
+        <input type="text" x-model="miniTutorInput"
+               :placeholder="pendingTutorImage ? 'Add a note for your attached diagram or press Send...' : 'Ask your tutor or request a diagram...'"
+               class="input input-sm input-bordered flex-1 rounded-full text-xs font-semibold bg-base-100 text-base-content"
+               :disabled="miniTutorGenerating" />
+        <button type="submit"
+                class="btn btn-sm btn-circle border"
+                style="background: #f8b000; color: #151515; border-color: #151515;"
+                :disabled="(!miniTutorInput.trim() && !pendingTutorImage) || miniTutorGenerating"
+                title="Send message">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m22 2-7 20-4-9-9-4Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M22 2 11 13"/></svg>
+        </button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- Include Math & Science Toolkit + Digital Scratchpad & Diagram Trainer -->
+  {% include 'student/partials/math_tools.html' %}
+  {% include 'student/partials/scratchpad.html' %}
+</div>
+
+<style>
+.question-palette-drawer,
+.mini-tutor-drawer {
+  top: 4rem !important;
+  margin-top: 0 !important;
+  bottom: 0 !important;
+  height: calc(100dvh - 4rem) !important;
+  width: 440px;
+  max-width: 95vw;
+}
+@media (max-width: 768px) {
+  .question-palette-drawer,
+  .mini-tutor-drawer {
+    top: 0 !important;
+    margin-top: 0 !important;
+    bottom: 0 !important;
+    height: 100dvh !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+  }
+}
+</style>
+
+<script>
+document.addEventListener('alpine:init', () => {
+  Alpine.data('digiStudyStudio', () => ({
+    paper: {{ paper_json | safe }},
+    tutorName: '{{ tutor_name }}' || 'bella',
+    viewMode: 'card',
+    currentIdx: 0,
+    showAnswer: true,
+    studiedMap: {},
+    explanationsMap: {},
+    loadingWhy: false,
+    activeVideo: null,
+    showQuestionGrid: false,
+    showMiniTutor: false,
+    isDesktop: window.innerWidth >= 1024,
+
+    // AI Tutor & Scratchpad Attachment state
+    miniTutorEmotion: 'base',
+    miniTutorMessages: [],
+    miniTutorInput: '',
+    miniTutorGenerating: false,
+    miniTutorCurrentAiText: '',
+    miniTutorVoiceEnabled: false,
+    pendingTutorImage: null,
+    pendingTutorMeta: null,
+    currentAudio: null,
+    isSpeaking: false,
+    speakingText: '',
+
+    get questions() {
+      if (!this.paper || !this.paper.modules || !this.paper.modules.length) return [];
+      return this.paper.modules[0].questions || [];
+    },
+
+    get currentQuestion() {
+      return this.questions[this.currentIdx] || null;
+    },
+
+    get parsedOptions() {
+      const q = this.currentQuestion;
+      if (!q || !q.options) return [];
+      try {
+        const parsed = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    },
+
+    get currentQuestionVideos() {
+      const q = this.currentQuestion;
+      if (!q) return [];
+      const vids = [];
+      if (q.explanation_video_url) {
+        vids.push({
+          id: 'primary',
+          label: 'Main Explanation',
+          url: q.explanation_video_url,
+          type: q.explanation_video_type || 'youtube'
+        });
+      }
+      if (q.additional_videos) {
+        try {
+          const alts = typeof q.additional_videos === 'string' ? JSON.parse(q.additional_videos) : q.additional_videos;
+          if (Array.isArray(alts)) {
+            alts.forEach(a => vids.push({
+              id: a.id || a.label,
+              label: a.label || 'Alt Video',
+              url: a.url,
+              type: a.type || 'youtube'
+            }));
+          }
+        } catch (e) {}
+      }
+      return vids;
+    },
+
+    init() {
+      try {
+        const saved = localStorage.getItem('saxaz_digi_studied_' + (this.paper?.id || '0'));
+        if (saved) this.studiedMap = JSON.parse(saved) || {};
+      } catch (e) {}
+      try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('mode') === 'book') {
+          this.viewMode = 'book';
+        }
+        const qIdParam = params.get('question_id');
+        const qIdxParam = params.get('q');
+        if (qIdParam && this.questions.length > 0) {
+          const foundIdx = this.questions.findIndex(item => String(item.id) === String(qIdParam));
+          if (foundIdx >= 0) this.currentIdx = foundIdx;
+        } else if (qIdxParam !== null && this.questions.length > 0) {
+          const parsedIdx = parseInt(qIdxParam, 10);
+          if (!isNaN(parsedIdx) && parsedIdx >= 0 && parsedIdx < this.questions.length) {
+            this.currentIdx = parsedIdx;
+          }
+        }
+      } catch (e) {}
+      window.addEventListener('resize', () => {
+        this.isDesktop = window.innerWidth >= 1024;
+      });
+      this.syncVideoForCurrentQuestion();
+
+      const handleScratchpadPayload = (detail, forceSend = false) => {
+        if (!detail || !detail.dataUrl) return;
+        this.openMiniTutor();
+        const isAutoSend = Boolean(forceSend || detail.autoSend);
+        if (isAutoSend) {
+          const bpTitle = detail.blueprintTitle || detail.traceTitle || '';
+          const promptText = (detail.traceMode && bpTitle)
+            ? `I practiced tracing "${bpTitle}" on the Scratchpad! How does my diagram look?`
+            : `Here is my Scratchpad diagram for Question ${this.currentIdx + 1}. Can you review it and guide me?`;
+          this.sendMiniTutorMessageWithImage(promptText, detail.dataUrl, detail);
+        } else {
+          this.pendingTutorImage = detail.dataUrl;
+          this.pendingTutorMeta = detail;
+          this.$nextTick(() => {
+            const c = document.getElementById('mini-tutor-chat-container');
+            if (c) c.scrollTop = c.scrollHeight;
+          });
+        }
+      };
+
+      // Listen for Scratchpad Attach & Send events
+      window.addEventListener('scratchpad-send-to-tutor', (e) => {
+        handleScratchpadPayload(e.detail, Boolean(e.detail?.autoSend));
+      });
+      window.addEventListener('scratchpad-attach-drawing', (e) => {
+        handleScratchpadPayload(e.detail, false);
+      });
+      window.addEventListener('attach-drawing-to-tutor', (e) => {
+        handleScratchpadPayload(e.detail, true);
+      });
+    },
+
+    detectBlueprintForCurrentQuestion() {
+      const q = this.currentQuestion;
+      if (!q) return null;
+      const combined = `${q.question_text || ''} ${q.model_answer || ''}`.toLowerCase();
+      if (combined.includes('lime water') || combined.includes('pichkari') || (combined.includes('exhaled') && combined.includes('air'))) {
+        return { key: 'lime_water_experiment', title: 'Lime Water Experiment — Exhaled & Atmospheric Air' };
+      }
+      if (combined.includes('potassium hydroxide') || combined.includes('koh') || combined.includes('bell jar') || (combined.includes('carbon dioxide') && combined.includes('experiment'))) {
+        return { key: 'co2_photosynthesis_experiment', title: 'Experiment: CO₂ is Essential for Photosynthesis' };
+      }
+      if (combined.includes('stomata') || combined.includes('stomatal') || combined.includes('guard cell')) {
+        return { key: 'open_stomatal_pore', title: 'Open Stomatal Pore' };
+      }
+      if (combined.includes('double circulation')) {
+        return { key: 'double_circulation', title: 'Double Circulation in Humans' };
+      }
+      if (combined.includes('nephron') || combined.includes('bowman') || combined.includes('glomerulus')) {
+        return { key: 'nephron', title: 'Structure of a Nephron' };
+      }
+      if (combined.includes('excretory system') || (combined.includes('ureter') && combined.includes('bladder'))) {
+        return { key: 'human_excretory_system', title: 'Human Excretory System' };
+      }
+      if (combined.includes('heart') || combined.includes('ventricle') || combined.includes('atrium') || combined.includes('vena cava')) {
+        return { key: 'heart_anatomy', title: 'Human Heart — Labelled Diagram' };
+      }
+      return null;
+    },
+
+    async triggerBlueprintDraw(keyOrPrompt, displayTitle) {
+      const title = displayTitle || keyOrPrompt;
+      window.dispatchEvent(new CustomEvent('tutor-draw-animated', {
+        detail: { steps: [], title }
+      }));
+      try {
+        const res = await fetch('/student/tutor/generate-drawing', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: keyOrPrompt })
+        });
+        if (res.ok) {
+          const dData = await res.json();
+          if (dData && dData.steps && dData.steps.length) {
+            window.dispatchEvent(new CustomEvent('tutor-draw-animated', {
+              detail: { steps: dData.steps, title: dData.title || title }
+            }));
+            return dData;
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+      return null;
+    },
+
+    practiceDiagramOnScratchpad() {
+      const matched = this.detectBlueprintForCurrentQuestion();
+      if (matched) {
+        this.triggerBlueprintDraw(matched.key, matched.title);
+      } else {
+        window.dispatchEvent(new CustomEvent('toggle-scratchpad'));
+      }
+    },
+
+    openDiagramInScratchpad(diagramObj, title) {
+      if (diagramObj && diagramObj.steps && diagramObj.steps.length) {
+        window.dispatchEvent(new CustomEvent('tutor-draw-animated', {
+          detail: { steps: diagramObj.steps, title: diagramObj.title || title || 'Interactive Diagram' }
+        }));
+      } else if (typeof diagramObj === 'string') {
+        this.triggerBlueprintDraw(diagramObj, title || diagramObj);
+      }
+    },
+
+    handleQuickPrompt(qp) {
+      if (qp === 'Draw a diagram on Scratchpad') {
+        const matched = this.detectBlueprintForCurrentQuestion();
+        if (matched) {
+          this.miniTutorInput = `Draw a labelled diagram of ${matched.title} on the Scratchpad`;
+        } else {
+          this.miniTutorInput = 'Can you draw a labelled diagram for this concept on the Scratchpad?';
+        }
+      } else {
+        this.miniTutorInput = qp;
+      }
+      this.sendMiniTutorMessage();
+    },
+
+    toggleSelfTest() {
+      this.showAnswer = !this.showAnswer;
+      if (this.showAnswer) {
+        this.$nextTick(() => {
+          if (window.SAXAZPlayer && typeof window.SAXAZPlayer.initAll === 'function') {
+            window.SAXAZPlayer.initAll();
+          }
+        });
+      }
+    },
+
+    syncVideoForCurrentQuestion() {
+      const vids = this.currentQuestionVideos;
+      this.activeVideo = vids.length > 0 ? vids[0] : null;
+      if (this.showAnswer) {
+        this.$nextTick(() => {
+          if (window.SAXAZPlayer && typeof window.SAXAZPlayer.initAll === 'function') {
+            window.SAXAZPlayer.initAll();
+          }
+        });
+      }
+    },
+
+    selectVideo(v) {
+      this.activeVideo = null;
+      this.$nextTick(() => {
+        this.activeVideo = v;
+        if (this.showAnswer) {
+          this.$nextTick(() => {
+            if (window.SAXAZPlayer && typeof window.SAXAZPlayer.initAll === 'function') {
+              window.SAXAZPlayer.initAll();
+            }
+          });
+        }
+      });
+    },
+
+    goToQuestion(idx) {
+      if (idx < 0 || idx >= this.questions.length) return;
+      this.currentIdx = idx;
+      this.syncVideoForCurrentQuestion();
+    },
+
+    prevQuestion() {
+      if (this.currentIdx > 0) this.goToQuestion(this.currentIdx - 1);
+    },
+
+    nextQuestion() {
+      if (this.currentIdx < this.questions.length - 1) this.goToQuestion(this.currentIdx + 1);
+    },
+
+    toggleStudied(qId) {
+      const nextState = !this.studiedMap[qId];
+      this.studiedMap[qId] = nextState;
+      try {
+        localStorage.setItem('saxaz_digi_studied_' + (this.paper?.id || '0'), JSON.stringify(this.studiedMap));
+      } catch (e) {}
+      if (nextState) {
+        fetch('/student/digi-library/study-progress', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question_id: qId, bank_id: this.paper?.id, studied: true })
+        }).catch(() => {});
+      }
+    },
+
+    async explainDeeper() {
+      const q = this.currentQuestion;
+      if (!q || this.loadingWhy) return;
+      this.loadingWhy = true;
+      try {
+        const res = await fetch('/student/exams/ask_why', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            question_text: q.question_text,
+            student_answer: q.model_answer,
+            correct_answer: q.model_answer
+          })
+        });
+        const data = await res.json();
+        if (data.explanation) {
+          this.explanationsMap[q.id] = data.explanation;
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        this.loadingWhy = false;
+      }
+    },
+
+    stopSpeaking() {
+      if (this.currentAudio) {
+        try {
+          this.currentAudio.pause();
+          this.currentAudio.currentTime = 0;
+        } catch (e) {}
+        this.currentAudio = null;
+      }
+      if (window.speechSynthesis) {
+        try { window.speechSynthesis.cancel(); } catch (e) {}
+      }
+      this.isSpeaking = false;
+      this.speakingText = '';
+    },
+
+    async speak(text) {
+      if (!text) return;
+      if (this.isSpeaking && this.speakingText === text) {
+        this.stopSpeaking();
+        return;
+      }
+      this.stopSpeaking();
+      this.isSpeaking = true;
+      this.speakingText = text;
+      try {
+        const res = await fetch('/api/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+        if (!res.ok) throw new Error('TTS request failed');
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        this.currentAudio = audio;
+        audio.onended = () => {
+          URL.revokeObjectURL(url);
+          if (this.currentAudio === audio) {
+            this.currentAudio = null;
+            this.isSpeaking = false;
+            this.speakingText = '';
+          }
+        };
+        audio.onerror = () => {
+          URL.revokeObjectURL(url);
+          this.currentAudio = null;
+          this.isSpeaking = false;
+          this.speakingText = '';
+        };
+        await audio.play();
+      } catch (e) {
+        console.error('TTS error, falling back to browser speechSynthesis:', e);
+        if (window.speechSynthesis) {
+          try {
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.onend = () => { this.isSpeaking = false; this.speakingText = ''; };
+            utter.onerror = () => { this.isSpeaking = false; this.speakingText = ''; };
+            window.speechSynthesis.speak(utter);
+            return;
+          } catch (sErr) {}
+        }
+        this.isSpeaking = false;
+        this.speakingText = '';
+      }
+    },
+
+    openMiniTutor(initialPrompt = '') {
+      this.showMiniTutor = true;
+      this.showQuestionGrid = false;
+      document.body.classList.add('mini-tutor-open');
+      if (this.miniTutorMessages.length === 0 && this.currentQuestion) {
+        this.miniTutorMessages.push({
+          role: 'assistant',
+          content: `Hi! We're studying **${this.paper.title}** (${this.paper.subject_name}). Ask me anything about **Question ${this.currentIdx + 1}**, or open the **Scratchpad & Diagram Trainer** to draw and trace diagrams together!`
+        });
+      }
+      if (initialPrompt) {
+        this.miniTutorInput = initialPrompt;
+        this.sendMiniTutorMessage();
+      }
+    },
+
+    closeMiniTutor() {
+      this.showMiniTutor = false;
+      document.body.classList.remove('mini-tutor-open');
+    },
+
+    escapeHtml(str) {
+      return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    },
+
+    renderMarkdown(text) {
+      if (!text) return '';
+      const cleaned = text
+        .replace(/\[\s*emotion\s*:\s*[^\]]*\]/gi, '')
+        .replace(/\[\s*(?:DRAW_STEPS|DRAW_DIAGRAM|DRAW)\s*:\s*([^\]]+)\]/gi, '');
+      if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
+        return DOMPurify.sanitize(marked.parse(cleaned));
+      }
+      return this.escapeHtml(cleaned).replace(/\n/g, '<br/>');
+    },
+
+    async sendMiniTutorMessage() {
+      if (this.miniTutorGenerating) return;
+      let text = this.miniTutorInput.trim();
+      const attachedImg = this.pendingTutorImage;
+      const attachedMeta = this.pendingTutorMeta;
+
+      if (!text && !attachedImg) return;
+      if (!text && attachedImg) {
+        const bpTitle = attachedMeta?.blueprintTitle || '';
+        text = (attachedMeta?.traceMode && bpTitle)
+          ? `I practiced tracing "${bpTitle}" on the Scratchpad! How does my diagram look?`
+          : `Here is my Scratchpad diagram for Question ${this.currentIdx + 1}. Can you review it and guide me?`;
+      }
+
+      this.miniTutorInput = '';
+      this.pendingTutorImage = null;
+      this.pendingTutorMeta = null;
+      await this.sendMiniTutorMessageWithImage(text, attachedImg, attachedMeta);
+    },
+
+    async sendMiniTutorMessageWithImage(text, imageDataUrl, scratchpadMeta = null) {
+      const q = this.currentQuestion;
+      const contextPrefix = q
+        ? `[Digi-Library Study Context — Book: ${this.paper.book_title}, Subject: ${this.paper.subject_name}, Chapter: ${this.paper.title}, Q${this.currentIdx + 1}: "${q.question_text}", Model Answer: "${q.model_answer}"]\n\n`
+        : '';
+
+      this.miniTutorMessages.push({
+        role: 'user',
+        content: text,
+        image: imageDataUrl || null,
+        scratchpad_meta: scratchpadMeta || null
+      });
+
+      this.$nextTick(() => {
+        const c = document.getElementById('mini-tutor-chat-container');
+        if (c) c.scrollTop = c.scrollHeight;
+      });
+
+      this.miniTutorGenerating = true;
+      this.miniTutorCurrentAiText = '';
+      this.miniTutorEmotion = 'thinking';
+
+      const payloadMessages = this.miniTutorMessages.slice(-8).map((m, i, arr) => {
+        const isLast = i === arr.length - 1;
+        const contentStr = (isLast && m.role === 'user') ? (contextPrefix + m.content) : m.content;
+        if (m.image) {
+          return {
+            role: m.role,
+            content: contentStr,
+            image: m.image,
+            scratchpad_meta: m.scratchpad_meta || null
+          };
+        }
+        return { role: m.role, content: contentStr };
+      });
+
+      try {
+        const response = await fetch('/student/tutor/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: payloadMessages })
+        });
+        if (!response.ok || !response.body) throw new Error('Network error');
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        this.miniTutorEmotion = 'talking';
+
+        let rawAi = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          rawAi += decoder.decode(value, { stream: true });
+          const emoMatches = [...rawAi.matchAll(/\[\s*emotion\s*:\s*([a-z]+)\s*\]/gi)];
+          if (emoMatches.length > 0) {
+            this.miniTutorEmotion = emoMatches[emoMatches.length - 1][1].toLowerCase();
+          }
+          this.miniTutorCurrentAiText = rawAi
+            .replace(/\[\s*emotion\s*:\s*[^\]]*\]/gi, '')
+            .replace(/\[\s*(?:DRAW_STEPS|DRAW_DIAGRAM|DRAW)\s*:\s*[^\]]*\]/gi, '')
+            .trimStart();
+          const c = document.getElementById('mini-tutor-chat-container');
+          if (c) c.scrollTop = c.scrollHeight;
+        }
+
+        const finalText = rawAi.trim();
+        const drawMatch = finalText.match(/\[\s*(?:DRAW_STEPS|DRAW_DIAGRAM|DRAW)\s*:\s*([^\]]+)\]/i);
+        const cleanedContent = finalText
+          .replace(/\[\s*emotion\s*:\s*[^\]]*\]/gi, '')
+          .replace(/\[\s*(?:DRAW_STEPS|DRAW_DIAGRAM|DRAW)\s*:\s*[^\]]*\]/gi, '')
+          .trim();
+        const msgObj = {
+          role: 'assistant',
+          content: cleanedContent || "I'm sorry, I couldn't generate a response right now. Please try again!"
+        };
+
+        if (!imageDataUrl && drawMatch && drawMatch[1]) {
+          const drawPrompt = drawMatch[1].trim();
+          const dData = await this.triggerBlueprintDraw(drawPrompt, drawPrompt.replace(/_/g, ' '));
+          if (dData && dData.steps && dData.steps.length) {
+            msgObj.diagram = dData;
+            msgObj.diagramTitle = dData.title || drawPrompt;
+          }
+        }
+
+        this.miniTutorMessages.push(msgObj);
+        this.$nextTick(() => {
+          const c = document.getElementById('mini-tutor-chat-container');
+          if (c) c.scrollTop = c.scrollHeight;
+        });
+        if (this.miniTutorVoiceEnabled && msgObj.content) {
+          this.speak(msgObj.content);
+        }
+      } catch (e) {
+        this.miniTutorMessages.push({
+          role: 'assistant',
+          content: 'Sorry, I encountered a connection issue. Please try again!'
+        });
+      } finally {
+        this.miniTutorGenerating = false;
+        this.miniTutorCurrentAiText = '';
+        this.miniTutorEmotion = 'base';
+      }
+    }
+  }));
+});
+</script>
+{% endblock %}

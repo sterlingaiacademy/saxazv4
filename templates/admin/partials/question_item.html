@@ -1,0 +1,432 @@
+<div class="question-item bg-base-200/50 rounded-xl p-4 border border-base-content/5 text-sm flex flex-col md:flex-row gap-4 relative group hover:bg-base-200 hover:border-base-300 transition-all" id="question-{{ q.id }}" x-data="{ 
+  open: false,
+  editingQuestion: false,
+  showVideoForm: false,
+  showAltVideoForm: false, 
+  videoType: '{{ q.explanation_video_type or 'youtube' }}', 
+  youtubeUrl: '{{ q.explanation_video_url if q.explanation_video_type == 'youtube' and q.explanation_video_url else '' }}', 
+  fetchedThumb: null,
+  fetchThumb() {
+    const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^&?\/\s]{11})/i;
+    const match = this.youtubeUrl.match(regex);
+    if (match && match[1]) {
+      this.fetchedThumb = 'https://img.youtube.com/vi/' + match[1] + '/hqdefault.jpg';
+    } else {
+      alert('Invalid YouTube URL');
+      this.fetchedThumb = null;
+    }
+  }
+}">
+  <div class="flex-1 space-y-3">
+    <div x-show="!editingQuestion">
+      <div class="space-y-3">
+        <div class="text-base-content/90 leading-relaxed flex flex-wrap items-center gap-1.5 cursor-pointer select-none group/qrow" @click="open = !open">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-base-content/50 group-hover/qrow:text-base-content transition-transform duration-200 shrink-0" :class="open ? 'rotate-90' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+          <span class="font-bold text-base-content tracking-wide mr-1 q-counter"></span>
+          {% if q.question_type %}
+            <span class="badge badge-sm badge-secondary/20 text-secondary border-none uppercase text-[9px] font-bold tracking-wider align-middle">{{ q.question_type }}</span>
+          {% endif %}
+          {% if q.max_marks %}
+            <span class="badge badge-sm badge-ghost text-base-content/60 text-[10px] font-bold align-middle">{{ q.max_marks }} Marks</span>
+          {% endif %}
+          {% if q.explanation_video_url %}
+            <span class="badge badge-sm badge-ghost text-emerald-600 border-emerald-500/30 bg-emerald-500/10 text-[10px] font-bold align-middle">Video Attached</span>
+          {% endif %}
+          {% if saved %}
+            <span class="badge badge-success badge-sm font-bold" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 2500)">Saved!</span>
+          {% endif %}
+          <span class="w-full mt-1 font-semibold" :class="open ? '' : 'line-clamp-2'">{{ q.question_text }}</span>
+        </div>
+
+        <div x-show="open" x-collapse style="display: none;" class="space-y-3 pt-2 border-t border-base-300/60">
+          {% if q.media_url %}
+          <div class="mt-2 flex items-center gap-3">
+            <div class="text-[10px] font-bold uppercase text-base-content/50">Question Image:</div>
+            <img src="{{ q.media_url }}" alt="Question Media" class="max-h-32 rounded-lg border border-base-content/10 object-contain bg-base-100 p-1 cursor-pointer shadow-sm" @click="$dispatch('open-image-modal', '{{ q.media_url }}')">
+          </div>
+          {% endif %}
+          <div class="bg-base-100 p-3 rounded-xl border border-base-300">
+            <span class="font-bold text-emerald-600 text-[10px] uppercase tracking-wider block mb-1">Answer</span>
+            <div class="text-base-content/80 leading-relaxed">
+              {{ q.model_answer }}
+            </div>
+            {% if q.answer_media_url %}
+            <div class="mt-2 flex items-center gap-3">
+              <div class="text-[10px] font-bold uppercase text-emerald-600">Answer Image:</div>
+              <img src="{{ q.answer_media_url }}" alt="Answer Media" class="max-h-32 rounded-lg border border-base-300 object-contain bg-base-100 p-1 cursor-pointer shadow-sm" @click="$dispatch('open-image-modal', '{{ q.answer_media_url }}')">
+            </div>
+            {% endif %}
+          </div>
+          {% if q.options and q.options != 'None' %}
+          <div class="bg-base-100 p-3 rounded-xl border border-base-300">
+            <span class="font-bold text-sky-600 text-[10px] uppercase tracking-wider block mb-1">Options</span>
+            <div class="text-base-content/70 leading-relaxed font-mono text-xs">
+              {{ q.options }}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div x-show="editingQuestion" style="display: none;">
+      <form 
+        id="q-edit-{{ q.id }}" 
+        class="space-y-4 bg-base-100 p-5 rounded-2xl border border-primary/30 shadow-md" 
+        hx-post="/admin/curriculum/questions/{{ q.id }}/edit" 
+        hx-target="#question-{{ q.id }}" 
+        hx-swap="outerHTML" 
+        hx-encoding="multipart/form-data"
+        enctype="multipart/form-data"
+        x-data="{ 
+          removeQImage: false,
+          removeAImage: false 
+        }">
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="form-control">
+            <label class="label pb-1"><span class="label-text text-xs font-bold uppercase text-base-content/80">Question Type</span></label>
+            {% set qtype = q.question_type or 'LONG_ANSWER' %}
+            <select name="question_type" class="select select-sm select-bordered bg-base-100 text-base-content w-full rounded-lg">
+              <option value="MCQ" {% if qtype == 'MCQ' %}selected{% endif %}>MCQ</option>
+              <option value="ASSERTION_REASON" {% if qtype == 'ASSERTION_REASON' %}selected{% endif %}>Assertion & Reason</option>
+              <option value="CASE_BASED" {% if qtype == 'CASE_BASED' %}selected{% endif %}>Case-Based</option>
+              <option value="VERY_SHORT_ANSWER" {% if qtype == 'VERY_SHORT_ANSWER' %}selected{% endif %}>Very Short Answer (VSA)</option>
+              <option value="SHORT_ANSWER" {% if qtype == 'SHORT_ANSWER' %}selected{% endif %}>Short Answer (SA)</option>
+              <option value="LONG_ANSWER" {% if qtype == 'LONG_ANSWER' %}selected{% endif %}>Long Answer (LA)</option>
+              <option value="NUMERICAL" {% if qtype == 'NUMERICAL' %}selected{% endif %}>Numerical</option>
+              <option value="DIAGRAM_BASED" {% if qtype == 'DIAGRAM_BASED' %}selected{% endif %}>Diagram-Based</option>
+              <option value="MAP_BASED" {% if qtype == 'MAP_BASED' %}selected{% endif %}>Map-Based</option>
+              <option value="COMPETENCY_BASED" {% if qtype == 'COMPETENCY_BASED' %}selected{% endif %}>Competency-Based</option>
+            </select>
+          </div>
+          <div class="form-control">
+            <label class="label pb-1"><span class="label-text text-xs font-bold uppercase text-base-content/80">Marks</span></label>
+            <input type="number" name="max_marks" value="{{ q.max_marks or 1 }}" min="1" class="input input-sm input-bordered bg-base-100 text-base-content w-full rounded-lg">
+          </div>
+        </div>
+
+        <!-- Question Text -->
+        <div>
+          <label class="label pb-1"><span class="label-text text-xs font-bold uppercase text-base-content/80">Question Text</span></label>
+          <textarea name="question_text" class="textarea textarea-bordered w-full text-base-content bg-base-100 min-h-[4rem] rounded-xl" required>{{ q.question_text }}</textarea>
+        </div>
+
+        <!-- Question Image Upload / URL -->
+        <div class="p-3 bg-base-200/60 rounded-xl border border-base-300 space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold uppercase tracking-wider text-base-content/70 flex items-center gap-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+              Question Image
+            </label>
+            {% if q.media_url %}
+            <label class="cursor-pointer flex items-center gap-1.5 text-xs text-error">
+              <input type="checkbox" name="remove_question_image" value="1" x-model="removeQImage" class="checkbox checkbox-error checkbox-xs rounded">
+              <span>Remove Current Image</span>
+            </label>
+            {% endif %}
+          </div>
+
+          {% if q.media_url %}
+          <div x-show="!removeQImage" class="flex items-center gap-3 py-1">
+            <img src="{{ q.media_url }}" class="h-16 w-auto rounded-lg border border-base-300 object-contain bg-base-100 p-1" alt="Current Question Image">
+            <span class="text-xs text-base-content/50">Current Image Attached</span>
+          </div>
+          {% endif %}
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+            <div>
+              <span class="text-[10px] uppercase font-bold text-base-content/50 block mb-1">Upload Question Image</span>
+              <input type="file" name="question_image" accept="image/*" class="file-input file-input-bordered file-input-sm w-full bg-base-100 text-base-content">
+            </div>
+            <div>
+              <span class="text-[10px] uppercase font-bold text-base-content/50 block mb-1">Or Question Image URL</span>
+              <input type="text" name="question_image_url" placeholder="https://..." class="input input-sm input-bordered w-full bg-base-100 text-base-content" value="{{ q.media_url if q.media_url else '' }}">
+            </div>
+          </div>
+        </div>
+
+        <!-- Correct Answer Text -->
+        <div>
+          <label class="label pb-1"><span class="label-text text-xs font-bold uppercase text-success">Correct Answer</span></label>
+          <textarea name="model_answer" class="textarea textarea-bordered w-full text-base-content bg-base-100 min-h-[3rem] rounded-xl">{{ q.model_answer }}</textarea>
+        </div>
+
+        <!-- Correct Answer Image Upload / URL -->
+        <div class="p-3 bg-base-200/60 rounded-xl border border-base-300 space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold uppercase tracking-wider text-success/90 flex items-center gap-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+              Correct Answer Image
+            </label>
+            {% if q.answer_media_url %}
+            <label class="cursor-pointer flex items-center gap-1.5 text-xs text-error">
+              <input type="checkbox" name="remove_answer_image" value="1" x-model="removeAImage" class="checkbox checkbox-error checkbox-xs rounded">
+              <span>Remove Current Image</span>
+            </label>
+            {% endif %}
+          </div>
+
+          {% if q.answer_media_url %}
+          <div x-show="!removeAImage" class="flex items-center gap-3 py-1">
+            <img src="{{ q.answer_media_url }}" class="h-16 w-auto rounded-lg border border-base-300 object-contain bg-base-100 p-1" alt="Current Answer Image">
+            <span class="text-xs text-base-content/50">Current Image Attached</span>
+          </div>
+          {% endif %}
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+            <div>
+              <span class="text-[10px] uppercase font-bold text-base-content/50 block mb-1">Upload Answer Image</span>
+              <input type="file" name="answer_image" accept="image/*" class="file-input file-input-bordered file-input-sm w-full bg-base-100 text-base-content">
+            </div>
+            <div>
+              <span class="text-[10px] uppercase font-bold text-base-content/50 block mb-1">Or Answer Image URL</span>
+              <input type="text" name="answer_image_url" placeholder="https://..." class="input input-sm input-bordered w-full bg-base-100 text-base-content" value="{{ q.answer_media_url if q.answer_media_url else '' }}">
+            </div>
+          </div>
+        </div>
+
+        <!-- Options -->
+        <div>
+          <label class="label pb-1"><span class="label-text text-xs font-bold uppercase text-info/80">Options (JSON Array for MCQs, leave blank for non-MCQ)</span></label>
+          <textarea name="options" class="textarea textarea-bordered w-full font-mono text-xs text-base-content bg-base-100 min-h-[3rem] rounded-xl" placeholder='["Option A", "Option B", "Option C", "Option D"]'>{{ q.options if q.options and q.options != 'None' else '' }}</textarea>
+        </div>
+
+        <div class="flex gap-2 justify-end pt-2">
+          <button type="button" class="btn btn-sm btn-ghost rounded-xl" @click="editingQuestion = false">Cancel</button>
+          <button type="submit" class="btn btn-sm btn-primary rounded-xl px-6">Save Changes</button>
+        </div>
+      </form>
+    </div>
+    
+    <!-- Explanation Video Display -->
+    {% if q.explanation_video_url %}
+    <div x-show="open && !editingQuestion" x-collapse style="display: none;">
+      {% if q.explanation_video_type == 'youtube' %}
+      <div class="mt-4 group relative bg-base-100 border-2 border-base-300 hover:border-primary/60 rounded-2xl overflow-hidden transition-all shadow-sm"
+           data-initial-url="{{ (q.explanation_video_url or '') | e }}"
+           x-data="youtubeLinkCard()">
+        <div class="flex flex-col sm:flex-row items-stretch">
+          <div class="relative w-full sm:w-48 aspect-video bg-black shrink-0 overflow-hidden">
+            <template x-if="!playing">
+              <div class="w-full h-full relative cursor-pointer group/thumb" @click="playing = true">
+                <img :src="thumbUrl" :alt="title" class="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300" />
+                <div class="absolute inset-0 bg-black/30 group-hover/thumb:bg-black/15 transition-colors flex items-center justify-center">
+                  <div class="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                  </div>
+                </div>
+              </div>
+            </template>
+            <template x-if="playing">
+              <iframe :src="embedUrl" class="w-full h-full" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </template>
+          </div>
+          <div class="flex-1 p-3.5 flex flex-col justify-between min-w-0 pr-12">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded bg-red-500/10 text-red-500 font-black text-[10px] uppercase tracking-wider">YouTube Explanation</span>
+                <span x-show="author" x-text="author" class="text-[11px] font-bold text-base-content/50 truncate"></span>
+              </div>
+              <h5 class="text-sm font-black text-base-content leading-snug line-clamp-1 mt-0.5" x-text="loadingTitle ? 'Fetching video title...' : (title || 'YouTube Video')"></h5>
+              <a :href="url" target="_blank" class="text-[11px] font-mono text-base-content/50 hover:text-secondary truncate block" x-text="url"></a>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 pt-2 mt-2 border-t border-base-200">
+              <button type="button" @click="playing = !playing" class="btn btn-xs rounded-lg font-bold" :class="playing ? 'btn-neutral' : 'btn-primary'">
+                <span x-text="playing ? 'Close Player' : 'Watch'">Watch</span>
+              </button>
+              <button type="button" class="btn btn-xs btn-ghost border border-base-300 rounded-lg font-bold" @click="showVideoForm = !showVideoForm">Modify Video</button>
+              <button type="button" class="btn btn-xs btn-outline btn-info rounded-lg font-bold" @click="showAltVideoForm = !showAltVideoForm">+ Alternative Video</button>
+            </div>
+          </div>
+          <button type="button"
+                  hx-delete="/admin/curriculum/questions/{{ q.id }}/video"
+                  hx-target="#question-{{ q.id }}"
+                  hx-swap="outerHTML"
+                  hx-confirm="Remove this video?"
+                  title="Delete / Remove Video"
+                  class="absolute top-2.5 right-2.5 w-8 h-8 rounded-xl bg-error/10 hover:bg-error text-error hover:text-white border border-error/20 flex items-center justify-center transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+          </button>
+        </div>
+      </div>
+      {% else %}
+      <div class="mt-4 bg-info/5 border-2 border-info/20 p-3 rounded-2xl flex flex-wrap items-center gap-3 relative pr-12">
+        <div class="text-info">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div class="min-w-0 flex-1">
+          <span class="text-xs font-black text-info uppercase">Uploaded Video ({{ q.explanation_video_type }})</span>
+          <p class="text-xs text-base-content/60 truncate max-w-xs">{{ q.explanation_video_url }}</p>
+        </div>
+        <button type="button" class="btn btn-xs btn-ghost border border-base-300 rounded-lg font-bold" @click="showVideoForm = !showVideoForm">Modify</button>
+        <button type="button" class="btn btn-xs btn-outline btn-info rounded-lg font-bold" @click="showAltVideoForm = !showAltVideoForm">+ Alternative Video</button>
+        <button type="button" class="absolute top-2.5 right-2.5 w-8 h-8 rounded-xl bg-error/10 hover:bg-error text-error hover:text-white border border-error/20 flex items-center justify-center transition-all"
+            hx-delete="/admin/curriculum/questions/{{ q.id }}/video"
+            hx-target="#question-{{ q.id }}"
+            hx-swap="outerHTML"
+            hx-confirm="Remove this video?" title="Remove Video">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+        </button>
+      </div>
+      {% endif %}
+    
+    <!-- Alternative Videos List -->
+    {% set alts = q.additional_videos | parse_json if q.additional_videos else [] %}
+    {% if alts %}
+    <div class="mt-3 space-y-2">
+      {% for alt in alts %}
+      <div class="flex items-center justify-between bg-base-100 border border-base-content/10 shadow-sm p-3 rounded-lg group hover:border-warning transition-colors">
+        <div class="flex items-center gap-3 flex-wrap">
+          <span class="badge badge-sm badge-neutral font-bold tracking-wider">{{ alt.category }}</span>
+          <span class="font-bold text-sm text-base-content">{{ alt.label }}</span>
+          <a href="{{ alt.url }}" target="_blank" class="text-xs text-warning-content bg-warning/20 px-2 py-1 rounded hover:bg-warning/40 transition-colors ml-2 font-medium">View Media</a>
+        </div>
+        <button type="button"
+            hx-delete="/admin/curriculum/questions/{{ q.id }}/alternative-videos/{{ alt.id }}"
+            hx-target="#question-{{ q.id }}" hx-swap="outerHTML"
+            class="btn btn-xs btn-ghost text-error opacity-75 group-hover:opacity-100 transition-opacity"
+            title="Remove alternative video"
+            hx-confirm="Remove this alternative video?">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+        </button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    </div>
+    
+    <!-- Add Alternative Video Form -->
+    <div class="mt-4" x-show="showAltVideoForm" style="display: none;" x-transition>
+      <div class="p-4 bg-base-100 rounded-xl border border-base-300">
+        <div class="flex items-center justify-between mb-3">
+          <h5 class="text-sm font-bold uppercase text-base-content/80">Add Alternative Video</h5>
+          <button type="button" @click="showAltVideoForm = false" class="btn btn-xs btn-ghost btn-circle text-base-content/50">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <form hx-post="/admin/curriculum/questions/{{ q.id }}/alternative-videos" hx-target="#question-{{ q.id }}" hx-swap="outerHTML" hx-encoding="multipart/form-data" enctype="multipart/form-data" class="flex flex-col gap-3" x-data="{ altVideoType: 'youtube' }">
+          <div class="flex flex-col md:flex-row gap-2">
+            <select name="category" class="select select-sm select-bordered w-full md:w-32 bg-base-100 text-base-content" required>
+              <option value="Language">Language</option>
+              <option value="Content">Content</option>
+            </select>
+            <input type="text" name="label" class="input input-sm input-bordered flex-1 bg-base-100 text-base-content" placeholder="e.g. Malayalam, Extra Details" required>
+            <select name="video_type" class="select select-sm select-bordered w-full md:w-32 bg-base-100 text-base-content" x-model="altVideoType">
+              <option value="youtube">YouTube</option>
+              <option value="upload">Upload MP4</option>
+            </select>
+          </div>
+          <div class="flex flex-col md:flex-row gap-2 items-center">
+            <div class="flex-1 w-full" x-show="altVideoType === 'youtube'">
+              <input type="text" name="youtube_url" class="input input-sm input-bordered w-full bg-base-100 text-base-content" placeholder="YouTube URL (https://...)" :required="altVideoType === 'youtube'" :disabled="altVideoType !== 'youtube'">
+            </div>
+            <div class="flex-1 w-full" x-show="altVideoType === 'upload'">
+              <input type="file" name="file" class="file-input file-input-sm file-input-bordered w-full bg-base-100 text-base-content" accept="video/mp4,video/webm" :required="altVideoType === 'upload'" :disabled="altVideoType !== 'upload'">
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary w-full md:w-auto px-6">Add Video</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Attach Video Form -->
+    <div class="mt-4" x-show="showVideoForm" style="display: none;" x-collapse>
+      <div class="bg-base-100 p-5 rounded-2xl border-2 border-base-300 shadow-lg relative overflow-hidden"
+           data-initial-url="{{ (q.explanation_video_url if q.explanation_video_type == 'youtube' and q.explanation_video_url else '') | e }}"
+           x-data="youtubeLinkCard()">
+        <button type="button" class="btn btn-sm btn-circle btn-ghost absolute top-3 right-3 text-base-content/50 hover:text-base-content z-10" @click="showVideoForm = false" title="Close">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+        <div class="flex items-center gap-2 mb-4 relative z-10">
+          <div class="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center border border-primary/20">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+          </div>
+          <h4 class="text-base font-black text-base-content tracking-wide">Attach / Modify Explanation Video</h4>
+        </div>
+        
+        <form hx-post="/admin/curriculum/questions/{{ q.id }}/video" 
+           hx-target="#question-{{ q.id }}" 
+           hx-swap="outerHTML" 
+           hx-encoding="multipart/form-data"
+           enctype="multipart/form-data"
+           class="space-y-4 relative z-10">
+          
+          <div class="flex gap-4 mb-2">
+            <label class="cursor-pointer flex items-center gap-2">
+              <input type="radio" name="video_type" value="youtube" class="radio radio-primary radio-sm" x-model="videoType" />
+              <span class="text-xs font-black uppercase tracking-wider">YouTube Link</span>
+            </label>
+            <label class="cursor-pointer flex items-center gap-2">
+              <input type="radio" name="video_type" value="upload" class="radio radio-primary radio-sm" x-model="videoType" />
+              <span class="text-xs font-black uppercase tracking-wider">Upload MP4</span>
+            </label>
+          </div>
+
+          <!-- YouTube input with instant card preview -->
+          <div x-show="videoType === 'youtube'" class="space-y-3" x-transition>
+            <input type="hidden" name="youtube_url" :value="url" :disabled="videoType !== 'youtube'" />
+            <div x-show="editing || !videoId" class="flex flex-wrap gap-2">
+              <input type="text"
+                     x-ref="urlInput"
+                     x-model="url"
+                     @input="onInput()"
+                     @paste="setTimeout(() => onInput(), 50)"
+                     placeholder="Paste YouTube link (https://www.youtube.com/watch?v=...)"
+                     class="input input-sm sm:input-md input-bordered bg-base-200/60 text-base-content font-semibold flex-1 rounded-xl" />
+              <button type="submit" class="btn btn-sm sm:btn-md btn-primary rounded-xl font-black px-6">Save Video</button>
+            </div>
+
+            <!-- Live YouTube Card Preview when link is pasted -->
+            <div x-show="videoId && !editing" style="display: none;" class="relative bg-base-200/70 border-2 border-base-300 rounded-2xl overflow-hidden">
+              <div class="flex flex-col sm:flex-row items-center gap-4 p-3 pr-12">
+                <img :src="thumbUrl" class="w-full sm:w-36 aspect-video object-cover rounded-xl border border-base-300 shrink-0" alt="Thumbnail preview">
+                <div class="flex-1 min-w-0 space-y-1">
+                  <span class="px-2 py-0.5 rounded bg-red-500/10 text-red-500 font-black text-[10px] uppercase tracking-wider">YouTube Ready</span>
+                  <h5 class="text-sm font-black text-base-content line-clamp-1" x-text="loadingTitle ? 'Fetching title...' : (title || 'YouTube Video')"></h5>
+                  <p class="text-[11px] font-mono text-base-content/50 truncate" x-text="url"></p>
+                  <div class="flex gap-2 pt-1">
+                    <button type="submit" class="btn btn-xs btn-primary rounded-lg font-black px-4">Save Attached Video</button>
+                    <button type="button" @click="startEdit()" class="btn btn-xs btn-ghost border border-base-300 rounded-lg font-bold">Modify URL</button>
+                  </div>
+                </div>
+                <button type="button" @click="clearVideo(false)" title="Clear Link" class="absolute top-2.5 right-2.5 w-8 h-8 rounded-xl bg-error/10 hover:bg-error text-error hover:text-white flex items-center justify-center transition-all">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- File upload input -->
+          <div x-show="videoType === 'upload'" class="space-y-4" style="display: none;" x-transition>
+            <input type="file" name="video_file" accept="video/mp4,video/webm" class="file-input file-input-md file-input-bordered bg-base-100 text-base-content w-full rounded-xl" :disabled="videoType !== 'upload'" />
+            <button type="submit" class="btn btn-md btn-primary rounded-xl font-black w-full">Upload & Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+  <div class="flex-none flex gap-2 items-start justify-end">
+    {% if not q.explanation_video_url %}
+    <button type="button" class="btn btn-sm btn-square btn-ghost text-info/70 hover:text-info hover:bg-info/10 opacity-75 group-hover:opacity-100 transition-opacity rounded-xl"
+        @click="showVideoForm = !showVideoForm" title="Attach Video Explanation">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+    </button>
+    {% endif %}
+    <button type="button" class="btn btn-sm btn-square btn-ghost text-base-content/70 hover:text-primary hover:bg-primary/10 opacity-75 group-hover:opacity-100 transition-opacity rounded-xl"
+        @click="editingQuestion = !editingQuestion" title="Edit Question">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+    </button>
+    <button type="button" class="btn btn-sm btn-square btn-ghost text-error/70 hover:text-error hover:bg-error/10 opacity-75 group-hover:opacity-100 transition-opacity rounded-xl"
+        hx-delete="/admin/curriculum/exam_node/questions/{{ q.id }}"
+        hx-target="#question-{{ q.id }}"
+        hx-swap="outerHTML"
+        hx-confirm="Delete this question?" title="Delete Question">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+    </button>
+  </div>
+</div>

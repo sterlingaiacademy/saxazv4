@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block title %}AI Smart Search & Navigation - SAXAZ{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-8 pb-20">
+  <!-- Header -->
+  <div class="relative pb-2">
+    <div class="mb-4">
+      <a href="/student/dashboard" class="inline-flex items-center text-base-content/70 hover:text-primary transition-colors font-bold bg-base-100 px-5 py-2 rounded-full border-2 border-base-300 shadow-xs">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        Back to Dashboard
+      </a>
+    </div>
+    <div class="flex flex-wrap items-center gap-2.5">
+      <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-widest bg-primary text-gray-900 saxaz-on-gold shadow-xs">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+        AI-Powered Smart Search &amp; Navigator
+      </span>
+      {% if query %}
+        <span class="text-xs font-extrabold text-base-content/60 uppercase tracking-widest">
+          {{ results|length }} Destination{% if results|length != 1 %}s{% endif %} for "{{ query }}"
+        </span>
+      {% endif %}
+    </div>
+    <h1 class="text-3xl sm:text-4xl font-black text-base-content tracking-tight mt-2">
+      {% if query %}Search &amp; Navigation Results{% else %}Where would you like to go?{% endif %}
+    </h1>
+  </div>
+
+  <!-- Interactive AI Search Bar -->
+  <div class="w-full relative z-30"
+       x-data="saxazAiSearchBar({{ query | tojson }})"
+       @click.outside="dropdownOpen = false">
+    <div class="bg-white rounded-full shadow-xl p-1.5 sm:p-2 flex items-center border-2 border-gray-200 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/20 transition-all duration-300">
+      <div class="pl-4 sm:pl-6 pr-2 sm:pr-4 text-primary">
+        <svg x-show="!submitting && !aiLoading" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+        <svg x-show="submitting || aiLoading" style="display: none;" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6 animate-spin text-amber-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+      </div>
+      <form action="/student/search" method="GET" class="flex-1 flex items-center min-w-0" @submit="handleSubmit($event)">
+        <input type="text"
+               name="q"
+               x-model="query"
+               autocomplete="off"
+               spellcheck="false"
+               @focus="openDropdown()"
+               @input="onInput()"
+               @keydown.down.prevent="moveSelection(1)"
+               @keydown.up.prevent="moveSelection(-1)"
+               @keydown.escape="dropdownOpen = false"
+               placeholder="Ask anything or navigate anywhere (e.g. Chapter 6, Digi Library, Settings, Neuron)..."
+               class="w-full bg-transparent border-none focus:ring-0 focus:outline-none text-gray-900 font-bold placeholder-gray-400 py-2.5 sm:py-3 text-sm sm:text-lg min-w-0"
+               required>
+        <button type="submit"
+                :disabled="submitting"
+                class="btn saxaz-dark-btn rounded-full px-6 sm:px-8 font-black tracking-widest uppercase ml-2 h-auto py-2.5 sm:py-3 min-h-0 text-xs sm:text-sm hover:scale-105 transition-transform duration-300 shrink-0">
+          <span x-text="submitting ? 'Thinking...' : 'Search'">Search</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Live Suggestions Dropdown -->
+    <div x-show="dropdownOpen && displayItems.length > 0"
+         x-transition.opacity.duration.150ms
+         style="display: none;"
+         class="absolute left-0 right-0 mt-2.5 bg-white rounded-3xl shadow-2xl border-2 border-gray-200 overflow-hidden z-50 max-h-[65vh] overflow-y-auto">
+      <div class="px-4 py-2 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+        <span class="text-[10px] font-black uppercase tracking-widest text-gray-500">Quick Jump Destinations</span>
+        <span x-show="aiLoading" class="text-[10px] font-bold text-amber-600">AI analyzing...</span>
+      </div>
+      <div class="divide-y divide-gray-100">
+        <template x-for="(item, idx) in displayItems" :key="item.id || item.url || idx">
+          <a :href="item.url"
+             class="flex items-start justify-between gap-3 px-4 py-3 hover:bg-amber-50/60 transition-colors group"
+             :class="selectedIdx === idx ? 'bg-amber-50/80' : ''">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2 flex-wrap mb-0.5">
+                <span class="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-900"
+                      x-text="item.badge || item.category || 'Page'"></span>
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider truncate"
+                      x-text="item.category"></span>
+              </div>
+              <div class="text-sm font-black text-gray-900 group-hover:text-amber-600 transition-colors truncate"
+                   x-text="item.title"></div>
+              <div class="text-xs text-gray-500 line-clamp-1 mt-0.5"
+                   x-text="item.description"></div>
+            </div>
+            <span class="shrink-0 self-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-gray-100 text-gray-700 group-hover:bg-primary group-hover:text-gray-900">
+              Open &rarr;
+            </span>
+          </a>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  {% if query and (understood_intent or ai_answer or primary_destination) %}
+  <!-- AI Brain Smart Navigator Summary & Primary Destination Card -->
+  <div class="brilliant-card p-6 sm:p-8 border-2 border-primary/50 bg-gradient-to-br from-amber-50/80 via-white to-white space-y-5">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-primary text-gray-900 saxaz-on-gold shadow-xs">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+        <span>AI Understood What You Meant</span>
+      </div>
+      {% if primary_destination and primary_destination.category %}
+        <span class="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-gray-900 text-white">
+          Best Match: {{ primary_destination.category }}
+        </span>
+      {% endif %}
+    </div>
+
+    <div class="space-y-2">
+      {% if understood_intent %}
+        <h2 class="text-xl sm:text-2xl font-black text-gray-900 leading-snug">{{ understood_intent }}</h2>
+      {% endif %}
+      {% if ai_answer %}
+        <p class="text-sm sm:text-base text-gray-700 font-medium leading-relaxed">{{ ai_answer }}</p>
+      {% endif %}
+    </div>
+
+    {% if primary_destination %}
+    <div class="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-white border-2 border-gray-200 shadow-sm">
+      <div class="space-y-1 min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300">
+            {{ primary_destination.badge or 'Recommended Destination' }}
+          </span>
+          <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">{{ primary_destination.category }}</span>
+        </div>
+        <div class="text-lg sm:text-xl font-black text-gray-900 truncate">{{ primary_destination.title }}</div>
+        <p class="text-xs sm:text-sm text-gray-500 line-clamp-2">{{ primary_destination.description }}</p>
+      </div>
+
+      <div class="flex flex-wrap sm:flex-nowrap items-center gap-2.5 shrink-0">
+        <a href="{{ primary_destination.url }}"
+           class="btn saxaz-dark-btn rounded-full px-6 py-3 h-auto min-h-0 text-xs sm:text-sm font-black uppercase tracking-wider flex items-center gap-2 shadow-md">
+          <span>Navigate Now</span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </a>
+        <a href="/student/tutor?ask={{ (tutor_prompt or query) | urlencode }}&autosend=1"
+           class="btn btn-primary text-gray-900 rounded-full px-5 py-3 h-auto min-h-0 text-xs sm:text-sm font-black uppercase tracking-wider flex items-center gap-1.5 border border-amber-500">
+          <span>Ask AI Tutor Bella</span>
+        </a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Matching Destinations, Chapters, Digi-Library Studios, Exams & Questions -->
+  <div class="space-y-4">
+    <div class="flex items-center justify-between px-1">
+      <h2 class="text-lg sm:text-xl font-black text-base-content flex items-center gap-2.5">
+        <span class="w-2 h-6 bg-primary rounded-full"></span>
+        {% if query %}Matching Website Pages, Chapters &amp; Questions{% else %}Explore Platform Destinations{% endif %}
+      </h2>
+    </div>
+
+    {% if results %}
+      <div class="grid grid-cols-1 gap-4">
+        {% for result in results %}
+        <a href="{{ result.link }}" class="brilliant-card block p-5 sm:p-6 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 group cursor-pointer">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="min-w-0 flex-1 space-y-1.5">
+              <div class="flex items-center gap-2 flex-wrap">
+                {% if result.badge %}
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-primary text-gray-900 saxaz-on-gold">
+                    {{ result.badge }}
+                  </span>
+                {% endif %}
+                <span class="text-xs font-extrabold text-gray-400 uppercase tracking-widest">{{ result.chapter }}</span>
+              </div>
+              <h3 class="text-lg sm:text-xl font-black text-gray-900 group-hover:text-primary transition-colors">{{ result.name }}</h3>
+              {% if result.description %}
+                <p class="text-xs sm:text-sm text-gray-500 font-medium leading-relaxed line-clamp-2">{{ result.description }}</p>
+              {% endif %}
+            </div>
+            <div class="shrink-0 flex items-center">
+              <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider bg-gray-900 text-white group-hover:bg-primary group-hover:text-gray-900 transition-colors">
+                <span>Open</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+              </span>
+            </div>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  window.saxazAiSearchBar = window.saxazAiSearchBar || function(initialQuery) {
+    return {
+      query: initialQuery || '',
+      dropdownOpen: false,
+      suggestions: [],
+      aiData: null,
+      aiLoading: false,
+      submitting: false,
+      selectedIdx: -1,
+      suggestTimer: null,
+      aiTimer: null,
+
+      get displayItems() {
+        if (this.query.trim().length > 0 && this.aiData && Array.isArray(this.aiData.results) && this.aiData.results.length > 0) {
+          return this.aiData.results.slice(0, 8);
+        }
+        return this.suggestions || [];
+      },
+
+      openDropdown() {
+        this.dropdownOpen = true;
+        if (!this.suggestions.length && !this.query.trim()) {
+          this.fetchSuggestions('');
+        }
+      },
+
+      onInput() {
+        this.dropdownOpen = true;
+        this.selectedIdx = -1;
+        const q = (this.query || '').trim();
+
+        if (this.suggestTimer) clearTimeout(this.suggestTimer);
+        if (this.aiTimer) clearTimeout(this.aiTimer);
+
+        if (!q) {
+          this.aiData = null;
+          this.aiLoading = false;
+          this.fetchSuggestions('');
+          return;
+        }
+
+        this.suggestTimer = setTimeout(() => {
+          this.fetchSuggestions(q);
+        }, 140);
+
+        if (q.length >= 2) {
+          this.aiLoading = true;
+          this.aiTimer = setTimeout(() => {
+            this.fetchAiSearch(q);
+          }, 420);
+        } else {
+          this.aiData = null;
+          this.aiLoading = false;
+        }
+      },
+
+      async fetchSuggestions(q) {
+        try {
+          const res = await fetch(`/student/api/search-suggest?q=${encodeURIComponent(q)}`);
+          if (res.ok) {
+            const data = await res.json();
+            if ((this.query || '').trim() === q) {
+              this.suggestions = data.suggestions || [];
+            }
+          }
+        } catch (e) {}
+      },
+
+      async fetchAiSearch(q) {
+        try {
+          const res = await fetch(`/student/api/ai-search?q=${encodeURIComponent(q)}`);
+          if (res.ok) {
+            const data = await res.json();
+            if ((this.query || '').trim() === q) {
+              this.aiData = data;
+            }
+          }
+        } catch (e) {
+        } finally {
+          if ((this.query || '').trim() === q) {
+            this.aiLoading = false;
+          }
+        }
+      },
+
+      moveSelection(delta) {
+        const items = this.displayItems;
+        if (!items.length) return;
+        this.dropdownOpen = true;
+        this.selectedIdx = (this.selectedIdx + delta + items.length) % items.length;
+      },
+
+      handleSubmit(e) {
+        const items = this.displayItems;
+        if (this.dropdownOpen && this.selectedIdx >= 0 && this.selectedIdx < items.length) {
+          e.preventDefault();
+          window.location.href = items[this.selectedIdx].url;
+          return;
+        }
+        if (this.aiData && this.aiData.auto_navigate && this.aiData.primary_destination && this.aiData.primary_destination.url) {
+          e.preventDefault();
+          this.submitting = true;
+          window.location.href = this.aiData.primary_destination.url;
+          return;
+        }
+        this.submitting = true;
+      }
+    };
+  };
+</script>
+{% endblock %}

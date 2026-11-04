@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Courses &amp; Exams — SAXAZ Studio{% endblock %}
+{% block topbar_title %}<span>Courses &amp; Exam Pipelines</span>{% endblock %}
+
+{% block content %}
+<div class="w-full max-w-7xl mx-auto pb-20 space-y-6 sm:space-y-8"
+     x-data="{ searchQuery: '' }">
+
+  <!-- Top Kinetic Pitch-Black & Gold Header Banner -->
+  <div class="v2-obsidian-hero p-6 sm:p-8 lg:p-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative v2-enter">
+    <div class="absolute -right-12 -top-12 w-48 h-48 rounded-full border-[14px] border-[#f8b000]/15 v2-anim-spin-slow pointer-events-none"></div>
+
+    <div class="flex items-start sm:items-center gap-4 sm:gap-5 relative z-10">
+      <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#f8b000] text-[#111111] border-2 border-white flex items-center justify-center shadow-lg shrink-0 v2-anim-float">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+        </svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+          <span class="bg-[#f8b000] text-[#111111] px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest">Studio Curriculum</span>
+          <span class="text-xs font-extrabold text-white/75">{{ subjects|length }} Active Courses &bull; {{ overall_progress_pct }}% Mastery</span>
+        </div>
+        <h1 class="text-2xl sm:text-4xl font-black text-white tracking-tight">Courses &amp; Exam Arena</h1>
+        <p class="text-xs sm:text-sm text-white/70 font-medium mt-1 max-w-xl">
+          Launch any subject to enter its 4-stage chapter pipeline, watch concept videos, or take timed mock exams.
+        </p>
+      </div>
+    </div>
+
+    <div class="relative z-10 flex flex-wrap items-center gap-3 self-stretch md:self-auto">
+      <a href="/student/attempts" class="v2-btn-gold px-5 py-3 text-xs sm:text-sm w-full sm:w-auto">
+        <span>📊 Exam Scorecards</span>
+        <span>&rarr;</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter & Search Bar -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 v2-enter v2-delay-1">
+    <div class="flex items-center gap-2.5">
+      <span class="w-3 h-7 rounded-full bg-[#f8b000] border-2 border-[#111111]"></span>
+      <h2 class="text-xl sm:text-2xl font-black text-[#111111]">Select a Subject Studio</h2>
+    </div>
+
+    <div class="relative w-full sm:w-72">
+      <input type="text"
+             x-model="searchQuery"
+             placeholder="Filter subjects..."
+             class="w-full px-4 py-2.5 rounded-full bg-white border-2 border-[#111111] shadow-[0_3px_0_#111111] text-xs sm:text-sm font-bold text-[#111111] placeholder-gray-400 focus:outline-none">
+    </div>
+  </div>
+
+  <!-- Interactive Subject Bento Cards -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 v2-enter v2-delay-2">
+    {% for subject in subjects %}
+    <div x-show="!searchQuery.trim() || '{{ subject.name | lower }}'.includes(searchQuery.toLowerCase())"
+         class="v2-bento-card v2-spotlight-card flex flex-col justify-between p-6 group cursor-pointer"
+         onclick="window.location.href='/student/subjects/{{ subject.id }}'">
+      
+      <div class="relative z-10 space-y-5">
+        <div class="flex items-start justify-between gap-3">
+          {% if subject.thumbnail_url %}
+          <img src="{{ subject.thumbnail_url }}" alt="{{ subject.name }}"
+               class="w-20 h-20 object-contain rounded-2xl border-2 border-[#111111] bg-[#fffbeb] p-2 shadow-[0_4px_0_#111111] group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+          {% endif %}
+          <div class="w-16 h-16 rounded-2xl bg-[#f8b000] text-[#111111] border-2 border-[#111111] shadow-[0_4px_0_#111111] items-center justify-center text-2xl font-black group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300 {% if subject.thumbnail_url %}hidden{% else %}flex{% endif %}" style="{% if subject.thumbnail_url %}display:none;{% endif %}">
+            {{ subject.name[:2].upper() }}
+          </div>
+
+          <span class="px-3 py-1 rounded-full text-[11px] font-mono-num font-black bg-[#111111] text-[#f8b000]">
+            {{ subject.progress_pct }}%
+          </span>
+        </div>
+
+        <div>
+          <h3 class="text-xl sm:text-2xl font-black text-[#111111] group-hover:text-amber-600 transition-colors">
+            {{ subject.name }}
+          </h3>
+          <p class="text-xs font-bold text-gray-500 mt-1 line-clamp-2">
+            {{ subject.description or 'Interactive chapters, concept videos, and AI-graded exams.' }}
+          </p>
+        </div>
+      </div>
+
+      <div class="relative z-10 mt-6 pt-4 border-t-2 border-gray-100 space-y-4">
+        <div class="space-y-1.5">
+          <div class="flex justify-between text-[10px] font-black uppercase tracking-widest text-gray-400">
+            <span>Course Mastery</span>
+            <span class="text-[#111111]">{{ subject.progress_pct }}%</span>
+          </div>
+          <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden border border-[#111111]/15">
+            <div class="bg-[#f8b000] h-full rounded-full transition-all duration-1000 ease-out"
+                 style="width: {{ subject.progress_pct }}%"></div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <a href="/student/subjects/{{ subject.id }}" class="v2-btn-black flex-1 py-2.5 text-xs">
+            <span>Enter Studio</span>
+            <span>&rarr;</span>
+          </a>
+          <a href="/student/tutor?subject_id={{ subject.id }}"
+             onclick="event.stopPropagation();"
+             class="v2-btn-gold px-3.5 py-2.5 text-xs"
+             title="Open Subject AI Tutor">
+            ⚡ AI
+          </a>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="col-span-full v2-bento-card p-12 text-center">
+      <h3 class="text-xl font-black text-[#111111]">No Subjects Enrolled</h3>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

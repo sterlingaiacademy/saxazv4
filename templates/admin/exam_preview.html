@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8 pb-32">
+  <div class="flex flex-col space-y-2 mt-8">
+    <a href="/admin/curriculum/chapters/{{ paper.chapter_id }}" class="text-sm font-medium text-base-content/50 hover:text-base-content transition-colors flex items-center gap-2 w-fit">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+      Back to Chapter Editor
+    </a>
+    <h1 class="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-white/60">
+      Preview: <span class="text-primary">{{ paper.title }}</span>
+    </h1>
+    <p class="text-base-content/60">This is a generated view of the exam paper as it will appear (content-wise) to students.</p>
+  </div>
+
+  <div class="bg-base-200/60 backdrop-blur-xl rounded-[2rem] shadow-xl border border-base-content/5 p-8 space-y-8">
+    {% set total_q = namespace(value=0) %}
+    {% set total_m = namespace(value=0) %}
+    {% for module in paper.modules %}
+      {% set total_q.value = total_q.value + module.questions|length %}
+      {% set total_m.value = total_m.value + (module.questions|length * module.mark_value) %}
+    {% endfor %}
+    
+    <div class="flex gap-4 mb-6">
+      <div class="badge badge-primary">Total Questions: {{ total_q.value }}</div>
+      <div class="badge badge-secondary">Total Marks: {{ total_m.value }}</div>
+      <div class="badge badge-ghost">Target Marks: {{ paper.target_marks }}</div>
+    </div>
+
+    {% for module in paper.modules %}
+      <div class="bg-base-200/50 rounded-2xl p-6 border border-base-content/10">
+        <h3 class="text-2xl font-bold text-base-content mb-2">{{ module.name }}</h3>
+        <p class="text-sm text-base-content/50 mb-6">Each question carries {{ module.mark_value }} marks.</p>
+        
+        <div class="space-y-4">
+          {% for q in module.questions %}
+            <div class="p-4 bg-white/5 rounded-xl border border-base-300">
+              <div class="flex justify-between items-start gap-4">
+                <div class="font-medium text-base-content">{{ loop.index }}. {{ q.question_text }}</div>
+                <div class="badge badge-sm badge-outline shrink-0">{{ q.max_marks }} Marks</div>
+              </div>
+              <div class="mt-4 pt-4 border-t border-base-200 text-sm text-base-content/60">
+                <span class="text-success/80 font-bold">Correct Answer:</span> {{ q.model_answer }}
+              </div>
+            </div>
+          {% else %}
+            <div class="text-sm text-base-content/50 italic">No questions in this module for this generation.</div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endfor %}
+    
+    <div class="alert alert-info shadow-lg mt-8">
+      <div>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current flex-shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <span>Refresh this page to see another random permutation of the questions.</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

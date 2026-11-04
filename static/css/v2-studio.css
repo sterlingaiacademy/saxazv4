@@ -1,0 +1,573 @@
+/* ============================================================================
+   SAXAZ V2 — KINETIC STUDIO EDITION (SIGNATURE YELLOW, WHITE & PITCH BLACK)
+   High-Velocity Interactive Learning OS • Spring Physics • Mobile-First
+   ============================================================================ */
+
+:root {
+  --v2-gold: #f8b000;
+  --v2-gold-bright: #ffd000;
+  --v2-gold-deep: #d99600;
+  --v2-gold-soft: rgba(248, 176, 0, 0.14);
+  --v2-gold-glow: rgba(248, 176, 0, 0.38);
+  --v2-black: #111111;
+  --v2-black-soft: #1a1a1a;
+  --v2-charcoal: #222222;
+  --v2-white: #ffffff;
+  --v2-cream: #fffcf5;
+  --v2-surface: #ffffff;
+  --v2-surface-2: #faf7f0;
+  --v2-border: rgba(17, 17, 17, 0.12);
+  --v2-border-strong: #111111;
+  --v2-text: #111111;
+  --v2-text-muted: #525252;
+  --v2-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --v2-Fluid: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-theme="dark"] {
+  --v2-surface: #141414;
+  --v2-surface-2: #1c1c1c;
+  --v2-cream: #0c0c0c;
+  --v2-border: rgba(255, 255, 255, 0.12);
+  --v2-border-strong: #f8b000;
+  --v2-text: #ffffff;
+  --v2-text-muted: #a3a3a3;
+}
+
+/* Typography — Geometric Precision */
+body {
+  font-family: 'Plus Jakarta Sans', 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  letter-spacing: -0.012em;
+}
+
+.font-mono-num {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================================
+   1. KINETIC BACKGROUND & AMBIENT MOVING GEOMETRY
+   ============================================================================ */
+[data-theme="light"] .space-bg {
+  background-color: #fbf8f1 !important;
+  background-image:
+    radial-gradient(circle at 12% 8%, rgba(248, 176, 0, 0.18), transparent 34%),
+    radial-gradient(circle at 88% 12%, rgba(255, 208, 0, 0.14), transparent 36%),
+    radial-gradient(circle at 50% 95%, rgba(248, 176, 0, 0.10), transparent 45%),
+    radial-gradient(rgba(17, 17, 17, 0.055) 1px, transparent 1px) !important;
+  background-size: 100% 100%, 100% 100%, 100% 100%, 24px 24px !important;
+  background-position: 0 0, 0 0, 0 0, -1px -1px !important;
+}
+
+[data-theme="dark"] .space-bg {
+  background-color: #0b0b0b !important;
+  background-image:
+    radial-gradient(circle at 12% 8%, rgba(248, 176, 0, 0.14), transparent 35%),
+    radial-gradient(circle at 88% 12%, rgba(248, 176, 0, 0.08), transparent 38%),
+    radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px) !important;
+  background-size: 100% 100%, 100% 100%, 24px 24px !important;
+}
+
+/* Hide legacy left vertical sidebar completely in V2 */
+.global-sidebar {
+  display: none !important;
+}
+.main-content-wrapper {
+  margin-left: 0 !important;
+  width: 100% !important;
+}
+
+/* ============================================================================
+   2. KEYFRAME ANIMATIONS (LIQUID GOLD, FLOATING ORBS, SPRING ENTRANCES)
+   ============================================================================ */
+@keyframes v2FloatSlow {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  50% { transform: translate3d(0, -10px, 0) rotate(2deg); }
+}
+
+@keyframes v2FloatReverse {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(6px, 8px, 0) scale(1.04); }
+}
+
+@keyframes v2SpinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes v2SpinReverseSlow {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
+@keyframes v2GoldShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes v2PulseRing {
+  0% { transform: scale(0.92); opacity: 0.85; }
+  70% { transform: scale(1.35); opacity: 0; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+
+@keyframes v2SlideUpSpring {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 22px, 0) scale(0.975);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes v2ScalePop {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  70% {
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes v2Marquee {
+  0% { transform: translate3d(0%, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
+}
+
+@keyframes v2WaveBar {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(1); }
+}
+
+@keyframes v2BorderBeam {
+  0%, 100% { border-color: rgba(248, 176, 0, 0.35); box-shadow: 0 0 0 0 rgba(248, 176, 0, 0); }
+  50% { border-color: rgba(248, 176, 0, 0.95); box-shadow: 0 0 22px -4px rgba(248, 176, 0, 0.45); }
+}
+
+.v2-anim-float { animation: v2FloatSlow 5s ease-in-out infinite; }
+.v2-anim-float-delayed { animation: v2FloatReverse 6.5s ease-in-out 1s infinite; }
+.v2-anim-spin-slow { animation: v2SpinSlow 28s linear infinite; }
+.v2-anim-spin-reverse { animation: v2SpinReverseSlow 34s linear infinite; }
+.v2-anim-pulse-border { animation: v2BorderBeam 3s ease-in-out infinite; }
+
+.v2-enter {
+  animation: v2SlideUpSpring 0.55s var(--v2-Fluid) both;
+}
+.v2-delay-1 { animation-delay: 60ms; }
+.v2-delay-2 { animation-delay: 120ms; }
+.v2-delay-3 { animation-delay: 180ms; }
+.v2-delay-4 { animation-delay: 240ms; }
+.v2-delay-5 { animation-delay: 300ms; }
+
+/* Shimmering Liquid Gold Strip */
+.v2-shimmer-bar {
+  background: linear-gradient(90deg, #f8b000 0%, #ffe169 35%, #ffffff 50%, #ffe169 65%, #f8b000 100%);
+  background-size: 200% 100%;
+  animation: v2GoldShimmer 3.2s linear infinite;
+}
+
+/* Scrolling Live Ticker */
+.v2-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: v2Marquee 28s linear infinite;
+}
+.v2-marquee-track:hover {
+  animation-play-state: paused;
+}
+
+/* ============================================================================
+   3. TOP FLOATING PITCH-BLACK & GOLD COMMAND DOCK (.v2-command-bar)
+   ============================================================================ */
+.v2-command-bar {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border-bottom: 2px solid #111111 !important;
+  box-shadow: 0 6px 24px -6px rgba(17, 17, 17, 0.08) !important;
+  height: 4.25rem !important;
+  transition: all 0.25s ease;
+}
+
+[data-theme="dark"] .v2-command-bar {
+  background: rgba(17, 17, 17, 0.92) !important;
+  border-bottom: 2px solid rgba(248, 176, 0, 0.35) !important;
+  box-shadow: 0 8px 28px -6px rgba(0, 0, 0, 0.65) !important;
+}
+
+/* Segmented Pitch-Black & Gold Workspace Pill Switcher */
+.v2-nav-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.3rem;
+  border-radius: 9999px;
+  background: #111111;
+  border: 2px solid #111111;
+  box-shadow: 0 4px 14px rgba(17, 17, 17, 0.16);
+}
+
+[data-theme="dark"] .v2-nav-pills {
+  background: #1e1e1e;
+  border-color: rgba(248, 176, 0, 0.35);
+}
+
+.v2-nav-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.42rem 0.95rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.72);
+  transition: all 0.25s var(--v2-spring);
+  white-space: nowrap;
+}
+
+.v2-nav-pill:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.v2-nav-pill.active {
+  background: #f8b000;
+  color: #111111 !important;
+  box-shadow: 0 3px 12px rgba(248, 176, 0, 0.45);
+  transform: scale(1.02);
+}
+
+/* Global AI Spotlight Trigger Pill */
+.v2-spotlight-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.42rem 0.75rem 0.42rem 0.85rem;
+  border-radius: 9999px;
+  background: #fffbeb;
+  border: 2px solid #111111;
+  box-shadow: 0 3px 0 #111111;
+  color: #111111;
+  font-size: 0.78rem;
+  font-weight: 800;
+  transition: all 0.2s var(--v2-spring);
+  cursor: pointer;
+}
+
+.v2-spotlight-trigger:hover {
+  background: #f8b000;
+  transform: translateY(-1.5px);
+  box-shadow: 0 5px 0 #111111;
+}
+
+.v2-spotlight-trigger:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 #111111;
+}
+
+[data-theme="dark"] .v2-spotlight-trigger {
+  background: #1e1e1e;
+  border-color: #f8b000;
+  box-shadow: 0 3px 0 #f8b000;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .v2-spotlight-trigger:hover {
+  background: #f8b000;
+  color: #111111;
+}
+
+.v2-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.1rem 0.42rem;
+  border-radius: 0.4rem;
+  font-size: 0.65rem;
+  font-weight: 900;
+  font-family: 'JetBrains Mono', monospace;
+  background: #111111;
+  color: #f8b000;
+  letter-spacing: 0.02em;
+}
+
+/* ============================================================================
+   4. KINETIC STUDIO CARDS & 3D INTERACTIVE SURFACES
+   ============================================================================ */
+.brilliant-card,
+.v2-bento-card {
+  position: relative;
+  background: #ffffff;
+  border: 2px solid #111111 !important;
+  border-radius: 1.6rem !important;
+  box-shadow: 0 6px 0 #111111, 0 14px 30px -10px rgba(17, 17, 17, 0.1) !important;
+  transition: transform 0.28s var(--v2-spring), box-shadow 0.28s var(--v2-Fluid), border-color 0.2s ease, background-color 0.2s ease !important;
+}
+
+.brilliant-card:hover,
+.v2-bento-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 10px 0 #111111, 0 22px 38px -10px rgba(248, 176, 0, 0.26) !important;
+}
+
+.brilliant-card:active,
+.v2-bento-card:active {
+  transform: translateY(2px) !important;
+  box-shadow: 0 3px 0 #111111 !important;
+}
+
+[data-theme="dark"] .brilliant-card,
+[data-theme="dark"] .v2-bento-card {
+  background: #161616 !important;
+  border: 2px solid rgba(255, 255, 255, 0.16) !important;
+  box-shadow: 0 6px 0 #000000, 0 14px 30px -10px rgba(0, 0, 0, 0.6) !important;
+}
+
+[data-theme="dark"] .brilliant-card:hover,
+[data-theme="dark"] .v2-bento-card:hover {
+  border-color: #f8b000 !important;
+  box-shadow: 0 9px 0 #f8b000, 0 20px 38px -10px rgba(248, 176, 0, 0.25) !important;
+}
+
+/* Mouse-Tracking Golden Spotlight Effect on Bento Cards */
+.v2-spotlight-card {
+  position: relative;
+  overflow: hidden;
+}
+.v2-spotlight-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    450px circle at var(--mouse-x, 50%) var(--mouse-y, 0%),
+    rgba(248, 176, 0, 0.16),
+    transparent 45%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+.v2-spotlight-card:hover::before {
+  opacity: 1;
+}
+
+/* Pitch-Black Signature Hero Banner with Kinetic Gold Accents */
+.v2-obsidian-hero {
+  position: relative;
+  background: linear-gradient(135deg, #111111 0%, #1c1c1c 60%, #111111 100%);
+  border: 2.5px solid #111111;
+  border-radius: 2rem;
+  box-shadow: 0 10px 0 #f8b000, 0 24px 48px -12px rgba(17, 17, 17, 0.35);
+  color: #ffffff;
+  overflow: hidden;
+}
+
+/* Golden Signature Hero Banner */
+.v2-gold-hero {
+  position: relative;
+  background: linear-gradient(135deg, #ffd000 0%, #f8b000 55%, #f59e0b 100%);
+  border: 2.5px solid #111111;
+  border-radius: 2rem;
+  box-shadow: 0 10px 0 #111111, 0 24px 48px -12px rgba(248, 176, 0, 0.38);
+  color: #111111;
+  overflow: hidden;
+}
+
+/* Tactile Yellow & Black Studio Buttons */
+.v2-btn-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: #f8b000 !important;
+  color: #111111 !important;
+  border: 2px solid #111111 !important;
+  border-radius: 9999px !important;
+  font-weight: 900 !important;
+  box-shadow: 0 4px 0 #111111 !important;
+  transition: all 0.2s var(--v2-spring) !important;
+}
+.v2-btn-gold:hover {
+  background: #ffd000 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 0 #111111 !important;
+}
+.v2-btn-gold:active {
+  transform: translateY(2px) !important;
+  box-shadow: 0 1px 0 #111111 !important;
+}
+
+.v2-btn-black {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: #111111 !important;
+  color: #ffffff !important;
+  border: 2px solid #111111 !important;
+  border-radius: 9999px !important;
+  font-weight: 900 !important;
+  box-shadow: 0 4px 0 #f8b000 !important;
+  transition: all 0.2s var(--v2-spring) !important;
+}
+.v2-btn-black:hover {
+  background: #222222 !important;
+  color: #f8b000 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 0 #f8b000 !important;
+}
+.v2-btn-black:active {
+  transform: translateY(2px) !important;
+  box-shadow: 0 1px 0 #f8b000 !important;
+}
+
+/* ============================================================================
+   5. 4-STAGE GUIDED CHAPTER PIPELINE (.v2-stage-pipeline)
+   ============================================================================ */
+.v2-stage-pipeline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem;
+  border-radius: 1.35rem;
+  background: #ffffff;
+  border: 2px solid #111111;
+  box-shadow: 0 5px 0 #111111;
+  overflow-x: auto;
+}
+
+[data-theme="dark"] .v2-stage-pipeline {
+  background: #161616;
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 5px 0 #000000;
+}
+
+.v2-stage-pill {
+  flex: 1 1 0%;
+  min-width: max-content;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1.1rem;
+  border-radius: 1rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #525252;
+  border: 2px solid transparent;
+  transition: all 0.25s var(--v2-spring);
+  cursor: pointer;
+  user-select: none;
+}
+
+[data-theme="dark"] .v2-stage-pill {
+  color: #a3a3a3;
+}
+
+.v2-stage-pill:hover {
+  background: rgba(248, 176, 0, 0.12);
+  color: #111111;
+}
+
+[data-theme="dark"] .v2-stage-pill:hover {
+  color: #ffffff;
+}
+
+.v2-stage-pill.active {
+  background: #f8b000;
+  color: #111111 !important;
+  border-color: #111111;
+  box-shadow: 0 3px 0 #111111;
+  transform: translateY(-1px);
+}
+
+.v2-stage-step-num {
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 900;
+  font-family: 'JetBrains Mono', monospace;
+  background: rgba(17, 17, 17, 0.08);
+  color: inherit;
+  transition: all 0.2s ease;
+}
+
+.v2-stage-pill.active .v2-stage-step-num {
+  background: #111111;
+  color: #f8b000;
+}
+
+/* ============================================================================
+   6. MOBILE-FIRST FLOATING PILL DOCK & RESPONSIVE ERGONOMICS
+   ============================================================================ */
+@media (max-width: 767px) {
+  .v2-command-bar {
+    height: 3.75rem !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  .mobile-bottom-bar {
+    bottom: calc(0.55rem + env(safe-area-inset-bottom, 0px)) !important;
+    left: 0.65rem !important;
+    right: 0.65rem !important;
+    padding: 0.35rem 0.4rem !important;
+    padding-bottom: 0.35rem !important;
+    border-radius: 1.5rem !important;
+    background: rgba(17, 17, 17, 0.96) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 2px solid rgba(248, 176, 0, 0.55) !important;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .mobile-bottom-bar > a {
+    color: rgba(255, 255, 255, 0.65) !important;
+    border-radius: 1.1rem !important;
+    padding: 0.4rem 0.3rem !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    transition: all 0.22s var(--v2-spring) !important;
+  }
+
+  .mobile-bottom-bar > a.v2-mobile-active {
+    background: #f8b000 !important;
+    color: #111111 !important;
+    box-shadow: 0 4px 12px rgba(248, 176, 0, 0.4) !important;
+    transform: translateY(-2px) !important;
+  }
+
+  .mobile-bottom-clearance {
+    padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .brilliant-card,
+  .v2-bento-card {
+    border-radius: 1.35rem !important;
+    box-shadow: 0 4px 0 #111111, 0 10px 20px -8px rgba(17, 17, 17, 0.08) !important;
+  }
+}
+
+/* Interactive Spotlight Card Mouse Tracking Helper */
+@media (hover: hover) {
+  .v2-hover-lift {
+    transition: transform 0.25s var(--v2-spring), box-shadow 0.25s var(--v2-Fluid);
+  }
+  .v2-hover-lift:hover {
+    transform: translateY(-4px) scale(1.008);
+  }
+}

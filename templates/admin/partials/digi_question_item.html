@@ -1,0 +1,331 @@
+<div id="digi-question-{{ q.id }}"
+     x-data="{ open: false, editing: false, showVideoForm: false, showAltVideoForm: false, vSource: 'youtube', altSource: 'youtube' }"
+     class="brilliant-card bg-base-100 rounded-2xl p-5 space-y-3 transition-all">
+
+  <!-- View Mode Header (Clickable to expand/collapse) -->
+  <div class="flex flex-col sm:flex-row items-start justify-between gap-4">
+    <div class="space-y-1.5 flex-1 min-w-0 cursor-pointer select-none group/qhead" @click="open = !open">
+      <div class="flex items-center gap-2 flex-wrap">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-base-content/50 group-hover/qhead:text-base-content transition-transform duration-200 shrink-0" :class="open ? 'rotate-90' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+        <span class="px-2.5 py-0.5 rounded-lg bg-primary/15 border border-primary/30 text-amber-700 font-black text-xs uppercase tracking-wider">
+          Q{{ q_order_num if q_order_num is defined else '' }}
+        </span>
+        <span class="badge badge-secondary badge-xs font-black uppercase">{{ q.question_type or 'STUDY Q&A' }}</span>
+        {% if q.explanation_video_url %}
+          <span class="badge badge-ghost badge-xs font-bold text-emerald-600 border-emerald-500/30 bg-emerald-500/10">Video Attached</span>
+        {% endif %}
+        {% if q.media_url or q.answer_media_url %}
+          <span class="badge badge-ghost badge-xs font-bold text-sky-600 border-sky-500/30 bg-sky-500/10">Has Image</span>
+        {% endif %}
+        {% if saved %}
+          <span class="badge badge-success badge-xs text-white font-bold">Saved</span>
+        {% endif %}
+      </div>
+
+      <p class="text-base font-extrabold text-base-content whitespace-pre-line leading-relaxed" :class="open ? '' : 'line-clamp-2'">{{ q.question_text }}</p>
+    </div>
+
+    <!-- Ordering & Action Buttons -->
+    <div class="flex flex-wrap items-center gap-1.5 shrink-0" @click.stop>
+      <button type="button" @click="open = !open" class="btn btn-xs btn-ghost border border-base-300 rounded-lg font-bold">
+        <span x-text="open ? 'Hide Details' : 'View Answer'">View Answer</span>
+      </button>
+      <div class="join border border-base-300 rounded-xl bg-base-200/50 mr-1" title="Reorder Question in Chapter">
+        <button type="button"
+                hx-post="/admin/digi-library/questions/{{ q.id }}/move"
+                hx-vals='{"direction": "up"}'
+                hx-target="#digi-questions-list"
+                hx-swap="innerHTML"
+                class="btn btn-xs btn-ghost join-item px-2 font-black" title="Move Up">
+          ↑
+        </button>
+        <button type="button"
+                hx-post="/admin/digi-library/questions/{{ q.id }}/move"
+                hx-vals='{"direction": "down"}'
+                hx-target="#digi-questions-list"
+                hx-swap="innerHTML"
+                class="btn btn-xs btn-ghost join-item px-2 font-black" title="Move Down">
+          ↓
+        </button>
+      </div>
+
+      <button type="button" @click="editing = !editing" class="btn btn-xs btn-outline rounded-lg font-bold">
+        Edit Q&amp;A
+      </button>
+      <button type="button" @click="showVideoForm = !showVideoForm" class="btn btn-xs btn-ghost border border-base-300 rounded-lg font-bold text-secondary">
+        {{ 'Modify Video' if q.explanation_video_url else '+ Attach Video' }}
+      </button>
+      <button type="button" @click="showAltVideoForm = !showAltVideoForm" class="btn btn-xs btn-ghost rounded-lg font-bold text-base-content/70">
+        + Alt Video
+      </button>
+      <button type="button"
+              hx-delete="/admin/digi-library/questions/{{ q.id }}"
+              hx-target="#digi-question-{{ q.id }}"
+              hx-swap="outerHTML"
+              hx-confirm="Delete this question?"
+              class="btn btn-xs btn-ghost text-error hover:bg-error/10 rounded-lg font-bold">
+        Delete
+      </button>
+    </div>
+  </div>
+
+  <!-- Collapsible Question Details (Answer, Images, Options, Attached Videos) -->
+  <div x-show="open" x-collapse style="display: none;" class="space-y-4 pt-3 border-t border-base-200">
+    {% if q.media_url %}
+      <div>
+        <img src="{{ q.media_url }}" alt="Question Image" class="max-h-44 rounded-xl border-2 border-base-300 bg-base-200/40 p-1" />
+      </div>
+    {% endif %}
+
+    {% if q.options %}
+      {% set opts = q.options | parse_json %}
+      {% if opts %}
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+        {% for opt in opts %}
+          <div class="text-xs bg-base-200/70 px-3.5 py-2.5 rounded-xl border border-base-300 font-bold">{{ opt }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    {% endif %}
+
+    <div class="bg-emerald-500/10 border-2 border-emerald-500/25 rounded-2xl p-4">
+      <div class="text-[11px] font-black uppercase tracking-wider text-emerald-600 mb-1">Answer</div>
+      <p class="text-sm text-base-content font-semibold whitespace-pre-line leading-relaxed">{{ q.model_answer }}</p>
+      {% if q.answer_media_url %}
+        <div class="mt-2">
+          <img src="{{ q.answer_media_url }}" alt="Answer Image" class="max-h-40 rounded-xl border border-base-300 bg-white p-1" />
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Attached Primary Video: Rich YouTube Card or Uploaded Video Card -->
+    {% if q.explanation_video_url %}
+      {% if q.explanation_video_type == 'youtube' %}
+      <div class="group relative bg-base-200/60 border-2 border-base-300 hover:border-primary/60 rounded-2xl overflow-hidden transition-all"
+           data-initial-url="{{ (q.explanation_video_url or '') | e }}"
+           x-data="youtubeLinkCard()">
+        <div class="flex flex-col sm:flex-row items-stretch">
+          <div class="relative w-full sm:w-52 aspect-video bg-black shrink-0 overflow-hidden">
+            <template x-if="!playing">
+              <div class="w-full h-full relative cursor-pointer group/thumb" @click="playing = true">
+                <img :src="thumbUrl" :alt="title" class="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300" />
+                <div class="absolute inset-0 bg-black/30 group-hover/thumb:bg-black/15 transition-colors flex items-center justify-center">
+                  <div class="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-0.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                  </div>
+                </div>
+              </div>
+            </template>
+            <template x-if="playing">
+              <iframe :src="embedUrl" class="w-full h-full" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </template>
+          </div>
+
+          <div class="flex-1 p-3.5 flex flex-col justify-between min-w-0 pr-12">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded bg-red-500/10 text-red-500 font-black text-[10px] uppercase tracking-wider">YouTube Explanation</span>
+                <span x-show="author" x-text="author" class="text-[11px] font-bold text-base-content/50 truncate"></span>
+              </div>
+              <h4 class="text-sm font-black text-base-content leading-snug line-clamp-1 mt-0.5" x-text="loadingTitle ? 'Fetching video title...' : (title || 'YouTube Video')"></h4>
+              <a :href="url" target="_blank" class="text-[11px] font-mono text-base-content/50 hover:text-secondary truncate block" x-text="url"></a>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 pt-2 mt-2 border-t border-base-300/60">
+              <button type="button" @click="playing = !playing" class="btn btn-xs rounded-lg font-bold" :class="playing ? 'btn-neutral' : 'btn-primary'">
+                <span x-text="playing ? 'Close Player' : 'Watch Video'">Watch Video</span>
+              </button>
+              <button type="button" @click="showVideoForm = !showVideoForm" class="btn btn-xs btn-ghost border border-base-300 rounded-lg font-bold">
+                Modify Link
+              </button>
+            </div>
+          </div>
+
+          <!-- Edge Delete Button -->
+          <button type="button"
+                  hx-delete="/admin/digi-library/questions/{{ q.id }}/video"
+                  hx-target="#digi-question-{{ q.id }}"
+                  hx-swap="outerHTML"
+                  hx-confirm="Remove this video?"
+                  title="Delete / Remove Video"
+                  class="absolute top-2.5 right-2.5 w-8 h-8 rounded-xl bg-error/10 hover:bg-error text-error hover:text-white border border-error/20 flex items-center justify-center transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+          </button>
+        </div>
+      </div>
+      {% else %}
+      <div class="relative bg-base-200/60 border-2 border-base-300 rounded-2xl p-3.5 pr-12 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="px-2.5 py-1 rounded-lg bg-primary/15 border border-primary/30 text-amber-700 font-black text-xs">Uploaded Video</span>
+          <span class="text-xs font-mono text-base-content/60 truncate">{{ q.explanation_video_url }}</span>
+        </div>
+        <button type="button" @click="showVideoForm = !showVideoForm" class="btn btn-xs btn-ghost border border-base-300 rounded-lg font-bold">Modify</button>
+        <button type="button"
+                hx-delete="/admin/digi-library/questions/{{ q.id }}/video"
+                hx-target="#digi-question-{{ q.id }}"
+                hx-swap="outerHTML"
+                class="absolute top-2.5 right-2.5 w-8 h-8 rounded-xl bg-error/10 hover:bg-error text-error hover:text-white flex items-center justify-center">
+          ×
+        </button>
+      </div>
+      {% endif %}
+    {% endif %}
+
+    <!-- Additional Videos Pills -->
+    {% set add_vids = (q.additional_videos | parse_json) if q.additional_videos else [] %}
+    {% if add_vids %}
+    <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-base-200 text-xs">
+      {% for av in add_vids %}
+        <div class="inline-flex items-center gap-2 bg-secondary/10 text-secondary px-3 py-1.5 rounded-xl border border-secondary/20 font-bold">
+          <span>{{ av.label }} ({{ av.category }})</span>
+          <button type="button"
+                  hx-delete="/admin/digi-library/questions/{{ q.id }}/additional-videos/{{ av.id }}"
+                  hx-target="#digi-question-{{ q.id }}"
+                  hx-swap="outerHTML"
+                  class="hover:text-error font-black">×</button>
+        </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Inline Edit Question Form -->
+  <div x-show="editing" x-collapse style="display: none;" class="pt-4 border-t border-base-300">
+    <form hx-post="/admin/digi-library/questions/{{ q.id }}/edit"
+          hx-target="#digi-question-{{ q.id }}"
+          hx-swap="outerHTML"
+          hx-encoding="multipart/form-data"
+          class="space-y-3 bg-base-200/50 p-4 rounded-2xl border-2 border-base-300">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label class="label py-0.5"><span class="label-text text-xs font-bold">Question Type</span></label>
+          <select name="question_type" class="select select-bordered select-sm w-full bg-base-100 rounded-xl font-bold">
+            {% for qt in ['CUSTOM', 'SHORT_ANSWER', 'LONG_ANSWER', 'MCQ', 'ASSERTION_REASON', 'NUMERICAL'] %}
+              <option value="{{ qt }}" {% if q.question_type == qt %}selected{% endif %}>{{ qt }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="label py-0.5"><span class="label-text text-xs font-bold">Options JSON (for MCQ)</span></label>
+          <input type="text" name="options" value="{{ q.options or '' }}" placeholder='["A. ...", "B. ..."]' class="input input-bordered input-sm w-full bg-base-100 rounded-xl font-mono text-xs" />
+        </div>
+      </div>
+
+      <div>
+        <label class="label py-0.5"><span class="label-text text-xs font-bold">Question Text</span></label>
+        <textarea name="question_text" rows="2" class="textarea textarea-bordered w-full bg-base-100 rounded-xl text-sm font-medium" required>{{ q.question_text }}</textarea>
+      </div>
+
+      <div>
+        <label class="label py-0.5"><span class="label-text text-xs font-bold">Model Answer &amp; Explanation</span></label>
+        <textarea name="model_answer" rows="3" class="textarea textarea-bordered w-full bg-base-100 rounded-xl text-sm font-medium" required>{{ q.model_answer }}</textarea>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label class="label py-0.5"><span class="label-text text-xs font-bold">Replace Question Image</span></label>
+          <input type="file" name="question_image" accept="image/*" class="file-input file-input-bordered file-input-xs w-full bg-base-100 rounded-xl" />
+          {% if q.media_url %}
+            <label class="label cursor-pointer justify-start gap-2 mt-1">
+              <input type="checkbox" name="remove_question_image" value="1" class="checkbox checkbox-xs checkbox-error" />
+              <span class="label-text text-xs text-error">Remove current question image</span>
+            </label>
+          {% endif %}
+        </div>
+        <div>
+          <label class="label py-0.5"><span class="label-text text-xs font-bold">Replace Answer Image</span></label>
+          <input type="file" name="answer_image" accept="image/*" class="file-input file-input-bordered file-input-xs w-full bg-base-100 rounded-xl" />
+          {% if q.answer_media_url %}
+            <label class="label cursor-pointer justify-start gap-2 mt-1">
+              <input type="checkbox" name="remove_answer_image" value="1" class="checkbox checkbox-xs checkbox-error" />
+              <span class="label-text text-xs text-error">Remove current answer image</span>
+            </label>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <button type="button" @click="editing = false" class="btn btn-xs sm:btn-sm btn-ghost rounded-xl font-bold">Cancel</button>
+        <button type="submit" class="btn btn-xs sm:btn-sm btn-primary text-primary-content rounded-xl font-black px-5">Save Question</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Primary Video Attach / Modify Form with Live YouTube Card -->
+  <div x-show="showVideoForm" x-collapse style="display: none;" class="pt-3 border-t border-base-300"
+       data-initial-url="{{ (q.explanation_video_url if q.explanation_video_type == 'youtube' and q.explanation_video_url else '') | e }}"
+       x-data="youtubeLinkCard()">
+    <form hx-post="/admin/digi-library/questions/{{ q.id }}/video"
+          hx-target="#digi-question-{{ q.id }}"
+          hx-swap="outerHTML"
+          hx-encoding="multipart/form-data"
+          class="bg-base-200/60 p-4 rounded-2xl border-2 border-base-300 space-y-3">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-black uppercase tracking-wider text-base-content/70">Attach / Modify Explanation Video</span>
+        <select name="video_source" x-model="vSource" class="select select-bordered select-xs bg-base-100 rounded-lg font-bold">
+          <option value="youtube">YouTube URL</option>
+          <option value="upload">Upload Video</option>
+        </select>
+      </div>
+
+      <div x-show="vSource === 'youtube'" class="space-y-2">
+        <input type="hidden" name="video_url" :value="url" />
+        <div x-show="editing || !videoId" class="flex gap-2">
+          <input type="text"
+                 x-ref="urlInput"
+                 x-model="url"
+                 @input="onInput()"
+                 @paste="setTimeout(() => onInput(), 50)"
+                 placeholder="Paste YouTube link (https://www.youtube.com/watch?v=...)"
+                 class="input input-bordered input-sm flex-1 bg-base-100 rounded-xl font-semibold" />
+          <button type="submit" class="btn btn-sm btn-primary text-primary-content rounded-xl font-black px-5">Save Video</button>
+        </div>
+
+        <div x-show="videoId && !editing" style="display: none;" class="relative bg-base-100 border-2 border-base-300 rounded-2xl p-3 pr-12 flex flex-col sm:flex-row items-center gap-3">
+          <img :src="thumbUrl" class="w-full sm:w-32 aspect-video object-cover rounded-xl shrink-0" alt="YouTube Thumbnail" />
+          <div class="flex-1 min-w-0 space-y-1">
+            <span class="px-2 py-0.5 rounded bg-red-500/10 text-red-500 font-black text-[10px] uppercase">YouTube Ready</span>
+            <h5 class="text-xs sm:text-sm font-black text-base-content line-clamp-1" x-text="loadingTitle ? 'Fetching title...' : (title || 'YouTube Video')"></h5>
+            <div class="flex gap-2 pt-1">
+              <button type="submit" class="btn btn-xs btn-primary text-primary-content rounded-lg font-black px-4">Save Attached Video</button>
+              <button type="button" @click="startEdit()" class="btn btn-xs btn-ghost border border-base-300 rounded-lg font-bold">Change URL</button>
+            </div>
+          </div>
+          <button type="button" @click="clearVideo(false)" class="absolute top-2.5 right-2.5 w-8 h-8 rounded-xl bg-error/10 hover:bg-error text-error hover:text-white flex items-center justify-center">
+            ×
+          </button>
+        </div>
+      </div>
+
+      <div x-show="vSource === 'upload'" style="display: none;" class="flex gap-2">
+        <input type="file" name="file" accept="video/*" class="file-input file-input-bordered file-input-sm flex-1 bg-base-100 rounded-xl" />
+        <button type="submit" class="btn btn-sm btn-primary text-primary-content rounded-xl font-black px-5">Upload &amp; Save</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Additional / Alternative Video Form -->
+  <div x-show="showAltVideoForm" x-collapse style="display: none;" class="pt-3 border-t border-base-300">
+    <form hx-post="/admin/digi-library/questions/{{ q.id }}/additional-videos"
+          hx-target="#digi-question-{{ q.id }}"
+          hx-swap="outerHTML"
+          hx-encoding="multipart/form-data"
+          class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-base-200/50 p-3 rounded-xl flex-wrap">
+      <select name="category" class="select select-bordered select-xs bg-base-100 rounded-lg font-bold">
+        <option value="teacher">Teacher Explanation</option>
+        <option value="animation">3D / Animation</option>
+        <option value="shortcut">Quick Trick</option>
+      </select>
+      <input type="text" name="label" placeholder="Label (e.g. Malayalam / Animated)" class="input input-bordered input-xs bg-base-100 rounded-lg" required />
+      <select name="video_source" x-model="altSource" class="select select-bordered select-xs bg-base-100 rounded-lg font-bold">
+        <option value="youtube">YouTube URL</option>
+        <option value="upload">Upload File</option>
+      </select>
+      <input x-show="altSource === 'youtube'" type="url" name="url" placeholder="https://www.youtube.com/watch?v=..." class="input input-bordered input-xs flex-1 bg-base-100 rounded-lg" />
+      <input x-show="altSource === 'upload'" style="display: none;" type="file" name="video_file" accept="video/*" class="file-input file-input-bordered file-input-xs flex-1 bg-base-100 rounded-lg" />
+      <button type="submit" class="btn btn-xs btn-secondary text-white rounded-lg font-bold">+ Add Alt Video</button>
+    </form>
+  </div>
+
+</div>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="saxazlight">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+  <title>Parent Portal Locked - SAXAZ</title>
+  <!-- Tailwind CSS + DaisyUI (compiled static) -->
+  <link rel="stylesheet" href="/static/css/app.css">
+  <style>
+    @media (max-width: 640px) {
+      input:not([type="radio"]):not([type="checkbox"]), select, textarea {
+        font-size: 16px !important;
+      }
+    }
+    /* Dynamic Responsive Split Layout for Desktop & Mobile */
+    @media (min-width: 1024px) {
+      body.auth-split-body {
+        display: flex !important;
+        flex-direction: row !important;
+        height: 100vh !important;
+        width: 100vw !important;
+        overflow: hidden !important;
+      }
+      .auth-left-panel {
+        display: flex !important;
+        width: 55% !important;
+        height: 100vh !important;
+        position: relative !important;
+        overflow: hidden !important;
+      }
+      .auth-right-panel {
+        display: flex !important;
+        width: 45% !important;
+        height: 100vh !important;
+        overflow-y: auto !important;
+      }
+    }
+    @media (max-width: 1023px) {
+      body.auth-split-body {
+        display: flex !important;
+        flex-direction: column !important;
+        min-height: 100vh !important;
+        width: 100% !important;
+        overflow-y: auto !important;
+      }
+      .auth-left-panel {
+        display: none !important;
+      }
+      .auth-right-panel {
+        display: flex !important;
+        width: 100% !important;
+        min-height: 100vh !important;
+        overflow-y: auto !important;
+        padding-top: 3rem !important;
+        padding-bottom: 3rem !important;
+      }
+    }
+  </style>
+</head>
+<body class="auth-split-body font-sans antialiased bg-base-100 text-base-content w-full">
+
+  <!-- Left Panel (Yellow) -->
+  <div class="auth-left-panel bg-primary flex-col justify-between relative overflow-hidden px-12 pt-16">
+    
+    <!-- Quote Text -->
+    <div class="z-10 max-w-2xl mt-8">
+      <h1 class="text-[3.5rem] leading-[1.05] font-black tracking-tighter text-[#1a1a1a] uppercase">
+        What we know <br>
+        is a drop, <br>
+        what we <br>
+        <span class="text-white">don't know <br> is an ocean.</span>
+      </h1>
+      <div class="mt-4 w-12 h-1 bg-black"></div>
+      <p class="mt-2 text-2xl font-medium text-black">Isaac Newton</p>
+    </div>
+    
+    <!-- Scientist Image -->
+    <div class="absolute bottom-0 right-[-10%] w-[85%] h-auto max-h-[85vh] object-cover object-bottom z-0 pointer-events-none">
+      <img src="/static/images/newton.jpg" alt="Isaac Newton" class="w-full h-full object-contain object-bottom mix-blend-multiply opacity-95 filter contrast-125 saturate-110">
+    </div>
+
+  </div>
+
+  <!-- Right Panel (PIN Form) -->
+  <div class="auth-right-panel bg-white flex flex-col justify-center items-center px-8 sm:px-16 lg:px-24 relative z-20">
+    
+    <div class="w-full max-w-md">
+      
+      <div class="mb-10 text-center">
+        <div class="w-20 h-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+        </div>
+        <h2 class="text-4xl font-black text-[#1a1a1a] tracking-tight mb-2">
+          Portal Locked
+        </h2>
+        <p class="text-base-content/60 text-sm">Please enter your 4-digit Parent PIN to access analytics.</p>
+      </div>
+
+      {% if error %}
+      <div class="alert alert-error bg-red-50 text-red-700 border-red-200 mb-6 text-sm py-3 rounded-2xl shadow-sm justify-center">
+        <span>{{ error }}</span>
+      </div>
+      {% endif %}
+
+      <form action="/login/parent-pin" method="POST" class="space-y-6">
+        <input type="hidden" name="uid" value="{{ uid }}">
+        
+        <div class="form-control w-full">
+          <input type="password" name="pin" placeholder="••••" 
+              class="input input-bordered w-full text-center bg-base-200/50 border-transparent focus:bg-white focus:border-primary focus:ring-1 focus:ring-primary rounded-full transition-all tracking-[1em] text-3xl h-16 font-black" required maxlength="4" pattern="[0-9]{4}">
+        </div>
+
+        <div class="mt-8">
+          <button type="submit" class="btn btn-primary w-full rounded-full text-[15px] font-bold py-3 h-auto min-h-0 text-[#1a1a1a] shadow-[0_4px_14px_0_rgba(244,170,0,0.39)] hover:shadow-[0_6px_20px_rgba(244,170,0,0.23)] hover:-translate-y-[1px] transition-all">
+            Unlock Portal
+          </button>
+        </div>
+      </form>
+      
+      <div class="text-center mt-8 text-sm">
+        <a href="/login" class="font-bold text-base-content/50 hover:text-[#1a1a1a] transition-colors underline decoration-2 underline-offset-2">Cancel and Go Back</a>
+      </div>
+      
+    </div>
+    
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="w-full max-w-[1600px] mx-auto pb-16 px-2 lg:px-6 space-y-8">
+  
+  <!-- Back to Digi Library -->
+  <div>
+    <a href="/student/digi-library" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-base-100 border-2 border-base-300 text-xs font-black uppercase tracking-widest text-base-content/70 hover:text-base-content hover:border-primary transition-all shadow-sm">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+      <span>Back to Digi-Library Books</span>
+    </a>
+  </div>
+
+  <!-- Sleek Book Edition Header -->
+  <div class="brilliant-card bg-base-100 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center gap-6">
+    {% if book.thumbnail_url %}
+      <img src="{{ book.thumbnail_url }}" alt="{{ book.title }}" class="w-36 sm:w-44 h-auto object-contain rounded-2xl shadow-md border-2 border-base-300 bg-base-200/40 shrink-0" />
+    {% else %}
+      <div class="w-24 h-32 sm:w-28 sm:h-36 rounded-2xl bg-primary/15 text-amber-700 flex flex-col items-center justify-center shadow-xs border-2 border-primary/30 shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+      </div>
+    {% endif %}
+    <div class="space-y-2">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="px-3 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider" style="background: #f8b000; color: #151515;">Labour India Book Edition</span>
+        {% if book.class_name %}
+        <span class="px-3 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider border border-base-300 bg-base-200 text-base-content">{{ book.class_name }}</span>
+        {% endif %}
+      </div>
+      <h1 class="text-2xl sm:text-3xl font-black text-base-content tracking-tight">{{ book.title }}</h1>
+      <p class="text-xs sm:text-sm text-base-content/70 font-medium max-w-3xl">
+        {{ book.description or 'Subjects are arranged below in exact book sequence. Select any subject to study its chapters, model answers, explanation videos, and AI Tutor tools.' }}
+      </p>
+    </div>
+  </div>
+
+  <!-- Ordered Subjects Grid -->
+  <div>
+    <div class="flex justify-between items-center mb-6">
+      <div>
+        <h2 class="text-xl sm:text-2xl font-black text-base-content tracking-tight">Subjects in Book Order</h2>
+        <p class="text-xs text-base-content/60 font-medium">Follow the subjects in sequence or jump to any subject in {{ book.title }}.</p>
+      </div>
+      <span class="px-3.5 py-1 rounded-full text-xs font-black" style="background: #f8b000; color: #151515;">{{ book.subjects|length }} Subject{% if book.subjects|length != 1 %}s{% endif %}</span>
+    </div>
+
+    {% if book.subjects %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {% for subject in book.subjects %}
+        <a href="/student/digi-library/subjects/{{ subject.id }}" class="group brilliant-card bg-base-100 rounded-3xl p-6 flex flex-col justify-between">
+          <div>
+            <!-- Top Row: Icon & Order Badge -->
+            <div class="flex justify-between items-start mb-4">
+              <div class="flex items-center gap-3">
+                {% if subject.thumbnail_url %}
+                  <img src="{{ subject.thumbnail_url }}" alt="{{ subject.name }}" class="w-16 h-auto max-h-24 rounded-2xl object-contain bg-base-200/40 shadow-sm border-2 border-base-300" />
+                {% else %}
+                  <div class="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm font-black text-xl border" style="background: #f8b000; color: #151515; border-color: #151515;">
+                    {{ subject.name[:1] }}
+                  </div>
+                {% endif %}
+                <span class="px-2.5 py-1 rounded-lg bg-base-200 border border-base-300 text-[11px] font-black uppercase tracking-wider text-base-content">
+                  Subject #{{ loop.index }}
+                </span>
+              </div>
+              <span class="px-2.5 py-0.5 rounded-full font-black text-xs border" style="background: rgba(248,176,0,0.22); color: #151515; border-color: #f8b000;">
+                {{ subject.bank_count }} Chapter{% if subject.bank_count != 1 %}s{% endif %}
+              </span>
+            </div>
+
+            <!-- Title & Subtitle -->
+            <h3 class="text-xl font-black text-base-content transition-colors mb-1">{{ subject.name }}</h3>
+            <p class="text-xs sm:text-sm text-base-content/70 font-medium mb-6 line-clamp-2">{{ subject.description or 'Study ordered chapters with model answers, explanation videos, AI Tutor & Scratchpad.' }}</p>
+          </div>
+
+          <div class="pt-4 border-t-2 border-base-200 flex justify-between items-center">
+            <div class="flex items-center gap-2 text-xs font-black text-base-content/80">
+              <svg class="w-4 h-4 shrink-0" style="color: #d97706;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+              <span>{{ subject.question_count }} Study Q&amp;As</span>
+            </div>
+
+            <span class="px-4 py-2 rounded-xl text-xs font-black shadow-xs inline-flex items-center gap-1.5 group-hover:scale-[1.03] transition-transform border" style="background: #f8b000; color: #151515; border-color: #151515;">
+              <span>Open Chapters</span>
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+            </span>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="brilliant-card bg-base-100 rounded-3xl p-12 text-center">
+      <p class="text-base-content/60 font-bold">No subjects have been added to this book edition yet.</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

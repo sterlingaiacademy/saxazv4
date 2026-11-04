@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Settings - SAXAZ{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6 pb-20 pt-12">
+  <div class="flex flex-col items-center text-center mb-8">
+    <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">My Preferences</h1>
+    <p class="text-base-content/70 mt-2">Customize your personal admin experience. These settings apply only to your account.</p>
+  </div>
+
+  {% if request.query_params.get('success') %}
+  <div class="bg-success/10 border border-success/20 px-6 py-4 rounded-[2rem] flex items-center gap-4 shadow-sm" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)" x-transition.opacity.duration.500ms>
+    <div class="w-12 h-12 rounded-full bg-success/20 flex items-center justify-center shrink-0">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+    </div>
+    <div>
+      <h3 class="font-bold text-success text-lg tracking-tight">Settings Saved!</h3>
+      <p class="text-success/80 text-sm font-medium">Your preferences have been updated successfully.</p>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="brilliant-card bg-base-100 shadow-sm border border-base-300 overflow-hidden">
+    <div class="p-8 md:p-12 relative z-10">
+      <form method="POST" action="/admin/settings" x-data="adminSettings()" x-effect="document.body.classList.toggle('custom-cursor-active', cursorMode === '1')">
+        <!-- Install Mobile / Desktop Web App (PWA) -->
+        <div class="flex flex-row items-center justify-between p-5 rounded-3xl gap-4 bg-primary/5 border border-primary/20 mb-10 max-w-4xl mx-auto"
+             x-data="{ installed: window.isSaxazStandalone && window.isSaxazStandalone() }"
+             @saxaz-pwa-status.window="installed = window.isSaxazStandalone && window.isSaxazStandalone()">
+          <div class="flex items-center gap-3.5 text-left min-w-0">
+            <img src="/static/images/pwa-icon-192.png?v=2" alt="SAXAZ App" class="w-12 h-12 rounded-2xl shadow-md shrink-0 bg-white border border-base-300" />
+            <div class="min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <h2 class="text-lg sm:text-xl font-black">Install Mobile App</h2>
+                <span class="badge badge-xs sm:badge-sm bg-primary text-[#151515] border-none font-black uppercase tracking-wider">Web App</span>
+              </div>
+              <p class="text-base-content/65 font-medium text-xs sm:text-sm mt-0.5">Install SAXAZ on your phone or computer for instant, full-screen access.</p>
+            </div>
+          </div>
+          <button type="button"
+                  @click="window.triggerSaxazAppInstall && window.triggerSaxazAppInstall()"
+                  class="btn btn-primary btn-circle w-12 h-12 min-h-0 text-[#151515] shadow-md hover:scale-105 transition-transform flex items-center justify-center shrink-0"
+                  :title="installed ? 'App Installed' : 'Install SAXAZ Web App'">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-12 lg:gap-20 w-full max-w-4xl mx-auto">
+          
+          <!-- Left Column: UI Settings -->
+          <div class="flex-1 flex flex-col gap-12">
+            <div class="flex flex-col items-center">
+              <h2 class="text-2xl font-black text-center mb-2">UI Sound Effects</h2>
+              <p class="text-base-content/60 text-center mb-6 font-medium min-h-[3rem] flex items-center justify-center">Toggle all platform interactive sounds.</p>
+            
+              <div class="bg-base-200 p-2 rounded-full inline-flex shadow-inner border border-base-300 gap-1">
+                <label class="cursor-pointer w-20 py-3 rounded-full text-base font-bold transition-all duration-300 flex items-center justify-center gap-2"
+                    :class="sfxMode === '1' ? 'bg-base-100 text-primary shadow-sm ring-1 ring-base-300 scale-105' : 'text-base-content/60 hover:text-base-content hover:bg-base-300/50'">
+                  <input type="radio" name="sfx_mode" value="1" class="sr-only" x-model="sfxMode" />
+                  On
+                </label>
+                
+                <label class="cursor-pointer w-24 py-3 rounded-full text-base font-bold transition-all duration-300 flex items-center justify-center gap-2"
+                    :class="sfxMode === '2' ? 'bg-base-100 text-secondary shadow-sm ring-1 ring-base-300 scale-105' : 'text-base-content/60 hover:text-base-content hover:bg-base-300/50'">
+                  <input type="radio" name="sfx_mode" value="2" class="sr-only" x-model="sfxMode" />
+                  Custom
+                </label>
+                
+                <label class="cursor-pointer w-20 py-3 rounded-full text-base font-bold transition-all duration-300 flex items-center justify-center gap-2"
+                    :class="sfxMode === '0' ? 'bg-base-100 text-error shadow-sm ring-1 ring-base-300 scale-105' : 'text-base-content/60 hover:text-base-content hover:bg-base-300/50'">
+                  <input type="radio" name="sfx_mode" value="0" class="sr-only" x-model="sfxMode" />
+                  Off
+                </label>
+              </div>
+              
+              <input type="hidden" name="sfx_custom" :value="JSON.stringify(sfxCustom)">
+
+              <!-- Custom Settings Grid -->
+              <div x-show="sfxMode === '2'" x-collapse class="w-full max-w-xs mt-6">
+                <div class="bg-base-200/50 rounded-3xl p-6 border border-base-300 grid grid-cols-1 gap-4 shadow-inner">
+                  <template x-for="(item, key) in sfxOptions" :key="key">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-2 text-base-content/60">
+                        <div class="w-5 h-5 flex items-center justify-center text-current" x-html="item.icon"></div>
+                        <span class="font-medium text-base-content/80 text-sm" x-text="item.label"></span>
+                      </div>
+                      <input type="checkbox" class="toggle toggle-sm toggle-secondary" 
+                          x-model="sfxCustom[key]" 
+                          @change="if(sfxCustom[key]) { window.SFX?.play(key) }"
+                          x-init="if(sfxCustom[key] === undefined) sfxCustom[key] = true" />
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Custom Cursor -->
+          <div class="flex-1 flex flex-col gap-12">
+            <div class="flex flex-col items-center">
+              <h2 class="text-2xl font-black text-center mb-2">Custom Cursor</h2>
+              <p class="text-base-content/60 text-center mb-6 font-medium min-h-[3rem] flex items-center justify-center">Magical, animated glowing cursors.</p>
+              
+              <div class="bg-base-200 p-2 rounded-full inline-flex shadow-inner border border-base-300 gap-1">
+                <label class="cursor-pointer w-32 py-3 rounded-full text-base font-bold transition-all duration-300 flex items-center justify-center gap-2"
+                    :class="cursorMode === '1' ? 'bg-base-100 text-primary shadow-sm ring-1 ring-base-300 scale-105' : 'text-base-content/60 hover:text-base-content hover:bg-base-300/50'">
+                  <input type="radio" name="cursor_mode" value="1" class="sr-only" x-model="cursorMode" />
+                  On
+                </label>
+                
+                <label class="cursor-pointer w-32 py-3 rounded-full text-base font-bold transition-all duration-300 flex items-center justify-center gap-2"
+                    :class="cursorMode === '0' ? 'bg-base-100 text-error shadow-sm ring-1 ring-base-300 scale-105' : 'text-base-content/60 hover:text-base-content hover:bg-base-300/50'">
+                  <input type="radio" name="cursor_mode" value="0" class="sr-only" x-model="cursorMode" />
+                  Off
+                </label>
+              </div>
+
+              <!-- Custom Cursor Effects Dropdown -->
+              <div x-show="cursorMode === '1'" x-collapse class="w-full max-w-[16rem] mt-6">
+                <div class="form-control w-full">
+                  <select name="cursor_effect" x-model="cursorEffect" class="select select-bordered select-secondary w-full bg-base-200/50 text-base font-medium rounded-2xl shadow-inner focus:outline-none">
+                    <option value="none">None</option>
+                    <option value="magic">Magic</option>
+                    <option value="bubbles">Bubbles</option>
+                    <option value="sparks">Sparks</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-12 flex justify-center items-center pt-8 border-t border-base-content/10">
+          <button type="submit" class="btn btn-primary rounded-full px-12 h-14 text-lg font-bold shadow-[0_0_20px_rgba(var(--p),0.4)] hover:scale-105 transition-transform">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+            Save Preferences
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+  Alpine.data('adminSettings', () => ({
+    sfxMode: '{{ user.sfx_mode | default("1") }}',
+    cursorMode: '{{ user.cursor_mode | default("0") }}',
+    sfxCustom: {{ (user.sfx_custom if user.sfx_custom and user.sfx_custom != '' else '{}') | safe }},
+    cursorEffect: '{{ user.cursor_effect | default("magic") }}',
+    
+    initialState: '',
+    
+    sfxOptions: {
+      'click': { label: 'Click', icon: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" /></svg>' },
+      'hover': { label: 'Hover', icon: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>' },
+      'pop': { label: 'Pop', icon: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>' },
+      'success': { label: 'Success', icon: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>' },
+      'whoosh': { label: 'Whoosh', icon: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>' }
+    },
+    
+    get currentState() {
+      return JSON.stringify({
+        sfxMode: String(this.sfxMode),
+        cursorMode: String(this.cursorMode),
+        sfxCustom: JSON.stringify(this.sfxCustom),
+        cursorEffect: String(this.cursorEffect)
+      });
+    },
+    
+    get isDirty() {
+      return this.currentState !== this.initialState;
+    },
+
+    init() {
+      if (typeof this.sfxCustom === 'string') {
+        try {
+          this.sfxCustom = JSON.parse(this.sfxCustom);
+        } catch (e) {
+          this.sfxCustom = {};
+        }
+      }
+      this.$nextTick(() => {
+        this.initialState = this.currentState;
+      });
+
+      const handleBeforeUnload = (e) => {
+        if (this.isDirty) {
+          e.preventDefault();
+          e.returnValue = ''; 
+        }
+      };
+      window.addEventListener('beforeunload', handleBeforeUnload);
+
+      document.querySelectorAll('a').forEach(a => {
+        a.addEventListener('click', (e) => {
+          const isSubmitBtn = a.closest('button[type="submit"]');
+          if (this.isDirty && !isSubmitBtn && !a.hasAttribute('download') && a.href && !a.href.startsWith('javascript:')) {
+            e.preventDefault();
+            Swal.fire({
+              title: 'Save Changes?',
+              text: "You have unsaved settings.",
+              icon: 'warning',
+              showCancelButton: true,
+              confirmButtonText: 'Yes, Save',
+              cancelButtonText: 'No, Discard',
+              buttonsStyling: false,
+              customClass: {
+                popup: 'rounded-[2rem] shadow-2xl border border-base-content/10 bg-base-100 p-6',
+                title: 'text-2xl font-black text-base-content mt-4',
+                htmlContainer: 'text-base-content/70 font-medium mt-2',
+                actions: 'mt-6 gap-4',
+                confirmButton: 'btn btn-primary rounded-full px-8 shadow-[0_0_15px_rgba(var(--p),0.4)] text-[#1a1a1a] font-bold hover:scale-105 transition-transform',
+                cancelButton: 'btn btn-outline border-base-content/20 rounded-full px-8 font-bold hover:bg-base-300 hover:scale-105 transition-transform'
+              }
+            }).then((result) => {
+              if (result.isConfirmed) {
+                const formData = new FormData(document.querySelector('form'));
+                fetch('/admin/settings', {
+                  method: 'POST',
+                  body: formData
+                }).then(() => {
+                  window.removeEventListener('beforeunload', handleBeforeUnload);
+                  window.location.href = a.href;
+                });
+              } else if (result.dismiss === Swal.DismissReason.cancel) {
+                window.removeEventListener('beforeunload', handleBeforeUnload);
+                window.location.href = a.href;
+              }
+            });
+          }
+        });
+      });
+      
+      document.querySelector('form').addEventListener('submit', () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+      });
+    }
+  }));
+});
+</script>
+{% endblock %}

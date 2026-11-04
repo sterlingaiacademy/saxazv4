@@ -1,0 +1,634 @@
+<!-- Enhanced Tools Box Partial (Math & Science Symbols, Formulas, Elements) -->
+<div x-data="mathTools()" class="fixed inset-0 pointer-events-none z-50">
+  
+  <!-- Floating Tools Box Panel -->
+  <div x-show="showSymbols" 
+       x-transition:enter="transition duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+       x-transition:enter-start="opacity-0 scale-95 -translate-y-3"
+       x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+       x-transition:leave="transition duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
+       x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+       x-transition:leave-end="opacity-0 scale-95 -translate-y-3"
+        class="math-tools-panel absolute bg-white/95 backdrop-blur-2xl rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.2)] border border-slate-200/90 overflow-hidden pointer-events-auto flex flex-col transition-shadow duration-300 text-slate-900 select-none z-[100]"
+        style="z-index: 100;"
+        :style="`top: ${symPos.y}px; left: ${symPos.x}px; width: ${boxSize.width}px; max-height: ${boxSize.height}px;`">
+      
+    <!-- Header / Drag Handle -->
+    <div @mousedown="startDrag($event)" class="math-tools-header bg-gradient-to-r from-slate-100 via-white to-slate-100 px-4 py-3 flex justify-between items-center cursor-move select-none border-b border-slate-200">
+      <div class="flex items-center gap-2.5">
+        <div class="w-7 h-7 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white shadow-md">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a1 1 0 01-1-1V9a1 1 0 011-1h1a2 2 0 100-4H4a1 1 0 01-1-1V4a1 1 0 011-1h3a1 1 0 011 1v1z" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="font-extrabold text-sm text-slate-900 leading-tight flex items-center gap-1.5">
+            Tools Box
+            <span class="bg-violet-100 text-violet-700 border border-violet-200 px-1.5 py-0.5 rounded-full font-bold text-[9px] uppercase">Symbols</span>
+          </h3>
+          <p class="text-[10px] text-slate-500 font-medium leading-none mt-0.5">Click or drag to insert</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-1.5">
+        <!-- Quick Size Presets (Desktop Only) -->
+        <div class="math-tools-size-box hidden sm:flex bg-slate-100 border border-slate-200 rounded-lg p-0.5 text-[10px] font-bold text-slate-600">
+          <button @click="setSize(330, 390)" :class="boxSize.width <= 350 ? 'bg-white text-violet-700 shadow-2xs font-extrabold' : 'hover:text-slate-900'" class="px-1.5 py-0.5 rounded transition-all" title="Compact (S)">S</button>
+          <button @click="setSize(420, 450)" :class="boxSize.width > 350 && boxSize.width <= 460 ? 'bg-white text-violet-700 shadow-2xs font-extrabold' : 'hover:text-slate-900'" class="px-1.5 py-0.5 rounded transition-all" title="Medium (M)">M</button>
+          <button @click="setSize(540, 560)" :class="boxSize.width > 460 ? 'bg-white text-violet-700 shadow-2xs font-extrabold' : 'hover:text-slate-900'" class="px-1.5 py-0.5 rounded transition-all" title="Large (L)">L</button>
+        </div>
+
+        <!-- Close Button -->
+        <button @click="showSymbols = false; document.body.classList.remove('math-tools-open')" class="math-tools-close-btn w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors flex items-center justify-center cursor-pointer">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Insertion Toast Notification -->
+    <div x-show="toastMessage" 
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 -translate-y-2"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 -translate-y-2"
+         class="bg-emerald-50 border-b border-emerald-200 text-emerald-800 px-4 py-1.5 text-xs font-bold flex items-center justify-between"
+         style="display: none;">
+      <span class="flex items-center gap-1.5">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>
+        <span x-text="toastMessage"></span>
+      </span>
+      <span class="text-[10px] text-emerald-600 font-mono font-semibold">Inserted</span>
+    </div>
+    
+    <!-- Category Tabs -->
+    <div class="math-tools-tabs flex bg-slate-100 p-1 gap-1 border-b border-slate-200">
+      <button @click="symbolCategory = 'math'" 
+              :class="symbolCategory === 'math' ? 'bg-white text-violet-700 shadow-sm border border-slate-200 font-extrabold' : 'text-slate-600 hover:bg-white/70 hover:text-slate-900 font-bold'" 
+              class="flex-1 py-1.5 px-1.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 21 18-18"/><path d="M5 21v-4"/><path d="M9 21v-2"/><path d="M13 21v-4"/><path d="M17 21v-2"/><path d="M21 21v-4"/><path d="M3 5h4"/><path d="M3 9h2"/><path d="M3 13h4"/><path d="M3 17h2"/><path d="M3 21h18"/></svg>
+        Math
+      </button>
+      <button @click="symbolCategory = 'physics'" 
+              :class="symbolCategory === 'physics' ? 'bg-white text-violet-700 shadow-sm border border-slate-200 font-extrabold' : 'text-slate-600 hover:bg-white/70 hover:text-slate-900 font-bold'" 
+              class="flex-1 py-1.5 px-1.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        Physics
+      </button>
+      <button @click="symbolCategory = 'chem'" 
+              :class="symbolCategory === 'chem' ? 'bg-white text-violet-700 shadow-sm border border-slate-200 font-extrabold' : 'text-slate-600 hover:bg-white/70 hover:text-slate-900 font-bold'" 
+              class="flex-1 py-1.5 px-1.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.31L4.69 19.3A2 2 0 0 0 6.44 22h11.12a2 2 0 0 0 1.75-2.7L14 9.31V2"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 0 0-4 0"/></svg>
+        Chem
+      </button>
+      <button @click="symbolCategory = 'templates'" 
+              :class="symbolCategory === 'templates' ? 'bg-white text-violet-700 shadow-sm border border-slate-200 font-extrabold' : 'text-slate-600 hover:bg-white/70 hover:text-slate-900 font-bold'" 
+              class="flex-1 py-1.5 px-1.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Formulas
+      </button>
+    </div>
+    
+    <!-- Search Bar -->
+    <div class="math-tools-search-box px-3 pt-2.5 pb-2 bg-white border-b border-slate-100">
+      <div class="relative">
+        <input type="text" 
+               x-model="searchQuery" 
+               :placeholder="symbolCategory === 'chem' ? 'Search element or compound...' : 'Search symbol or term...'" 
+               class="math-tools-search-input w-full pl-8 pr-7 py-1.5 text-xs font-medium rounded-xl bg-slate-50 focus:bg-white text-slate-900 placeholder-slate-400 border border-slate-200 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all" 
+               @keydown.stop>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <button x-show="searchQuery.length > 0" @click="searchQuery = ''" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>
+        </button>
+      </div>
+
+      <!-- Chemistry Search Quick Results -->
+      <div x-show="symbolCategory === 'chem' && searchQuery.length > 0" class="math-tools-chem-search max-h-36 overflow-y-auto mt-1.5 rounded-xl bg-slate-50 p-1 border border-slate-200">
+        <template x-for="item in getFilteredChemSearch()">
+          <button draggable="true" 
+                  @dragstart="$event.dataTransfer.setData('text/plain', item.formula)" 
+                  @click="insertSymbol(item.formula); searchQuery = ''" 
+                  class="w-full text-left px-2.5 py-1 text-xs hover:bg-violet-600 hover:text-white text-slate-800 rounded-lg flex justify-between items-center transition-colors cursor-move group mb-0.5">
+            <span x-text="item.name" class="capitalize font-semibold"></span>
+            <span x-text="item.formula" class="font-mono font-bold tracking-wider px-1.5 py-0.5 rounded bg-white text-violet-700 group-hover:bg-white/20 group-hover:text-white border border-slate-200 group-hover:border-transparent"></span>
+          </button>
+        </template>
+        <div x-show="getFilteredChemSearch().length === 0" class="text-xs text-center py-2 text-slate-400 italic">No matching element found</div>
+      </div>
+    </div>
+    
+    <!-- Symbol Grid Container (Auto-reflowing) -->
+    <div class="math-tools-grid-box p-3 overflow-y-auto bg-slate-50/60 scrollbar-thin flex-1" :style="`max-height: ${boxSize.height - 170}px;`">
+      
+      <!-- Standard Symbols View (Math, Physics, Chem) -->
+      <div x-show="symbolCategory !== 'templates'" class="grid grid-cols-[repeat(auto-fill,minmax(40px,1fr))] gap-1.5">
+        <template x-for="sym in getFilteredSymbols()">
+          <button draggable="true" 
+                  @dragstart="$event.dataTransfer.setData('text/plain', sym.val)" 
+                  @click="insertSymbol(sym.val)" 
+                  class="math-tools-btn h-9 bg-white hover:bg-violet-600 text-slate-800 hover:text-white font-mono font-bold text-sm rounded-xl border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-violet-600 transition-all duration-150 hover:scale-105 active:scale-95 flex items-center justify-center cursor-move group relative select-none" 
+                  :title="sym.label || 'Click or Drag to insert'">
+            <span x-text="sym.val" :class="{'text-xs font-bold': sym.val.length > 2}" class="pointer-events-none"></span>
+          </button>
+        </template>
+      </div>
+
+      <!-- Formulas & Templates View -->
+      <div x-show="symbolCategory === 'templates'" class="grid grid-cols-1 gap-2" style="display: none;">
+        <template x-for="tmpl in getFilteredTemplates()">
+          <button @click="insertSymbol(tmpl.code)" 
+                  class="math-tools-formula-btn w-full text-left p-2.5 rounded-xl bg-white hover:bg-violet-50/80 border border-slate-200/90 hover:border-violet-400 transition-all shadow-2xs flex items-center justify-between group cursor-pointer">
+            <div>
+              <div class="text-xs font-extrabold text-slate-900 group-hover:text-violet-700 transition-colors" x-text="tmpl.name"></div>
+              <div class="text-[11px] font-mono text-slate-600 mt-0.5 font-medium" x-text="tmpl.code"></div>
+            </div>
+            <span class="px-2 py-0.5 text-[10px] font-bold text-violet-700 bg-violet-100 group-hover:bg-violet-600 group-hover:text-white rounded-lg transition-colors">Insert</span>
+          </button>
+        </template>
+      </div>
+    </div>
+
+    <!-- Footer Status / Guide + Resize Handle -->
+    <div class="math-tools-footer px-3 py-1.5 bg-slate-100/90 border-t border-slate-200 flex justify-between items-center text-[10px] text-slate-600 font-medium">
+      <span class="truncate flex items-center gap-1.5">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-violet-600 inline shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        Focus field &amp; click to insert
+      </span>
+      <div class="flex items-center gap-1.5 flex-shrink-0">
+        <span class="math-tools-badge font-mono font-bold text-slate-700 bg-white px-1.5 py-0.5 rounded border border-slate-200 text-[9px]" x-text="`${getFilteredSymbols().length} symbols`"></span>
+        <!-- Drag Resize Handle Icon -->
+        <div @mousedown.stop.prevent="startResize($event)" 
+             class="math-tools-resize-handle hidden sm:flex w-5 h-5 rounded bg-slate-200/80 hover:bg-violet-600 hover:text-white text-slate-500 items-center justify-center cursor-se-resize transition-all select-none shadow-2xs group"
+             title="Click & Drag to resize Tools Box">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 transform rotate-90" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M6 4a1 1 0 011 1v10a1 1 0 11-2 0V5a1 1 0 011-1zm6 0a1 1 0 011 1v10a1 1 0 11-2 0V5a1 1 0 011-1z" />
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Global Docked Side-Tab Button for Tools Box (Right Edge) -->
+  <div id="math-tools-dock-wrap" class="fixed top-36 right-0 pointer-events-auto z-40">
+    <button id="math-tools-dock-btn" @click="toggleSymbols" 
+        class="group relative overflow-hidden inline-flex items-center gap-2 px-3 py-2.5 rounded-l-2xl bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-[-6px_8px_30px_rgba(99,102,241,0.4)] border-l border-t border-b border-white/30 hover:-translate-x-2 transition-all duration-200 cursor-pointer select-none" 
+        title="Open Tools Box">
+      
+      <!-- Icon Container -->
+      <div class="w-7 h-7 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white font-bold text-xs shadow-inner group-hover:scale-110 transition-transform">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a1 1 0 01-1-1V9a1 1 0 011-1h1a2 2 0 100-4H4a1 1 0 01-1-1V4a1 1 0 011-1h3a1 1 0 011 1v1z" />
+        </svg>
+      </div>
+      
+      <!-- Text Labels -->
+      <div class="flex flex-col text-left">
+        <span class="font-extrabold text-[11px] uppercase tracking-wider leading-none text-white drop-shadow-xs">Tools</span>
+        <span class="text-[9px] text-white/90 font-mono leading-none mt-0.5">π &amp; Formulas</span>
+      </div>
+
+      <!-- Slide Indicator Chevron -->
+      <div class="ml-0.5 w-4 h-4 rounded-full bg-white/15 flex items-center justify-center text-white group-hover:bg-white group-hover:text-violet-700 transition-all shadow-xs">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7" />
+        </svg>
+      </div>
+    </button>
+  </div>
+
+<!-- High-Contrast Styling for Dark & Light Themes -->
+<style>
+/* Guaranteed vibrant visibility for Tools dock button in Light & Dark mode */
+#math-tools-dock-btn {
+  background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 50%, #6366f1 100%) !important;
+  color: #ffffff !important;
+  box-shadow: -6px 8px 30px rgba(124, 58, 237, 0.45) !important;
+  border-left: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+#math-tools-dock-btn:hover {
+  background: linear-gradient(135deg, #6d28d9 0%, #7c3aed 50%, #4f46e5 100%) !important;
+  box-shadow: -8px 12px 35px rgba(124, 58, 237, 0.55) !important;
+}
+
+#math-tools-dock-wrap {
+  transition: right 300ms cubic-bezier(0.16, 1, 0.3, 1), top 300ms cubic-bezier(0.16, 1, 0.3, 1), bottom 300ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms ease;
+}
+@media (min-width: 1024px) {
+  body.question-palette-open #math-tools-dock-wrap,
+  body.mini-tutor-open #math-tools-dock-wrap {
+    top: auto !important;
+    bottom: 88px !important;
+    right: 440px !important;
+    z-index: 130 !important;
+  }
+}
+@media (max-width: 640px) {
+  /* On mobile phones, Tools Box renders as a responsive bottom sheet */
+  .math-tools-panel {
+    position: fixed !important;
+    top: auto !important;
+    bottom: 8px !important;
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    max-width: calc(100vw - 16px) !important;
+    height: 72dvh !important;
+    max-height: 75dvh !important;
+    z-index: 150 !important;
+    margin: 0 auto !important;
+    border-radius: 1.5rem !important;
+  }
+  .math-tools-grid-box {
+    max-height: calc(72dvh - 180px) !important;
+  }
+}
+
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-panel {
+  background-color: rgba(17, 24, 39, 0.98) !important;
+  backdrop-filter: blur(24px) !important;
+  border-color: #374151 !important;
+  color: #f9fafb !important;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-header {
+  background: linear-gradient(to right, #111827, #1f2937, #111827) !important;
+  border-color: #374151 !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-header h3 {
+  color: #ffffff !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-header p {
+  color: #9ca3af !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-size-box {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+  color: #9ca3af !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-size-box button {
+  color: #9ca3af !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-size-box button:hover {
+  color: #ffffff !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-size-box button.bg-white {
+  background-color: #7c3aed !important;
+  color: #ffffff !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-close-btn {
+  background-color: #1f2937 !important;
+  color: #9ca3af !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-close-btn:hover {
+  background-color: #374151 !important;
+  color: #ffffff !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-tabs {
+  background-color: #111827 !important;
+  border-color: #374151 !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-tabs button {
+  color: #9ca3af !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-tabs button.bg-white {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+  color: #a78bfa !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-search-box {
+  background-color: #111827 !important;
+  border-color: #374151 !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-search-input {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+  color: #f9fafb !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-search-input::placeholder {
+  color: #6b7280 !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-chem-search {
+  background-color: #111827 !important;
+  border-color: #374151 !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-chem-search button {
+  color: #e5e7eb !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-grid-box {
+  background-color: #0f172a !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-btn {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f1f5f9 !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-btn:hover {
+  background-color: #7c3aed !important;
+  border-color: #8b5cf6 !important;
+  color: #ffffff !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-formula-btn {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-formula-btn:hover {
+  background-color: #2e1065 !important;
+  border-color: #7c3aed !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-formula-btn .text-slate-900 {
+  color: #f1f5f9 !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-formula-btn .text-slate-600 {
+  color: #94a3b8 !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-footer {
+  background-color: #111827 !important;
+  border-color: #374151 !important;
+  color: #9ca3af !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-badge {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+  color: #e5e7eb !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-resize-handle {
+  background-color: #1f2937 !important;
+  color: #9ca3af !important;
+}
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .math-tools-resize-handle:hover {
+  background-color: #7c3aed !important;
+  color: #ffffff !important;
+}
+</style>
+
+<script>
+function mathTools() {
+  return {
+    showSymbols: false,
+    symbolCategory: 'math',
+    symPos: {x: 0, y: 0},
+    boxSize: {width: 390, height: 430},
+    dragging: false,
+    resizing: false,
+    dragOffset: {x: 0, y: 0},
+    resizeStart: {x: 0, y: 0, width: 0, height: 0},
+    searchQuery: '',
+    toastMessage: '',
+    toastTimeout: null,
+    
+    setSize(w, h) {
+      this.boxSize = {width: w, height: h};
+    },
+
+    startResize(e) {
+      this.resizing = true;
+      this.resizeStart = {
+        x: e.clientX,
+        y: e.clientY,
+        width: this.boxSize.width,
+        height: this.boxSize.height
+      };
+    },
+    
+    symbolLists: {
+      math: [
+        {val: 'π', label: 'Pi'}, {val: 'e', label: 'Euler number'}, {val: 'θ', label: 'Theta'}, {val: 'α', label: 'Alpha'}, 
+        {val: 'β', label: 'Beta'}, {val: 'γ', label: 'Gamma'}, {val: 'Δ', label: 'Delta'}, {val: 'Σ', label: 'Sigma'}, 
+        {val: 'Ω', label: 'Omega'}, {val: 'μ', label: 'Mu'}, {val: 'λ', label: 'Lambda'}, {val: '√', label: 'Square Root'}, 
+        {val: '∛', label: 'Cube Root'}, {val: '±', label: 'Plus-minus'}, {val: '×', label: 'Multiply'}, {val: '÷', label: 'Divide'}, 
+        {val: '≈', label: 'Approximately'}, {val: '≠', label: 'Not Equal'}, {val: '≤', label: 'Less than/Equal'}, {val: '≥', label: 'Greater than/Equal'}, 
+        {val: '∞', label: 'Infinity'}, {val: '°', label: 'Degree'}, {val: '²', label: 'Square'}, {val: '³', label: 'Cube'}, 
+        {val: '½', label: 'Half'}, {val: '¼', label: 'Quarter'}, {val: 'sin', label: 'Sine'}, {val: 'cos', label: 'Cosine'}, 
+        {val: 'tan', label: 'Tangent'}, {val: 'log', label: 'Logarithm'}, {val: 'ln', label: 'Natural Log'}, {val: '!', label: 'Factorial'}, 
+        {val: '∫', label: 'Integral'}, {val: '∬', label: 'Double Integral'}, {val: '∑', label: 'Summation'}, {val: '∏', label: 'Product'},
+        {val: 'lim', label: 'Limit'}, {val: 'd/dx', label: 'Derivative'}, {val: '∈', label: 'Element of'}, {val: '∉', label: 'Not element of'},
+        {val: '⊂', label: 'Subset'}, {val: '⊆', label: 'Subset equal'}, {val: '∪', label: 'Union'}, {val: '∩', label: 'Intersection'},
+        {val: '∀', label: 'For all'}, {val: '∃', label: 'Exists'}, {val: '∴', label: 'Therefore'}, {val: '∵', label: 'Because'}
+      ],
+      physics: [
+        {val: 'v', label: 'Velocity'}, {val: 'a', label: 'Acceleration'}, {val: 't', label: 'Time'}, {val: 'F', label: 'Force'}, 
+        {val: 'm', label: 'Mass'}, {val: 'E', label: 'Energy'}, {val: 'P', label: 'Power'}, {val: 'W', label: 'Work'}, 
+        {val: 'p', label: 'Momentum'}, {val: 'τ', label: 'Torque'}, {val: 'ω', label: 'Angular Speed'}, {val: 'T', label: 'Period / Temp'}, 
+        {val: 'f', label: 'Frequency'}, {val: 'c', label: 'Speed of Light'}, {val: 'h', label: 'Planck Constant'}, {val: 'G', label: 'Gravitational Const'}, 
+        {val: 'g', label: 'Gravity'}, {val: 'ρ', label: 'Density'}, {val: 'I', label: 'Current'}, {val: 'R', label: 'Resistance'}, 
+        {val: 'C', label: 'Capacitance'}, {val: 'L', label: 'Inductance'}, {val: 'B', label: 'Magnetic Field'}, {val: 'λ', label: 'Wavelength'}, 
+        {val: 'ε', label: 'Permittivity'}, {val: 'μ₀', label: 'Permeability'}, {val: 'ε₀', label: 'Vacuum Permittivity'}, {val: 'Φ', label: 'Flux'}, 
+        {val: 'Ψ', label: 'Wave function'}, {val: '∇', label: 'Nabla/Gradient'}, {val: '∂', label: 'Partial diff'}, {val: '∝', label: 'Proportional'}, 
+        {val: 'm/s', label: 'Meters per second'}, {val: 'm/s²', label: 'Meters per second squared'}, {val: 'N', label: 'Newton'}, {val: 'J', label: 'Joule'},
+        {val: 'W', label: 'Watt'}, {val: 'Pa', label: 'Pascal'}, {val: 'Hz', label: 'Hertz'}, {val: 'Ω', label: 'Ohm'},
+        {val: 'V', label: 'Volt'}, {val: 'A', label: 'Ampere'}, {val: 'kg', label: 'Kilogram'}, {val: 'mol', label: 'Mole'}
+      ],
+      chem: [
+        {val: '→', label: 'Reaction Arrow'}, {val: '⇌', label: 'Equilibrium Arrow'}, {val: 'Δ', label: 'Heat'}, {val: '₀', label: 'Subscript 0'}, 
+        {val: '₁', label: 'Subscript 1'}, {val: '₂', label: 'Subscript 2'}, {val: '₃', label: 'Subscript 3'}, {val: '₄', label: 'Subscript 4'}, 
+        {val: '₅', label: 'Subscript 5'}, {val: '₆', label: 'Subscript 6'}, {val: '₇', label: 'Subscript 7'}, {val: '₈', label: 'Subscript 8'}, 
+        {val: '₉', label: 'Subscript 9'}, {val: '⁺', label: 'Positive Charge'}, {val: '⁻', label: 'Negative Charge'}, {val: '²⁺', label: '2+ Charge'},
+        {val: '³⁺', label: '3+ Charge'}, {val: '²⁻', label: '2- Charge'}, {val: '°C', label: 'Celsius'}, {val: '(s)', label: 'Solid'}, 
+        {val: '(l)', label: 'Liquid'}, {val: '(g)', label: 'Gas'}, {val: '(aq)', label: 'Aqueous'}, {val: 'e⁻', label: 'Electron'}, 
+        {val: 'H⁺', label: 'Hydrogen Ion'}, {val: 'OH⁻', label: 'Hydroxide Ion'}, {val: 'pH', label: 'pH'}, {val: 'K', label: 'Potassium'}, 
+        {val: 'Na', label: 'Sodium'}, {val: 'Cl', label: 'Chlorine'}, {val: 'O', label: 'Oxygen'}, {val: 'H', label: 'Hydrogen'}, 
+        {val: 'C', label: 'Carbon'}, {val: 'N', label: 'Nitrogen'}, {val: 'Fe', label: 'Iron'}, {val: 'Cu', label: 'Copper'}, 
+        {val: 'S', label: 'Sulfur'}, {val: 'P', label: 'Phosphorus'}, {val: 'Pb', label: 'Lead'}, {val: 'Zn', label: 'Zinc'}
+      ]
+    },
+    
+    formulaTemplates: [
+      {name: 'Fraction (a/b)', code: '(a / b)'},
+      {name: 'Quadratic Equation', code: 'ax² + bx + c = 0'},
+      {name: 'Pythagorean Theorem', code: 'a² + b² = c²'},
+      {name: 'Circle Area', code: 'A = πr²'},
+      {name: 'Trig Identity', code: 'sin²(θ) + cos²(θ) = 1'},
+      {name: 'Einstein Mass-Energy', code: 'E = mc²'},
+      {name: 'Newton Second Law', code: 'F = ma'},
+      {name: 'Ohm\'s Law', code: 'V = I × R'},
+      {name: 'Kinematic Equation', code: 'v = u + at'},
+      {name: 'Water Molecule', code: 'H₂O'},
+      {name: 'Carbon Dioxide', code: 'CO₂'},
+      {name: 'Sulfuric Acid', code: 'H₂SO₄'},
+      {name: 'Lead Nitrate Thermal Decomposition', code: '2Pb(NO₃)₂ → 2PbO + 4NO₂ + O₂'}
+    ],
+
+    periodicTable: {
+      'hydrogen': 'H₂', 'helium': 'He', 'lithium': 'Li', 'beryllium': 'Be', 'boron': 'B', 'carbon': 'C', 'nitrogen': 'N₂', 'oxygen': 'O₂', 'fluorine': 'F₂', 'neon': 'Ne',
+      'sodium': 'Na', 'magnesium': 'Mg', 'aluminum': 'Al', 'silicon': 'Si', 'phosphorus': 'P₄', 'sulfur': 'S₈', 'chlorine': 'Cl₂', 'argon': 'Ar',
+      'potassium': 'K', 'calcium': 'Ca', 'scandium': 'Sc', 'titanium': 'Ti', 'vanadium': 'V', 'chromium': 'Cr', 'manganese': 'Mn', 'iron': 'Fe', 'cobalt': 'Co', 'nickel': 'Ni', 'copper': 'Cu', 'zinc': 'Zn',
+      'silver': 'Ag', 'gold': 'Au', 'platinum': 'Pt', 'mercury': 'Hg', 'lead': 'Pb', 'tin': 'Sn', 'bromine': 'Br₂', 'iodine': 'I₂',
+      'water': 'H₂O', 'carbon dioxide': 'CO₂', 'ammonia': 'NH₃', 'methane': 'CH₄', 'sulfuric acid': 'H₂SO₄', 'hydrochloric acid': 'HCl', 'nitric acid': 'HNO₃', 'sodium hydroxide': 'NaOH',
+      'lead nitrate': 'Pb(NO₃)₂', 'lead oxide': 'PbO', 'nitrogen dioxide': 'NO₂', 'ferrous sulphate': 'FeSO₄', 'ferric oxide': 'Fe₂O₃', 'sulphur dioxide': 'SO₂', 'sulphur trioxide': 'SO₃',
+      'glucose': 'C₆H₁₂O₆', 'ethanol': 'C₂H₅OH', 'sodium chloride': 'NaCl', 'calcium carbonate': 'CaCO₃', 'ozone': 'O₃'
+    },
+    
+    getFilteredSymbols() {
+      let list = this.symbolLists[this.symbolCategory] || [];
+      if (!this.searchQuery) return list;
+      let q = this.searchQuery.toLowerCase();
+      return list.filter(item => item.val.toLowerCase().includes(q) || (item.label && item.label.toLowerCase().includes(q)));
+    },
+
+    getFilteredTemplates() {
+      if (!this.searchQuery) return this.formulaTemplates;
+      let q = this.searchQuery.toLowerCase();
+      return this.formulaTemplates.filter(t => t.name.toLowerCase().includes(q) || t.code.toLowerCase().includes(q));
+    },
+    
+    getFilteredChemSearch() {
+      if (!this.searchQuery) return [];
+      let q = this.searchQuery.toLowerCase();
+      let results = [];
+      for (let key in this.periodicTable) {
+        if (key.includes(q) || this.periodicTable[key].toLowerCase().includes(q)) {
+          results.push({name: key, formula: this.periodicTable[key]});
+        }
+      }
+      return results.slice(0, 15);
+    },
+    
+    isValidTextInput(el) {
+      if (!el || el.disabled || el.readOnly) return false;
+      const xModel = el.getAttribute('x-model') || '';
+      if (['searchQuery', 'paletteSearch', 'quickDrawInput'].includes(xModel)) return false;
+      if (el.tagName === 'TEXTAREA') return true;
+      if (el.tagName === 'INPUT') {
+        const type = (el.getAttribute('type') || 'text').toLowerCase();
+        return ['text', 'search', 'number'].includes(type);
+      }
+      return false;
+    },
+
+    init() {
+      this.activeElement = null;
+      document.addEventListener('focusin', (e) => {
+        if (this.isValidTextInput(e.target)) {
+          this.activeElement = e.target;
+        }
+      });
+      
+      document.addEventListener('mousemove', (e) => {
+        if (this.resizing) {
+          let deltaX = e.clientX - this.resizeStart.x;
+          let deltaY = e.clientY - this.resizeStart.y;
+          let newWidth = Math.max(280, Math.min(680, this.resizeStart.width + deltaX));
+          let newHeight = Math.max(280, Math.min(750, this.resizeStart.height + deltaY));
+          this.boxSize = { width: newWidth, height: newHeight };
+          return;
+        }
+
+        if (this.dragging) {
+          let newX = e.clientX - this.dragOffset.x;
+          let newY = e.clientY - this.dragOffset.y;
+          
+          newX = Math.max(10, Math.min(newX, window.innerWidth - 200));
+          newY = Math.max(10, Math.min(newY, window.innerHeight - 100));
+          
+          this.symPos = {x: newX, y: newY};
+        }
+      });
+      
+      document.addEventListener('mouseup', () => {
+        this.dragging = false;
+        this.resizing = false;
+      });
+
+      // Global toggle event
+      window.addEventListener('toggle-math-tools', () => {
+        this.toggleSymbols();
+      });
+    },
+    
+    startDrag(e) {
+      this.dragging = true;
+      this.dragOffset = {
+        x: e.clientX - this.symPos.x,
+        y: e.clientY - this.symPos.y
+      };
+    },
+
+    toggleSymbols() {
+      this.showSymbols = !this.showSymbols;
+      document.body.classList.toggle('math-tools-open', this.showSymbols);
+      if (this.showSymbols) {
+        const isMobile = window.innerWidth < 640;
+        const panelWidth = Math.min(this.boxSize.width, window.innerWidth - 32);
+
+        if (isMobile) {
+          this.symPos = {
+            x: Math.max(10, Math.round((window.innerWidth - panelWidth) / 2)),
+            y: Math.max(50, Math.round((window.innerHeight - Math.min(this.boxSize.height, window.innerHeight - 80)) / 2))
+          };
+        } else {
+          // Initialize cleanly under the docked Tools button if visible, or center if hidden
+          const btn = document.getElementById('math-tools-dock-btn');
+          const isBtnVisible = btn && btn.offsetParent !== null && btn.getBoundingClientRect().width > 0;
+          
+          if (isBtnVisible) {
+            const btnRect = btn.getBoundingClientRect();
+            // Spawn strictly below the button with a 12px margin
+            const startY = Math.round(btnRect.bottom + 12);
+            const availableHeight = window.innerHeight - startY - 20;
+            if (this.boxSize.height > availableHeight && availableHeight >= 280) {
+              this.boxSize.height = availableHeight;
+            }
+            
+            const isPaletteOpen = document.body.classList.contains('question-palette-open');
+            let startX;
+            if (isPaletteOpen && window.innerWidth >= 1024) {
+              startX = Math.max(16, window.innerWidth - panelWidth - 450);
+            } else {
+              startX = Math.max(16, Math.round(btnRect.right - panelWidth - 10));
+            }
+            
+            this.symPos = { x: startX, y: startY };
+          } else {
+            // Side dock hidden (e.g. Tutor page or tablet): center nicely
+            const startX = Math.max(16, Math.round((window.innerWidth - panelWidth) / 2));
+            const startY = Math.max(70, Math.round((window.innerHeight - Math.min(this.boxSize.height, window.innerHeight - 80)) / 2));
+            this.symPos = { x: startX, y: startY };
+          }
+        }
+      }
+    },
+    
+    showNotification(msg) {
+      this.toastMessage = msg;
+      if (this.toastTimeout) clearTimeout(this.toastTimeout);
+      this.toastTimeout = setTimeout(() => {
+        this.toastMessage = '';
+      }, 2000);
+    },
+
+    insertSymbol(sym) {
+      if (!this.isValidTextInput(this.activeElement) || this.activeElement.offsetParent === null) {
+        const candidates = Array.from(document.querySelectorAll('textarea, input[type="text"]'));
+        this.activeElement = candidates.find(el => this.isValidTextInput(el) && el.offsetParent !== null) || null;
+      }
+      if (this.activeElement) {
+        const start = this.activeElement.selectionStart || 0;
+        const end = this.activeElement.selectionEnd || 0;
+        const text = this.activeElement.value || '';
+        
+        this.activeElement.value = text.slice(0, start) + sym + text.slice(end);
+        this.activeElement.dispatchEvent(new Event('input', { bubbles: true }));
+        
+        setTimeout(() => {
+          this.activeElement.focus();
+          try {
+            this.activeElement.selectionStart = this.activeElement.selectionEnd = start + sym.length;
+          } catch(e) {}
+        }, 10);
+        
+        this.showNotification(`Inserted "${sym}"`);
+      } else {
+        // Fallback: Copy to clipboard if no input focused
+        navigator.clipboard.writeText(sym);
+        this.showNotification(`Copied "${sym}" to clipboard`);
+      }
+    }
+  };
+}
+</script>

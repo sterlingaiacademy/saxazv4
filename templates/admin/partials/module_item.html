@@ -1,0 +1,191 @@
+<div class="module-container bg-base-100 rounded-2xl border-2 border-base-300 overflow-hidden group/mod transition-all shadow-sm" id="module-{{ module.id }}" x-data="{ open: {{ 'true' if start_open else 'false' }}, editingName: false }" data-module-mark-value="{{ module.mark_value }}">
+  <!-- Module Header -->
+  <div class="flex flex-wrap justify-between items-center gap-3 p-4 cursor-pointer hover:bg-base-200/70 transition-colors" @click="if($event.target.closest('button, form, input, select, a, label')) return; if(!editingName) open = !open">
+    <div class="flex items-center gap-3 flex-1 min-w-0">
+      <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-base-200 border border-base-300 text-base-content/70 transition-transform duration-300"
+         :class="{'rotate-90': open}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <!-- Module name with inline edit -->
+        <div x-show="!editingName" class="flex items-center gap-2 flex-wrap">
+          <h4 class="font-bold text-lg text-base-content/90">{{ module.name }}</h4>
+          <button type="button" @click.stop="editingName = true" class="btn btn-xs btn-ghost btn-circle text-base-content/60 hover:text-primary opacity-75 group-hover/mod:opacity-100 transition-opacity" title="Edit Module Name & Settings">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+          </button>
+          {% if rename_error %}
+          <span class="badge badge-error badge-sm font-bold">{{ rename_error }}</span>
+          {% endif %}
+        </div>
+
+        <form x-show="editingName" style="display: none;" @click.stop hx-post="/admin/curriculum/modules/{{ module.id }}/rename" hx-target="#module-{{ module.id }}" hx-swap="outerHTML" class="bg-base-100 p-3 rounded-xl border border-primary/30 shadow-sm space-y-2 my-1">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 items-end">
+            <div class="form-control">
+              <label class="label py-0.5"><span class="label-text text-[10px] uppercase font-bold text-base-content/60">Module Name</span></label>
+              <input type="text" name="name" value="{{ module.name }}" class="input input-sm input-bordered bg-base-100 text-base-content w-full" required>
+            </div>
+            <div class="form-control">
+              <label class="label py-0.5"><span class="label-text text-[10px] uppercase font-bold text-base-content/60">Question Type</span></label>
+              <select name="question_type" class="select select-sm select-bordered bg-base-100 text-base-content w-full">
+                {% set mtype = module.question_type or 'LONG_ANSWER' %}
+                <option value="CUSTOM" {% if mtype == 'CUSTOM' %}selected{% endif %}>Custom (Mixed Types)</option>
+                <option value="MCQ" {% if mtype == 'MCQ' %}selected{% endif %}>MCQ</option>
+                <option value="ASSERTION_REASON" {% if mtype == 'ASSERTION_REASON' %}selected{% endif %}>Assertion & Reason</option>
+                <option value="CASE_BASED" {% if mtype == 'CASE_BASED' %}selected{% endif %}>Case-Based</option>
+                <option value="VERY_SHORT_ANSWER" {% if mtype == 'VERY_SHORT_ANSWER' %}selected{% endif %}>Very Short Answer (VSA)</option>
+                <option value="SHORT_ANSWER" {% if mtype == 'SHORT_ANSWER' %}selected{% endif %}>Short Answer (SA)</option>
+                <option value="LONG_ANSWER" {% if mtype == 'LONG_ANSWER' %}selected{% endif %}>Long Answer (LA)</option>
+                <option value="NUMERICAL" {% if mtype == 'NUMERICAL' %}selected{% endif %}>Numerical</option>
+                <option value="DIAGRAM_BASED" {% if mtype == 'DIAGRAM_BASED' %}selected{% endif %}>Diagram-Based</option>
+                <option value="MAP_BASED" {% if mtype == 'MAP_BASED' %}selected{% endif %}>Map-Based</option>
+                <option value="COMPETENCY_BASED" {% if mtype == 'COMPETENCY_BASED' %}selected{% endif %}>Competency-Based</option>
+              </select>
+            </div>
+            <div class="form-control">
+              <label class="label py-0.5"><span class="label-text text-[10px] uppercase font-bold text-base-content/60">Marks / Q</span></label>
+              <input type="number" name="mark_value" value="{{ module.mark_value }}" min="1" class="input input-sm input-bordered bg-base-100 text-base-content w-full" required>
+            </div>
+            <div class="form-control">
+              <label class="label py-0.5"><span class="label-text text-[10px] uppercase font-bold text-base-content/60">Secs / Q</span></label>
+              <input type="number" name="time_limit_seconds" value="{{ module.time_limit_seconds }}" min="5" class="input input-sm input-bordered bg-base-100 text-base-content w-full" required>
+            </div>
+          </div>
+          <div class="flex justify-end gap-2 pt-1">
+            <button type="button" @click="editingName = false" class="btn btn-xs btn-ghost">Cancel</button>
+            <button type="submit" class="btn btn-xs btn-primary px-4">Save</button>
+          </div>
+        </form>
+
+        <div class="flex flex-wrap gap-2 mt-0.5">
+          <span class="text-xs text-base-content/60 tracking-wider uppercase font-bold">{{ module.mark_value }} Marks Per Q</span>
+          <span class="text-xs text-secondary tracking-wider uppercase font-bold">{{ module.time_limit_seconds }} Secs Per Q</span>
+          {% if module.question_type %}
+          <span class="badge badge-xs badge-outline opacity-80 uppercase font-bold">{{ module.question_type }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <button type="button" @click.stop
+        class="btn btn-xs btn-ghost text-error hover:bg-error/10 font-bold rounded-md"
+        hx-delete="/admin/curriculum/exam_node/modules/{{ module.id }}"
+        hx-target="#module-{{ module.id }}"
+        hx-swap="outerHTML"
+        hx-confirm="Delete this module and all its questions?">
+      Delete Module
+    </button>
+  </div>
+
+
+  <!-- Collapsible Questions List -->
+  <div x-show="open" x-collapse style="display: none;">
+    <div class="p-4 pt-0 border-t border-base-300">
+      <div class="space-y-4 my-4 pl-4 sm:pl-8 border-l-2 border-base-300" id="questions-list-{{ module.id }}" style="counter-reset: qnum;">
+        {% for q in module.questions %}
+          {% include "admin/partials/question_item.html" %}
+        {% endfor %}
+      </div>
+
+      <!-- Add Question Form -->
+      <div class="bg-base-200/60 p-4 rounded-xl border border-base-300 sm:ml-8">
+        <form hx-post="/admin/curriculum/modules/{{ module.id }}/questions" 
+           hx-target="#questions-list-{{ module.id }}" 
+           hx-swap="beforeend" 
+           hx-encoding="multipart/form-data"
+           enctype="multipart/form-data"
+           class="space-y-4"
+           x-data="{ 
+             questionType: '{{ module.question_type }}' === 'CUSTOM' ? 'LONG_ANSWER' : '{{ module.question_type }}',
+             optA: '', optB: '', optC: '', optD: '', correct: 'A',
+             get optionsJson() { return JSON.stringify([this.optA, this.optB, this.optC, this.optD]); },
+             get modelAns() { 
+               if(this.correct === 'A') return this.optA;
+               if(this.correct === 'B') return this.optB;
+               if(this.correct === 'C') return this.optC;
+               return this.optD; 
+             }
+           }"
+           hx-on::after-request="if(event.detail.successful) { this.reset(); optA=''; optB=''; optC=''; optD=''; correct='A'; }">
+          
+          <input type="hidden" name="max_marks" value="{{ module.mark_value }}">
+          {% if module.question_type == 'CUSTOM' %}
+            <div class="form-control">
+              <label class="label"><span class="label-text text-base-content/50 text-[10px] uppercase font-bold tracking-wider">Question Type</span></label>
+              <select name="question_type" x-model="questionType" class="select select-sm bg-base-100 border-base-content/10 text-base-content focus:border-primary w-full rounded-lg">
+                <option value="MCQ">MCQ</option>
+                <option value="ASSERTION_REASON">Assertion & Reason</option>
+                <option value="CASE_BASED">Case-Based</option>
+                <option value="VERY_SHORT_ANSWER">Very Short Answer</option>
+                <option value="SHORT_ANSWER">Short Answer</option>
+                <option value="LONG_ANSWER">Long Answer</option>
+                <option value="NUMERICAL">Numerical Problem</option>
+              </select>
+            </div>
+          {% else %}
+            <input type="hidden" name="question_type" :value="questionType">
+          {% endif %}
+          
+          <div class="form-control">
+            <label class="label"><span class="label-text text-base-content/50 text-[10px] uppercase font-bold tracking-wider">Question Text</span></label>
+            <textarea name="question_text" class="textarea bg-base-100 border-base-content/10 text-base-content focus:border-primary w-full resize-y min-h-[60px]" required placeholder="Type the question here..."></textarea>
+          </div>
+          
+          <div class="space-y-2" x-show="questionType === 'MCQ' || questionType === 'ASSERTION_REASON'" style="display: none;">
+            <label class="label"><span class="label-text text-base-content/50 text-[10px] uppercase font-bold tracking-wider">Options & Correct Answer</span></label>
+            
+            <input type="hidden" name="options" :value="optionsJson" :disabled="questionType !== 'MCQ' && questionType !== 'ASSERTION_REASON'">
+            <input type="hidden" name="model_answer" :value="modelAns" :disabled="questionType !== 'MCQ' && questionType !== 'ASSERTION_REASON'">
+            
+            <div class="grid grid-cols-1 gap-2">
+              <div class="flex items-center gap-2">
+                <input type="radio" name="correct_opt" value="A" x-model="correct" class="radio radio-sm radio-primary" :disabled="questionType !== 'MCQ' && questionType !== 'ASSERTION_REASON'" />
+                <input type="text" x-model="optA" class="input input-sm bg-base-100 border-base-content/10 text-base-content w-full" placeholder="Option A" :required="questionType === 'MCQ' || questionType === 'ASSERTION_REASON'" :disabled="questionType !== 'MCQ' && questionType !== 'ASSERTION_REASON'">
+              </div>
+              <div class="flex items-center gap-2">
+                <input type="radio" name="correct_opt" value="B" x-model="correct" class="radio radio-sm radio-primary" :disabled="questionType !== 'MCQ' && questionType !== 'ASSERTION_REASON'" />
+                <input type="text" x-model="optB" class="input input-sm bg-base-100 border-base-content/10 text-base-content w-full" placeholder="Option B" :required="questionType === 'MCQ' || questionType === 'ASSERTION_REASON'" :disabled="questionType !== 'MCQ' && questionType !== 'ASSERTION_REASON'">
+              </div>
+              <div class="flex items-center gap-2">
+                <input type="radio" name="correct_opt" value="C" x-model="correct" class="radio radio-sm radio-primary" :disabled="questionType !== 'MCQ' && questionType !== 'ASSERTION_REASON'" />
+                <input type="text" x-model="optC" class="input input-sm bg-base-100 border-base-content/10 text-base-content w-full" placeholder="Option C" :required="questionType === 'MCQ' || questionType === 'ASSERTION_REASON'" :disabled="questionType !== 'MCQ' && questionType !== 'ASSERTION_REASON'">
+              </div>
+              <div class="flex items-center gap-2">
+                <input type="radio" name="correct_opt" value="D" x-model="correct" class="radio radio-sm radio-primary" :disabled="questionType !== 'MCQ' && questionType !== 'ASSERTION_REASON'" />
+                <input type="text" x-model="optD" class="input input-sm bg-base-100 border-base-content/10 text-base-content w-full" placeholder="Option D" :required="questionType === 'MCQ' || questionType === 'ASSERTION_REASON'" :disabled="questionType !== 'MCQ' && questionType !== 'ASSERTION_REASON'">
+              </div>
+            </div>
+          </div>
+          
+          <div class="form-control">
+            <label class="label"><span class="label-text text-base-content/50 text-[10px] uppercase font-bold tracking-wider">Media (Optional Image)</span></label>
+            <input type="file" name="media" class="file-input file-input-sm file-input-bordered bg-base-100 text-base-content border-base-content/10 w-full" accept="image/*">
+          </div>
+
+          <div class="form-control" x-show="questionType !== 'MCQ' && questionType !== 'ASSERTION_REASON'">
+            <label class="label"><span class="label-text text-base-content/50 text-[10px] uppercase font-bold tracking-wider">Correct Answer (for Automated Grading)</span></label>
+            <textarea name="model_answer" class="textarea bg-base-100 border-base-content/10 text-base-content focus:border-primary w-full resize-y min-h-[80px]" :required="questionType !== 'MCQ' && questionType !== 'ASSERTION_REASON'" :disabled="questionType === 'MCQ' || questionType === 'ASSERTION_REASON'" placeholder="Provide the correct answer to compare against..."></textarea>
+          </div>
+          
+          <button type="submit" class="btn btn-sm btn-primary w-full rounded-lg" hx-disabled-elt="this">Add Question</button>
+        </form>
+
+        <div class="divider text-xs text-base-content/30 my-4 uppercase tracking-wider font-bold">OR BULK UPLOAD</div>
+        
+        <form hx-post="/admin/curriculum/modules/{{ module.id }}/upload-questions" 
+           hx-target="#questions-list-{{ module.id }}" 
+           hx-swap="beforeend" 
+           hx-encoding="multipart/form-data" enctype="multipart/form-data"
+           class="flex items-center gap-2"
+           x-data="{ uploading: false }"
+           @submit="uploading = true"
+           hx-on::after-request="uploading = false; if(event.detail.successful) this.reset()">
+          
+          <input type="file" name="file" class="file-input file-input-sm file-input-bordered bg-base-100 text-base-content border-base-content/10 w-full" accept=".pdf,.docx,.txt,.csv,.xlsx" required />
+          <button type="submit" class="btn btn-sm btn-secondary shadow-md shrink-0 border-none" :disabled="uploading">
+            <span x-show="!uploading">Auto-Extract</span>
+            <span x-show="uploading" class="loading loading-spinner loading-xs"></span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

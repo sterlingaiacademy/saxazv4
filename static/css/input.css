@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Custom SAXAZ overrides ── */
+@layer utilities {
+  .q-counter::before {
+    counter-increment: qnum;
+    content: "Q" counter(qnum) ":";
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+  .hover-scrollbar {
+    overflow-y: hidden !important;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hover-scrollbar:hover {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(248, 176, 0, 0.55) transparent;
+  }
+  .hover-scrollbar::-webkit-scrollbar {
+    height: 4px !important;
+    width: 0px !important;
+    background: transparent !important;
+  }
+  .hover-scrollbar::-webkit-scrollbar-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+  .hover-scrollbar::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+  .hover-scrollbar::-webkit-scrollbar-thumb {
+    background: transparent !important;
+    border-radius: 9999px !important;
+  }
+  .hover-scrollbar:hover::-webkit-scrollbar-thumb,
+  .hover-scrollbar:active::-webkit-scrollbar-thumb {
+    background: rgba(248, 176, 0, 0.55) !important;
+    border-radius: 9999px !important;
+  }
+}

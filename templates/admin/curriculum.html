@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Curriculum Builder - SAXAZ{% endblock %}
+{% block topbar_title %}Curriculum & Exam Builder{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-8 pb-28">
+  <!-- CLEAN HEADER BAR -->
+  <div class="brilliant-card bg-base-100 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div class="space-y-2 max-w-2xl">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 text-amber-700 border border-amber-500/30 text-xs font-black uppercase tracking-widest">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+        Curriculum &amp; Exam Management
+      </div>
+      <h1 class="text-2xl md:text-4xl font-black text-base-content tracking-tight leading-tight">
+        Curriculum Builder
+      </h1>
+      <p class="text-base-content/65 font-bold text-sm md:text-base leading-relaxed">
+        Organize Classes, Subjects, and Chapters. Attach YouTube concept videos and build randomized Mock &amp; Real Exam question banks.
+      </p>
+    </div>
+
+    <div class="flex flex-wrap gap-3 shrink-0">
+      <a href="/admin/dashboard" class="btn bg-base-200 hover:bg-base-300 text-base-content border-2 border-base-300 rounded-2xl px-5 font-black shadow-2xs tactile-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+        Dashboard
+      </a>
+      <a href="#create-class-form" class="btn btn-primary text-primary-content rounded-2xl px-6 font-black shadow-md tactile-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" /></svg>
+        New Class
+      </a>
+    </div>
+  </div>
+
+  <!-- MAIN BUILDER -->
+  <div class="brilliant-card bg-base-100 p-6 md:p-8 relative overflow-hidden">
+    <div class="relative z-10" x-data="{
+      searchQuery: '',
+      filterTree() {
+        const q = this.searchQuery.toLowerCase().trim();
+        const items = document.querySelectorAll('#curriculum-tree > div');
+        items.forEach(item => {
+          if (!q) {
+            item.style.display = '';
+            return;
+          }
+          const text = item.textContent.toLowerCase();
+          item.style.display = text.includes(q) ? '' : 'none';
+        });
+      }
+    }">
+      <!-- Live Search & Filter Bar -->
+      <div class="mb-8 flex items-center gap-3 bg-base-200/70 p-3 rounded-2xl border-2 border-base-300 shadow-inner focus-within:border-primary transition-colors">
+        <div class="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center text-amber-700 shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <input type="text" x-model="searchQuery" @input="filterTree" placeholder="Filter curriculum (classes, subjects, chapters)..." class="input input-sm bg-transparent border-none focus:outline-none flex-1 text-base font-bold text-base-content placeholder:text-base-content/40">
+        <button x-show="searchQuery" @click="searchQuery = ''; filterTree()" class="btn btn-ghost btn-xs btn-circle text-base-content/50 hover:text-base-content" style="display: none;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div id="curriculum-tree" class="space-y-6">
+        {% for c in tree %}
+          {% include "admin/partials/class_item.html" %}
+        {% endfor %}
+      </div>
+
+      <!-- Create New Class Card -->
+      <div id="create-class-form" class="mt-10 pt-8 border-t-2 border-base-200">
+        <form hx-post="/admin/curriculum/classes" hx-target="#curriculum-tree" hx-swap="beforeend" hx-encoding="multipart/form-data" enctype="multipart/form-data" class="brilliant-card bg-base-200/40 p-6 space-y-4" hx-on::after-request="if(event.detail.successful) this.reset()">
+           <div class="flex items-center gap-3">
+             <div class="w-11 h-11 rounded-2xl bg-primary text-slate-900 flex items-center justify-center font-black shadow-sm shrink-0">
+               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" /></svg>
+             </div>
+             <div>
+               <h3 class="text-lg font-black text-base-content">Add New Class / Grade Level</h3>
+               <p class="text-xs font-bold text-base-content/50">Create a class container to hold subjects, chapters, and exams.</p>
+             </div>
+           </div>
+           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+             <input type="text" name="name" placeholder="Grade Level or Class Name (e.g. Class 4 or Grade 10)" class="input input-bordered bg-base-100 text-base-content border-2 border-base-300 focus:border-primary font-bold rounded-xl" required>
+             <input type="text" name="description" placeholder="Class Description (optional)" class="input input-bordered bg-base-100 text-base-content border-2 border-base-300 focus:border-primary font-medium rounded-xl">
+           </div>
+          <div class="flex items-center justify-end">
+            <button type="submit" class="btn btn-primary text-slate-900 font-black rounded-xl px-8 tactile-btn border-2 border-amber-600/30">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" /></svg>
+              Add Class
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

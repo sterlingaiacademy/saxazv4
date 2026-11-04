@@ -1,0 +1,202 @@
+<div class="bg-base-200/50 backdrop-blur-md rounded-2xl border border-base-300 overflow-hidden" id="exam-paper-{{ paper.id }}" x-data="{ 
+  open: {{ 'true' if start_open else 'false' }},
+  editingTitle: false,
+  useMockEdit: {{ 'true' if paper.use_mock_questions == 1 else 'false' }},
+  totalMarks: {{ paper.total_marks | default(0) }},
+  init() {
+    const observer = new MutationObserver(() => this.recalculateMarks());
+    observer.observe(this.$el, { childList: true, subtree: true });
+    this.recalculateMarks();
+  },
+  recalculateMarks() {
+    let total = 0;
+    const modules = this.$el.querySelectorAll('.module-container');
+    modules.forEach(mod => {
+      const markValue = parseFloat(mod.dataset.moduleMarkValue || 0);
+      const questionCount = mod.querySelectorAll('.question-item').length;
+      total += (markValue * questionCount);
+    });
+    this.totalMarks = total;
+    if ('{{ paper.type }}' === 'mock') {
+      window.dispatchEvent(new CustomEvent('mock-marks-updated', { detail: { marks: total } }));
+    }
+  }
+}">
+  <!-- Header / Title Bar -->
+  <div class="p-6 cursor-pointer hover:bg-base-200/80 transition-colors group flex flex-wrap items-center justify-between gap-4" @click="if($event.target.closest('button, form, input, select, a, label')) return; if(!editingTitle) open = !open">
+    <div class="flex items-start sm:items-center gap-4 flex-1 min-w-0">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 shadow-sm"
+         :class="{'rotate-90': open, 'bg-primary/20 text-amber-700': '{{ paper.type }}' === 'real', 'bg-secondary/20 text-secondary': '{{ paper.type }}' === 'mock'}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+      </div>
+      
+      <div class="w-full flex-1 min-w-0">
+        <div x-show="!editingTitle" class="flex items-center gap-2 flex-wrap">
+          <h3 class="text-xl font-black tracking-wide" :class="'{{ paper.type }}' === 'real' ? 'text-amber-700' : 'text-secondary'">
+            {{ paper.title }}
+          </h3>
+          <button type="button" @click.stop="editingTitle = true" class="btn btn-ghost btn-xs btn-circle text-base-content/60 hover:text-primary opacity-75 group-hover:opacity-100 transition-opacity" title="Edit Exam Title & Settings">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+          </button>
+          {% if saved %}
+          <span class="badge badge-success badge-sm font-bold" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 2500)">Saved!</span>
+          {% endif %}
+          {% if rename_error %}
+          <span class="badge badge-error badge-sm font-bold">{{ rename_error }}</span>
+          {% endif %}
+        </div>
+
+        <form
+          x-show="editingTitle"
+          style="display: none;"
+          @click.stop
+          hx-post="/admin/curriculum/exams/{{ paper.id }}/rename"
+          hx-target="#exam-paper-{{ paper.id }}"
+          hx-swap="outerHTML"
+          class="bg-base-100 p-4 rounded-xl border border-primary/30 shadow-md space-y-3 my-2"
+          @keydown.escape.stop="editingTitle = false">
+          <input type="hidden" name="update_settings" value="1">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-end">
+            <div class="form-control sm:col-span-2">
+              <label class="label py-0.5"><span class="label-text text-[10px] font-bold uppercase text-base-content/60">Exam Title</span></label>
+              <input type="text" name="title" value="{{ paper.title }}" class="input input-sm input-bordered w-full bg-base-100 text-base-content" required>
+            </div>
+            {% if paper.type == 'mock' %}
+            <div class="form-control">
+              <label class="label py-0.5"><span class="label-text text-[10px] font-bold uppercase text-base-content/60">Threshold %</span></label>
+              <input type="number" name="unlock_threshold_percent" value="{{ paper.unlock_threshold_percent if paper.unlock_threshold_percent is not none else '' }}" placeholder="e.g. 80" min="1" max="100" class="input input-sm input-bordered w-full bg-base-100 text-base-content">
+            </div>
+            {% else %}
+            <div class="form-control">
+              <label class="label py-0.5"><span class="label-text text-[10px] font-bold uppercase text-base-content/60">Req. Mock %</span></label>
+              <input type="number" name="required_mock_percent" value="{{ paper.required_mock_percent if paper.required_mock_percent is not none else '' }}" placeholder="e.g. 80" min="1" max="100" class="input input-sm input-bordered w-full bg-base-100 text-base-content">
+            </div>
+            <div class="form-control">
+              <label class="label py-0.5"><span class="label-text text-[10px] font-bold uppercase text-base-content/60">Max Attempts</span></label>
+              <input type="number" name="max_attempts" value="{{ paper.max_attempts if paper.max_attempts is not none else '' }}" placeholder="Unlimited" min="1" class="input input-sm input-bordered w-full bg-base-100 text-base-content">
+            </div>
+            <div class="form-control">
+              <label class="label cursor-pointer justify-start gap-2 py-1">
+                <input type="checkbox" name="use_mock_questions" value="1" class="checkbox checkbox-xs checkbox-primary" x-model="useMockEdit" {% if paper.use_mock_questions == 1 %}checked{% endif %} />
+                <span class="label-text text-xs font-bold text-base-content/80">Scramble Mock Qs</span>
+              </label>
+            </div>
+            <div class="form-control" x-show="useMockEdit">
+              <label class="label py-0.5"><span class="label-text text-[10px] font-bold uppercase text-base-content/60">Target Marks</span></label>
+              <input type="number" name="target_marks" value="{{ paper.target_marks if paper.target_marks is not none else '' }}" placeholder="e.g. 50" min="1" class="input input-sm input-bordered w-full bg-base-100 text-base-content">
+            </div>
+            {% endif %}
+          </div>
+          <div class="flex items-center justify-end gap-2 pt-1">
+            <button type="button" class="btn btn-sm btn-ghost" @click.stop="editingTitle = false">Cancel</button>
+            <button type="submit" class="btn btn-sm btn-primary px-5">Save</button>
+          </div>
+        </form>
+
+        <div class="flex flex-wrap gap-2 mt-1">
+          <span class="badge badge-sm font-bold uppercase tracking-wider text-[10px]" :class="'{{ paper.type }}' === 'real' ? 'bg-primary/15 text-amber-700 border-primary/30' : 'badge-secondary badge-outline'">{{ paper.type }} Exam</span>
+          
+          <span class="badge badge-sm font-bold uppercase tracking-wider text-[10px] {{ 'badge-success bg-success/10 text-emerald-700 border-success/30' if paper.status == 'published' else 'badge-ghost bg-base-100 text-base-content/70 border-base-300' }}">
+            {{ paper.status }}
+          </span>
+
+          {% if paper.type == 'mock' %}
+          <span class="badge badge-sm font-bold tracking-wider text-[10px] badge-ghost bg-base-100 text-base-content/70 border-base-300" title="Maximum Achievable Marks">
+            Max Marks: <span x-text="totalMarks">{{ paper.total_marks }}</span>
+          </span>
+          {% endif %}
+
+          {% if paper.type == 'mock' and paper.unlock_threshold_percent %}
+          <span class="badge badge-sm font-bold tracking-wider text-[10px] badge-ghost bg-base-100 text-base-content/70 border-base-300">
+            Unlock Thresh: {{ paper.unlock_threshold_percent }}%
+          </span>
+          {% endif %}
+
+          {% if paper.type == 'real' %}
+            {% if paper.required_mock_percent %}
+            <span class="badge badge-sm font-bold tracking-wider text-[10px] badge-ghost bg-base-100 text-base-content/70 border-base-300">
+              Req Mock: {{ paper.required_mock_percent }}%
+            </span>
+            {% endif %}
+            {% if paper.max_attempts %}
+            <span class="badge badge-sm font-bold tracking-wider text-[10px] badge-ghost bg-base-100 text-base-content/70 border-base-300">
+              Attempts: {{ paper.max_attempts }}
+            </span>
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-4" @click.stop>
+      <form hx-post="/admin/curriculum/exams/{{ paper.id }}/status"
+         hx-target="#exam-paper-{{ paper.id }}"
+         hx-swap="outerHTML">
+        <input type="hidden" name="status" value="{{ paper.status }}">
+        <label class="cursor-pointer flex items-center bg-base-100 p-1 rounded-full border border-base-300 hover:border-primary/50 transition-colors">
+          <input type="checkbox" class="toggle toggle-success toggle-sm" 
+              onchange="this.form.requestSubmit()"
+              {{ 'checked' if paper.status == 'published' else '' }} 
+              title="Toggle Publish Status" />
+        </label>
+      </form>
+      <button type="button"
+          class="btn btn-sm btn-ghost text-error hover:bg-error/10 font-bold"
+          hx-delete="/admin/curriculum/exam_node/exam_papers/{{ paper.id }}"
+          hx-target="#exam-paper-{{ paper.id }}"
+          hx-swap="outerHTML"
+          hx-confirm="Delete this entire exam paper?">
+        Delete Exam
+      </button>
+    </div>
+  </div>
+
+  <!-- Collapsible Content -->
+  <div x-show="open" x-collapse style="display: none;">
+    <div class="p-6 pt-0 border-t border-base-300 bg-base-200/40">
+      {% if not (paper.type == 'real' and paper.use_mock_questions == 1) %}
+      <div class="space-y-6 mt-6" id="modules-list-{{ paper.id }}">
+        {% for module in paper.modules %}
+          {% set start_open = false %}
+          {% include "admin/partials/module_item.html" %}
+        {% endfor %}
+      </div>
+
+      <div class="mt-8 bg-base-100 p-4 rounded-xl border border-base-300 shadow-sm">
+        <h4 class="font-bold text-base-content/70 mb-3 text-sm uppercase tracking-wider">Add Module</h4>
+        <form hx-post="/admin/curriculum/exams/{{ paper.id }}/modules" 
+           hx-target="#modules-list-{{ paper.id }}" 
+           hx-swap="beforeend" 
+           class="flex flex-col sm:flex-row gap-4"
+           hx-on::after-request="if(event.detail.successful) this.reset()">
+          <input type="text" name="name" placeholder="Module Name (e.g. Section A - MCQs)" class="input input-sm input-bordered bg-base-100 border-base-300 text-base-content focus:border-primary flex-1 rounded-lg" required>
+          <select name="question_type" class="select select-sm select-bordered bg-base-100 border-base-300 text-base-content focus:border-primary rounded-lg">
+            <option value="CUSTOM">Custom (Mixed Types)</option>
+            <option value="MCQ">MCQ</option>
+            <option value="ASSERTION_REASON">Assertion & Reason</option>
+            <option value="CASE_BASED">Case-Based</option>
+            <option value="VERY_SHORT_ANSWER">Very Short Answer (VSA)</option>
+            <option value="SHORT_ANSWER">Short Answer (SA)</option>
+            <option value="LONG_ANSWER" selected>Long Answer (LA)</option>
+            <option value="NUMERICAL">Numerical</option>
+            <option value="DIAGRAM_BASED">Diagram-Based</option>
+            <option value="MAP_BASED">Map-Based</option>
+            <option value="COMPETENCY_BASED">Competency-Based</option>
+          </select>
+          <input type="number" name="mark_value" placeholder="Marks/Q" class="input input-sm input-bordered bg-base-100 border-base-300 text-base-content focus:border-primary w-24 rounded-lg" required>
+          <input type="number" name="time_limit_seconds" placeholder="Sec/Q" class="input input-sm input-bordered bg-base-100 border-base-300 text-base-content focus:border-primary w-24 rounded-lg" required value="60">
+          <button type="submit" class="btn btn-sm btn-primary font-black rounded-lg px-5" hx-disabled-elt="this">Add Module</button>
+        </form>
+      </div>
+      {% else %}
+      <div class="p-4 mt-4 bg-primary/15 rounded-xl border border-primary/30 text-amber-800">
+        <p class="text-sm font-bold">This Real Exam pulls and scrambles questions from the Mock Exam.</p>
+        <p class="text-xs mt-1">Target Marks: {{ paper.target_marks | default('N/A') }}</p>
+        <div class="mt-4">
+          <a href="/admin/curriculum/exams/{{ paper.id }}/preview" target="_blank" class="btn btn-sm btn-primary font-black">Preview Scrambled Paper</a>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>

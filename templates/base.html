@@ -1,0 +1,2171 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="winter">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+  <meta name="theme-color" content="#151515">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SAXAZ">
+  <link rel="manifest" href="/manifest.json?v=2">
+  <link rel="icon" type="image/png" sizes="192x192" href="/static/images/pwa-icon-192.png?v=2">
+  <link rel="apple-touch-icon" href="/static/images/pwa-icon-192.png?v=2">
+  <script>
+    // Capture browser native PWA install prompt immediately at head start (before any blocking scripts)
+    window.deferredSaxazInstallPrompt = window.deferredSaxazInstallPrompt || null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      window.deferredSaxazInstallPrompt = e;
+      window.dispatchEvent(new CustomEvent('saxaz-pwa-status'));
+    });
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
+    }
+  </script>
+  <title>{% block title %}SAXAZ{% endblock %}</title>
+  {% set current_sfx_mode = user.get('parent_sfx_mode') if user and user.get('is_parent') else (user.get('sfx_mode') if user and user.get('sfx_mode') is not none else 0) %}
+  {% set current_sfx_custom = user.get('parent_sfx_custom') if user and user.get('is_parent') else (user.get('sfx_custom') if user else '{}') %}
+  {% set current_cursor_mode = user.get('parent_cursor_mode') if user and user.get('is_parent') else (user.get('cursor_mode') if user and user.get('cursor_mode') is not none else 1) %}
+  {% set current_cursor_effect = user.get('parent_cursor_effect') if user and user.get('is_parent') else (user.get('cursor_effect') if user and user.get('cursor_effect') else 'none') %}
+  
+  <!-- Tailwind CSS + DaisyUI (compiled static, no CDN dependency) -->
+  <link rel="stylesheet" href="/static/css/app.css?v=11">
+  <!-- SAXAZ Studio Edition Design System (v2) -->
+  <link rel="stylesheet" href="/static/css/v2-studio.css?v=1">
+
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- HTMX -->
+  <script src="https://unpkg.com/htmx.org@1.9.11"></script>
+
+  <!-- Global AI Smart Search & Spotlight Navigator Component (registered before Alpine.js) -->
+  <script>
+    window.saxazAiSearchBar = window.saxazAiSearchBar || function(initialQuery) {
+      return {
+        query: initialQuery || '',
+        dropdownOpen: false,
+        suggestions: [],
+        aiData: null,
+        aiLoading: false,
+        submitting: false,
+        selectedIdx: -1,
+        suggestTimer: null,
+        aiTimer: null,
+
+        get displayItems() {
+          if (this.query.trim().length > 0 && this.aiData && Array.isArray(this.aiData.results) && this.aiData.results.length > 0) {
+            return this.aiData.results.slice(0, 8);
+          }
+          return this.suggestions || [];
+        },
+
+        openDropdown() {
+          this.dropdownOpen = true;
+          if (!this.suggestions.length && !this.query.trim()) {
+            this.fetchSuggestions('');
+          }
+        },
+
+        onInput() {
+          this.dropdownOpen = true;
+          this.selectedIdx = -1;
+          const q = (this.query || '').trim();
+
+          if (this.suggestTimer) clearTimeout(this.suggestTimer);
+          if (this.aiTimer) clearTimeout(this.aiTimer);
+
+          if (!q) {
+            this.aiData = null;
+            this.aiLoading = false;
+            this.fetchSuggestions('');
+            return;
+          }
+
+          this.suggestTimer = setTimeout(() => {
+            this.fetchSuggestions(q);
+          }, 140);
+
+          if (q.length >= 2) {
+            this.aiLoading = true;
+            this.aiTimer = setTimeout(() => {
+              this.fetchAiSearch(q);
+            }, 420);
+          } else {
+            this.aiData = null;
+            this.aiLoading = false;
+          }
+        },
+
+        async fetchSuggestions(q) {
+          try {
+            const res = await fetch(`/student/api/search-suggest?q=${encodeURIComponent(q)}`);
+            if (res.ok) {
+              const data = await res.json();
+              if ((this.query || '').trim() === q) {
+                this.suggestions = data.suggestions || [];
+              }
+            }
+          } catch (e) {}
+        },
+
+        async fetchAiSearch(q) {
+          try {
+            const res = await fetch(`/student/api/ai-search?q=${encodeURIComponent(q)}`);
+            if (res.ok) {
+              const data = await res.json();
+              if ((this.query || '').trim() === q) {
+                this.aiData = data;
+              }
+            }
+          } catch (e) {
+          } finally {
+            if ((this.query || '').trim() === q) {
+              this.aiLoading = false;
+            }
+          }
+        },
+
+        moveSelection(delta) {
+          const items = this.displayItems;
+          if (!items.length) return;
+          this.dropdownOpen = true;
+          this.selectedIdx = (this.selectedIdx + delta + items.length) % items.length;
+        },
+
+        handleSubmit(e) {
+          const items = this.displayItems;
+          if (this.dropdownOpen && this.selectedIdx >= 0 && this.selectedIdx < items.length) {
+            e.preventDefault();
+            window.location.href = items[this.selectedIdx].url;
+            return;
+          }
+          if (this.aiData && this.aiData.auto_navigate && this.aiData.primary_destination && this.aiData.primary_destination.url) {
+            e.preventDefault();
+            this.submitting = true;
+            window.location.href = this.aiData.primary_destination.url;
+            return;
+          }
+          this.submitting = true;
+        }
+      };
+    };
+  </script>
+
+  <!-- Global YouTube Link Preview Component (must be registered before Alpine.js) -->
+  <script>
+    window.extractYouTubeId = function(url) {
+      if (!url) return '';
+      const s = String(url).trim();
+      const m = s.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/|live\/|watch\?v=|watch\?.+&v=))([a-zA-Z0-9_-]{11})/);
+      if (m && m[1]) return m[1];
+      if (/^[a-zA-Z0-9_-]{11}$/.test(s)) return s;
+      return '';
+    };
+
+    window.youtubeMetaCache = window.youtubeMetaCache || {};
+
+    window.youtubeLinkCard = function(initialUrl) {
+      const cleanInit = (initialUrl !== undefined && initialUrl !== null) ? String(initialUrl).trim() : '';
+      const initId = window.extractYouTubeId(cleanInit);
+      return {
+        url: cleanInit,
+        videoId: initId,
+        editing: !initId,
+        playing: false,
+        title: initId ? 'Loading video title...' : 'YouTube Video',
+        author: 'YouTube',
+        loadingMeta: false,
+        loadingTitle: false,
+        get thumbUrl() {
+          return this.videoId ? `https://i.ytimg.com/vi/${this.videoId}/hqdefault.jpg` : '';
+        },
+        get embedUrl() {
+          return this.videoId ? `https://www.youtube.com/embed/${this.videoId}?rel=0` : '';
+        },
+        init() {
+          if (!this.url && this.$el && this.$el.dataset && this.$el.dataset.initialUrl) {
+            const dsUrl = String(this.$el.dataset.initialUrl || '').trim();
+            if (dsUrl) {
+              this.url = dsUrl;
+              this.videoId = window.extractYouTubeId(dsUrl);
+              this.editing = !this.videoId;
+              if (this.videoId) {
+                this.title = 'Loading video title...';
+              }
+            }
+          }
+          if (this.videoId) {
+            this.fetchMeta(this.videoId);
+          }
+        },
+        onInput() {
+          const id = window.extractYouTubeId(this.url);
+          if (id) {
+            this.videoId = id;
+            this.editing = false;
+            this.fetchMeta(id);
+          } else {
+            this.videoId = '';
+          }
+        },
+        async fetchMeta(id) {
+          if (!id) return;
+          if (window.youtubeMetaCache[id]) {
+            this.title = window.youtubeMetaCache[id].title;
+            this.author = window.youtubeMetaCache[id].author;
+            return;
+          }
+          this.loadingMeta = true;
+          this.loadingTitle = true;
+          try {
+            const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${id}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data && data.title) {
+                this.title = data.title;
+                this.author = data.author_name || 'YouTube';
+                window.youtubeMetaCache[id] = { title: this.title, author: this.author };
+                this.loadingMeta = false;
+                this.loadingTitle = false;
+                return;
+              }
+            }
+          } catch (e) {}
+          try {
+            const res2 = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`);
+            if (res2.ok) {
+              const data2 = await res2.json();
+              if (data2 && data2.title) {
+                this.title = data2.title;
+                this.author = data2.author_name || 'YouTube';
+                window.youtubeMetaCache[id] = { title: this.title, author: this.author };
+                this.loadingMeta = false;
+                this.loadingTitle = false;
+                return;
+              }
+            }
+          } catch (e) {}
+          this.title = `YouTube Video (${id})`;
+          this.author = 'YouTube';
+          this.loadingMeta = false;
+          this.loadingTitle = false;
+        },
+        startEdit() {
+          this.playing = false;
+          this.editing = true;
+          this.$nextTick(() => {
+            if (this.$refs.urlInput) {
+              this.$refs.urlInput.focus();
+              this.$refs.urlInput.select();
+            }
+          });
+        },
+        clearVideo(autoSubmit = false) {
+          this.url = '';
+          this.videoId = '';
+          this.playing = false;
+          this.editing = true;
+          this.title = 'YouTube Video';
+          if (autoSubmit) {
+            this.$nextTick(() => {
+              const form = this.$el.closest('form');
+              if (form) {
+                if (typeof htmx !== 'undefined') htmx.trigger(form, 'submit');
+                else form.requestSubmit();
+              }
+            });
+          }
+        }
+      };
+    };
+  </script>
+  
+  <!-- Alpine Plugins -->
+  <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/focus@3.x.x/dist/cdn.min.js"></script>
+  <!-- Alpine.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+
+
+  
+  <!-- Plyr (Video/Audio Player) & SAXAZ Protected Video Vault -->
+  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+  <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+  <script defer src="/static/js/saxaz-player.js?v=4"></script>
+  
+  <!-- KaTeX for beautiful math and chemistry equations -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  
+  <!-- Canvas Confetti for Exam & Achievement Celebrations -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+  <script>
+    function renderMathGlobal(el = document.body) {
+      if (typeof renderMathInElement === 'function') {
+        try {
+          renderMathInElement(el, {
+            delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '\\[', right: '\\]', display: true},
+              {left: '\\(', right: '\\)', display: false},
+              {left: '$', right: '$', display: false}
+            ],
+            throwOnError: false
+          });
+        } catch(e) { console.debug('KaTeX render:', e); }
+      }
+    }
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(renderMathGlobal, 150);
+      if (window.htmx && window.MutationObserver) {
+        new MutationObserver((mutations) => {
+          for (const m of mutations) {
+            for (const n of m.addedNodes) {
+              if (n.nodeType === 1) {
+                try { htmx.process(n); } catch (e) {}
+              }
+            }
+          }
+        }).observe(document.body, { childList: true, subtree: true });
+      }
+    });
+    document.addEventListener('htmx:afterSettle', (e) => setTimeout(() => renderMathGlobal(e.target), 100));
+  </script>
+  
+  <!-- Alpine.js theme & font size setup before paint -->
+  <script>
+    const getCookie = (name) => document.cookie.split('; ').find(row => row.startsWith(name + '='))?.split('=')[1];
+    
+    // Theme init
+    const savedTheme = localStorage.getItem('themeMode') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    
+    // Font Size (responsive-aware so large text modes never overflow narrow mobile screens)
+    window.applySaxazFontSize = (mode) => {
+      const m = Math.max(1, Math.min(4, parseInt(mode || 1)));
+      const isSmallScreen = window.innerWidth < 640;
+      const rootSize = isSmallScreen ? (13.5 + (m * 1.15)) : (14 + (m * 2));
+      document.documentElement.style.fontSize = `${rootSize}px`;
+    };
+    const fontSizeMode = parseInt(getCookie('fontSizeMode') || '1');
+    window.applySaxazFontSize(fontSizeMode);
+    window.addEventListener('resize', () => {
+      const curMode = parseInt(getCookie('fontSizeMode') || '1');
+      window.applySaxazFontSize(curMode);
+    }, { passive: true });
+
+    // Sidebar initial state (always start closed on mobile < 768px so backdrop never covers screen)
+    if (window.innerWidth < 768 || localStorage.getItem('sidebarOpen') === 'false') {
+      document.documentElement.classList.add('sidebar-closed');
+    }
+  </script>
+  <style>
+    .q-counter::before { counter-increment: qnum; content: "Q" counter(qnum) ":"; }
+    
+    /* Apple-Level Fluid Curves & Transitions */
+    :root {
+      --apple-ease: cubic-bezier(0.16, 1, 0.3, 1);
+      --apple-ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+      --apple-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      scroll-behavior: smooth;
+      overscroll-behavior: none !important;
+      overscroll-behavior-y: none !important;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .main-content-wrapper,
+    .main-content-wrapper > main {
+      overscroll-behavior: none !important;
+      overscroll-behavior-y: none !important;
+    }
+    .global-topbar {
+      flex-shrink: 0 !important;
+    }
+
+    @supports (height: 100dvh) {
+      .h-screen { height: 100dvh !important; }
+      .min-h-screen { min-height: 100dvh !important; }
+    }
+
+    .sx-ios-fs {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100dvh !important;
+      z-index: 99999 !important;
+      border-radius: 0 !important;
+      background: #000 !important;
+    }
+
+    /* Apple-grade Interactive Elements */
+    .btn, .card, .brilliant-card {
+      transition: transform 0.28s var(--apple-ease), box-shadow 0.28s var(--apple-ease), background-color 0.2s ease, border-color 0.2s ease !important;
+    }
+    .btn:active, .card.cursor-pointer:active {
+      transform: scale(0.97) !important;
+    }
+    
+    /* Apple Spring Pop-in */
+    @keyframes applePopIn {
+      0% {
+        opacity: 0;
+        transform: scale(0.95) translateY(6px);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+    .apple-popup {
+      animation: applePopIn 0.32s var(--apple-ease) forwards;
+    }
+
+    /* KaTeX equation display spacing */
+    .katex-display {
+      margin: 0.75em 0 !important;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 0.25em 0;
+    }
+
+    /* Override daisyUI primary color to SAXAZ Gold (#F8B000) using OKLCH format for DaisyUI 4 */
+    [data-theme="light"], [data-theme="dark"] {
+      --p: 80.2% 0.174 84.2; /* Primary color: #F8B000 (SAXAZ Gold) */
+      --pf: 74.5% 0.174 84.2; /* Primary focus: #E09E00 */
+      --pc: 19.5% 0.006 260; /* Primary content: #151515 (Charcoal text on Gold) */
+    }
+    [data-theme="light"] {
+      --b2: 96.2% 0.014 85;  /* Warm cream base-200 */
+      --b3: 91.5% 0.022 85;  /* Warm sand base-300 */
+    }
+    
+    /* Warm SAXAZ Cream & Ambient Glow Background (replaces stark white) */
+    [data-theme="light"] .space-bg {
+      background-color: #f6f2e8;
+      background-image:
+        radial-gradient(circle at 0% 0%, rgba(248, 176, 0, 0.16), transparent 36%),
+        radial-gradient(circle at 100% 0%, rgba(155, 143, 217, 0.15), transparent 38%),
+        radial-gradient(circle at 100% 100%, rgba(43, 176, 230, 0.10), transparent 42%),
+        linear-gradient(180deg, #fffcf5 0%, #f3ede0 100%);
+    }
+    [data-theme="dark"] .space-bg {
+      background-color: #12151a;
+      background-image:
+        radial-gradient(circle at 0% 0%, rgba(248, 176, 0, 0.08), transparent 36%),
+        radial-gradient(circle at 100% 0%, rgba(43, 176, 230, 0.06), transparent 38%);
+    }
+
+    /* SAXAZ Gold & Charcoal Signature Classes */
+    .saxaz-hero-banner {
+      background: linear-gradient(135deg, #f8b000 0%, #f0a200 100%) !important;
+      border: 2px solid rgba(21, 21, 21, 0.15) !important;
+      border-bottom: 6px solid #151515 !important;
+      box-shadow: 0 16px 36px rgba(248, 176, 0, 0.24), 0 6px 16px rgba(21, 21, 21, 0.08) !important;
+    }
+    .saxaz-on-gold {
+      color: #151515 !important;
+    }
+    .saxaz-dark-btn {
+      background-color: #151515 !important;
+      color: #ffffff !important;
+      border: 2px solid #151515 !important;
+      border-bottom: 4px solid #000000 !important;
+      transition: transform 0.15s ease, background-color 0.2s ease, box-shadow 0.2s ease !important;
+    }
+    .saxaz-dark-btn:hover {
+      background-color: #2b2b2b !important;
+      border-color: #2b2b2b !important;
+      color: #ffffff !important;
+      box-shadow: 0 8px 20px rgba(21, 21, 21, 0.22) !important;
+    }
+    [data-theme="dark"] .saxaz-dark-btn {
+      background-color: #f8b000 !important;
+      color: #151515 !important;
+      border-color: #f8b000 !important;
+      border-bottom-color: #b88200 !important;
+    }
+    [data-theme="dark"] .saxaz-dark-btn:hover {
+      background-color: #ffc229 !important;
+      color: #151515 !important;
+    }
+
+    /* SAXAZ Dark Charcoal Sidebar, Topbar & Mobile Bottom Bar */
+    .global-sidebar {
+      background-color: #151515 !important;
+      border-right-color: rgba(255, 255, 255, 0.08) !important;
+      color: #ffffff !important;
+    }
+    .global-sidebar > div.border-b,
+    .global-sidebar > div.border-t {
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+    .global-sidebar a[href="/student/profile"],
+    .global-sidebar .sidebar-user-badge {
+      background-color: #222222 !important;
+      border-color: rgba(255, 255, 255, 0.10) !important;
+    }
+    .global-sidebar a[href="/student/profile"]:hover,
+    .global-sidebar .sidebar-user-badge:hover {
+      background-color: #2b2b2b !important;
+      border-color: rgba(248, 176, 0, 0.45) !important;
+    }
+    .global-sidebar a[href="/student/profile"] h3,
+    .global-sidebar .sidebar-user-badge h3 {
+      color: #ffffff !important;
+    }
+    .global-sidebar .menu li > a {
+      color: rgba(255, 255, 255, 0.80) !important;
+    }
+    .global-sidebar .menu li > a:hover {
+      background-color: #262626 !important;
+      color: #ffffff !important;
+    }
+    .global-sidebar .menu li > a.bg-primary {
+      background-color: #f8b000 !important;
+      color: #151515 !important;
+      font-weight: 800 !important;
+      box-shadow: 0 4px 14px rgba(248, 176, 0, 0.30) !important;
+    }
+    .global-sidebar .menu li > a.bg-primary:hover {
+      background-color: #ffc229 !important;
+      color: #151515 !important;
+    }
+    .global-sidebar a[href="/logout"] {
+      color: rgba(255, 255, 255, 0.82) !important;
+      border-color: rgba(255, 255, 255, 0.14) !important;
+    }
+    .global-sidebar a[href="/logout"]:hover {
+      background-color: #262626 !important;
+      color: #ffffff !important;
+    }
+
+    .global-topbar {
+      background-color: #151515 !important;
+      border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+    }
+    .global-topbar > div:first-child > button,
+    .global-topbar > div:first-child > div,
+    .global-topbar > div:first-child > div *,
+    .global-topbar > div:last-child > button:not(.topbar-install-btn),
+    .global-topbar > div:last-child > .relative > button,
+    .global-topbar > div:last-child > .dropdown > button {
+      color: #ffffff !important;
+    }
+    .global-topbar > div:last-child > .dropdown > button span.text-primary {
+      color: #f8b000 !important;
+    }
+    .global-topbar > div:first-child > button:hover,
+    .global-topbar > div:last-child > button:not(.topbar-install-btn):hover,
+    .global-topbar > div:last-child > .relative > button:hover,
+    .global-topbar > div:last-child > .dropdown > button:hover {
+      background-color: rgba(255, 255, 255, 0.10) !important;
+    }
+    .global-topbar .bg-orange-50 {
+      background-color: rgba(248, 176, 0, 0.16) !important;
+      border-color: rgba(248, 176, 0, 0.35) !important;
+      color: #f8b000 !important;
+    }
+    .global-topbar .bg-indigo-50 {
+      background-color: rgba(56, 189, 248, 0.15) !important;
+      border-color: rgba(56, 189, 248, 0.35) !important;
+      color: #38bdf8 !important;
+    }
+
+    .mobile-bottom-bar {
+      background-color: rgba(21, 21, 21, 0.96) !important;
+      border-top-color: rgba(255, 255, 255, 0.10) !important;
+    }
+    .mobile-bottom-bar > a {
+      color: rgba(255, 255, 255, 0.65) !important;
+    }
+    .mobile-bottom-bar > a:hover {
+      color: #ffffff !important;
+    }
+    .mobile-bottom-bar > a.text-primary {
+      color: #f8b000 !important;
+    }
+
+    /* Dark Mode Global Overrides & Dual-Theme Contrast Protection */
+    [data-theme="dark"] .bg-white { background-color: #1f2937 !important; }
+    [data-theme="dark"] .bg-gray-50,
+    [data-theme="dark"] .bg-gray-100 { background-color: #111827 !important; }
+    [data-theme="dark"] .bg-gray-200 { background-color: #374151 !important; }
+    [data-theme="dark"] .bg-gray-300 { background-color: #4b5563 !important; }
+    
+    [data-theme="dark"] .bg-slate-50,
+    [data-theme="dark"] .bg-slate-100 { background-color: #111827 !important; }
+    [data-theme="dark"] .bg-slate-200 { background-color: #1f2937 !important; }
+    [data-theme="dark"] .bg-slate-300 { background-color: #374151 !important; }
+    
+    [data-theme="dark"] .text-black,
+    [data-theme="dark"] .text-gray-900,
+    [data-theme="dark"] .text-gray-800,
+    [data-theme="dark"] .text-slate-900,
+    [data-theme="dark"] .text-slate-800 { color: #f9fafb !important; }
+
+    /* Protect dark text inside gold banners and primary buttons in both modes */
+    .saxaz-hero-banner .saxaz-on-gold,
+    [data-theme="dark"] .saxaz-hero-banner .saxaz-on-gold,
+    [data-theme="dark"] .saxaz-hero-banner h1:not(.text-white),
+    [data-theme="dark"] .saxaz-hero-banner h2:not(.text-white),
+    [data-theme="dark"] .saxaz-hero-banner p:not(.text-white),
+    [data-theme="dark"] .saxaz-on-gold,
+    [data-theme="dark"] .btn-primary,
+    [data-theme="dark"] .badge-primary { color: #151515 !important; }
+
+    /* Protect primary-content text when used on translucent/dark backgrounds in Dark Mode */
+    [data-theme="dark"] .bg-primary\/10.text-primary-content,
+    [data-theme="dark"] .bg-primary\/15.text-primary-content,
+    [data-theme="dark"] .bg-primary\/20.text-primary-content,
+    [data-theme="dark"] .bg-primary\/10 .text-primary-content,
+    [data-theme="dark"] .bg-primary\/15 .text-primary-content,
+    [data-theme="dark"] .bg-primary\/20 .text-primary-content,
+    [data-theme="dark"] .bg-base-100.text-primary-content,
+    [data-theme="dark"] .hover\:bg-primary\/15:hover {
+      color: #fbbf24 !important;
+    }
+    
+    [data-theme="dark"] .text-gray-700,
+    [data-theme="dark"] .text-slate-700 { color: #f3f4f6 !important; }
+    [data-theme="dark"] .text-gray-600,
+    [data-theme="dark"] .text-gray-500,
+    [data-theme="dark"] .text-slate-600,
+    [data-theme="dark"] .text-slate-500 { color: #9ca3af !important; }
+    
+    [data-theme="dark"] .border-gray-200,
+    [data-theme="dark"] .border-gray-100,
+    [data-theme="dark"] .border-gray-300,
+    [data-theme="dark"] .border-slate-200,
+    [data-theme="dark"] .border-slate-100,
+    [data-theme="dark"] .border-slate-300 { border-color: #374151 !important; }
+    
+    [data-theme="dark"] .border-white { border-color: #1f2937 !important; }
+    
+    [data-theme="dark"] .hover\:bg-gray-50:hover,
+    [data-theme="dark"] .hover\:bg-gray-100:hover { background-color: #374151 !important; }
+
+    /* Badges, Pills & Accent Text in Dark Mode */
+    [data-theme="dark"] .bg-orange-50 {
+      background-color: rgba(249, 115, 22, 0.15) !important;
+      border-color: rgba(249, 115, 22, 0.3) !important;
+    }
+    [data-theme="dark"] .text-orange-600,
+    [data-theme="dark"] .text-orange-700 { color: #fb923c !important; }
+    [data-theme="dark"] .text-amber-600,
+    [data-theme="dark"] .text-amber-700,
+    [data-theme="dark"] .text-amber-800 { color: #fbbf24 !important; }
+    
+    [data-theme="dark"] .bg-indigo-50 {
+      background-color: rgba(99, 102, 241, 0.15) !important;
+      border-color: rgba(99, 102, 241, 0.3) !important;
+    }
+    [data-theme="dark"] .text-indigo-600,
+    [data-theme="dark"] .text-indigo-700 { color: #818cf8 !important; }
+    [data-theme="dark"] .text-emerald-600,
+    [data-theme="dark"] .text-emerald-700,
+    [data-theme="dark"] .text-emerald-800 { color: #34d399 !important; }
+    [data-theme="dark"] .text-rose-600,
+    [data-theme="dark"] .text-rose-700 { color: #fb7185 !important; }
+    [data-theme="dark"] .text-purple-600,
+    [data-theme="dark"] .text-purple-700 { color: #c084fc !important; }
+    [data-theme="dark"] .text-sky-600,
+    [data-theme="dark"] .text-sky-700 { color: #38bdf8 !important; }
+
+    /* ==========================================================================
+       TOOLS BOX (MATH & SCIENCE PALETTE) — HIGH-PRECISION DUAL-THEME STYLING
+       ========================================================================== */
+    .math-tools-panel {
+      z-index: 100 !important;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    }
+    
+    /* Dark Mode Tools Box Overrides */
+    [data-theme="dark"] .math-tools-panel {
+      background-color: rgba(17, 24, 39, 0.96) !important;
+      backdrop-filter: blur(24px) !important;
+      -webkit-backdrop-filter: blur(24px) !important;
+      border-color: #374151 !important;
+      color: #f9fafb !important;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+    }
+
+    [data-theme="dark"] .math-tools-header {
+      background: linear-gradient(to right, #111827, #1f2937, #111827) !important;
+      border-color: #374151 !important;
+    }
+    [data-theme="dark"] .math-tools-header h3 {
+      color: #ffffff !important;
+    }
+    [data-theme="dark"] .math-tools-header p {
+      color: #9ca3af !important;
+    }
+
+    [data-theme="dark"] .math-tools-size-box {
+      background-color: #1f2937 !important;
+      border-color: #374151 !important;
+      color: #9ca3af !important;
+    }
+    [data-theme="dark"] .math-tools-size-box button {
+      color: #9ca3af !important;
+    }
+    [data-theme="dark"] .math-tools-size-box button:hover {
+      color: #ffffff !important;
+    }
+    [data-theme="dark"] .math-tools-size-box button.bg-white {
+      background-color: #7c3aed !important;
+      color: #ffffff !important;
+    }
+
+    [data-theme="dark"] .math-tools-close-btn {
+      background-color: #1f2937 !important;
+      color: #9ca3af !important;
+    }
+    [data-theme="dark"] .math-tools-close-btn:hover {
+      background-color: #374151 !important;
+      color: #ffffff !important;
+    }
+
+    [data-theme="dark"] .math-tools-tabs {
+      background-color: #111827 !important;
+      border-color: #374151 !important;
+    }
+    [data-theme="dark"] .math-tools-tabs button {
+      color: #9ca3af !important;
+    }
+    [data-theme="dark"] .math-tools-tabs button:hover {
+      background-color: rgba(255, 255, 255, 0.05) !important;
+      color: #ffffff !important;
+    }
+    [data-theme="dark"] .math-tools-tabs button.bg-white {
+      background-color: #7c3aed !important;
+      color: #ffffff !important;
+      border-color: #8b5cf6 !important;
+    }
+
+    [data-theme="dark"] .math-tools-search-box {
+      background-color: #111827 !important;
+      border-color: #1f2937 !important;
+    }
+    [data-theme="dark"] .math-tools-search-input {
+      background-color: #1f2937 !important;
+      border-color: #374151 !important;
+      color: #ffffff !important;
+    }
+    [data-theme="dark"] .math-tools-search-input::placeholder {
+      color: #9ca3af !important;
+    }
+
+    [data-theme="dark"] .math-tools-chem-search {
+      background-color: #1f2937 !important;
+      border-color: #374151 !important;
+    }
+    [data-theme="dark"] .math-tools-chem-search button {
+      color: #e2e8f0 !important;
+    }
+    [data-theme="dark"] .math-tools-chem-search button:hover {
+      background-color: #7c3aed !important;
+      color: #ffffff !important;
+    }
+
+    [data-theme="dark"] .math-tools-grid-box {
+      background-color: rgba(17, 24, 39, 0.7) !important;
+    }
+
+    /* Symbol Grid Buttons in Dark Mode: Crisp White Text on Midnight Glass */
+    [data-theme="dark"] .math-tools-btn {
+      background-color: #1f2937 !important;
+      color: #ffffff !important;
+      border-color: #374151 !important;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+    }
+    [data-theme="dark"] .math-tools-btn:hover {
+      background-color: #7c3aed !important;
+      color: #ffffff !important;
+      border-color: #8b5cf6 !important;
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4) !important;
+    }
+    [data-theme="dark"] .math-tools-btn span {
+      color: #ffffff !important;
+    }
+
+    /* Formula Cards in Dark Mode */
+    [data-theme="dark"] .math-tools-formula-btn {
+      background-color: #1f2937 !important;
+      border-color: #374151 !important;
+    }
+    [data-theme="dark"] .math-tools-formula-btn:hover {
+      background-color: rgba(124, 58, 237, 0.15) !important;
+      border-color: #7c3aed !important;
+    }
+    [data-theme="dark"] .math-tools-formula-btn .text-slate-900 {
+      color: #ffffff !important;
+    }
+    [data-theme="dark"] .math-tools-formula-btn .text-slate-600 {
+      color: #c4b5fd !important;
+    }
+
+    /* Footer in Dark Mode */
+    [data-theme="dark"] .math-tools-footer {
+      background-color: #111827 !important;
+      border-color: #374151 !important;
+      color: #9ca3af !important;
+    }
+    [data-theme="dark"] .math-tools-badge {
+      background-color: #1f2937 !important;
+      border-color: #374151 !important;
+      color: #e2e8f0 !important;
+    }
+    [data-theme="dark"] .math-tools-resize-handle {
+      background-color: #1f2937 !important;
+      color: #9ca3af !important;
+    }
+    [data-theme="dark"] .math-tools-resize-handle:hover {
+      background-color: #7c3aed !important;
+      color: #ffffff !important;
+    }
+    
+    /* Hide sidebar/navbar in exam mode */
+    body.exam-mode .global-sidebar, body.exam-mode .global-topbar, body.exam-mode .mobile-bottom-bar {
+      display: none !important;
+    }
+    body.exam-mode .main-content-wrapper {
+      margin-left: 0 !important;
+    }
+
+    /* Smooth Question Palette & Mini Tutor Dock Buttons Shift on Desktop */
+    #math-tools-dock-wrap, #scratchpad-dock-wrap {
+      transition: right 300ms cubic-bezier(0.16, 1, 0.3, 1), top 300ms cubic-bezier(0.16, 1, 0.3, 1), bottom 300ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms ease;
+    }
+    @media (min-width: 1024px) {
+      body.question-palette-open #math-tools-dock-wrap,
+      body.mini-tutor-open #math-tools-dock-wrap {
+        top: auto !important;
+        bottom: 88px !important;
+        right: 440px !important;
+        z-index: 130 !important;
+      }
+      body.question-palette-open #scratchpad-dock-wrap,
+      body.mini-tutor-open #scratchpad-dock-wrap {
+        top: auto !important;
+        bottom: 24px !important;
+        right: 440px !important;
+        z-index: 130 !important;
+      }
+    }
+
+    /* Invisible & Hover-Only Sleek Scrollbars (for Colored Beads & Chips) */
+    .no-scrollbar {
+      -ms-overflow-style: none !important;
+      scrollbar-width: none !important;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+    }
+    .hover-scrollbar {
+      overflow-y: hidden !important;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .hover-scrollbar:hover {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(248, 176, 0, 0.55) transparent;
+    }
+    .hover-scrollbar::-webkit-scrollbar {
+      height: 4px !important;
+      width: 0px !important;
+      background: transparent !important;
+    }
+    .hover-scrollbar::-webkit-scrollbar-button {
+      display: none !important;
+      width: 0 !important;
+      height: 0 !important;
+    }
+    .hover-scrollbar::-webkit-scrollbar-track {
+      background: transparent !important;
+    }
+    .hover-scrollbar::-webkit-scrollbar-thumb {
+      background: transparent !important;
+      border-radius: 9999px !important;
+    }
+    .hover-scrollbar:hover::-webkit-scrollbar-thumb,
+    .hover-scrollbar:active::-webkit-scrollbar-thumb {
+      background: rgba(248, 176, 0, 0.55) !important;
+      border-radius: 9999px !important;
+    }
+    .hover-scrollbar:hover::-webkit-scrollbar-thumb:hover {
+      background: rgba(248, 176, 0, 0.85) !important;
+    }
+
+    @media (max-width: 1023px) {
+      /* On mobile/tablet, hide floating dock buttons when palette, mini tutor, or tools are open */
+      body.question-palette-open #math-tools-dock-wrap,
+      body.question-palette-open #scratchpad-dock-wrap,
+      body.mini-tutor-open #math-tools-dock-wrap,
+      body.mini-tutor-open #scratchpad-dock-wrap,
+      body.scratchpad-open #math-tools-dock-wrap,
+      body.scratchpad-open #scratchpad-dock-wrap,
+      body.math-tools-open #math-tools-dock-wrap,
+      body.math-tools-open #scratchpad-dock-wrap {
+        display: none !important;
+      }
+      
+      /* Mobile Floating Action Buttons (FABs) pinned to bottom right, clear of question text */
+      #math-tools-dock-wrap {
+        top: auto !important;
+        bottom: 80px !important;
+        right: 12px !important;
+        z-index: 45 !important;
+      }
+      #scratchpad-dock-wrap {
+        top: auto !important;
+        bottom: 136px !important;
+        right: 12px !important;
+        z-index: 45 !important;
+      }
+      #math-tools-dock-wrap button,
+      #scratchpad-dock-wrap button {
+        width: 44px !important;
+        height: 44px !important;
+        border-radius: 9999px !important;
+        padding: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
+        border: 2px solid rgba(255, 255, 255, 0.5) !important;
+      }
+      #math-tools-dock-wrap button .flex-col,
+      #scratchpad-dock-wrap button .flex-col,
+      #math-tools-dock-wrap button .ml-0.5,
+      #scratchpad-dock-wrap button .ml-0.5 {
+        display: none !important;
+      }
+      #math-tools-dock-wrap button .w-7,
+      #scratchpad-dock-wrap button .w-7 {
+        background: transparent !important;
+        box-shadow: none !important;
+        width: 100% !important;
+        height: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+      }
+      #math-tools-dock-wrap button svg,
+      #scratchpad-dock-wrap button svg {
+        width: 20px !important;
+        height: 20px !important;
+      }
+    }
+
+    /* Mobile Safe Area & Input Polish */
+    @supports (padding: env(safe-area-inset-bottom)) {
+      .mobile-bottom-bar {
+        padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px)) !important;
+      }
+    }
+    @media (max-width: 640px) {
+      /* Prevent iOS auto-zoom on inputs & textareas */
+      input:not([type="radio"]):not([type="checkbox"]), select, textarea {
+        font-size: 16px !important;
+      }
+    }
+
+    /* AI Tutor Avatar Dynamic Emotion Animations */
+    @keyframes tutorTalking {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-1.5px); }
+    }
+    @keyframes tutorThinking {
+      0%, 100% { transform: rotate(-0.8deg); }
+      50% { transform: rotate(0.8deg) translateY(-1px); }
+    }
+    @keyframes tutorLaughing {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-2px); }
+    }
+    @keyframes tutorSerious {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-1px); }
+    }
+    @keyframes tutorAngry {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(-1deg); }
+    }
+
+    .tutor-emotion-base,
+    .tutor-emotion-talking,
+    .tutor-emotion-thinking,
+    .tutor-emotion-laughing,
+    .tutor-emotion-serious,
+    .tutor-emotion-angry {
+      transition: none !important;
+      will-change: transform;
+    }
+
+    .tutor-emotion-base {
+      animation: none !important;
+      transform: none !important;
+    }
+    .tutor-emotion-talking {
+      animation: tutorTalking 1.4s ease-in-out infinite;
+      transform-origin: center bottom;
+    }
+    .tutor-emotion-thinking {
+      animation: tutorThinking 2.4s ease-in-out infinite;
+      transform-origin: center bottom;
+    }
+    .tutor-emotion-laughing {
+      animation: tutorLaughing 1.2s ease-in-out infinite;
+      transform-origin: center bottom;
+    }
+    .tutor-emotion-serious {
+      animation: tutorSerious 2.8s ease-in-out infinite;
+      transform-origin: center bottom;
+    }
+    .tutor-emotion-angry {
+      animation: tutorAngry 1.6s ease-in-out infinite;
+      transform-origin: center bottom;
+    }
+    
+    /* Prevent sidebar flash on load */
+    html.sidebar-closed .global-sidebar {
+      transform: translateX(-100%) !important;
+      transition: none !important;
+    }
+    html.sidebar-closed .main-content-wrapper {
+      margin-left: 0 !important;
+      transition: none !important;
+    }
+    
+    /* Kurzgesagt/Brilliant Neumorphic Tactility (Push Effect) */
+    .btn-primary, .btn-secondary, .btn-accent, .tactile-btn {
+      border-bottom: 4px solid rgba(21, 21, 21, 0.35);
+      transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), border-width 0.1s !important;
+    }
+    [data-theme="dark"] .btn-primary, [data-theme="dark"] .btn-secondary, [data-theme="dark"] .btn-accent, [data-theme="dark"] .tactile-btn {
+      border-bottom-color: rgba(0, 0, 0, 0.45);
+    }
+    .btn-primary:active, .btn-secondary:active, .btn-accent:active, .tactile-btn:active {
+      transform: translateY(2px) !important;
+    }
+    
+    /* Brilliant 3D Card Styling with SAXAZ Tactile Borders & Warm Surface (Zero Layout Shift) */
+    .brilliant-card {
+      border: 2px solid rgba(21, 21, 21, 0.10);
+      border-bottom: 6px solid rgba(21, 21, 21, 0.20);
+      border-radius: 2rem;
+      background: linear-gradient(180deg, #ffffff 0%, #fffdf8 100%);
+      box-shadow: 0 10px 26px rgba(21, 21, 21, 0.06);
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .brilliant-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(248, 176, 0, 0.85);
+      border-bottom-color: #151515;
+      box-shadow: 0 16px 32px rgba(248, 176, 0, 0.16), 0 6px 16px rgba(21, 21, 21, 0.08);
+    }
+    .brilliant-card:active {
+      transform: translateY(2px);
+    }
+    [data-theme="dark"] .brilliant-card {
+      background: #1f2937;
+      border-color: rgba(255, 255, 255, 0.08);
+      border-bottom-color: rgba(0, 0, 0, 0.45);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+    }
+    [data-theme="dark"] .brilliant-card:hover {
+      border-color: rgba(248, 176, 0, 0.7);
+      border-bottom-color: #f8b000;
+    }
+
+    /* Comic Conversation Speech Bubble for Collapsed Sidebar */
+    .global-sidebar,
+    .global-sidebar nav,
+    .global-sidebar .menu,
+    .global-sidebar .menu li {
+      overflow: visible !important;
+    }
+    .global-sidebar a {
+      position: relative;
+    }
+    .comic-bubble {
+      position: absolute;
+      left: calc(100% + 16px);
+      top: 50%;
+      transform: translateY(-50%) scale(0.82) rotate(-2deg);
+      transform-origin: left center;
+      background: #ffffff !important;
+      color: #151515 !important;
+      border: 2.5px solid #151515 !important;
+      border-radius: 14px;
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      box-shadow: 4px 4px 0px #f8b000, 4px 4px 0px 2px #151515;
+      transition: opacity 0.16s ease, transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1), visibility 0.16s;
+      z-index: 9999;
+    }
+    .comic-bubble::before {
+      content: "";
+      position: absolute;
+      left: -11.5px;
+      top: 50%;
+      transform: translateY(-50%);
+      border-width: 8px 10px 8px 0;
+      border-style: solid;
+      border-color: transparent #151515 transparent transparent;
+    }
+    .comic-bubble::after {
+      content: "";
+      position: absolute;
+      left: -7.5px;
+      top: 50%;
+      transform: translateY(-50%);
+      border-width: 6px 8px 6px 0;
+      border-style: solid;
+      border-color: transparent #ffffff transparent transparent;
+    }
+    a:hover > .comic-bubble,
+    a:focus-visible > .comic-bubble {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(-50%) scale(1) rotate(0deg);
+    }
+    /* Theme Transition Portal Effect */
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+      animation: none;
+      mix-blend-mode: normal;
+    }
+    ::view-transition-old(root) {
+      z-index: 1;
+    }
+    ::view-transition-new(root) {
+      z-index: 2147483646;
+    }
+    
+    /* Prevent text selection to protect content */
+    body {
+      user-select: none;
+      -webkit-user-select: none;
+      -ms-user-select: none;
+    }
+    /* Allow selection in inputs and text areas so user can still type normally */
+    input, textarea, [contenteditable="true"] {
+      user-select: auto;
+      -webkit-user-select: auto;
+      -ms-user-select: auto;
+    }
+
+    /* SweetAlert2 Toast overrides for SAXAZ aesthetics */
+    div:where(.swal2-container) div:where(.swal2-toast) {
+      border-radius: 1.5rem !important;
+      box-shadow: 0 10px 30px -10px rgba(0,0,0,0.2) !important;
+      padding: 0.75rem 1rem !important;
+    }
+
+    /* Global Page Loader - shown by default to cover FOUC */
+    #global-loader {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      background-color: var(--fallback-b1,oklch(var(--b1)/1));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.4s ease-out;
+    }
+    #global-loader.hidden-loader {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* ==========================================================================
+       GLOBAL MOBILE & RESPONSIVE OPTIMIZATION + COMPILED UTILITY POLYFILLS
+       ========================================================================== */
+    .shadow-xs { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+    .shadow-2xs { box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.04); }
+    .max-h-\[72vh\] { max-height: 72vh; }
+    .max-h-\[65vh\] { max-height: 65vh; }
+    @media (min-width: 640px) {
+      .sm\:left-0 { left: 0px !important; }
+      .sm\:border-3 { border-width: 3px !important; }
+    }
+    .main-content-wrapper > main {
+      overflow-x: hidden !important;
+      max-width: 100vw !important;
+    }
+    @media (max-width: 767px) {
+      .mobile-bottom-clearance {
+        padding-bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px)) !important;
+      }
+      .mobile-bottom-bar {
+        padding-left: 0.25rem !important;
+        padding-right: 0.25rem !important;
+      }
+      .mobile-bottom-bar > a {
+        padding-left: 0.35rem !important;
+        padding-right: 0.35rem !important;
+        font-size: 10.5px !important;
+        min-width: 0 !important;
+      }
+    }
+
+    /* Topbar Install App Icon Button (matches bell & theme icon buttons) */
+    .topbar-install-btn {
+      color: #ffffff !important;
+    }
+    .topbar-install-btn:hover {
+      background-color: rgba(255, 255, 255, 0.10) !important;
+      color: #f8b000 !important;
+    }
+    @media (display-mode: standalone) {
+      .topbar-install-btn {
+        display: none !important;
+      }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    // Progressive Web App (Browser App) Registration & Install Handler
+    window.isSaxazStandalone = () => (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true
+    );
+
+    window.addEventListener('appinstalled', () => {
+      window.deferredSaxazInstallPrompt = null;
+      window.dispatchEvent(new CustomEvent('saxaz-pwa-status'));
+      if (window.Swal) {
+        Swal.fire({
+          icon: 'success',
+          title: 'SAXAZ App Installed!',
+          text: 'You can now launch SAXAZ directly from your home screen or desktop.',
+          toast: true,
+          position: 'bottom-end',
+          showConfirmButton: false,
+          timer: 4000
+        });
+      }
+    });
+
+    window.triggerSaxazAppInstall = async function() {
+      if (window.isSaxazStandalone()) {
+        Swal.fire({
+          icon: 'success',
+          title: 'App Already Installed',
+          html: '<p class="text-sm font-medium opacity-80">You are currently running the installed <b>SAXAZ Web App</b>.</p>',
+          confirmButtonText: 'OK',
+          buttonsStyling: false,
+          customClass: {
+            popup: 'rounded-[2rem] border border-base-300 shadow-2xl bg-base-100 p-6',
+            title: 'text-xl font-black text-base-content mt-2',
+            confirmButton: 'btn btn-primary rounded-full px-8 font-black text-[#151515] mt-4'
+          }
+        });
+        return;
+      }
+
+      // If beforeinstallprompt hasn't fired yet (e.g. Service Worker just activated), wait up to 1.5s for it
+      if (!window.deferredSaxazInstallPrompt) {
+        await new Promise((resolve) => {
+          let resolved = false;
+          const onReady = () => {
+            if (!resolved && window.deferredSaxazInstallPrompt) {
+              resolved = true;
+              window.removeEventListener('saxaz-pwa-status', onReady);
+              resolve();
+            }
+          };
+          window.addEventListener('saxaz-pwa-status', onReady);
+          setTimeout(() => {
+            if (!resolved) {
+              resolved = true;
+              window.removeEventListener('saxaz-pwa-status', onReady);
+              resolve();
+            }
+          }, 1200);
+        });
+      }
+
+      // Trigger the native browser "Do you want to install SAXAZ?" dialog directly
+      if (window.deferredSaxazInstallPrompt) {
+        try {
+          window.deferredSaxazInstallPrompt.prompt();
+          const { outcome } = await window.deferredSaxazInstallPrompt.userChoice;
+          if (outcome === 'accepted') {
+            window.deferredSaxazInstallPrompt = null;
+          }
+          window.dispatchEvent(new CustomEvent('saxaz-pwa-status'));
+          return;
+        } catch (err) {
+          console.debug('PWA prompt error:', err);
+        }
+      }
+
+      // If the browser suppressed beforeinstallprompt, check why (already installed vs iOS Safari)
+      const ua = navigator.userAgent || '';
+      const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+      if (isIOS) {
+        Swal.fire({
+          title: 'Install SAXAZ Web App',
+          html: `
+            <div class="text-left space-y-3 mt-2 bg-base-200/70 p-4 rounded-2xl border border-base-300 text-sm">
+              <div class="flex items-start gap-3">
+                <span class="w-6 h-6 rounded-full bg-primary text-[#151515] font-black text-xs flex items-center justify-center shrink-0 mt-0.5">1</span>
+                <span>Tap the <b>Share</b> button <span class="inline-block px-1.5 py-0.5 rounded bg-base-300 font-bold text-xs">↑</span> in Safari.</span>
+              </div>
+              <div class="flex items-start gap-3">
+                <span class="w-6 h-6 rounded-full bg-primary text-[#151515] font-black text-xs flex items-center justify-center shrink-0 mt-0.5">2</span>
+                <span>Tap <b>"Add to Home Screen"</b> to install.</span>
+              </div>
+            </div>`,
+          imageUrl: '/static/images/pwa-icon-192.png?v=2',
+          imageWidth: 64,
+          imageHeight: 64,
+          confirmButtonText: 'OK',
+          buttonsStyling: false,
+          customClass: {
+            popup: 'rounded-[2rem] border border-base-300 shadow-2xl bg-base-100 p-6 max-w-md',
+            image: 'rounded-2xl shadow-md mx-auto mt-2 mb-1',
+            title: 'text-xl font-black text-base-content mt-1',
+            confirmButton: 'btn btn-primary rounded-full px-8 font-black text-[#151515] mt-5'
+          }
+        });
+        return;
+      }
+
+      Swal.fire({
+        title: 'SAXAZ App Already Installed',
+        html: `<p class="text-sm font-medium opacity-80 mb-3">Your browser reports that the <b>SAXAZ Web App</b> is already installed on this device (look for the <b>Open in App ↗</b> icon in your address bar).</p>
+               <div class="text-left bg-base-200/70 p-3.5 rounded-2xl border border-base-300 text-xs space-y-1.5">
+                 <div class="font-black text-base-content">Want a fresh install prompt with the new logo?</div>
+                 <div class="opacity-80">Click the <b>↗</b> icon in your address bar → open the app's <b>⋮</b> menu → click <b>Uninstall SAXAZ</b>, then click this download button again.</div>
+               </div>`,
+        imageUrl: '/static/images/pwa-icon-192.png?v=2',
+        imageWidth: 64,
+        imageHeight: 64,
+        imageAlt: 'SAXAZ App Icon',
+        confirmButtonText: 'OK',
+        buttonsStyling: false,
+        customClass: {
+          popup: 'rounded-[2rem] border border-base-300 shadow-2xl bg-base-100 p-6 max-w-md',
+          image: 'rounded-2xl shadow-md mx-auto mt-2 mb-1',
+          title: 'text-xl font-black text-base-content mt-1',
+          confirmButton: 'btn btn-primary rounded-full px-8 font-black text-[#151515] mt-5'
+        }
+      });
+    };
+  </script>
+  <script>
+    window.USER_SFX_MODE = {% if current_sfx_mode is not none %}{{ current_sfx_mode }}{% else %}1{% endif %};
+    window.USER_SFX_CUSTOM_CONFIG = {% if current_sfx_custom %}{{ current_sfx_custom | safe }}{% else %}{}{% endif %};
+    
+    {% if not user or user.get('role') != 'admin' %}
+    // Anti-copy/paste protection (allow inside inputs/textareas when not in exam-mode)
+    document.addEventListener('copy', (e) => {
+      const isInput = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable);
+      if (isInput && !document.body.classList.contains('exam-mode')) return;
+      e.preventDefault();
+      Swal.fire({
+        icon: 'warning',
+        title: 'Copying Disabled',
+        text: 'Copying content is disabled to protect academic integrity.',
+        toast: true,
+        position: 'bottom-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true
+      });
+    });
+    document.addEventListener('cut', (e) => {
+      if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+      }
+    });
+    document.addEventListener('paste', (e) => {
+      const isInput = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable);
+      if (isInput && !document.body.classList.contains('exam-mode')) return;
+      e.preventDefault();
+      Swal.fire({
+        icon: 'warning',
+        title: 'Pasting Disabled',
+        text: 'Pasting is disabled to encourage original work.',
+        toast: true,
+        position: 'bottom-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true
+      });
+    });
+    {% endif %}
+
+    // Global loader: hide when page is ready or upon safety timeout to prevent UI freezes
+    const dismissGlobalLoader = () => {
+      const loader = document.getElementById('global-loader');
+      if (loader && !loader.classList.contains('hidden-loader')) {
+        loader.classList.add('hidden-loader');
+        setTimeout(() => { if (loader) loader.style.display = 'none'; }, 400);
+      }
+    };
+    window.addEventListener('load', dismissGlobalLoader);
+    document.addEventListener('DOMContentLoaded', dismissGlobalLoader);
+    window.addEventListener('pageshow', dismissGlobalLoader);
+    setTimeout(dismissGlobalLoader, 1500); // Safety fallback ensures user is never locked out
+  </script>
+  <script src="/static/js/sfx.js" defer></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="flex h-screen overflow-hidden font-sans text-base-content antialiased bg-base-100 transition-colors duration-300 {% if current_cursor_mode == 1 %}custom-cursor-active{% endif %}"
+    x-data="{ 
+     themeMode: localStorage.getItem('themeMode') || 'light',
+     fontSizeMode: parseInt(getCookie('fontSizeMode') || '1'),
+     sidebarOpen: false,
+     spotlightOpen: false,
+     openSpotlight() {
+       this.spotlightOpen = true;
+       this.$nextTick(() => {
+         if (this.$refs.globalSpotlightInput) {
+           this.$refs.globalSpotlightInput.focus();
+           this.$refs.globalSpotlightInput.select();
+         }
+       });
+     },
+     toggleTheme(event) {
+       const isDark = this.themeMode === 'light';
+       
+       if (!document.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+         this.themeMode = isDark ? 'dark' : 'light';
+         document.documentElement.setAttribute('data-theme', this.themeMode);
+         localStorage.setItem('themeMode', this.themeMode);
+         return;
+       }
+
+       let x, y;
+       
+       if (event && event.clientX && event.clientY) {
+         x = event.clientX;
+         y = event.clientY;
+       } else {
+         const btn = document.getElementById('theme-toggle-btn');
+         if (btn) {
+           const rect = btn.getBoundingClientRect();
+           x = rect.left + rect.width / 2;
+           y = rect.top + rect.height / 2;
+         } else {
+           x = innerWidth / 2;
+           y = 0;
+         }
+       }
+
+       const endRadius = Math.hypot(
+         Math.max(x, innerWidth - x),
+         Math.max(y, innerHeight - y)
+       );
+
+       const styleId = 'theme-transition-style';
+       let styleEl = document.getElementById(styleId);
+       if (!styleEl) {
+         styleEl = document.createElement('style');
+         styleEl.id = styleId;
+         document.head.appendChild(styleEl);
+       }
+       styleEl.innerHTML = `
+         ::view-transition-new(root) {
+           animation: portal-open 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+         }
+         @keyframes portal-open {
+           0% { clip-path: circle(0px at ${x}px ${y}px); }
+           100% { clip-path: circle(${endRadius}px at ${x}px ${y}px); }
+         }
+       `;
+
+       document.startViewTransition(() => {
+         this.themeMode = isDark ? 'dark' : 'light';
+         document.documentElement.setAttribute('data-theme', this.themeMode);
+         localStorage.setItem('themeMode', this.themeMode);
+       });
+     },
+     toggleSidebar() {
+       this.sidebarOpen = !this.sidebarOpen;
+     },
+     setSidebar(state) {
+       this.sidebarOpen = state;
+     },
+     setFontSize(mode) {
+       this.fontSizeMode = mode;
+       if (window.applySaxazFontSize) {
+         window.applySaxazFontSize(mode);
+       } else {
+         const rootSize = 14 + (mode * 2);
+         document.documentElement.style.fontSize = `${rootSize}px`;
+       }
+       document.cookie = `fontSizeMode=${this.fontSizeMode};path=/;max-age=31536000`;
+     }
+   }"
+   @keydown.window.ctrl.k.prevent="openSpotlight()"
+   @keydown.window.meta.k.prevent="openSpotlight()"
+   @open-saxaz-spotlight.window="openSpotlight()"
+   x-init="setTimeout(() => document.documentElement.classList.remove('sidebar-closed'), 50)">
+
+  <!-- Global Page Loader -->
+  <div id="global-loader">
+    <span class="loading loading-infinity w-24 text-primary"></span>
+  </div>
+
+  <!-- Main Content Area (Full-Width Kinetic Studio Shell — No Left Sidebar) -->
+  <div class="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 main-content-wrapper space-bg w-full">
+    
+    <!-- Top Floating Kinetic Studio Command Bar -->
+    <header class="global-topbar v2-command-bar flex items-center justify-between px-3 sm:px-6 lg:px-10 z-30 sticky top-0 gap-2 sm:gap-4">
+      
+      <!-- Left: Brand Logo + STUDIO Badge + Page Context -->
+      <div class="flex items-center gap-2.5 sm:gap-4 min-w-0 shrink-0">
+        <a href="/" class="flex items-center gap-2.5 group shrink-0">
+          <div class="w-20 sm:w-28 transition-transform duration-300 group-hover:scale-105">
+            {% include "logo.html" %}
+          </div>
+          <span class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-[#111111] text-[#f8b000] border border-[#f8b000]/40 shadow-sm">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#f8b000] animate-pulse"></span>
+            STUDIO
+          </span>
+        </a>
+        <div class="hidden xl:flex items-center gap-2 pl-3 border-l-2 border-base-300 text-xs font-extrabold text-base-content/70 truncate max-w-[200px]">
+          {% block topbar_title %}<span>Mission Control</span>{% endblock %}
+        </div>
+      </div>
+
+      <!-- Center: Segmented Pitch-Black & Gold Workspace Switcher (Desktop) -->
+      {% if user %}
+      <nav class="hidden md:flex items-center justify-center">
+        <div class="v2-nav-pills">
+          {% if user.role == 'student' and not user.get('is_parent') %}
+            <a href="/student/dashboard" class="v2-nav-pill {% if request.url.path.startswith('/student/dashboard') %}active{% endif %}">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+              <span>Study Desk</span>
+            </a>
+            <a href="/student/exams" class="v2-nav-pill {% if request.url.path.startswith('/student/exams') or request.url.path.startswith('/student/subjects') or request.url.path.startswith('/student/chapters') or request.url.path.startswith('/student/attempts') %}active{% endif %}">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+              <span>Courses &amp; Exams</span>
+            </a>
+            <a href="/student/digi-library" class="v2-nav-pill {% if request.url.path.startswith('/student/digi-library') %}active{% endif %}">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+              <span>Digi Library</span>
+            </a>
+            <a href="/student/tutor" class="v2-nav-pill {% if request.url.path.startswith('/student/tutor') %}active{% endif %}">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+              <span>AI Co-Pilot</span>
+            </a>
+            <a href="/student/settings" class="v2-nav-pill {% if request.url.path.startswith('/student/settings') %}active{% endif %}">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              <span>Settings</span>
+            </a>
+          {% elif user.role == 'student' and user.get('is_parent') %}
+            <a href="/parent/dashboard" class="v2-nav-pill {% if request.url.path.startswith('/parent/dashboard') %}active{% endif %}">
+              <span>Overview</span>
+            </a>
+            <a href="/parent/mock-exams" class="v2-nav-pill {% if request.url.path.startswith('/parent/mock-exams') %}active{% endif %}">
+              <span>Mock Exams</span>
+            </a>
+            <a href="/parent/real-exams" class="v2-nav-pill {% if request.url.path.startswith('/parent/real-exams') %}active{% endif %}">
+              <span>Real Exams</span>
+            </a>
+            <a href="/parent/settings" class="v2-nav-pill {% if request.url.path.startswith('/parent/settings') %}active{% endif %}">
+              <span>Settings</span>
+            </a>
+          {% elif user.role == 'admin' %}
+            <a href="/admin/dashboard" class="v2-nav-pill {% if request.url.path.startswith('/admin/dashboard') or request.url.path == '/admin' %}active{% endif %}">
+              <span>Studio Hub</span>
+            </a>
+            <a href="/admin/curriculum" class="v2-nav-pill {% if request.url.path.startswith('/admin/curriculum') %}active{% endif %}">
+              <span>Curriculum</span>
+            </a>
+            <a href="/admin/digi-library" class="v2-nav-pill {% if request.url.path.startswith('/admin/digi-library') %}active{% endif %}">
+              <span>Digi Library</span>
+            </a>
+            <a href="/admin/analytics" class="v2-nav-pill {% if request.url.path.startswith('/admin/analytics') %}active{% endif %}">
+              <span>Analytics</span>
+            </a>
+            <a href="/admin/settings" class="v2-nav-pill {% if request.url.path.startswith('/admin/settings') %}active{% endif %}">
+              <span>Settings</span>
+            </a>
+          {% endif %}
+          {% block nav_items %}{% endblock %}
+        </div>
+      </nav>
+      {% endif %}
+
+      <!-- Right: Global AI Spotlight Trigger, PWA Install, Notifications, Theme, Font, Profile -->
+      <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+        {% if user and user.role == 'student' and not user.get('is_parent') %}
+        <!-- Global AI Spotlight Command Trigger -->
+        <button type="button"
+                @click="openSpotlight()"
+                class="v2-spotlight-trigger"
+                title="Open AI Command Spotlight (Ctrl+K)">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-[#f8b000] shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          <span class="hidden sm:inline">Ask AI or Jump...</span>
+          <span class="sm:hidden">AI</span>
+          <kbd class="v2-kbd hidden lg:inline-flex">⌘K</kbd>
+        </button>
+        {% endif %}
+
+        <!-- Install Browser Web App Icon Button -->
+        <button type="button"
+                @click="window.triggerSaxazAppInstall && window.triggerSaxazAppInstall()"
+                class="btn btn-ghost btn-circle btn-sm sm:btn-md text-base-content hover:bg-primary/20 transition-colors topbar-install-btn"
+                style="color: inherit !important;"
+                title="Install SAXAZ Web App">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+        </button>
+
+        {% if user and user.role == 'student' and not user.get('is_parent') %}
+        <!-- Notifications Bell -->
+        <div class="relative" x-data="{
+          open: false,
+          unreadCount: 0,
+          notifications: [],
+          async fetchNotifs() {
+            try {
+              const res = await fetch('/student/api/notifications');
+              const data = await res.json();
+              this.notifications = data.notifications || [];
+              this.unreadCount = data.unreadCount || 0;
+            } catch(e) {}
+          },
+          async markRead() {
+            if (this.unreadCount === 0) return;
+            try {
+              await fetch('/student/api/notifications/read', { method: 'POST' });
+              this.unreadCount = 0;
+              this.notifications.forEach(n => n.is_read = 1);
+            } catch(e) {}
+          }
+        }" x-init="fetchNotifs(); setInterval(() => fetchNotifs(), 30000)">
+          <button @click="open = !open; if(open) markRead()" @click.outside="open = false" class="btn btn-ghost btn-circle btn-sm sm:btn-md relative text-base-content hover:bg-primary/20 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+            <span x-show="unreadCount > 0" class="absolute top-1 right-1 flex h-3 w-3" style="display: none;">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500 text-[9px] font-bold text-white items-center justify-center" x-text="unreadCount"></span>
+            </span>
+          </button>
+          
+          <!-- Dropdown -->
+          <div tabindex="0" class="fixed sm:absolute left-3 right-3 sm:left-auto sm:right-0 top-16 sm:top-auto sm:mt-4 bg-white border-2 border-[#111111] rounded-3xl shadow-2xl w-auto sm:w-80 max-h-[75dvh] sm:max-h-96 overflow-y-auto z-50 flex flex-col"
+               x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0 scale-100" x-transition:leave-end="opacity-0 translate-y-2 scale-95" style="display: none;">
+            <div class="px-5 py-4 border-b-2 border-[#111111]/10 bg-[#111111] text-white rounded-t-3xl sticky top-0 z-10 flex items-center justify-between">
+              <h3 class="font-black text-[#f8b000] tracking-wide uppercase text-xs">Live Activity Feed</h3>
+            </div>
+            <div class="p-2 space-y-1 bg-white">
+              <template x-for="n in notifications" :key="n.id">
+                <div class="p-3 rounded-2xl transition-colors hover:bg-base-50 flex items-start gap-3 relative overflow-hidden" :class="!n.is_read ? 'bg-primary/10' : ''">
+                  <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 border border-[#111111]/15"
+                       :class="{
+                         'bg-orange-100 text-orange-600': n.type === 'streak',
+                         'bg-amber-100 text-amber-700': n.type === 'xp',
+                         'bg-emerald-100 text-emerald-600': n.type === 'completion'
+                       }">
+                    <template x-if="n.type === 'streak'">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clip-rule="evenodd" /></svg>
+                    </template>
+                    <template x-if="n.type === 'xp'">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" /></svg>
+                    </template>
+                    <template x-if="n.type === 'completion'">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
+                    </template>
+                  </div>
+                  <div>
+                    <h4 class="text-sm font-bold text-gray-900" x-text="n.title"></h4>
+                    <p class="text-xs text-gray-500 font-medium leading-snug" x-text="n.message"></p>
+                    <div class="text-[10px] text-gray-400 mt-1 font-bold tracking-wider uppercase" x-text="new Date(n.created_at.replace(' ', 'T') + 'Z').toLocaleString()"></div>
+                  </div>
+                </div>
+              </template>
+              <template x-if="notifications.length === 0">
+                <div class="text-center p-8 text-gray-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
+                  <p class="text-xs font-bold uppercase tracking-widest">No notifications yet</p>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        
+        <!-- Theme Toggle -->
+        <button id="theme-toggle-btn" class="btn btn-ghost btn-circle btn-sm sm:btn-md text-base-content hover:bg-primary/20 transition-colors" @click="toggleTheme($event)">
+          <svg x-show="themeMode === 'dark'" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="display: none;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+          <svg x-show="themeMode === 'light'" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+        </button>
+        
+        <!-- Font Size Switcher -->
+        <div class="dropdown dropdown-end" x-data="{ open: false }" @click.outside="open = false">
+          <button tabindex="0" class="btn btn-ghost btn-circle btn-sm sm:btn-md text-base-content hover:bg-primary/20 transition-colors" @click="open = !open">
+            <span class="font-black text-base sm:text-lg leading-none flex items-start">
+              A<span class="text-[10px] ml-[1px] text-primary" x-text="fontSizeMode === 1 ? '' : '+' + (fontSizeMode-1)"></span>
+            </span>
+          </button>
+          <div tabindex="0" class="dropdown-content z-[1] mt-4 p-2 bg-white border-2 border-[#111111] rounded-2xl shadow-xl w-48"
+             x-show="open"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 translate-y-2 scale-95"
+             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+             x-transition:leave-end="opacity-0 translate-y-2 scale-95"
+             style="display: none;">
+            <div class="px-3 py-2 text-[10px] font-black text-base-content/50 uppercase tracking-widest mb-1">Studio Text Scale</div>
+            <div class="space-y-1">
+              <button @click="setFontSize(1); open = false" class="w-full text-left px-3 py-2 rounded-xl text-sm transition-colors flex items-center justify-between" :class="fontSizeMode === 1 ? 'bg-primary text-[#111111] font-black' : 'text-base-content/70 hover:bg-base-200 hover:text-base-content'">
+                Default <span>A</span>
+              </button>
+              <button @click="setFontSize(2); open = false" class="w-full text-left px-3 py-2 rounded-xl text-sm transition-colors flex items-center justify-between" :class="fontSizeMode === 2 ? 'bg-primary text-[#111111] font-black' : 'text-base-content/70 hover:bg-base-200 hover:text-base-content'">
+                Large <span class="text-base">A</span>
+              </button>
+              <button @click="setFontSize(3); open = false" class="w-full text-left px-3 py-2 rounded-xl text-sm transition-colors flex items-center justify-between" :class="fontSizeMode === 3 ? 'bg-primary text-[#111111] font-black' : 'text-base-content/70 hover:bg-base-200 hover:text-base-content'">
+                Larger <span class="text-lg">A</span>
+              </button>
+              <button @click="setFontSize(4); open = false" class="w-full text-left px-3 py-2 rounded-xl text-sm transition-colors flex items-center justify-between" :class="fontSizeMode === 4 ? 'bg-primary text-[#111111] font-black' : 'text-base-content/70 hover:bg-base-200 hover:text-base-content'">
+                Extra <span class="text-xl">A</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Profile Pill & Dropdown -->
+        {% if user %}
+        <div class="dropdown dropdown-end ml-1">
+          <div tabindex="0" role="button" class="flex items-center gap-2 p-1 sm:pr-3 rounded-full bg-[#111111] text-white border-2 border-[#111111] hover:border-[#f8b000] transition-all cursor-pointer shadow-sm">
+            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-[#f8b000] overflow-hidden shrink-0">
+              {% if user.profile_picture %}
+                <img src="{{ user.profile_picture }}" alt="Profile" class="w-full h-full object-cover" />
+              {% else %}
+                <div class="bg-[#f8b000] text-[#111111] w-full h-full flex items-center justify-center text-xs font-black">
+                  {{ user.name[:2].upper() }}
+                </div>
+              {% endif %}
+            </div>
+            <span class="hidden lg:inline text-xs font-extrabold text-white truncate max-w-[100px]">{{ user.name }}</span>
+          </div>
+          <ul tabindex="0" class="mt-3 z-[60] p-2 shadow-2xl menu menu-sm dropdown-content bg-white rounded-2xl w-56 border-2 border-[#111111]">
+            <li class="menu-title text-[11px] font-black uppercase tracking-wider text-gray-400 px-3 py-1"><span>{{ user.name }}</span></li>
+            {% if user.role == 'student' and not user.get('is_parent') %}
+            <li><a href="/student/profile" class="font-bold rounded-xl py-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg> My Profile &amp; Badges</a></li>
+            <li><a href="/student/settings" class="font-bold rounded-xl py-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /></svg> Studio Settings</a></li>
+            {% elif user.get('is_parent') %}
+            <li><a href="/parent/settings" class="font-bold rounded-xl py-2">Parent Settings</a></li>
+            {% elif user.role == 'admin' %}
+            <li><a href="/admin/settings" class="font-bold rounded-xl py-2">Admin Settings</a></li>
+            {% endif %}
+            <li class="mt-1 pt-1 border-t border-base-200"><a href="/logout" class="text-error font-black rounded-xl py-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg> Sign Out</a></li>
+          </ul>
+        </div>
+        {% endif %}
+      </div>
+    </header>
+
+    {% if user and user.role == 'student' and not user.get('is_parent') %}
+    <!-- GLOBAL ⌘K / Ctrl+K AI SPOTLIGHT MODAL -->
+    <div x-show="spotlightOpen"
+         x-transition.opacity.duration.200ms
+         style="display: none;"
+         class="fixed inset-0 z-[200] bg-black/70 backdrop-blur-md flex items-start justify-center p-3 sm:p-6 pt-14 sm:pt-20"
+         @click.self="spotlightOpen = false"
+         @keydown.escape.window="spotlightOpen = false">
+      <div class="w-full max-w-2xl bg-white rounded-[2rem] border-3 border-[#111111] shadow-[0_14px_0_#f8b000,0_30px_70px_rgba(0,0,0,0.65)] overflow-hidden apple-popup"
+           x-data="saxazAiSearchBar('')"
+           x-init="$watch('spotlightOpen', v => { if(v) openDropdown(); })">
+        <!-- Spotlight Input Bar -->
+        <div class="bg-[#111111] p-3 sm:p-4 flex items-center gap-3 border-b-2 border-[#f8b000]">
+          <div class="w-10 h-10 rounded-2xl bg-[#f8b000] text-[#111111] flex items-center justify-center shrink-0 shadow-sm">
+            <svg x-show="!submitting && !aiLoading" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.8"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            <svg x-show="submitting || aiLoading" style="display: none;" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+          </div>
+          <form action="/student/search" method="GET" class="flex-1 flex items-center gap-2 min-w-0" @submit="handleSubmit($event)">
+            <input type="text"
+                   x-ref="globalSpotlightInput"
+                   name="q"
+                   x-model="query"
+                   autocomplete="off"
+                   spellcheck="false"
+                   @input="onInput()"
+                   @keydown.down.prevent="moveSelection(1)"
+                   @keydown.up.prevent="moveSelection(-1)"
+                   placeholder="Jump to any chapter, subject, book, or ask AI anything..."
+                   class="w-full bg-transparent border-none focus:ring-0 focus:outline-none text-white font-extrabold placeholder-white/45 text-sm sm:text-base min-w-0"
+                   required>
+            <button type="submit" class="px-4 py-2 rounded-full bg-[#f8b000] text-[#111111] font-black text-xs uppercase tracking-wider shrink-0 hover:bg-[#ffd000] transition-colors">
+              Go
+            </button>
+          </form>
+          <button type="button" @click="spotlightOpen = false" class="w-8 h-8 rounded-full bg-white/10 text-white/70 hover:text-white flex items-center justify-center text-xs font-black">
+            ✕
+          </button>
+        </div>
+
+        <!-- Spotlight Results Body -->
+        <div class="max-h-[65dvh] overflow-y-auto divide-y divide-gray-100 bg-white">
+          <template x-if="query.trim().length > 0 && aiData && aiData.primary_destination">
+            <div class="p-4 bg-[#fffbeb] border-b-2 border-[#f8b000]">
+              <div class="flex items-center justify-between gap-2 mb-1">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-[#111111] text-[#f8b000]">AI Smart Match</span>
+                <span class="text-[10px] font-black uppercase text-amber-800" x-text="aiData.primary_destination.category || 'Direct Jump'"></span>
+              </div>
+              <p class="text-xs sm:text-sm font-black text-[#111111] mb-1.5" x-text="aiData.understood_intent"></p>
+              <p x-show="aiData.ai_answer" class="text-xs text-gray-700 mb-3 leading-relaxed" x-text="aiData.ai_answer"></p>
+              <div class="flex flex-wrap gap-2">
+                <a :href="aiData.primary_destination.url" class="v2-btn-gold px-4 py-1.5 text-xs">
+                  <span x-text="'Launch ' + aiData.primary_destination.title"></span>
+                  <span>&rarr;</span>
+                </a>
+                <a :href="'/student/tutor?ask=' + encodeURIComponent(query.trim()) + '&autosend=1'" class="v2-btn-black px-4 py-1.5 text-xs">
+                  <span>Open in AI Co-Pilot</span>
+                </a>
+              </div>
+            </div>
+          </template>
+
+          <div class="px-4 py-2 bg-gray-50 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-500">
+            <span x-text="query.trim().length > 0 ? 'Instant Destinations' : 'Quick Studio Shortcuts'"></span>
+            <span x-show="aiLoading" class="text-amber-600 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span> AI Routing...
+            </span>
+          </div>
+
+          <template x-for="(item, idx) in displayItems" :key="item.id || item.url || idx">
+            <a :href="item.url"
+               class="flex items-center justify-between gap-3 px-4 py-3 hover:bg-[#fffbeb] transition-colors group"
+               :class="selectedIdx === idx ? 'bg-[#fffbeb]' : ''">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2 mb-0.5">
+                  <span class="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-[#111111] text-[#f8b000]" x-text="item.badge || item.category || 'Studio'"></span>
+                  <span class="text-[10px] font-bold text-gray-400 uppercase truncate" x-text="item.category"></span>
+                </div>
+                <div class="text-sm font-black text-[#111111] group-hover:text-amber-600 truncate" x-text="item.title"></div>
+                <div class="text-xs text-gray-500 line-clamp-1" x-text="item.description"></div>
+              </div>
+              <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-gray-100 text-[#111111] group-hover:bg-[#f8b000] transition-colors shrink-0">Jump &rarr;</span>
+            </a>
+          </template>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% set is_active_exam = (request.url.path.startswith('/student/exams/') or request.url.path.startswith('/student/real-exams') or request.url.path.startswith('/student/digi-library/banks/') or '/take' in request.url.path) %}
+    <!-- Main Scrollable View -->
+    <main class="flex-1 overflow-y-auto flex flex-col justify-between relative">
+      <div class="w-full flex-1 p-3 sm:p-5 md:px-8 md:pt-6 md:pb-10 {% if not is_active_exam %}pb-16 mobile-bottom-clearance{% else %}pb-6{% endif %}">
+        {% block content %}{% endblock %}
+      </div>
+      {% if request.url.path.rstrip('/') == '/student/dashboard' %}
+        {% include "footer.html" %}
+      {% endif %}
+    </main>
+
+    {% if user and user.role == 'student' and not user.get('is_parent') and not is_active_exam %}
+    <!-- Floating Pitch-Black & Gold Mobile Pill Dock (md:hidden) -->
+    <nav class="mobile-bottom-bar md:hidden fixed z-40 flex items-center justify-around select-none">
+      <a href="/student/dashboard" class="flex flex-col items-center gap-0.5 {% if request.url.path.startswith('/student/dashboard') %}v2-mobile-active{% endif %}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+        </svg>
+        <span>Desk</span>
+      </a>
+      <a href="/student/exams" class="flex flex-col items-center gap-0.5 {% if request.url.path.startswith('/student/exams') or request.url.path.startswith('/student/subjects') or request.url.path.startswith('/student/chapters') or request.url.path.startswith('/student/attempts') %}v2-mobile-active{% endif %}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+        </svg>
+        <span>Courses</span>
+      </a>
+      <a href="/student/tutor" class="flex flex-col items-center gap-0.5 {% if request.url.path.startswith('/student/tutor') %}v2-mobile-active{% endif %}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+        <span>Co-Pilot</span>
+      </a>
+      <a href="/student/digi-library" class="flex flex-col items-center gap-0.5 {% if request.url.path.startswith('/student/digi-library') %}v2-mobile-active{% endif %}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+        <span>Library</span>
+      </a>
+      <a href="/student/settings" class="flex flex-col items-center gap-0.5 {% if request.url.path.startswith('/student/settings') %}v2-mobile-active{% endif %}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        <span>Settings</span>
+      </a>
+    </nav>
+    {% elif user and user.role == 'student' and user.get('is_parent') %}
+    <nav class="mobile-bottom-bar md:hidden fixed z-40 flex items-center justify-around select-none">
+      <a href="/parent/dashboard" class="flex flex-col items-center gap-0.5 {% if request.url.path.startswith('/parent/dashboard') %}v2-mobile-active{% endif %}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+        <span>Overview</span>
+      </a>
+      <a href="/parent/mock-exams" class="flex flex-col items-center gap-0.5 {% if request.url.path.startswith('/parent/mock-exams') %}v2-mobile-active{% endif %}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+        <span>Mock Exams</span>
+      </a>
+      <a href="/parent/real-exams" class="flex flex-col items-center gap-0.5 {% if request.url.path.startswith('/parent/real-exams') %}v2-mobile-active{% endif %}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
+        <span>Real Exams</span>
+      </a>
+      <a href="/parent/settings" class="flex flex-col items-center gap-0.5 {% if request.url.path.startswith('/parent/settings') %}v2-mobile-active{% endif %}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /></svg>
+        <span>Settings</span>
+      </a>
+    </nav>
+    {% endif %}
+
+  </div>
+
+  <!-- Global Spotlight Mouse-Tracking Glow Script -->
+  <script>
+    document.addEventListener('mousemove', (e) => {
+      const cards = document.querySelectorAll('.v2-spotlight-card');
+      for (const card of cards) {
+        const rect = card.getBoundingClientRect();
+        card.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+        card.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+      }
+    }, { passive: true });
+  </script>
+
+  <!-- Global Toast Container for Notifications -->
+<script>
+  const swalTailwindConfig = {
+    buttonsStyling: false,
+    customClass: {
+      popup: 'rounded-[2rem] border border-base-300 shadow-2xl bg-base-100 p-6',
+      title: 'text-2xl font-black text-base-content tracking-tight mt-4',
+      htmlContainer: 'text-base-content/70 font-medium text-sm',
+      confirmButton: 'btn btn-error rounded-full px-8 shadow-[0_0_15px_rgba(239,68,68,0.4)] text-white',
+      cancelButton: 'btn btn-ghost rounded-full px-8',
+      actions: 'gap-4 mt-6 flex justify-center w-full'
+    }
+  };
+
+  window.alert = function(message) { 
+    Swal.fire({
+      ...swalTailwindConfig,
+      text: message, 
+      icon: "info",
+      customClass: {
+        ...swalTailwindConfig.customClass,
+        confirmButton: 'btn btn-primary rounded-full px-8 shadow-[0_0_15px_rgba(244,170,0,0.4)] text-[#1a1a1a]'
+      },
+      confirmButtonText: "OK" 
+    }); 
+  }; 
+  
+  document.addEventListener("htmx:confirm", function(evt) { 
+    if (!evt.detail.question) return; // Only show popup if hx-confirm is set
+    evt.preventDefault(); 
+    Swal.fire({ 
+      ...swalTailwindConfig,
+      title: "Are you sure?", 
+      text: evt.detail.question, 
+      icon: "warning", 
+      showCancelButton: true, 
+      confirmButtonText: "Yes, delete it!" 
+    }).then((result) => { 
+      if(result.isConfirmed) { 
+        evt.detail.issueRequest(true); 
+      } 
+    }); 
+  });
+</script>
+
+<style>
+  /* Global custom cursor */
+  body.custom-cursor-active * {
+    cursor: url('data:image/svg+xml;utf8,<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><defs><filter id="glow"><feGaussianBlur stdDeviation="1" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><path d="M2 2 L20 8 L12 12 L8 20 Z" fill="%23F4AA00" stroke="%23ffffff" stroke-width="1.5" filter="url(%23glow)"/></svg>') 2 2, auto !important;
+  }
+  body.custom-cursor-active a, body.custom-cursor-active button, body.custom-cursor-active [role="button"], body.custom-cursor-active input[type="submit"], body.custom-cursor-active input[type="button"], body.custom-cursor-active label {
+    cursor: url('data:image/svg+xml;utf8,<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><defs><filter id="glow"><feGaussianBlur stdDeviation="1.5" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><path d="M4 2 L12 24 L15 15 L24 12 Z" fill="%233B82F6" stroke="%23ffffff" stroke-width="1.5" filter="url(%23glow)"/></svg>') 4 2, pointer !important;
+  }
+
+  /* Trail particles */
+  body.custom-cursor-active .magic-trail {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 999999;
+    transform: translate(-50%, -50%);
+    animation: spark 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  }
+
+  @keyframes spark {
+    0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(0) rotate(90deg); opacity: 0; }
+  }
+  @keyframes bubble {
+    0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+    100% { transform: translate(-50%, calc(-50% - 40px)) scale(1.5); opacity: 0; }
+  }
+  @keyframes drop {
+    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    100% { transform: translate(-50%, calc(-50% + 50px)) scale(0); opacity: 0; }
+  }
+</style>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    let lastX = 0, lastY = 0;
+    let lastTime = 0;
+    
+    document.addEventListener('mousemove', (e) => {
+      if (!document.body.classList.contains('custom-cursor-active')) return;
+      const now = Date.now();
+      const dist = Math.hypot(e.clientX - lastX, e.clientY - lastY);
+      const effectType = document.querySelector('select[name="cursor_effect"]')?.value || '{{ current_cursor_effect or "magic" }}';
+      
+      if (effectType === 'none') return;
+      
+      if (dist > 15 || now - lastTime > 100) {
+        const particle = document.createElement('div');
+        particle.className = 'magic-trail';
+        
+        const offsetX = (Math.random() - 0.5) * 10;
+        const offsetY = (Math.random() - 0.5) * 10;
+        particle.style.left = (e.clientX + offsetX) + 'px';
+        particle.style.top = (e.clientY + offsetY) + 'px';
+        
+        if (effectType === 'bubbles') {
+          const size = Math.random() * 8 + 6;
+          particle.style.width = size + 'px';
+          particle.style.height = size + 'px';
+          particle.style.background = 'transparent';
+          particle.style.border = '1.5px solid rgba(59, 130, 246, 0.7)';
+          particle.style.boxShadow = 'inset 0 0 4px rgba(255, 255, 255, 0.8)';
+          particle.style.animation = 'bubble 0.8s ease-out forwards';
+          document.body.appendChild(particle);
+          setTimeout(() => particle.remove(), 800);
+        } else if (effectType === 'sparks') {
+          const size = Math.random() * 3 + 2;
+          particle.style.width = size + 'px';
+          particle.style.height = size + 'px';
+          particle.style.background = '#ff4500';
+          particle.style.boxShadow = '0 0 8px #ff8c00';
+          particle.style.animation = 'drop 0.6s ease-in forwards';
+          document.body.appendChild(particle);
+          setTimeout(() => particle.remove(), 600);
+        } else {
+          // Default magic
+          const size = Math.random() * 6 + 4;
+          particle.style.width = size + 'px';
+          particle.style.height = size + 'px';
+          if (Math.random() > 0.7) {
+            particle.style.clipPath = 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)';
+          }
+          const colors = ['#F4AA00', '#3B82F6', '#10B981', '#facc15'];
+          particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+          particle.style.boxShadow = `0 0 8px ${particle.style.background}`;
+          particle.style.animation = 'spark 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards';
+          document.body.appendChild(particle);
+          setTimeout(() => particle.remove(), 600);
+        }
+        
+        lastX = e.clientX;
+        lastY = e.clientY;
+        lastTime = now;
+      }
+    }, { passive: true });
+  });
+</script>
+
+<!-- Global Image Modal -->
+<div x-data="{ showImage: false, imageUrl: '' }" @open-image-modal.window="imageUrl = $event.detail; showImage = true">
+  <div x-show="showImage" x-transition.opacity.duration.300ms class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-md p-4" style="display: none;" @click="showImage = false">
+    <img :src="imageUrl" class="max-w-full max-h-full rounded-xl shadow-2xl" @click.stop />
+  </div>
+</div>
+
+<!-- Global Live Study Time Tracking -->
+<script>
+  (function() {
+    let lastActiveTime = Date.now();
+    let accumulatedSeconds = 0;
+    let isTabVisible = !document.hidden;
+
+    document.addEventListener('visibilitychange', function() {
+      isTabVisible = !document.hidden;
+      if (isTabVisible) lastActiveTime = Date.now();
+    });
+
+    ['mousemove', 'keydown', 'scroll', 'touchstart', 'click'].forEach(evt => {
+      window.addEventListener(evt, () => {
+        lastActiveTime = Date.now();
+      }, { passive: true });
+    });
+
+    function getActiveSubjectId() {
+      if (window.SAXAZ_SUBJECT_ID) return window.SAXAZ_SUBJECT_ID;
+      const path = window.location.pathname;
+      const subMatch = path.match(/\/student\/subjects\/(\d+)/);
+      if (subMatch) return parseInt(subMatch[1]);
+      return null;
+    }
+
+    setInterval(() => {
+      const subjectId = getActiveSubjectId();
+      if (!subjectId) return;
+      const now = Date.now();
+      // Track time if user interacted in the last 60 seconds and tab is visible
+      if (isTabVisible && (now - lastActiveTime < 60000)) {
+        accumulatedSeconds += 10;
+        
+        if (accumulatedSeconds >= 30) {
+          fetch('/student/api/track-time', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subject_id: subjectId, seconds: accumulatedSeconds })
+          }).then(r => r.json()).catch(() => {});
+          accumulatedSeconds = 0;
+        }
+      }
+    }, 10000);
+
+    window.addEventListener('beforeunload', () => {
+      const subjectId = getActiveSubjectId();
+      if (subjectId && accumulatedSeconds > 0) {
+        try {
+          const blob = new Blob([JSON.stringify({ subject_id: subjectId, seconds: accumulatedSeconds })], { type: 'application/json' });
+          navigator.sendBeacon('/student/api/track-time', blob);
+        } catch(e) {}
+      }
+    });
+  })();
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
