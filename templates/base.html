@@ -30,9 +30,7 @@
   {% set current_cursor_effect = user.get('parent_cursor_effect') if user and user.get('is_parent') else (user.get('cursor_effect') if user and user.get('cursor_effect') else 'none') %}
   
   <!-- Tailwind CSS + DaisyUI (compiled static, no CDN dependency) -->
-  <link rel="stylesheet" href="/static/css/app.css?v=11">
-  <!-- SAXAZ Studio Edition Design System (v2) -->
-  <link rel="stylesheet" href="/static/css/v2-studio.css?v=1">
+  <link rel="stylesheet" href="/static/css/app.css?v=99">
 
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
@@ -1433,8 +1431,10 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   {% block extra_head %}{% endblock %}
+  <!-- SAXAZ V2 Hyper-Kinetic Cyber-Gold OS Stylesheet (loaded last for cascade authority) -->
+  <link rel="stylesheet" href="/static/css/v2-studio.css?v=99">
 </head>
-<body class="flex h-screen overflow-hidden font-sans text-base-content antialiased bg-base-100 transition-colors duration-300 {% if current_cursor_mode == 1 %}custom-cursor-active{% endif %}"
+<body class="v2-studio-body flex h-screen overflow-hidden font-sans text-base-content antialiased bg-base-100 transition-colors duration-300"
     x-data="{ 
      themeMode: localStorage.getItem('themeMode') || 'light',
      fontSizeMode: parseInt(getCookie('fontSizeMode') || '1'),
@@ -1531,110 +1531,64 @@
     <span class="loading loading-infinity w-24 text-primary"></span>
   </div>
 
-  <!-- Main Content Area (Full-Width Kinetic Studio Shell — No Left Sidebar) -->
-  <div class="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 main-content-wrapper space-bg w-full">
-    
-    <!-- Top Floating Kinetic Studio Command Bar -->
-    <header class="global-topbar v2-command-bar flex items-center justify-between px-3 sm:px-6 lg:px-10 z-30 sticky top-0 gap-2 sm:gap-4">
-      
-      <!-- Left: Brand Logo + STUDIO Badge + Page Context -->
-      <div class="flex items-center gap-2.5 sm:gap-4 min-w-0 shrink-0">
-        <a href="/" class="flex items-center gap-2.5 group shrink-0">
-          <div class="w-20 sm:w-28 transition-transform duration-300 group-hover:scale-105">
-            {% include "logo.html" %}
-          </div>
-          <span class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-[#111111] text-[#f8b000] border border-[#f8b000]/40 shadow-sm">
-            <span class="w-1.5 h-1.5 rounded-full bg-[#f8b000] animate-pulse"></span>
-            STUDIO
-          </span>
-        </a>
-        <div class="hidden xl:flex items-center gap-2 pl-3 border-l-2 border-base-300 text-xs font-extrabold text-base-content/70 truncate max-w-[200px]">
-          {% block topbar_title %}<span>Mission Control</span>{% endblock %}
-        </div>
-      </div>
+  <!-- Interactive 60FPS Golden Constellation Canvas & Perspective Cyber-Grid -->
+  <canvas id="v2-particle-canvas"></canvas>
+  <div class="v2-cyber-grid-bg"></div>
+  <div id="v2-cursor-ring"></div>
 
-      <!-- Center: Segmented Pitch-Black & Gold Workspace Switcher (Desktop) -->
-      {% if user %}
-      <nav class="hidden md:flex items-center justify-center">
-        <div class="v2-nav-pills">
-          {% if user.role == 'student' and not user.get('is_parent') %}
-            <a href="/student/dashboard" class="v2-nav-pill {% if request.url.path.startswith('/student/dashboard') %}active{% endif %}">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
-              <span>Study Desk</span>
-            </a>
-            <a href="/student/exams" class="v2-nav-pill {% if request.url.path.startswith('/student/exams') or request.url.path.startswith('/student/subjects') or request.url.path.startswith('/student/chapters') or request.url.path.startswith('/student/attempts') %}active{% endif %}">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
-              <span>Courses &amp; Exams</span>
-            </a>
-            <a href="/student/digi-library" class="v2-nav-pill {% if request.url.path.startswith('/student/digi-library') %}active{% endif %}">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-              <span>Digi Library</span>
-            </a>
-            <a href="/student/tutor" class="v2-nav-pill {% if request.url.path.startswith('/student/tutor') %}active{% endif %}">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-              <span>AI Co-Pilot</span>
-            </a>
-            <a href="/student/settings" class="v2-nav-pill {% if request.url.path.startswith('/student/settings') %}active{% endif %}">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-              <span>Settings</span>
-            </a>
-          {% elif user.role == 'student' and user.get('is_parent') %}
-            <a href="/parent/dashboard" class="v2-nav-pill {% if request.url.path.startswith('/parent/dashboard') %}active{% endif %}">
-              <span>Overview</span>
-            </a>
-            <a href="/parent/mock-exams" class="v2-nav-pill {% if request.url.path.startswith('/parent/mock-exams') %}active{% endif %}">
-              <span>Mock Exams</span>
-            </a>
-            <a href="/parent/real-exams" class="v2-nav-pill {% if request.url.path.startswith('/parent/real-exams') %}active{% endif %}">
-              <span>Real Exams</span>
-            </a>
-            <a href="/parent/settings" class="v2-nav-pill {% if request.url.path.startswith('/parent/settings') %}active{% endif %}">
-              <span>Settings</span>
-            </a>
-          {% elif user.role == 'admin' %}
-            <a href="/admin/dashboard" class="v2-nav-pill {% if request.url.path.startswith('/admin/dashboard') or request.url.path == '/admin' %}active{% endif %}">
-              <span>Studio Hub</span>
-            </a>
-            <a href="/admin/curriculum" class="v2-nav-pill {% if request.url.path.startswith('/admin/curriculum') %}active{% endif %}">
-              <span>Curriculum</span>
-            </a>
-            <a href="/admin/digi-library" class="v2-nav-pill {% if request.url.path.startswith('/admin/digi-library') %}active{% endif %}">
-              <span>Digi Library</span>
-            </a>
-            <a href="/admin/analytics" class="v2-nav-pill {% if request.url.path.startswith('/admin/analytics') %}active{% endif %}">
-              <span>Analytics</span>
-            </a>
-            <a href="/admin/settings" class="v2-nav-pill {% if request.url.path.startswith('/admin/settings') %}active{% endif %}">
-              <span>Settings</span>
-            </a>
-          {% endif %}
-          {% block nav_items %}{% endblock %}
+  <!-- Main Content Area (SAXAZ V2 Spatial OS Shell — No Top Bar, No Left Sidebar!) -->
+  <div class="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 main-content-wrapper relative z-10 w-full">
+    
+    <!-- FLOATING SPATIAL TOP HUD PODS (Left Brand Cube Pod • Center AI Reactor Orb • Right System Pod) -->
+    <div class="v2-hud-top-wrap">
+      
+      <!-- Left HUD Pod: 3D Rotating Gold Wireframe Cube + Brand Logo + Live OS Status -->
+      <a href="/" class="v2-hud-pod group no-underline">
+        <div class="v2-cube-scene">
+          <div class="v2-cube">
+            <div class="v2-cube-face front">SX</div>
+            <div class="v2-cube-face back">V2</div>
+            <div class="v2-cube-face right">AI</div>
+            <div class="v2-cube-face left">OS</div>
+            <div class="v2-cube-face top">⚡</div>
+            <div class="v2-cube-face bottom">★</div>
+          </div>
         </div>
-      </nav>
+        <div class="w-18 sm:w-24 transition-transform duration-300 group-hover:scale-105">
+          {% include "logo.html" %}
+        </div>
+        <span class="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-[#f8b000] text-[#111111]">
+          <span class="w-1.5 h-1.5 rounded-full bg-[#111111] animate-ping"></span>
+          KINETIC OS
+        </span>
+        <div class="hidden xl:flex items-center gap-2 pl-2 border-l border-white/20 text-[11px] font-extrabold text-[#f8b000] truncate max-w-[160px]">
+          {% block topbar_title %}<span>Command Deck</span>{% endblock %}
+        </div>
+      </a>
+
+      <!-- Center Floating AI Reactor Orb (Opens Global ⌘K Spotlight) -->
+      {% if user and user.role == 'student' and not user.get('is_parent') %}
+      <button type="button"
+              @click="openSpotlight()"
+              class="v2-ai-orb-btn"
+              title="Open AI Command Spotlight (Ctrl+K)">
+        <span class="w-7 h-7 rounded-full bg-[#f8b000] text-[#111111] flex items-center justify-center font-black text-xs shrink-0 shadow-sm">⚡</span>
+        <span class="hidden sm:inline text-xs font-black tracking-wide" style="font-family:'Space Grotesk',sans-serif;">Ask AI Co-Pilot or Teleport Anywhere...</span>
+        <span class="sm:hidden text-xs font-black" style="font-family:'Space Grotesk',sans-serif;">AI Teleport</span>
+        <kbd class="hidden md:inline-flex px-2 py-0.5 rounded-md bg-white/15 text-[#f8b000] text-[10px] font-black border border-white/20">⌘K</kbd>
+      </button>
       {% endif %}
 
-      <!-- Right: Global AI Spotlight Trigger, PWA Install, Notifications, Theme, Font, Profile -->
-      <div class="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-        {% if user and user.role == 'student' and not user.get('is_parent') %}
-        <!-- Global AI Spotlight Command Trigger -->
-        <button type="button"
-                @click="openSpotlight()"
-                class="v2-spotlight-trigger"
-                title="Open AI Command Spotlight (Ctrl+K)">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-[#f8b000] shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-          <span class="hidden sm:inline">Ask AI or Jump...</span>
-          <span class="sm:hidden">AI</span>
-          <kbd class="v2-kbd hidden lg:inline-flex">⌘K</kbd>
-        </button>
-        {% endif %}
+      <!-- Right HUD Pod: PWA Install, Live Activity Radar, Theme Portal, Text Scale, Profile -->
+      <div class="v2-hud-pod !gap-1.5 sm:!gap-2">
+        {% block nav_items %}{% endblock %}
 
         <!-- Install Browser Web App Icon Button -->
         <button type="button"
                 @click="window.triggerSaxazAppInstall && window.triggerSaxazAppInstall()"
-                class="btn btn-ghost btn-circle btn-sm sm:btn-md text-base-content hover:bg-primary/20 transition-colors topbar-install-btn"
-                style="color: inherit !important;"
+                class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 hover:bg-[#f8b000] text-white hover:text-[#111111] flex items-center justify-center transition-all cursor-pointer topbar-install-btn"
                 title="Install SAXAZ Web App">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
             <polyline points="7 10 12 15 17 10"/>
             <line x1="12" y1="15" x2="12" y2="3"/>
@@ -1642,7 +1596,7 @@
         </button>
 
         {% if user and user.role == 'student' and not user.get('is_parent') %}
-        <!-- Notifications Bell -->
+        <!-- Notifications Radar Bell -->
         <div class="relative" x-data="{
           open: false,
           unreadCount: 0,
@@ -1664,50 +1618,33 @@
             } catch(e) {}
           }
         }" x-init="fetchNotifs(); setInterval(() => fetchNotifs(), 30000)">
-          <button @click="open = !open; if(open) markRead()" @click.outside="open = false" class="btn btn-ghost btn-circle btn-sm sm:btn-md relative text-base-content hover:bg-primary/20 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-            <span x-show="unreadCount > 0" class="absolute top-1 right-1 flex h-3 w-3" style="display: none;">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500 text-[9px] font-bold text-white items-center justify-center" x-text="unreadCount"></span>
+          <button @click="open = !open; if(open) markRead()" @click.outside="open = false" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 hover:bg-[#f8b000] text-white hover:text-[#111111] flex items-center justify-center relative transition-all cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+            <span x-show="unreadCount > 0" class="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5" style="display: none;">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f8b000] opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-[#f8b000] text-[9px] font-black text-[#111111] items-center justify-center" x-text="unreadCount"></span>
             </span>
           </button>
           
           <!-- Dropdown -->
           <div tabindex="0" class="fixed sm:absolute left-3 right-3 sm:left-auto sm:right-0 top-16 sm:top-auto sm:mt-4 bg-white border-2 border-[#111111] rounded-3xl shadow-2xl w-auto sm:w-80 max-h-[75dvh] sm:max-h-96 overflow-y-auto z-50 flex flex-col"
-               x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2 scale-95" x-transition:enter-end="opacity-100 translate-y-0 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0 scale-100" x-transition:leave-end="opacity-0 translate-y-2 scale-95" style="display: none;">
+               x-show="open" x-transition style="display: none;">
             <div class="px-5 py-4 border-b-2 border-[#111111]/10 bg-[#111111] text-white rounded-t-3xl sticky top-0 z-10 flex items-center justify-between">
-              <h3 class="font-black text-[#f8b000] tracking-wide uppercase text-xs">Live Activity Feed</h3>
+              <h3 class="font-black text-[#f8b000] tracking-wide uppercase text-xs">Live Activity Telemetry</h3>
             </div>
             <div class="p-2 space-y-1 bg-white">
               <template x-for="n in notifications" :key="n.id">
                 <div class="p-3 rounded-2xl transition-colors hover:bg-base-50 flex items-start gap-3 relative overflow-hidden" :class="!n.is_read ? 'bg-primary/10' : ''">
-                  <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 border border-[#111111]/15"
-                       :class="{
-                         'bg-orange-100 text-orange-600': n.type === 'streak',
-                         'bg-amber-100 text-amber-700': n.type === 'xp',
-                         'bg-emerald-100 text-emerald-600': n.type === 'completion'
-                       }">
-                    <template x-if="n.type === 'streak'">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clip-rule="evenodd" /></svg>
-                    </template>
-                    <template x-if="n.type === 'xp'">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" /></svg>
-                    </template>
-                    <template x-if="n.type === 'completion'">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
-                    </template>
-                  </div>
+                  <div class="w-9 h-9 rounded-xl bg-[#f8b000] text-[#111111] flex items-center justify-center shrink-0 font-black text-xs">⚡</div>
                   <div>
                     <h4 class="text-sm font-bold text-gray-900" x-text="n.title"></h4>
                     <p class="text-xs text-gray-500 font-medium leading-snug" x-text="n.message"></p>
-                    <div class="text-[10px] text-gray-400 mt-1 font-bold tracking-wider uppercase" x-text="new Date(n.created_at.replace(' ', 'T') + 'Z').toLocaleString()"></div>
                   </div>
                 </div>
               </template>
               <template x-if="notifications.length === 0">
                 <div class="text-center p-8 text-gray-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
-                  <p class="text-xs font-bold uppercase tracking-widest">No notifications yet</p>
+                  <p class="text-xs font-bold uppercase tracking-widest">All telemetry nominal</p>
                 </div>
               </template>
             </div>
@@ -1715,84 +1652,66 @@
         </div>
         {% endif %}
         
-        <!-- Theme Toggle -->
-        <button id="theme-toggle-btn" class="btn btn-ghost btn-circle btn-sm sm:btn-md text-base-content hover:bg-primary/20 transition-colors" @click="toggleTheme($event)">
-          <svg x-show="themeMode === 'dark'" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="display: none;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-          <svg x-show="themeMode === 'light'" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+        <!-- Theme Portal Toggle -->
+        <button id="theme-toggle-btn" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 hover:bg-[#f8b000] text-white hover:text-[#111111] flex items-center justify-center transition-all cursor-pointer" @click="toggleTheme($event)" title="Switch Light / Dark Cyber Theme">
+          <svg x-show="themeMode === 'dark'" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="display: none;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+          <svg x-show="themeMode === 'light'" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
         </button>
         
-        <!-- Font Size Switcher -->
+        <!-- Font Scale Switcher -->
         <div class="dropdown dropdown-end" x-data="{ open: false }" @click.outside="open = false">
-          <button tabindex="0" class="btn btn-ghost btn-circle btn-sm sm:btn-md text-base-content hover:bg-primary/20 transition-colors" @click="open = !open">
-            <span class="font-black text-base sm:text-lg leading-none flex items-start">
-              A<span class="text-[10px] ml-[1px] text-primary" x-text="fontSizeMode === 1 ? '' : '+' + (fontSizeMode-1)"></span>
+          <button tabindex="0" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 hover:bg-[#f8b000] text-white hover:text-[#111111] flex items-center justify-center transition-all cursor-pointer" @click="open = !open">
+            <span class="font-black text-xs sm:text-sm leading-none flex items-start">
+              A<span class="text-[9px] ml-[1px] text-[#f8b000]" x-text="fontSizeMode === 1 ? '' : '+' + (fontSizeMode-1)"></span>
             </span>
           </button>
-          <div tabindex="0" class="dropdown-content z-[1] mt-4 p-2 bg-white border-2 border-[#111111] rounded-2xl shadow-xl w-48"
-             x-show="open"
-             x-transition:enter="transition ease-out duration-200"
-             x-transition:enter-start="opacity-0 translate-y-2 scale-95"
-             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-             x-transition:leave="transition ease-in duration-150"
-             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
-             x-transition:leave-end="opacity-0 translate-y-2 scale-95"
-             style="display: none;">
-            <div class="px-3 py-2 text-[10px] font-black text-base-content/50 uppercase tracking-widest mb-1">Studio Text Scale</div>
+          <div tabindex="0" class="dropdown-content z-[80] mt-4 p-2 bg-white text-[#111111] border-2 border-[#111111] rounded-2xl shadow-xl w-44"
+               x-show="open" x-transition style="display: none;">
+            <div class="px-3 py-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest">HUD Scale</div>
             <div class="space-y-1">
-              <button @click="setFontSize(1); open = false" class="w-full text-left px-3 py-2 rounded-xl text-sm transition-colors flex items-center justify-between" :class="fontSizeMode === 1 ? 'bg-primary text-[#111111] font-black' : 'text-base-content/70 hover:bg-base-200 hover:text-base-content'">
-                Default <span>A</span>
-              </button>
-              <button @click="setFontSize(2); open = false" class="w-full text-left px-3 py-2 rounded-xl text-sm transition-colors flex items-center justify-between" :class="fontSizeMode === 2 ? 'bg-primary text-[#111111] font-black' : 'text-base-content/70 hover:bg-base-200 hover:text-base-content'">
-                Large <span class="text-base">A</span>
-              </button>
-              <button @click="setFontSize(3); open = false" class="w-full text-left px-3 py-2 rounded-xl text-sm transition-colors flex items-center justify-between" :class="fontSizeMode === 3 ? 'bg-primary text-[#111111] font-black' : 'text-base-content/70 hover:bg-base-200 hover:text-base-content'">
-                Larger <span class="text-lg">A</span>
-              </button>
-              <button @click="setFontSize(4); open = false" class="w-full text-left px-3 py-2 rounded-xl text-sm transition-colors flex items-center justify-between" :class="fontSizeMode === 4 ? 'bg-primary text-[#111111] font-black' : 'text-base-content/70 hover:bg-base-200 hover:text-base-content'">
-                Extra <span class="text-xl">A</span>
-              </button>
+              <button @click="setFontSize(1); open = false" class="w-full text-left px-3 py-1.5 rounded-xl text-xs font-bold flex items-center justify-between" :class="fontSizeMode === 1 ? 'bg-[#f8b000] text-[#111111] font-black' : 'hover:bg-gray-100'">100% Default <span>A</span></button>
+              <button @click="setFontSize(2); open = false" class="w-full text-left px-3 py-1.5 rounded-xl text-xs font-bold flex items-center justify-between" :class="fontSizeMode === 2 ? 'bg-[#f8b000] text-[#111111] font-black' : 'hover:bg-gray-100'">110% Large <span>A+</span></button>
+              <button @click="setFontSize(3); open = false" class="w-full text-left px-3 py-1.5 rounded-xl text-xs font-bold flex items-center justify-between" :class="fontSizeMode === 3 ? 'bg-[#f8b000] text-[#111111] font-black' : 'hover:bg-gray-100'">120% XL <span>A++</span></button>
             </div>
           </div>
         </div>
 
         <!-- Profile Pill & Dropdown -->
         {% if user %}
-        <div class="dropdown dropdown-end ml-1">
-          <div tabindex="0" role="button" class="flex items-center gap-2 p-1 sm:pr-3 rounded-full bg-[#111111] text-white border-2 border-[#111111] hover:border-[#f8b000] transition-all cursor-pointer shadow-sm">
-            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-[#f8b000] overflow-hidden shrink-0">
+        <div class="dropdown dropdown-end">
+          <div tabindex="0" role="button" class="flex items-center gap-2 p-0.5 sm:pr-2.5 rounded-full bg-[#f8b000] text-[#111111] hover:bg-[#ffd000] transition-all cursor-pointer shadow-sm">
+            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-[#111111] overflow-hidden shrink-0 bg-[#111111] text-[#f8b000] flex items-center justify-center font-black text-xs">
               {% if user.profile_picture %}
                 <img src="{{ user.profile_picture }}" alt="Profile" class="w-full h-full object-cover" />
               {% else %}
-                <div class="bg-[#f8b000] text-[#111111] w-full h-full flex items-center justify-center text-xs font-black">
-                  {{ user.name[:2].upper() }}
-                </div>
+                {{ user.name[:2].upper() }}
               {% endif %}
             </div>
-            <span class="hidden lg:inline text-xs font-extrabold text-white truncate max-w-[100px]">{{ user.name }}</span>
+            <span class="hidden lg:inline text-xs font-black text-[#111111] truncate max-w-[90px]">{{ user.name }}</span>
           </div>
-          <ul tabindex="0" class="mt-3 z-[60] p-2 shadow-2xl menu menu-sm dropdown-content bg-white rounded-2xl w-56 border-2 border-[#111111]">
+          <ul tabindex="0" class="mt-3 z-[80] p-2 shadow-2xl menu menu-sm dropdown-content bg-white text-[#111111] rounded-2xl w-56 border-2 border-[#111111]">
             <li class="menu-title text-[11px] font-black uppercase tracking-wider text-gray-400 px-3 py-1"><span>{{ user.name }}</span></li>
             {% if user.role == 'student' and not user.get('is_parent') %}
-            <li><a href="/student/profile" class="font-bold rounded-xl py-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg> My Profile &amp; Badges</a></li>
-            <li><a href="/student/settings" class="font-bold rounded-xl py-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /></svg> Studio Settings</a></li>
+            <li><a href="/student/profile" class="font-bold rounded-xl py-2">My Profile &amp; Badges</a></li>
+            <li><a href="/student/settings" class="font-bold rounded-xl py-2">Studio Control Center</a></li>
             {% elif user.get('is_parent') %}
             <li><a href="/parent/settings" class="font-bold rounded-xl py-2">Parent Settings</a></li>
             {% elif user.role == 'admin' %}
             <li><a href="/admin/settings" class="font-bold rounded-xl py-2">Admin Settings</a></li>
             {% endif %}
-            <li class="mt-1 pt-1 border-t border-base-200"><a href="/logout" class="text-error font-black rounded-xl py-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg> Sign Out</a></li>
+            <li class="mt-1 pt-1 border-t border-gray-200"><a href="/logout" class="text-error font-black rounded-xl py-2">Sign Out</a></li>
           </ul>
         </div>
         {% endif %}
       </div>
-    </header>
+    </div>
 
     {% if user and user.role == 'student' and not user.get('is_parent') %}
     <!-- GLOBAL ⌘K / Ctrl+K AI SPOTLIGHT MODAL -->
     <div x-show="spotlightOpen"
          x-transition.opacity.duration.200ms
          style="display: none;"
-         class="fixed inset-0 z-[200] bg-black/70 backdrop-blur-md flex items-start justify-center p-3 sm:p-6 pt-14 sm:pt-20"
+         class="fixed inset-0 z-[200] bg-black/75 backdrop-blur-md flex items-start justify-center p-3 sm:p-6 pt-14 sm:pt-20"
          @click.self="spotlightOpen = false"
          @keydown.escape.window="spotlightOpen = false">
       <div class="w-full max-w-2xl bg-white rounded-[2rem] border-3 border-[#111111] shadow-[0_14px_0_#f8b000,0_30px_70px_rgba(0,0,0,0.65)] overflow-hidden apple-popup"
@@ -1814,11 +1733,11 @@
                    @input="onInput()"
                    @keydown.down.prevent="moveSelection(1)"
                    @keydown.up.prevent="moveSelection(-1)"
-                   placeholder="Jump to any chapter, subject, book, or ask AI anything..."
+                   placeholder="Teleport to any chapter, subject, book, or ask AI anything..."
                    class="w-full bg-transparent border-none focus:ring-0 focus:outline-none text-white font-extrabold placeholder-white/45 text-sm sm:text-base min-w-0"
                    required>
             <button type="submit" class="px-4 py-2 rounded-full bg-[#f8b000] text-[#111111] font-black text-xs uppercase tracking-wider shrink-0 hover:bg-[#ffd000] transition-colors">
-              Go
+              Teleport
             </button>
           </form>
           <button type="button" @click="spotlightOpen = false" class="w-8 h-8 rounded-full bg-white/10 text-white/70 hover:text-white flex items-center justify-center text-xs font-black">
@@ -1849,7 +1768,7 @@
           </template>
 
           <div class="px-4 py-2 bg-gray-50 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-500">
-            <span x-text="query.trim().length > 0 ? 'Instant Destinations' : 'Quick Studio Shortcuts'"></span>
+            <span x-text="query.trim().length > 0 ? 'Instant Destinations' : 'Quick Studio Teleports'"></span>
             <span x-show="aiLoading" class="text-amber-600 flex items-center gap-1">
               <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span> AI Routing...
             </span>
@@ -1867,7 +1786,7 @@
                 <div class="text-sm font-black text-[#111111] group-hover:text-amber-600 truncate" x-text="item.title"></div>
                 <div class="text-xs text-gray-500 line-clamp-1" x-text="item.description"></div>
               </div>
-              <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-gray-100 text-[#111111] group-hover:bg-[#f8b000] transition-colors shrink-0">Jump &rarr;</span>
+              <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-gray-100 text-[#111111] group-hover:bg-[#f8b000] transition-colors shrink-0">Teleport &rarr;</span>
             </a>
           </template>
         </div>
@@ -1876,9 +1795,9 @@
     {% endif %}
 
     {% set is_active_exam = (request.url.path.startswith('/student/exams/') or request.url.path.startswith('/student/real-exams') or request.url.path.startswith('/student/digi-library/banks/') or '/take' in request.url.path) %}
-    <!-- Main Scrollable View -->
+    <!-- Main Scrollable Viewport -->
     <main class="flex-1 overflow-y-auto flex flex-col justify-between relative">
-      <div class="w-full flex-1 p-3 sm:p-5 md:px-8 md:pt-6 md:pb-10 {% if not is_active_exam %}pb-16 mobile-bottom-clearance{% else %}pb-6{% endif %}">
+      <div class="w-full flex-1 p-3 sm:p-5 md:px-8 md:pt-4 {% if not is_active_exam %}pb-28{% else %}pb-8{% endif %}">
         {% block content %}{% endblock %}
       </div>
       {% if request.url.path.rstrip('/') == '/student/dashboard' %}
@@ -1886,73 +1805,196 @@
       {% endif %}
     </main>
 
-    {% if user and user.role == 'student' and not user.get('is_parent') and not is_active_exam %}
-    <!-- Floating Pitch-Black & Gold Mobile Pill Dock (md:hidden) -->
-    <nav class="mobile-bottom-bar md:hidden fixed z-40 flex items-center justify-around select-none">
-      <a href="/student/dashboard" class="flex flex-col items-center gap-0.5 {% if request.url.path.startswith('/student/dashboard') %}v2-mobile-active{% endif %}">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-        </svg>
-        <span>Desk</span>
-      </a>
-      <a href="/student/exams" class="flex flex-col items-center gap-0.5 {% if request.url.path.startswith('/student/exams') or request.url.path.startswith('/student/subjects') or request.url.path.startswith('/student/chapters') or request.url.path.startswith('/student/attempts') %}v2-mobile-active{% endif %}">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-        </svg>
-        <span>Courses</span>
-      </a>
-      <a href="/student/tutor" class="flex flex-col items-center gap-0.5 {% if request.url.path.startswith('/student/tutor') %}v2-mobile-active{% endif %}">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-        </svg>
-        <span>Co-Pilot</span>
-      </a>
-      <a href="/student/digi-library" class="flex flex-col items-center gap-0.5 {% if request.url.path.startswith('/student/digi-library') %}v2-mobile-active{% endif %}">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-        </svg>
-        <span>Library</span>
-      </a>
-      <a href="/student/settings" class="flex flex-col items-center gap-0.5 {% if request.url.path.startswith('/student/settings') %}v2-mobile-active{% endif %}">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-        <span>Settings</span>
-      </a>
-    </nav>
-    {% elif user and user.role == 'student' and user.get('is_parent') %}
-    <nav class="mobile-bottom-bar md:hidden fixed z-40 flex items-center justify-around select-none">
-      <a href="/parent/dashboard" class="flex flex-col items-center gap-0.5 {% if request.url.path.startswith('/parent/dashboard') %}v2-mobile-active{% endif %}">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
-        <span>Overview</span>
-      </a>
-      <a href="/parent/mock-exams" class="flex flex-col items-center gap-0.5 {% if request.url.path.startswith('/parent/mock-exams') %}v2-mobile-active{% endif %}">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
-        <span>Mock Exams</span>
-      </a>
-      <a href="/parent/real-exams" class="flex flex-col items-center gap-0.5 {% if request.url.path.startswith('/parent/real-exams') %}v2-mobile-active{% endif %}">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
-        <span>Real Exams</span>
-      </a>
-      <a href="/parent/settings" class="flex flex-col items-center gap-0.5 {% if request.url.path.startswith('/parent/settings') %}v2-mobile-active{% endif %}">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /></svg>
-        <span>Settings</span>
-      </a>
-    </nav>
+    <!-- VISION-OS / MAC-OS FLOATING MAGNETIC BOTTOM DOCK (Desktop & Mobile!) -->
+    {% if user and not is_active_exam %}
+    <div class="v2-spatial-dock-wrap">
+      <nav class="v2-spatial-dock">
+        {% if user.role == 'student' and not user.get('is_parent') %}
+          <a href="/student/dashboard" class="v2-dock-item {% if request.url.path.startswith('/student/dashboard') %}is-active{% endif %}">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 sm:w-5 sm:h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+            <span>Command Deck</span>
+          </a>
+          <a href="/student/exams" class="v2-dock-item {% if request.url.path.startswith('/student/exams') or request.url.path.startswith('/student/subjects') or request.url.path.startswith('/student/chapters') or request.url.path.startswith('/student/attempts') %}is-active{% endif %}">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 sm:w-5 sm:h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            <span>Course Matrix</span>
+          </a>
+          <a href="/student/tutor" class="v2-dock-item {% if request.url.path.startswith('/student/tutor') %}is-active{% endif %}">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 sm:w-5 sm:h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <span>AI Co-Pilot</span>
+          </a>
+          <a href="/student/digi-library" class="v2-dock-item {% if request.url.path.startswith('/student/digi-library') %}is-active{% endif %}">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 sm:w-5 sm:h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+            <span>Digi-Vault</span>
+          </a>
+          <a href="/student/settings" class="v2-dock-item {% if request.url.path.startswith('/student/settings') %}is-active{% endif %}">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 sm:w-5 sm:h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span>Config</span>
+          </a>
+        {% elif user.role == 'student' and user.get('is_parent') %}
+          <a href="/parent/dashboard" class="v2-dock-item {% if request.url.path.startswith('/parent/dashboard') %}is-active{% endif %}"><span>Overview</span></a>
+          <a href="/parent/mock-exams" class="v2-dock-item {% if request.url.path.startswith('/parent/mock-exams') %}is-active{% endif %}"><span>Mock Exams</span></a>
+          <a href="/parent/real-exams" class="v2-dock-item {% if request.url.path.startswith('/parent/real-exams') %}is-active{% endif %}"><span>Real Exams</span></a>
+          <a href="/parent/settings" class="v2-dock-item {% if request.url.path.startswith('/parent/settings') %}is-active{% endif %}"><span>Settings</span></a>
+        {% elif user.role == 'admin' %}
+          <a href="/admin/dashboard" class="v2-dock-item {% if request.url.path.startswith('/admin/dashboard') or request.url.path == '/admin' %}is-active{% endif %}"><span>Studio Hub</span></a>
+          <a href="/admin/curriculum" class="v2-dock-item {% if request.url.path.startswith('/admin/curriculum') %}is-active{% endif %}"><span>Curriculum</span></a>
+          <a href="/admin/digi-library" class="v2-dock-item {% if request.url.path.startswith('/admin/digi-library') %}is-active{% endif %}"><span>Digi Library</span></a>
+          <a href="/admin/analytics" class="v2-dock-item {% if request.url.path.startswith('/admin/analytics') %}is-active{% endif %}"><span>Analytics</span></a>
+          <a href="/admin/settings" class="v2-dock-item {% if request.url.path.startswith('/admin/settings') %}is-active{% endif %}"><span>Settings</span></a>
+        {% endif %}
+      </nav>
+    </div>
     {% endif %}
 
   </div>
 
-  <!-- Global Spotlight Mouse-Tracking Glow Script -->
+  <!-- SAXAZ V2 HYPER-KINETIC PHYSICS ENGINE (60FPS Particle Constellation + 3D Card Tilt + Magnetic Cursor + Shockwave Ripples) -->
   <script>
-    document.addEventListener('mousemove', (e) => {
-      const cards = document.querySelectorAll('.v2-spotlight-card');
-      for (const card of cards) {
-        const rect = card.getBoundingClientRect();
-        card.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
-        card.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+    (function() {
+      // 1. Unregister stale V1 service worker caches so V2 styles always render fresh
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(regs => {
+          regs.forEach(r => r.update());
+        }).catch(() => {});
       }
-    }, { passive: true });
+
+      // 2. Magnetic Cursor Ring + 3D Perspective Tilt + Specular Glare
+      const cursorRing = document.getElementById('v2-cursor-ring');
+      let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
+      let ringX = mouseX, ringY = mouseY;
+
+      document.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+
+        // Hover state for magnetic ring
+        if (cursorRing) {
+          const interactive = e.target && e.target.closest('a, button, input, select, [role="button"], .v2-spotlight-card');
+          cursorRing.classList.toggle('is-hovering', !!interactive);
+        }
+
+        // 3D Tilt & Specular Spotlight on cards
+        const cards = document.querySelectorAll('.v2-spotlight-card, [data-v2-tilt]');
+        for (const card of cards) {
+          const rect = card.getBoundingClientRect();
+          if (rect.bottom < 0 || rect.top > window.innerHeight) continue;
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          card.style.setProperty('--mouse-x', `${x}px`);
+          card.style.setProperty('--mouse-y', `${y}px`);
+
+          if (card.hasAttribute('data-v2-tilt') && x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            const rotateX = ((y - centerY) / centerY) * -6;
+            const rotateY = ((x - centerX) / centerX) * 6;
+            card.style.transform = `perspective(900px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translateY(-4px)`;
+          } else if (card.hasAttribute('data-v2-tilt')) {
+            card.style.transform = '';
+          }
+        }
+      }, { passive: true });
+
+      function animateCursor() {
+        if (cursorRing) {
+          ringX += (mouseX - ringX) * 0.22;
+          ringY += (mouseY - ringY) * 0.22;
+          cursorRing.style.left = `${ringX}px`;
+          cursorRing.style.top = `${ringY}px`;
+        }
+        requestAnimationFrame(animateCursor);
+      }
+      requestAnimationFrame(animateCursor);
+
+      // 3. Click Shockwave Ripple
+      document.addEventListener('pointerdown', (e) => {
+        const ripple = document.createElement('div');
+        ripple.className = 'v2-click-ripple';
+        ripple.style.left = `${e.clientX}px`;
+        ripple.style.top = `${e.clientY}px`;
+        document.body.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 650);
+      }, { passive: true });
+
+      // 4. 60FPS Interactive Golden Constellation Canvas
+      const canvas = document.getElementById('v2-particle-canvas');
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+        window.addEventListener('resize', () => {
+          width = canvas.width = window.innerWidth;
+          height = canvas.height = window.innerHeight;
+        });
+
+        const count = window.innerWidth < 768 ? 24 : 48;
+        const particles = Array.from({ length: count }, () => ({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: (Math.random() - 0.5) * 0.65,
+          vy: (Math.random() - 0.5) * 0.65,
+          r: Math.random() * 2.2 + 1.2
+        }));
+
+        function drawParticles() {
+          ctx.clearRect(0, 0, width, height);
+          const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+          const dotColor = isDark ? 'rgba(248, 176, 0, 0.55)' : 'rgba(248, 176, 0, 0.65)';
+          const lineBase = isDark ? '248, 176, 0' : '17, 17, 17';
+
+          for (let i = 0; i < particles.length; i++) {
+            const p = particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            if (p.x < 0 || p.x > width) p.vx *= -1;
+            if (p.y < 0 || p.y > height) p.vy *= -1;
+
+            // Subtle magnetic pull toward cursor
+            const dxMouse = mouseX - p.x;
+            const dyMouse = mouseY - p.y;
+            const distMouse = Math.hypot(dxMouse, dyMouse);
+            if (distMouse < 180) {
+              ctx.beginPath();
+              ctx.moveTo(p.x, p.y);
+              ctx.lineTo(mouseX, mouseY);
+              ctx.strokeStyle = `rgba(248, 176, 0, ${(1 - distMouse / 180) * 0.45})`;
+              ctx.lineWidth = 1.2;
+              ctx.stroke();
+            }
+
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fillStyle = dotColor;
+            ctx.fill();
+
+            for (let j = i + 1; j < particles.length; j++) {
+              const p2 = particles[j];
+              const d = Math.hypot(p.x - p2.x, p.y - p2.y);
+              if (d < 135) {
+                ctx.beginPath();
+                ctx.moveTo(p.x, p.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.strokeStyle = `rgba(${lineBase}, ${(1 - d / 135) * (isDark ? 0.16 : 0.08)})`;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+              }
+            }
+          }
+          requestAnimationFrame(drawParticles);
+        }
+        requestAnimationFrame(drawParticles);
+      }
+    })();
   </script>
 
   <!-- Global Toast Container for Notifications -->

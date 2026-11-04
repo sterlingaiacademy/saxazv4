@@ -143,6 +143,8 @@ async def dashboard(request: Request):
     user = require_student(request, conn)
     class_id = user.get('class_id') or 1 # Fallback to 1 if no class assigned
     subjects = student_service.get_student_subjects(conn, class_id, user['id'])
+    for s in subjects:
+      s['chapters'] = student_service.get_student_chapters(conn, s['id'], user['id'])
     digi_books = student_service.get_student_digi_books(conn, user['id'])
     
     overall_progress_pct = int(sum(s.get('progress_pct', 0) for s in subjects) / len(subjects)) if subjects else 0
@@ -176,6 +178,8 @@ async def exams_subjects_hub(request: Request):
     user = require_student(request, conn)
     class_id = user.get('class_id') or 1
     subjects = student_service.get_student_subjects(conn, class_id, user['id'])
+    for s in subjects:
+      s['chapters'] = student_service.get_student_chapters(conn, s['id'], user['id'])
     overall_progress_pct = int(sum(s.get('progress_pct', 0) for s in subjects) / len(subjects)) if subjects else 0
     return templates.TemplateResponse(request=request, name="student/exams_subjects.html", context={
       "request": request,

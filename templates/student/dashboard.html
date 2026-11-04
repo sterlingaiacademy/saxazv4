@@ -1,614 +1,424 @@
 {% extends "base.html" %}
 
-{% block title %}Study Desk — SAXAZ Studio{% endblock %}
-{% block topbar_title %}<span>Study Desk • Mission Control</span>{% endblock %}
+{% block title %}Command Deck • SAXAZ Kinetic OS{% endblock %}
+{% block topbar_title %}Command Deck{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto space-y-6 sm:space-y-8 pb-20"
+<div class="w-full max-w-[1680px] mx-auto space-y-6 pb-16"
      x-data="{
-       deskTab: 'all',
-       liveClock: '',
+       activeSubjectIdx: 0,
+       deckView: 'all',
+       liveTime: '',
+       quickAiPrompt: '',
+       subjectsData: {{ subjects | tojson | forceescape }},
+       get selectedSubject() {
+         return (this.subjectsData && this.subjectsData.length > 0)
+           ? (this.subjectsData[this.activeSubjectIdx] || this.subjectsData[0])
+           : null;
+       },
        updateClock() {
          const now = new Date();
-         this.liveClock = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+         this.liveTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
        }
      }"
      x-init="updateClock(); setInterval(() => updateClock(), 1000)">
 
-  <!-- 1. LIVE KINETIC TICKER RIBBON -->
-  <div class="w-full overflow-hidden rounded-2xl bg-[#111111] border-2 border-[#111111] shadow-[0_4px_0_#f8b000] py-2 px-3 flex items-center gap-3 v2-enter">
-    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#f8b000] text-[#111111] text-[10px] font-black uppercase tracking-widest shrink-0">
-      <span class="w-1.5 h-1.5 rounded-full bg-[#111111] animate-ping"></span>
-      LIVE STUDIO
-    </span>
-    <div class="overflow-hidden flex-1 relative">
-      <div class="v2-marquee-track items-center gap-8 text-[11px] font-extrabold text-white/85 uppercase tracking-wider">
-        <span>⚡ Press <b class="text-[#f8b000]">Ctrl+K</b> anywhere to open AI Command Spotlight</span>
+  <!-- 1. KINETIC GOLD-ON-BLACK TELEMETRY TICKER -->
+  <div class="rounded-2xl bg-[#111111] text-white border-2 border-[#f8b000] px-4 py-2.5 shadow-lg flex items-center gap-4 overflow-hidden">
+    <div class="flex items-center gap-2 shrink-0 bg-[#f8b000] text-[#111111] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+      <span class="w-2 h-2 rounded-full bg-[#111111] animate-ping"></span>
+      <span>LIVE OS TELEMETRY</span>
+    </div>
+    <div class="v2-marquee-wrap flex-1 text-xs font-bold text-white/85">
+      <div class="v2-marquee-track">
+        <span>⚡ OPERATOR: <strong class="text-[#f8b000]">{{ user.name | upper }}</strong></span>
         <span>•</span>
-        <span>🔥 Current Streak: <b class="text-[#f8b000]">{{ stats.streak_days }} Day{% if stats.streak_days != 1 %}s{% endif %}</b></span>
+        <span>🔥 ACTIVE STREAK: <strong class="text-[#f8b000]" id="gamification-streak">{{ stats.streak_days if stats else 0 }}</strong> DAYS</span>
         <span>•</span>
-        <span>🏆 League: <b class="text-[#f8b000]">{{ stats.league }} ({{ "{:,}".format(stats.xp_earned) }} XP)</b></span>
+        <span>🏆 {{ stats.league if stats else 'Bronze' }} LEAGUE: <strong class="text-[#f8b000]" id="gamification-xp">{{ stats.xp_earned if stats else 0 }} XP</strong></span>
         <span>•</span>
-        <span>📚 {{ subjects|length }} Active Subjects &amp; {{ (digi_books | default([]))|length }} Digital Books Ready</span>
+        <span>🎯 OVERALL MASTERY: <strong class="text-[#f8b000]" id="overall-progress-text">{{ overall_progress_pct }}%</strong></span>
         <span>•</span>
-        <span>⚡ Press <b class="text-[#f8b000]">Ctrl+K</b> anywhere to open AI Command Spotlight</span>
+        <span>⌨️ PRESS <strong class="text-[#f8b000]">CTRL+K / ⌘K</strong> TO TELEPORT ANYWHERE</span>
         <span>•</span>
-        <span>🔥 Current Streak: <b class="text-[#f8b000]">{{ stats.streak_days }} Day{% if stats.streak_days != 1 %}s{% endif %}</b></span>
+        <span>📚 {{ digi_books|length }} INTERACTIVE DIGITAL BOOKS LOADED</span>
         <span>•</span>
-        <span>🏆 League: <b class="text-[#f8b000]">{{ stats.league }} ({{ "{:,}".format(stats.xp_earned) }} XP)</b></span>
+        <span>⚡ OPERATOR: <strong class="text-[#f8b000]">{{ user.name | upper }}</strong></span>
+        <span>•</span>
+        <span>🔥 ACTIVE STREAK: <strong class="text-[#f8b000]">{{ stats.streak_days if stats else 0 }}</strong> DAYS</span>
       </div>
     </div>
-    <span class="hidden sm:inline-flex font-mono-num text-[11px] font-bold text-[#f8b000] bg-white/10 px-2.5 py-0.5 rounded-lg shrink-0" x-text="liveClock"></span>
+    <div class="hidden md:flex items-center gap-2 shrink-0 font-mono text-xs font-black text-[#f8b000] bg-white/10 px-3 py-1 rounded-lg border border-white/15" x-text="liveTime"></div>
   </div>
 
-  <!-- 2. KINETIC MISSION CONTROL HERO BENTO -->
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 v2-enter v2-delay-1">
-    
-    <!-- Left 8 Cols: Signature Yellow/Black Kinetic Hero -->
-    <div class="lg:col-span-8 v2-gold-hero p-5 sm:p-8 lg:p-10 flex flex-col justify-between relative">
-      <!-- Floating Kinetic Geometry in Background -->
-      <div class="absolute -right-12 -top-12 w-52 h-52 rounded-full border-[14px] border-[#111111]/10 v2-anim-spin-slow pointer-events-none"></div>
-      <div class="absolute right-16 -bottom-16 w-40 h-40 rounded-3xl rotate-12 bg-white/25 v2-anim-float pointer-events-none"></div>
+  <!-- 2. ORBITAL MASTERY REACTOR HERO + 3D WIREFRAME CUBE + GAMIFICATION CORES -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
 
-      <div class="relative z-10 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-        <div class="space-y-2.5 max-w-xl">
-          <div class="inline-flex items-center gap-2 bg-[#111111] text-[#f8b000] px-3.5 py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-widest shadow-sm">
-            <span class="w-2 h-2 rounded-full bg-[#f8b000] animate-pulse"></span>
-            <span>SAXAZ Kinetic Study Desk</span>
-          </div>
-          <h1 class="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-[#111111] leading-[1.05]">
-            Ready to crush it, <span class="underline decoration-[#111111] decoration-4 underline-offset-4">{{ user.name }}</span>?
-          </h1>
-          <p class="text-xs sm:text-base font-bold text-[#111111]/80 leading-relaxed">
-            Jump straight into any subject, launch a 4-stage chapter pipeline, or co-create diagrams with your AI Tutor.
-          </p>
+    <!-- Left 8 Cols: Pitch-Black & Electric-Gold Orbital Reactor Hero -->
+    <div class="lg:col-span-8 v2-reactor-hero p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6" data-v2-tilt>
+      <div class="v2-kinetic-ring w-72 h-72 -right-16 -bottom-20"></div>
+
+      <!-- True 3D Multi-Ring Spinning Orbital Mastery Core -->
+      <div class="v2-orbital-core">
+        <div class="v2-orbit-ring ring-1"></div>
+        <div class="v2-orbit-ring ring-2"></div>
+        <div class="v2-orbit-ring ring-3"></div>
+        <div class="relative z-10 w-28 h-28 rounded-full bg-[#111111] border-2 border-[#f8b000] shadow-[0_0_30px_rgba(248,176,0,0.45)] flex flex-col items-center justify-center text-center">
+          <span class="text-3xl font-black text-[#f8b000] leading-none" style="font-family:'Space Grotesk',sans-serif;">{{ overall_progress_pct }}%</span>
+          <span class="text-[9px] font-black uppercase tracking-widest text-white/70 mt-1">Mastery Core</span>
+        </div>
+      </div>
+
+      <!-- Center Text & Instant Teleport Command Bar -->
+      <div class="flex-1 space-y-4 text-center md:text-left relative z-10 w-full">
+        <div class="flex flex-wrap items-center justify-center md:justify-start gap-2">
+          <span class="px-3 py-1 rounded-full bg-[#f8b000] text-[#111111] text-[10px] font-black uppercase tracking-widest">
+            ⚡ SPATIAL COMMAND DECK v2.0
+          </span>
+          <span class="px-3 py-1 rounded-full bg-white/10 text-white/85 text-[10px] font-black uppercase tracking-widest border border-white/15">
+            {{ subjects|length }} Active Courses • {{ total_digi_banks }} Digi-Modules
+          </span>
         </div>
 
-        <!-- Animated SVG Overall Mastery Ring -->
-        <div class="bg-[#111111] text-white p-4 rounded-3xl border-2 border-[#111111] shadow-xl flex items-center sm:flex-col justify-between sm:justify-center gap-3 shrink-0 self-stretch sm:self-auto">
-          <div class="relative w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
-            <svg class="w-full h-full -rotate-90" viewBox="0 0 80 80">
-              <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="8" />
-              <circle cx="40" cy="40" r="32" fill="none" stroke="#f8b000" stroke-width="8"
-                      stroke-linecap="round"
-                      stroke-dasharray="201"
-                      stroke-dashoffset="{{ 201 - (201 * (overall_progress_pct | default(0)) / 100) }}"
-                      class="transition-all duration-1000 ease-out" />
-            </svg>
-            <span class="absolute font-mono-num text-sm sm:text-base font-black text-[#f8b000]">{{ overall_progress_pct | default(0) }}%</span>
+        <h1 class="text-3xl sm:text-4xl xl:text-5xl font-black tracking-tight text-white leading-[1.05]" style="font-family:'Space Grotesk',sans-serif;">
+          Ready for launch, <span class="text-[#f8b000] underline decoration-[#f8b000]/40 decoration-wavy underline-offset-8">{{ user.name }}</span>.
+        </h1>
+
+        <p class="text-xs sm:text-sm text-white/75 font-medium max-w-xl">
+          Click any subject below to morph its live chapter syllabus directly on this deck—or fire up your AI Co-Pilot in one click.
+        </p>
+
+        <!-- Embedded Instant Teleport Trigger + Quick Mode Pills -->
+        <div class="flex flex-wrap items-center justify-center md:justify-start gap-2.5 pt-1">
+          <button type="button"
+                  @click="$dispatch('open-saxaz-spotlight')"
+                  class="v2-btn-gold text-xs sm:text-sm">
+            <span>⚡ AI Teleport &amp; Smart Search</span>
+            <kbd class="px-1.5 py-0.5 rounded bg-[#111111] text-[#f8b000] text-[10px]">⌘K</kbd>
+          </button>
+          <a href="/student/tutor" class="v2-btn-black text-xs sm:text-sm">
+            <span>🤖 Launch AI Co-Pilot</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right 4 Cols: Electric Gold Reactor Card with 3D Cube, Streak & League XP -->
+    <div class="lg:col-span-4 v2-gold-reactor-card p-6 sm:p-7 flex flex-col justify-between gap-5" data-v2-tilt>
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#111111] text-[#f8b000] text-[10px] font-black uppercase tracking-widest">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#f8b000] animate-ping"></span>
+            {{ stats.league if stats else 'Bronze' }} League Reactor
+          </span>
+          <div class="mt-3 flex items-baseline gap-2">
+            <span class="text-4xl sm:text-5xl font-black text-[#111111] leading-none" style="font-family:'Space Grotesk',sans-serif;">{{ stats.xp_earned if stats else 0 }}</span>
+            <span class="text-xs font-black uppercase tracking-widest text-[#111111]/75">Total XP</span>
           </div>
-          <div class="text-right sm:text-center">
-            <div class="text-[10px] font-black uppercase tracking-widest text-white/60">Mastery</div>
-            <div class="text-xs font-extrabold text-white">{{ subjects|length }} Courses</div>
+        </div>
+
+        <!-- Large 3D Rotating Wireframe Cube -->
+        <div class="v2-cube-scene v2-cube-lg bg-[#111111] rounded-2xl p-2 border-2 border-[#111111] shadow-lg">
+          <div class="v2-cube">
+            <div class="v2-cube-face front">XP</div>
+            <div class="v2-cube-face back">{{ stats.streak_days if stats else 0 }}🔥</div>
+            <div class="v2-cube-face right">AI</div>
+            <div class="v2-cube-face left">V2</div>
+            <div class="v2-cube-face top">★</div>
+            <div class="v2-cube-face bottom">⚡</div>
           </div>
         </div>
       </div>
 
-      <!-- Embedded AI Smart Search & Quick Command Bar inside Hero -->
-      <div class="relative z-20 mt-6" x-data="saxazAiSearchBar('')" @click.outside="dropdownOpen = false">
-        <div class="bg-white rounded-2xl sm:rounded-full p-1.5 sm:p-2 flex items-center border-2 border-[#111111] shadow-[0_5px_0_#111111] focus-within:translate-y-[-2px] transition-all">
-          <div class="pl-3 sm:pl-4 pr-2 text-[#111111]">
-            <svg x-show="!submitting && !aiLoading" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[#f8b000]" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-            <svg x-show="submitting || aiLoading" style="display: none;" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 animate-spin text-[#f8b000]" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+      <!-- Streak & League Progress Bar -->
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-[#111111] text-white rounded-2xl p-3.5 border-2 border-[#111111]">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-black uppercase tracking-wider text-white/60">Fire Streak</span>
+            <span class="text-base">🔥</span>
           </div>
-          <form action="/student/search" method="GET" class="flex-1 flex items-center min-w-0" @submit="handleSubmit($event)">
-            <input type="text"
-                   name="q"
-                   x-model="query"
-                   autocomplete="off"
-                   spellcheck="false"
-                   @focus="openDropdown()"
-                   @input="onInput()"
-                   @keydown.down.prevent="moveSelection(1)"
-                   @keydown.up.prevent="moveSelection(-1)"
-                   @keydown.escape="dropdownOpen = false"
-                   placeholder="Ask AI anything or jump to a chapter, exam, or book..."
-                   class="w-full bg-transparent border-none focus:ring-0 focus:outline-none text-[#111111] font-extrabold placeholder-gray-400 py-2 text-xs sm:text-sm min-w-0"
-                   required>
-            <button type="submit"
-                    :disabled="submitting"
-                    class="px-4 sm:px-6 py-2.5 rounded-xl sm:rounded-full bg-[#111111] text-[#f8b000] hover:bg-gray-900 font-black text-xs uppercase tracking-widest shrink-0 transition-transform active:scale-95">
-              <span x-text="submitting ? '...' : 'Launch'">Launch</span>
-            </button>
-          </form>
+          <div class="text-2xl font-black text-[#f8b000] mt-1" style="font-family:'Space Grotesk',sans-serif;">
+            {{ stats.streak_days if stats else 0 }} <span class="text-xs font-bold text-white/70">Days</span>
+          </div>
         </div>
 
-        <!-- Live AI Search Dropdown -->
-        <div x-show="dropdownOpen"
-             x-transition.opacity.duration.150ms
-             style="display: none;"
-             class="absolute left-0 right-0 mt-2 bg-white rounded-3xl shadow-2xl border-2 border-[#111111] overflow-hidden z-50 max-h-[65vh] overflow-y-auto">
-          <template x-if="query.trim().length > 0 && aiData && aiData.primary_destination">
-            <div class="p-4 bg-[#fffbeb] border-b-2 border-[#111111]/15">
-              <div class="flex items-center justify-between gap-2 mb-1">
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-[#111111] text-[#f8b000]">AI Smart Navigator</span>
-                <span class="text-[10px] font-black text-amber-800 uppercase" x-text="aiData.primary_destination.category || 'Best Match'"></span>
+        <div class="bg-white text-[#111111] rounded-2xl p-3.5 border-2 border-[#111111]">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-black uppercase tracking-wider text-[#111111]/60">Next Rank</span>
+            <span class="text-xs font-black text-[#111111]">{{ stats.league_progress if stats else 0 }}%</span>
+          </div>
+          <div class="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden mt-2.5 border border-[#111111]/20">
+            <div class="bg-[#111111] h-full rounded-full transition-all duration-700" style="width: {{ stats.league_progress if stats else 0 }}%"></div>
+          </div>
+          <div class="text-[10px] font-extrabold text-[#111111]/70 mt-1" id="gamification-next-xp">
+            {% if stats and stats.next_tier_xp %}{{ stats.next_tier_xp - stats.current_xp }} XP to rank up{% else %}Max Tier{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 3. INTERACTIVE LIVE COURSE & CHAPTER TELEPORT MATRIX (ZERO PAGE RELOAD!) -->
+  <div class="v2-spotlight-card p-5 sm:p-7">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b-2 border-dashed border-[#111111]/15">
+      <div>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#111111] text-[#f8b000] text-[10px] font-black uppercase tracking-widest mb-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-[#f8b000] animate-ping"></span>
+          Interactive Syllabus Matrix • Zero-Reload Chapter Explorer
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-black tracking-tight" style="font-family:'Space Grotesk',sans-serif;">
+          Select a Subject Pod to Morph Its Chapters Live
+        </h2>
+      </div>
+
+      <!-- Subject Selector Pills -->
+      <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+        {% for subject in subjects %}
+        <button type="button"
+                @click="activeSubjectIdx = {{ loop.index0 }}"
+                class="px-4 py-2.5 rounded-2xl font-black text-xs sm:text-sm transition-all cursor-pointer shrink-0 flex items-center gap-2 border-2 border-[#111111]"
+                :class="activeSubjectIdx === {{ loop.index0 }}
+                  ? 'bg-[#f8b000] text-[#111111] shadow-[0_4px_0_0_#111111] -translate-y-0.5'
+                  : 'bg-base-200/70 text-base-content hover:bg-base-300'">
+          <span>{{ subject.name }}</span>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-black"
+                :class="activeSubjectIdx === {{ loop.index0 }} ? 'bg-[#111111] text-[#f8b000]' : 'bg-base-300 text-base-content'">
+            {{ subject.progress_pct }}%
+          </span>
+        </button>
+        {% endfor %}
+        <a href="/student/attempts" class="px-3.5 py-2.5 rounded-2xl bg-[#111111] text-[#f8b000] font-black text-xs uppercase tracking-wider shrink-0 hover:bg-[#f8b000] hover:text-[#111111] border-2 border-[#111111] transition-all">
+          Exam History &rarr;
+        </a>
+      </div>
+    </div>
+
+    <!-- Active Subject Live Chapter Grid -->
+    <template x-if="selectedSubject">
+      <div class="pt-6 space-y-5">
+        <!-- Selected Subject Banner Strip -->
+        <div class="rounded-2xl bg-[#111111] text-white p-4 sm:p-5 border-2 border-[#f8b000] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-2xl bg-[#f8b000] text-[#111111] flex items-center justify-center font-black text-2xl shrink-0 border-2 border-white">
+              <span x-text="selectedSubject.name ? selectedSubject.name.charAt(0) : 'S'"></span>
+            </div>
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <h3 class="text-xl sm:text-2xl font-black text-white" style="font-family:'Space Grotesk',sans-serif;" x-text="selectedSubject.name"></h3>
+                <span class="px-2.5 py-0.5 rounded-full bg-[#f8b000] text-[#111111] text-[10px] font-black uppercase" x-text="(selectedSubject.chapters ? selectedSubject.chapters.length : 0) + ' Chapters'"></span>
               </div>
-              <p class="text-xs sm:text-sm font-black text-[#111111] mb-1" x-text="aiData.understood_intent"></p>
-              <p x-show="aiData.ai_answer" class="text-xs text-gray-600 mb-3" x-text="aiData.ai_answer"></p>
-              <div class="flex flex-wrap gap-2">
-                <a :href="aiData.primary_destination.url" class="v2-btn-black px-4 py-1.5 text-xs">
-                  <span x-text="'Go to ' + aiData.primary_destination.title"></span>
-                  <span>&rarr;</span>
+              <p class="text-xs text-white/70 font-medium mt-0.5" x-text="selectedSubject.description || 'Click any chapter card below to teleport directly into its 4-Stage Studio.'"></p>
+            </div>
+          </div>
+          <a :href="'/student/subjects/' + selectedSubject.id" class="v2-btn-gold text-xs shrink-0">
+            <span x-text="'Open Full ' + selectedSubject.name + ' Hub'"></span>
+            <span>&rarr;</span>
+          </a>
+        </div>
+
+        <!-- Chapters Grid for the Selected Subject -->
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <template x-for="(ch, cIdx) in (selectedSubject.chapters || [])" :key="ch.id">
+            <div class="rounded-2xl border-2 border-[#111111] bg-base-100 p-4 sm:p-5 shadow-[0_5px_0_0_#111111] hover:shadow-[0_8px_0_0_#f8b000] hover:-translate-y-1 transition-all flex flex-col justify-between gap-4">
+              <div>
+                <div class="flex items-center justify-between gap-2 mb-3">
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#111111] text-[#f8b000] text-xs font-black" style="font-family:'Space Grotesk',sans-serif;" x-text="'CH ' + String(cIdx + 1).padStart(2, '0')"></span>
+                  <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black border border-[#111111]/20"
+                        :class="ch.progress_pct >= 100 ? 'bg-emerald-400 text-[#111111]' : 'bg-[#f8b000]/25 text-base-content'"
+                        x-text="(ch.progress_pct || 0) + '% Mastery'"></span>
+                </div>
+                <a :href="'/student/chapters/' + ch.id" class="block group">
+                  <h4 class="text-base sm:text-lg font-black text-base-content group-hover:text-[#d49600] transition-colors line-clamp-1" style="font-family:'Space Grotesk',sans-serif;" x-text="ch.name"></h4>
+                  <p class="text-xs text-base-content/60 font-medium line-clamp-2 mt-1" x-text="ch.description || 'Interactive video explanations, revision notes, and practice tests.'"></p>
                 </a>
-                <a :href="'/student/tutor?ask=' + encodeURIComponent(query.trim()) + '&autosend=1'" class="v2-btn-gold px-4 py-1.5 text-xs">
-                  <span>Ask AI Co-Pilot</span>
-                </a>
+              </div>
+
+              <div class="space-y-2.5 pt-3 border-t border-dashed border-base-300">
+                <!-- Progress Bar -->
+                <div class="w-full h-2 rounded-full bg-base-200 overflow-hidden">
+                  <div class="h-full bg-[#f8b000] rounded-full transition-all duration-500" :style="'width:' + (ch.progress_pct || 0) + '%'"></div>
+                </div>
+                <!-- 1-Click Stage Teleporters -->
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex items-center gap-1">
+                    <a :href="'/student/chapters/' + ch.id" class="px-2 py-1 rounded-lg bg-base-200 hover:bg-[#f8b000] hover:text-[#111111] text-[10px] font-black uppercase transition-colors">🎬 Video</a>
+                    <a :href="'/student/chapters/' + ch.id" class="px-2 py-1 rounded-lg bg-base-200 hover:bg-[#f8b000] hover:text-[#111111] text-[10px] font-black uppercase transition-colors">📄 Notes</a>
+                    <a :href="'/student/chapters/' + ch.id" class="px-2 py-1 rounded-lg bg-base-200 hover:bg-[#f8b000] hover:text-[#111111] text-[10px] font-black uppercase transition-colors">🎯 Exam</a>
+                  </div>
+                  <a :href="'/student/chapters/' + ch.id" class="px-3 py-1.5 rounded-xl bg-[#111111] text-[#f8b000] hover:bg-[#f8b000] hover:text-[#111111] text-[11px] font-black uppercase tracking-wider transition-colors">
+                    Launch &rarr;
+                  </a>
+                </div>
               </div>
             </div>
           </template>
-          <div class="divide-y divide-gray-100">
-            <template x-for="(item, idx) in displayItems" :key="item.id || item.url || idx">
-              <a :href="item.url"
-                 class="flex items-center justify-between gap-3 px-4 py-3 hover:bg-[#fffbeb] transition-colors"
-                 :class="selectedIdx === idx ? 'bg-[#fffbeb]' : ''">
-                <div class="min-w-0 flex-1">
-                  <div class="flex items-center gap-2 mb-0.5">
-                    <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-[#111111] text-[#f8b000]" x-text="item.badge || item.category || 'Page'"></span>
-                    <span class="text-[10px] font-bold text-gray-400 uppercase truncate" x-text="item.category"></span>
-                  </div>
-                  <div class="text-sm font-black text-[#111111] truncate" x-text="item.title"></div>
-                  <div class="text-xs text-gray-500 line-clamp-1" x-text="item.description"></div>
-                </div>
-                <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-[#f8b000] text-[#111111] shrink-0">Open &rarr;</span>
-              </a>
-            </template>
-          </div>
         </div>
       </div>
-    </div>
-
-    <!-- Right 4 Cols: Live Telemetry Stack (Streak Flame + XP League + Quick AI Co-Pilot Card) -->
-    <div class="lg:col-span-4 flex flex-col gap-4 sm:gap-5 justify-between">
-      
-      <!-- Top Telemetry Row: Streak + XP League -->
-      <div class="grid grid-cols-2 gap-4 flex-1">
-        <!-- Live Animated Fire Streak Card -->
-        <div class="v2-bento-card v2-spotlight-card p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden bg-white">
-          <div class="flex items-center justify-between">
-            <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">Streak</span>
-            <span class="w-2 h-2 rounded-full bg-orange-500 animate-ping"></span>
-          </div>
-          <div class="my-2 flex items-center gap-2.5">
-            <div class="w-11 h-11 rounded-2xl bg-[#111111] text-[#f8b000] flex items-center justify-center shadow-md v2-anim-float shrink-0">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 23c-4.97 0-9-3.8-9-8.7 0-3.55 2.05-6.72 5.15-8.55.45-.26 1.02.1 0.98.62-.12 1.65.48 2.82 1.57 3.18.75.25 1.7-.05 2.75-.92 1.58-1.3 2.02-3.02 1.8-4.55-.08-.52.52-.88.95-.56C19.1 5.7 21 9.1 21 14.3 21 19.2 16.97 23 12 23Z"/>
-              </svg>
-            </div>
-            <div>
-              <div id="dashboard-streak-count" class="font-mono-num text-2xl sm:text-3xl font-black text-[#111111] leading-none">{{ stats.streak_days }}</div>
-              <div class="text-[10px] font-extrabold text-gray-500 uppercase mt-0.5">Active Days</div>
-            </div>
-          </div>
-          <div class="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
-            <div class="h-full v2-shimmer-bar rounded-full" style="width: 100%"></div>
-          </div>
-        </div>
-
-        <!-- XP & League Card -->
-        <div class="v2-bento-card v2-spotlight-card p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden bg-white">
-          <div class="flex items-center justify-between gap-1">
-            <span class="text-[10px] font-black uppercase tracking-widest text-gray-400">League</span>
-            <span id="dashboard-league-name" class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-[#111111] text-[#f8b000]">{{ stats.league }}</span>
-          </div>
-          <div class="my-2">
-            <div id="dashboard-xp-count" class="font-mono-num text-2xl sm:text-3xl font-black text-[#111111] leading-none">{{ "{:,}".format(stats.xp_earned) }}</div>
-            <div id="dashboard-xp-next" class="text-[10px] font-extrabold text-gray-500 uppercase mt-1">
-              {% if stats.league != 'Diamond' %}
-                {{ stats.next_tier_xp - stats.xp_earned }} XP to next
-              {% else %}
-                Max Tier Reached
-              {% endif %}
-            </div>
-          </div>
-          <div class="w-full h-2 rounded-full bg-gray-100 overflow-hidden border border-[#111111]/10">
-            <div id="dashboard-league-bar"
-                 class="h-full bg-[#f8b000] rounded-full transition-all duration-1000 ease-out"
-                 style="width: {{ stats.league_progress }}%"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Bottom Card: Pitch-Black AI Co-Pilot Studio Launcher -->
-      <a href="/student/tutor" class="v2-obsidian-hero p-5 flex items-center justify-between gap-4 group cursor-pointer hover:-translate-y-1 transition-all">
-        <div class="space-y-1 min-w-0">
-          <div class="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[#f8b000]">
-            <span class="w-2 h-2 rounded-full bg-[#f8b000] animate-ping"></span>
-            <span>Interactive Split-Screen Studio</span>
-          </div>
-          <h3 class="text-lg sm:text-xl font-black text-white truncate">Launch AI Co-Pilot &amp; Board</h3>
-          <p class="text-xs text-white/70 font-medium line-clamp-1">Live voice tutor + side-by-side smart scratchpad</p>
-        </div>
-        <div class="w-12 h-12 rounded-2xl bg-[#f8b000] text-[#111111] flex items-center justify-center shrink-0 font-black group-hover:scale-110 group-hover:rotate-6 transition-transform shadow-lg">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-        </div>
-      </a>
-
-    </div>
+    </template>
   </div>
 
-  <!-- 3. INTERACTIVE WORKSPACE MODE SWITCHER (INSTANT BENTO FILTER) -->
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 v2-enter v2-delay-2">
-    <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
-      <button type="button"
-              @click="deskTab = 'all'"
-              :class="deskTab === 'all' ? 'bg-[#111111] text-[#f8b000] shadow-[0_3px_0_#f8b000]' : 'bg-white text-[#111111] hover:bg-[#fffbeb]'"
-              class="px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider border-2 border-[#111111] transition-all shrink-0">
-        ⚡ All Studio ({{ subjects|length + (digi_books|default([])|length) }})
-      </button>
-      <button type="button"
-              @click="deskTab = 'courses'"
-              :class="deskTab === 'courses' ? 'bg-[#111111] text-[#f8b000] shadow-[0_3px_0_#f8b000]' : 'bg-white text-[#111111] hover:bg-[#fffbeb]'"
-              class="px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider border-2 border-[#111111] transition-all shrink-0">
-        🎯 Courses &amp; Exams ({{ subjects|length }})
-      </button>
-      <button type="button"
-              @click="deskTab = 'library'"
-              :class="deskTab === 'library' ? 'bg-[#111111] text-[#f8b000] shadow-[0_3px_0_#f8b000]' : 'bg-white text-[#111111] hover:bg-[#fffbeb]'"
-              class="px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider border-2 border-[#111111] transition-all shrink-0">
-        📖 Digital Bookshelf ({{ (digi_books|default([]))|length }})
-      </button>
-      <button type="button"
-              @click="deskTab = 'analytics'"
-              :class="deskTab === 'analytics' ? 'bg-[#111111] text-[#f8b000] shadow-[0_3px_0_#f8b000]' : 'bg-white text-[#111111] hover:bg-[#fffbeb]'"
-              class="px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider border-2 border-[#111111] transition-all shrink-0">
-        📊 Live Telemetry &amp; Scores
-      </button>
+  <!-- 4. BENTO LOWER DECK: LIVE AI CO-PILOT TERMINAL + 3D DIGI-LIBRARY VAULT + TELEMETRY RADAR -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+
+    <!-- Left 5 Cols: Embedded Live AI Co-Pilot Terminal -->
+    <div class="lg:col-span-5 v2-reactor-hero p-6 flex flex-col justify-between gap-5" data-v2-tilt>
+      <div class="space-y-3">
+        <div class="flex items-center justify-between gap-2">
+          <span class="px-3 py-1 rounded-full bg-[#f8b000] text-[#111111] text-[10px] font-black uppercase tracking-widest">
+            🤖 NEURAL AI CO-PILOT TERMINAL
+          </span>
+          <span class="v2-soundwave text-[#f8b000]">
+            <span></span><span></span><span></span><span></span>
+          </span>
+        </div>
+        <h3 class="text-2xl font-black text-white" style="font-family:'Space Grotesk',sans-serif;">
+          Instant 1-on-1 AI Mentor &amp; Live Scratchpad
+        </h3>
+        <p class="text-xs text-white/75 font-medium">
+          Type any question or click a neural prompt below to launch your AI Co-Pilot with live voice &amp; interactive Scratchpad drawing.
+        </p>
+
+        <!-- Quick Prompt Launch Chips -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+          <a href="/student/tutor?ask=Explain+my+current+science+chapter+with+a+real-world+analogy&autosend=1"
+             class="p-3 rounded-2xl bg-white/10 hover:bg-[#f8b000] text-white hover:text-[#111111] border border-white/15 transition-all text-xs font-black">
+            ⚡ Explain with a real-life analogy &rarr;
+          </a>
+          <a href="/student/tutor?ask=Draw+and+label+a+key+diagram+on+the+Scratchpad+for+me&autosend=1"
+             class="p-3 rounded-2xl bg-white/10 hover:bg-[#f8b000] text-white hover:text-[#111111] border border-white/15 transition-all text-xs font-black">
+            🎨 Sketch a diagram on Scratchpad &rarr;
+          </a>
+          <a href="/student/tutor?ask=Quiz+me+with+3+rapid-fire+exam+questions&autosend=1"
+             class="p-3 rounded-2xl bg-white/10 hover:bg-[#f8b000] text-white hover:text-[#111111] border border-white/15 transition-all text-xs font-black">
+            🎯 3-Question Rapid-Fire Drill &rarr;
+          </a>
+          <a href="/student/tutor"
+             class="p-3 rounded-2xl bg-[#f8b000]/20 hover:bg-[#f8b000] text-[#f8b000] hover:text-[#111111] border border-[#f8b000]/40 transition-all text-xs font-black">
+            ✏️ Open Visual Scratchpad Studio &rarr;
+          </a>
+        </div>
+      </div>
+
+      <!-- Direct AI Terminal Input -->
+      <form action="/student/tutor" method="GET" class="flex items-center gap-2 pt-2">
+        <input type="hidden" name="autosend" value="1" />
+        <input type="text"
+               name="ask"
+               x-model="quickAiPrompt"
+               placeholder="Ask your AI Co-Pilot anything right from the deck..."
+               class="flex-1 px-4 py-3 rounded-2xl bg-white/10 border-2 border-white/20 focus:border-[#f8b000] text-white placeholder-white/45 text-xs sm:text-sm font-bold outline-none"
+               required />
+        <button type="submit" class="v2-btn-gold text-xs py-3 px-4 shrink-0">
+          Send &rarr;
+        </button>
+      </form>
     </div>
 
-    <div class="flex items-center gap-2 shrink-0">
-      <a href="/student/attempts" class="v2-btn-gold px-4 py-2 text-xs">
-        <span>Exam History ({{ recent_attempts|length }})</span>
+    <!-- Center 4 Cols: 3D Digi-Library Hologram Vault -->
+    <div class="lg:col-span-4 v2-spotlight-card p-6 flex flex-col justify-between gap-4" data-v2-tilt>
+      <div>
+        <div class="flex items-center justify-between gap-2 mb-3">
+          <span class="px-3 py-1 rounded-full bg-[#111111] text-[#f8b000] text-[10px] font-black uppercase tracking-widest">
+            📚 DIGI-VAULT EDITIONS
+          </span>
+          <a href="/student/digi-library" class="text-xs font-black text-[#d49600] hover:underline">Open Shelf &rarr;</a>
+        </div>
+        <h3 class="text-xl sm:text-2xl font-black text-base-content mb-3" style="font-family:'Space Grotesk',sans-serif;">
+          Labour India Digital Books
+        </h3>
+
+        <div class="space-y-2.5">
+          {% for book in digi_books[:3] %}
+          <a href="/student/digi-library/books/{{ book.id }}"
+             class="flex items-center justify-between gap-3 p-3 rounded-2xl border-2 border-[#111111] bg-base-200/50 hover:bg-[#f8b000] text-base-content hover:text-[#111111] transition-all group">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-10 h-12 rounded-xl bg-[#111111] text-[#f8b000] flex items-center justify-center font-black text-xs shrink-0 border border-[#f8b000]">
+                📖
+              </div>
+              <div class="min-w-0">
+                <div class="text-xs sm:text-sm font-black truncate" x-text="{{ book.title | tojson | forceescape }}"></div>
+                <div class="text-[10px] font-bold opacity-70">{{ book.subject_count }} Subjects • {{ book.bank_count }} Chapters</div>
+              </div>
+            </div>
+            <span class="px-2.5 py-1 rounded-lg bg-[#111111] text-[#f8b000] text-[10px] font-black uppercase shrink-0">Read &rarr;</span>
+          </a>
+          {% else %}
+          <p class="text-xs text-base-content/60 font-medium">No digital books published yet.</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <a href="/student/digi-library" class="v2-btn-black w-full text-xs">
+        <span>Explore All {{ digi_books|length }} Digital Editions</span>
         <span>&rarr;</span>
       </a>
     </div>
-  </div>
 
-  <!-- 4. DIRECT INTERACTIVE SUBJECTS & COURSES BENTO GRID (1-CLICK ACCESS) -->
-  <div x-show="deskTab === 'all' || deskTab === 'courses'"
-       x-transition.opacity.duration.250ms
-       class="space-y-4 v2-enter v2-delay-3">
-    <div class="flex items-center justify-between px-1">
-      <div class="flex items-center gap-2.5">
-        <span class="w-3 h-7 rounded-full bg-[#f8b000] border-2 border-[#111111]"></span>
-        <h2 class="text-xl sm:text-2xl font-black text-[#111111]">Active Courses &amp; Exam Pipelines</h2>
-      </div>
-      <a href="/student/exams" class="text-xs font-black uppercase tracking-wider text-[#111111] hover:text-amber-600 underline decoration-2 underline-offset-4">
-        Full Courses Hub &rarr;
-      </a>
-    </div>
-
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-      {% for sub in subjects %}
-      <div class="v2-bento-card v2-spotlight-card p-5 flex flex-col justify-between gap-4 group cursor-pointer"
-           onclick="window.location.href='/student/subjects/{{ sub.id }}'">
-        <div class="relative z-10 flex items-start justify-between gap-3">
-          <div class="w-12 h-12 rounded-2xl bg-[#f8b000] text-[#111111] border-2 border-[#111111] shadow-[0_3px_0_#111111] flex items-center justify-center text-xl font-black group-hover:scale-110 group-hover:-rotate-3 transition-transform shrink-0">
-            {{ sub.name[:2].upper() }}
-          </div>
-          <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#111111] text-[#f8b000]">
-            {{ sub.progress_pct | default(0) }}% Done
+    <!-- Right 3 Cols: Live Biometric & Study Telemetry Chart -->
+    <div class="lg:col-span-3 v2-spotlight-card p-6 flex flex-col justify-between gap-4" data-v2-tilt>
+      <div>
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <span class="px-3 py-1 rounded-full bg-[#f8b000] text-[#111111] text-[10px] font-black uppercase tracking-widest">
+            📊 LIVE TELEMETRY
           </span>
+          <span class="text-xs font-black text-base-content/60">{{ analytics.total_study_hours if analytics else 0 }}h Total</span>
         </div>
-
-        <div class="relative z-10 space-y-1">
-          <h3 class="text-lg sm:text-xl font-black text-[#111111] group-hover:text-amber-600 transition-colors line-clamp-1">
-            {{ sub.name }}
-          </h3>
-          <p class="text-xs font-bold text-gray-500">
-            {{ sub.time_studied_str if sub.seconds_studied else 'Ready for study session' }}
-          </p>
-        </div>
-
-        <div class="relative z-10 space-y-3 pt-1">
-          <div class="w-full h-2.5 rounded-full bg-gray-100 overflow-hidden border border-[#111111]/15">
-            <div class="h-full bg-[#f8b000] rounded-full transition-all duration-700"
-                 style="width: {{ sub.progress_pct | default(0) }}%"></div>
-          </div>
-
-          <div class="flex items-center justify-between gap-2 pt-1">
-            <span class="text-[11px] font-black uppercase tracking-wider text-[#111111] group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
-              Open Chapters <span>&rarr;</span>
-            </span>
-            <a href="/student/tutor?subject_id={{ sub.id }}"
-               onclick="event.stopPropagation();"
-               class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-[#fffbeb] hover:bg-[#f8b000] text-[#111111] border border-[#111111] transition-colors"
-               title="Ask Subject AI Tutor">
-              ⚡ AI Tutor
-            </a>
-          </div>
-        </div>
-      </div>
-      {% else %}
-      <div class="col-span-full v2-bento-card p-8 text-center">
-        <p class="font-black text-lg text-[#111111]">No subjects assigned yet.</p>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-
-  <!-- 5. DIGITAL BOOKSHELF & QUICK PORTALS -->
-  <div x-show="deskTab === 'all' || deskTab === 'library'"
-       x-transition.opacity.duration.250ms
-       class="space-y-4 pt-2 v2-enter v2-delay-4">
-    <div class="flex items-center justify-between px-1">
-      <div class="flex items-center gap-2.5">
-        <span class="w-3 h-7 rounded-full bg-[#111111] border-2 border-[#f8b000]"></span>
-        <h2 class="text-xl sm:text-2xl font-black text-[#111111]">Digital Library &amp; Question Banks</h2>
-      </div>
-      <a href="/student/digi-library" class="text-xs font-black uppercase tracking-wider text-[#111111] hover:text-amber-600 underline decoration-2 underline-offset-4">
-        Open Full Library ({{ total_digi_banks | default(0) }} Banks) &rarr;
-      </a>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
-      {% for book in (digi_books | default([]))[:3] %}
-      <a href="/student/digi-library/books/{{ book.id }}"
-         class="v2-bento-card v2-spotlight-card p-5 flex items-center gap-4 group">
-        <div class="w-14 h-18 rounded-2xl bg-[#111111] text-[#f8b000] border-2 border-[#111111] flex flex-col items-center justify-center shrink-0 p-3 group-hover:bg-[#f8b000] group-hover:text-[#111111] transition-colors shadow-md">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-        </div>
-        <div class="min-w-0 flex-1">
-          <span class="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest bg-[#fffbeb] text-[#111111] border border-[#111111]/20">Digital Volume</span>
-          <h3 class="text-base sm:text-lg font-black text-[#111111] truncate mt-1">{{ book.title or book.name }}</h3>
-          <p class="text-xs font-bold text-gray-500 mt-0.5">Interactive chapters &amp; practice banks &rarr;</p>
-        </div>
-      </a>
-      {% else %}
-      <a href="/student/digi-library" class="col-span-full v2-bento-card p-6 flex items-center justify-between group">
-        <div class="flex items-center gap-4">
-          <div class="w-12 h-12 rounded-2xl bg-[#f8b000] text-[#111111] border-2 border-[#111111] flex items-center justify-center font-black">📖</div>
-          <div>
-            <h3 class="text-lg font-black text-[#111111]">Explore Digital Library</h3>
-            <p class="text-xs font-bold text-gray-500">Access reference books and {{ total_digi_banks | default(0) }} question banks.</p>
-          </div>
-        </div>
-        <span class="v2-btn-black px-4 py-2 text-xs">Open Library &rarr;</span>
-      </a>
-      {% endfor %}
-    </div>
-  </div>
-
-  <!-- 6. LIVE TELEMETRY, CHARTS & RECENT EXAM SCORES -->
-  <div x-show="deskTab === 'all' || deskTab === 'analytics'"
-       x-transition.opacity.duration.250ms
-       class="space-y-6 pt-2 v2-enter v2-delay-5">
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <!-- Subject Progress Pie Chart -->
-      <div class="v2-bento-card p-5 sm:p-7 flex flex-col justify-between">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-black text-[#111111] flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-[#f8b000] border border-[#111111]"></span>
-            Subject Time &amp; Mastery
-          </h3>
-          <span class="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-[#111111] bg-[#f8b000] px-3 py-1 rounded-full border border-[#111111]">
-            <span class="w-1.5 h-1.5 rounded-full bg-[#111111] animate-ping"></span>
-            Live Sync
-          </span>
-        </div>
-        
-        <div class="relative h-60 w-full flex items-center justify-center py-2">
-          <canvas id="progressChart"></canvas>
-        </div>
-
-        <div id="subjectTimeLegend" class="mt-4 pt-3 border-t-2 border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-          {% for sub in subjects %}
-          <div class="flex items-center justify-between p-2 rounded-xl bg-gray-50 border border-gray-200">
-            <div class="flex items-center gap-1.5 truncate max-w-[140px]">
-              <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background-color: {% if loop.index0 == 0 %}#F8B000{% elif loop.index0 == 1 %}#111111{% elif loop.index0 == 2 %}#F59E0B{% elif loop.index0 == 3 %}#525252{% else %}#D97706{% endif %};"></span>
-              <span class="font-bold text-gray-900 truncate">{{ sub.name }}</span>
-            </div>
-            <span class="font-black text-[#111111] bg-[#fffbeb] px-2 py-0.5 rounded-md border border-[#111111]/20 text-[11px] shrink-0">
-              {{ sub.time_studied_str if sub.seconds_studied else (sub.progress_pct ~ '%') }}
-            </span>
-          </div>
-          {% endfor %}
+        <h3 class="text-lg font-black text-base-content mb-2" style="font-family:'Space Grotesk',sans-serif;">
+          Subject Mastery Radar
+        </h3>
+        <div class="h-44 w-full relative">
+          <canvas id="v2MasteryChart"></canvas>
         </div>
       </div>
 
-      <!-- Recent Exam Score Trajectory -->
-      <div class="v2-bento-card p-5 sm:p-7 flex flex-col justify-between">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-black text-[#111111] flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-[#111111]"></span>
-            Score Velocity
-          </h3>
-          <a href="/student/attempts" class="text-xs font-black uppercase text-amber-600 hover:underline">All Reports &rarr;</a>
+      <div class="grid grid-cols-2 gap-2 pt-2 border-t border-dashed border-base-300 text-center">
+        <div class="p-2 rounded-xl bg-base-200/70">
+          <div class="text-lg font-black text-base-content" id="stat-total-hours">{{ analytics.total_study_hours if analytics else 0 }}h</div>
+          <div class="text-[9px] font-black uppercase tracking-wider text-base-content/50">Study Time</div>
         </div>
-        <div class="relative h-64 w-full">
-          <canvas id="examTrendChart"></canvas>
+        <div class="p-2 rounded-xl bg-[#f8b000]/25">
+          <div class="text-lg font-black text-base-content">{{ analytics.total_Practice_taken if analytics else 0 }}</div>
+          <div class="text-[9px] font-black uppercase tracking-wider text-base-content/60">Exams Taken</div>
         </div>
       </div>
     </div>
 
-    <!-- Activity Graph + Recent Exam Results -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Activity Graph -->
-      <div class="v2-bento-card p-5 sm:p-7 flex flex-col" x-data='{ "currentView": "daily", "activityData": {{ stats.activity_data | tojson | safe }} }'>
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
-          <h3 class="text-lg font-black text-[#111111]">Study Rhythm</h3>
-          <div class="bg-[#111111] rounded-full p-1 flex items-center gap-1 self-stretch sm:self-auto justify-between sm:justify-start">
-            <button type="button" @click="currentView = 'daily'" :class="currentView === 'daily' ? 'bg-[#f8b000] text-[#111111]' : 'text-white/70 hover:text-white'" class="flex-1 sm:flex-none px-3.5 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider transition-all">Daily</button>
-            <button type="button" @click="currentView = 'weekly'" :class="currentView === 'weekly' ? 'bg-[#f8b000] text-[#111111]' : 'text-white/70 hover:text-white'" class="flex-1 sm:flex-none px-3.5 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider transition-all">Weekly</button>
-            <button type="button" @click="currentView = 'monthly'" :class="currentView === 'monthly' ? 'bg-[#f8b000] text-[#111111]' : 'text-white/70 hover:text-white'" class="flex-1 sm:flex-none px-3.5 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider transition-all">Monthly</button>
-          </div>
-        </div>
-        
-        <div class="h-52 flex items-end gap-2 justify-between pt-6">
-          <template x-for="(day, index) in activityData[currentView]" :key="currentView + index">
-            <div class="flex flex-col justify-end items-center gap-3 flex-1 group h-full">
-              <div class="w-full max-w-[2.75rem] min-h-[1rem] rounded-2xl border-2 border-[#111111] transition-all duration-700 ease-out relative flex justify-center" 
-                 :class="day.is_today ? 'bg-[#f8b000] shadow-[0_3px_0_#111111]' : 'bg-gray-100 group-hover:bg-[#fffbeb]'"
-                 :style="`height: ${day.height_pct}%`"
-                 x-data x-init="let target = day.height_pct; $el.style.height = '0%'; setTimeout(() => { $el.style.height = target + '%' }, 50)">
-                <div class="absolute -top-10 opacity-0 group-hover:opacity-100 bg-[#111111] text-[#f8b000] text-[10px] font-black px-2.5 py-1 rounded-lg transition-all pointer-events-none whitespace-nowrap z-10" x-text="day.duration_str"></div>
-              </div>
-              <span class="text-[11px] font-black" :class="day.is_today ? 'text-[#111111]' : 'text-gray-400'" x-text="day.label"></span>
-            </div>
-          </template>
-        </div>
-      </div>
-      
-      <!-- Recent Exam Results -->
-      <div class="v2-bento-card p-5 sm:p-7 flex flex-col">
-        <div class="flex justify-between items-center mb-5">
-          <h3 class="text-lg font-black text-[#111111]">Latest Exam Scorecards</h3>
-          <a href="/student/attempts" class="text-xs font-black uppercase text-amber-600 hover:underline">View All &rarr;</a>
-        </div>
-        
-        <div class="space-y-3 flex-1 overflow-y-auto pr-1">
-          {% for attempt in recent_attempts %}
-            <a href="/student/attempts/{{ attempt.id }}" class="flex items-center justify-between gap-3 p-3.5 bg-[#faf7f0] rounded-2xl border-2 border-[#111111]/15 hover:border-[#111111] hover:bg-[#fffbeb] transition-all group">
-              <div class="flex items-center gap-3.5 min-w-0">
-                <div class="w-11 h-11 shrink-0 rounded-2xl bg-[#111111] text-[#f8b000] flex items-center justify-center text-lg font-black border-2 border-[#111111] group-hover:bg-[#f8b000] group-hover:text-[#111111] transition-colors">
-                  {{ attempt.grade }}
-                </div>
-                <div class="min-w-0">
-                  <div class="text-sm font-black text-[#111111] truncate">{{ attempt.exam_title }}</div>
-                  <div class="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-0.5">{{ attempt.date_str }}</div>
-                </div>
-              </div>
-              <div class="text-right shrink-0">
-                <div class="font-mono-num text-lg font-black text-[#111111]">{{ attempt.pct }}%</div>
-                <div class="text-[10px] font-black uppercase tracking-wider text-amber-700">{{ attempt.grade_label }}</div>
-              </div>
-            </a>
-          {% else %}
-            <div class="flex flex-col items-center justify-center h-full text-center py-10 opacity-70">
-              <div class="w-14 h-14 rounded-2xl bg-[#fffbeb] border-2 border-[#111111] flex items-center justify-center text-2xl mb-3">🎯</div>
-              <div class="text-base font-black text-[#111111]">No Exam Scorecards Yet</div>
-              <div class="text-xs text-gray-500 font-bold mt-1">Complete a chapter practice test to populate your live radar.</div>
-            </div>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
   </div>
 
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const rawSubjects = {{ subjects | tojson | safe }} || [];
-    const colorPalette = ['#F8B000', '#111111', '#F59E0B', '#404040', '#FACC15', '#737373', '#D97706', '#262626'];
-    
-    let subjectLabels = [];
-    let subjectData = [];
-    let subjectColors = [];
-    let subjectStudyMins = [];
-    let totalStudiedSeconds = 0;
+document.addEventListener('DOMContentLoaded', function() {
+  const ctx = document.getElementById('v2MasteryChart');
+  if (!ctx || typeof Chart === 'undefined') return;
+  const subjects = {{ subjects | tojson }};
+  const labels = subjects.map(s => (s.name || '').slice(0, 10));
+  const dataVals = subjects.map(s => s.progress_pct || 0);
 
-    rawSubjects.forEach((sub, idx) => {
-      subjectLabels.push(sub.name);
-      const secs = sub.seconds_studied || 0;
-      totalStudiedSeconds += secs;
-      const mins = Math.max(sub.minutes_studied || (secs / 60), 0);
-      subjectStudyMins.push(mins);
-      subjectColors.push(colorPalette[idx % colorPalette.length]);
-    });
-
-    if (totalStudiedSeconds === 0) {
-      subjectData = rawSubjects.map(s => Math.max(s.progress_pct || 1, 1));
-    } else {
-      subjectData = subjectStudyMins.map(m => Math.max(m, 0.1));
-    }
-
-    let progressPieChart = null;
-    if (document.getElementById('progressChart')) {
-      const ctxProgress = document.getElementById('progressChart').getContext('2d');
-      progressPieChart = new Chart(ctxProgress, {
-        type: 'pie',
-        data: {
-          labels: subjectLabels.length ? subjectLabels : ['No Subjects'],
-          datasets: [{
-            data: subjectData.length ? subjectData : [1],
-            backgroundColor: subjectColors.length ? subjectColors : ['#F8B000'],
-            borderWidth: 2,
-            borderColor: '#ffffff',
-            hoverOffset: 8
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'bottom',
-              labels: {
-                boxWidth: 12,
-                font: { family: 'Plus Jakarta Sans', weight: 'bold', size: 11 },
-                padding: 12
-              }
-            }
-          }
-        }
-      });
-    }
-
-    function refreshLiveSubjectProgress() {
-      fetch('/student/api/subject-progress')
-        .then(r => r.json())
-        .then(data => {
-          if (data.success && data.subjects && progressPieChart) {
-            const updated = data.subjects;
-            let hasStudyTime = updated.some(s => (s.seconds_studied || 0) > 0);
-            const newMins = updated.map(s => hasStudyTime ? Math.max(s.minutes_studied || ((s.seconds_studied || 0) / 60), 0.1) : Math.max(s.progress_pct || 1, 1));
-            progressPieChart.data.datasets[0].data = newMins;
-            progressPieChart.update();
-          }
-          if (data.success && data.stats) {
-            const st = data.stats;
-            const streakEl = document.getElementById('dashboard-streak-count');
-            const xpEl = document.getElementById('dashboard-xp-count');
-            const leagueEl = document.getElementById('dashboard-league-name');
-            const barEl = document.getElementById('dashboard-league-bar');
-            if (streakEl && typeof st.streak_days === 'number') streakEl.textContent = st.streak_days;
-            if (xpEl && typeof st.xp_earned === 'number') xpEl.textContent = st.xp_earned.toLocaleString();
-            if (leagueEl && st.league) leagueEl.textContent = st.league;
-            if (barEl && typeof st.league_progress === 'number') barEl.style.width = `${st.league_progress}%`;
-          }
-        })
-        .catch(() => {});
-    }
-    setInterval(refreshLiveSubjectProgress, 15000);
-
-    if (document.getElementById('examTrendChart')) {
-      const rawAllExams = {{ analytics.all_exams | tojson | safe }};
-      let examLabels = [];
-      let examScores = [];
-      if (rawAllExams && rawAllExams.length > 0) {
-        const slicedExams = rawAllExams.slice(0, 10).reverse();
-        examLabels = slicedExams.map(e => e.title);
-        examScores = slicedExams.map(e => (e.total_marks_awarded / Math.max(e.total_max_marks, 1) * 100).toFixed(1));
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Mastery %',
+        data: dataVals,
+        backgroundColor: '#f8b000',
+        borderColor: '#111111',
+        borderWidth: 2,
+        borderRadius: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, max: 100, grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { font: { size: 10, weight: 'bold' } } },
+        x: { grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' } } }
       }
-      const ctxTrend = document.getElementById('examTrendChart').getContext('2d');
-      new Chart(ctxTrend, {
-        type: 'line',
-        data: {
-          labels: examLabels.length ? examLabels : ['No Data'],
-          datasets: [{
-            label: 'Score (%)',
-            data: examScores.length ? examScores : [0],
-            borderColor: '#111111',
-            backgroundColor: 'rgba(248, 176, 0, 0.22)',
-            borderWidth: 3,
-            tension: 0.38,
-            fill: true,
-            pointBackgroundColor: '#f8b000',
-            pointBorderColor: '#111111',
-            pointBorderWidth: 2,
-            pointRadius: 5
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: { y: { beginAtZero: true, max: 100 } },
-          plugins: { legend: { display: false } }
-        }
-      });
     }
   });
+});
 </script>
 {% endblock %}

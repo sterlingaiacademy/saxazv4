@@ -1,7 +1,8 @@
-// SAXAZ Progressive Web App Service Worker
-const CACHE_NAME = 'saxaz-pwa-v2';
+// SAXAZ V2 Kinetic OS Progressive Web App Service Worker
+const CACHE_NAME = 'saxaz-v2-kinetic-os-v99';
 const PRECACHE_ASSETS = [
-  '/static/css/app.css?v=11',
+  '/static/css/app.css?v=99',
+  '/static/css/v2-studio.css?v=99',
   '/static/images/pwa-icon-192.png?v=2',
   '/static/images/pwa-icon-512.png?v=2'
 ];
@@ -23,8 +24,6 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Network-first strategy so dynamic exam/tutor data is always fresh,
-// while satisfying browser PWA installability criteria.
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   event.respondWith(
