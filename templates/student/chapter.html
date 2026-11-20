@@ -324,10 +324,11 @@
         document.documentElement.classList.add('sx-fs-lock');
         if (!['0', 'off'].includes(String(window.__saxazUserTtsMode || '').toLowerCase())) {
           this.cancelSideVoices();
-          const line = 'Hey {{ first_name }}! Do you want to play a fun game, or go to the next summary?';
+          const line = 'Hey buddy! Do you want to play a fun game, or go to the next summary?';
           const s = window.saxazStreamPcm ? window.saxazStreamPcm(line, {
             emotion: 'friendly_greeting',
             speed: 0.94,
+            persist: true,
             onPlay: () => { this.inviteSpeaking = true; }
           }) : null;
           if (s) {
@@ -414,7 +415,7 @@
         }
         if (cheer && !this.nutshellLit && !['0', 'off'].includes(String(window.__saxazUserTtsMode || '').toLowerCase())) {
           if (window.__gameCheerPcm && window.__gameCheerPcm.cancel) window.__gameCheerPcm.cancel();
-          const s = window.saxazStreamPcm ? window.saxazStreamPcm(cheer, { emotion: 'celebrating', speed: 0.95 }) : null;
+          const s = window.saxazStreamPcm ? window.saxazStreamPcm(cheer, { emotion: 'celebrating', speed: 0.95, persist: true }) : null;
           if (s) window.__gameCheerPcm = s;
           else if (window.saxazSpeak) window.saxazSpeak(cheer, { emotion: 'celebrating', interrupt: true });
         }
@@ -1483,7 +1484,7 @@
           <div>
             <div style="font-size:0.76rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#231f20;margin-bottom:8px;">CHAPTER IN A NUTSHELL</div>
             <p data-sx-sync-prose style="margin:0;font-size:1.04rem;line-height:1.78;color:#231f20;font-weight:500;">
-              Hey {{ first_name }}! Do you know why we are alive? Inside our body, four very important jobs are happening all the time, even when we are sleeping, sitting, or playing. We call them Life Processes. If even one of them stops, we cannot survive. Let us understand each one in detail.
+              Hey buddy! Do you know why we are alive? Inside our body, four very important jobs are happening all the time, even when we are sleeping, sitting, or playing. We call them Life Processes. If even one of them stops, we cannot survive. Let us understand each one in detail.
             </p>
             {{ render_part_footer(0) }}
           </div>

@@ -909,7 +909,7 @@ async def pcm_stream_tts(req: TTSRequest, request: Request):
                 even_len = len(collected) & ~1
                 final_b = bytes(collected[:even_len])
                 _store_in_lru(cache_key, final_b, "application/octet-stream", actual_model)
-                if store_key:
+                if store_key and actual_model == GEMINI_TTS_MODEL:
                     try:
                         await tts_store.put(store_key, final_b)
                     except Exception as store_err:

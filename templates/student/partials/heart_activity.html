@@ -302,7 +302,7 @@ window.saxazHeartGame = function() {
     speakShort(line, emo = 'celebrating') {
       if (['0', 'off'].includes(String(window.__saxazUserTtsMode || '').toLowerCase())) return;
       if (window.__heartPcm && window.__heartPcm.cancel) window.__heartPcm.cancel();
-      const s = window.saxazStreamPcm ? window.saxazStreamPcm(line, { emotion: emo }) : null;
+      const s = window.saxazStreamPcm ? window.saxazStreamPcm(line, { emotion: emo, persist: true }) : null;
       if (s) {
         window.__heartPcm = s;
         s.donePromise.then(ok => { if (ok === null && window.saxazSpeak) window.saxazSpeak(line, { emotion: emo, interrupt: true }); });

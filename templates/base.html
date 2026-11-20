@@ -1690,7 +1690,7 @@
               const res = await fetch('/api/tts/pcm-stream', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: clean, voice, engine: 'gemini', emotion, speed }),
+                body: JSON.stringify({ text: clean, voice, engine: 'gemini', emotion, speed, persist: opts.persist ? true : undefined }),
                 signal: abortCtrl.signal
               });
               if (!res.ok || !res.body || !res.body.getReader) {
