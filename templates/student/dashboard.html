@@ -99,8 +99,8 @@
            class="sx-subject-soon-pill"
            role="status"
            aria-live="polite">
-        <span class="material-symbols-outlined" style="font-size:18px;color:#f7b317;" aria-hidden="true">auto_awesome</span>
-        <span x-text="soonSubject + ' chapters unlocking soon!'"></span>
+        <span class="material-symbols-outlined" style="font-size:18px;color:#f7b317;" aria-hidden="true">lock</span>
+        <span x-text="soonSubject + ' is coming soon!'"></span>
         <a href="{{ ns.bio_href }}" class="sx-subject-soon-cta">Open Biology &rarr;</a>
       </div>
     </div>
@@ -140,15 +140,17 @@
           <span class="sx-subject-pct-pill">{{ m.pct }}% complete</span>
         </a>
         {% else %}
-        <a href="/student/exams?subject={{ item.key }}"
-           aria-label="{{ item.label }} (coming soon)"
+        <a href="#my-subjects"
+           @click.prevent="notifySubjectSoon({{ item.label | tojson | forceescape }})"
+           aria-label="{{ item.label }} is locked. Coming soon"
            data-sx-surf-badge
            class="sx-issue-badge-card is-subject-badge is-soon">
           <span class="sx-badge-stage is-subject-stage">
+            <span class="sx-subject-lock" aria-hidden="true"><span class="material-symbols-outlined">lock</span></span>
             <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_sub_{{ item.key }}_idle.webp?v=540" alt="{{ item.label }}">
             <canvas class="sx-badge-canvas" width="380" height="380" data-sx-cols="8" data-sx-frames="48" data-sx-sheet="/static/images/saxaz_web/badge_sub_{{ item.key }}_sheet.webp?v=540"></canvas>
           </span>
-          <span class="sx-subject-pct-pill is-soon">Coming soon</span>
+          <span class="sx-subject-pct-pill is-soon"><span class="material-symbols-outlined" aria-hidden="true">lock</span>Coming soon</span>
         </a>
         {% endif %}
       {% endfor %}

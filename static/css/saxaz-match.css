@@ -673,3 +673,24 @@ body .sx-issue-acc-bar.has-soon { grid-template-columns: 58px minmax(0, 1fr) aut
 @media (max-width: 480px) {
   .sx-header-role-badge { display: none !important; }
 }
+
+/* Dashboard: locked subjects */
+.sx-subject-lock {
+  position: absolute; top: 4px; right: 8px; z-index: 3;
+  width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center;
+  background: #231f20; color: #f7b317; box-shadow: 0 6px 14px rgba(35, 31, 32, 0.25);
+}
+.sx-subject-lock .material-symbols-outlined { font-size: 20px; }
+.sx-badge-stage.is-subject-stage { position: relative; }
+.sx-subject-pct-pill.is-soon { display: inline-flex !important; align-items: center; gap: 4px; }
+.sx-subject-pct-pill.is-soon .material-symbols-outlined { font-size: 15px; }
+.sx-issue-badge-card.is-soon:active .sx-subject-lock { animation: sx-lock-shake .35s ease; }
+@keyframes sx-lock-shake { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-14deg); } 75% { transform: rotate(14deg); } }
+/* The "coming soon" message pops up as a toast so it is seen wherever the tile is */
+.sx-subject-soon-pill {
+  position: fixed !important; left: 50%; bottom: 28px; z-index: 9000;
+  transform: translateX(-50%); padding: 12px 18px !important; font-size: 0.95rem !important;
+  box-shadow: 0 16px 34px rgba(35, 31, 32, 0.3); animation: sx-toast-in .28s cubic-bezier(.2, 1.2, .4, 1) both;
+  max-width: calc(100vw - 32px);
+}
+@keyframes sx-toast-in { from { opacity: 0; transform: translate(-50%, 16px); } to { opacity: 1; transform: translate(-50%, 0); } }

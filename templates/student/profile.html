@@ -1,108 +1,51 @@
 {% extends "base.html" %}
 {% block title %}Profile | SAXAZ{% endblock %}
 
-{% block content %}
-<div class="sx-ext-inner-wrap"
-     x-data="profileVoiceSettings()"
-     style="display:flex;flex-direction:column;gap:22px;">
-
-  <!-- Status Notice -->
-  {% set ok = request.query_params.get('success') %}
-  {% set err = request.query_params.get('error') %}
-  {% if ok %}
-  <div class="sx-ext-surface" style="padding:14px 20px;border:2px solid #231f20;background:#f7b317;color:#231f20;font-weight:700;font-size:0.9rem;">
-    {% if ok == 'password_updated' %}Password updated successfully.{% elif ok == 'voice_updated' %}Voice &amp; language saved.{% else %}Profile updated successfully.{% endif %}
-  </div>
-  {% endif %}
-  {% if err == 'invalid_old_password' %}
-  <div class="sx-ext-surface" style="padding:14px 20px;border:2px solid #231f20;background:#231f20;color:#ffffff;font-weight:700;font-size:0.9rem;">
-    Current password did not match. Please try again.
-  </div>
-  {% elif err == 'email_taken' %}
-  <div class="sx-ext-surface" style="padding:14px 20px;border:2px solid #231f20;background:#231f20;color:#ffffff;font-weight:700;font-size:0.9rem;">
-    That Login ID or email address is already registered to another account. Please use a different one.
-  </div>
-  {% elif err == 'password_mismatch' %}
-  <div class="sx-ext-surface" style="padding:14px 20px;border:2px solid #231f20;background:#231f20;color:#ffffff;font-weight:700;font-size:0.9rem;">
-    New password and confirmation password did not match. Please check both fields and try again.
-  </div>
-  {% elif err %}
-  <div class="sx-ext-surface" style="padding:14px 20px;border:2px solid #231f20;background:#231f20;color:#ffffff;font-weight:700;font-size:0.9rem;">
-    Could not save changes ({{ err }}). Please check your entries and try again.
-  </div>
-  {% endif %}
-
-  <!-- 1. STUDENT DETAILS CARD -->
-  <section class="sx-ext-surface">
-    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:22px;">
-      {% if user.profile_picture %}
-      <img id="profile-avatar-img"
-           src="{{ user.profile_picture }}"
-           alt="{{ user.name }}"
-           style="width:68px;height:68px;border-radius:50%;object-fit:cover;border:2px solid #231f20;background:#ffffff;flex-shrink:0;" />
-      {% else %}
-      <div id="profile-avatar-initial"
-           style="width:68px;height:68px;border-radius:50%;background:#f7b317;color:#231f20;border:2px solid #231f20;display:grid;place-items:center;font-family:var(--font-display);font-size:1.65rem;font-weight:900;flex-shrink:0;">
-        {{ ((user.name or 'Student').strip()[0] if (user.name or 'Student').strip() else 'S') | upper }}
-      </div>
-      {% endif %}
-
-      <div style="min-width:0;flex:1;">
-        <h1 style="font-family:var(--font-display);font-size:1.5rem;font-weight:800;margin:0 0 4px;color:#231f20;">
-          Student details
-        </h1>
-        <p style="margin:0;font-size:0.88rem;color:rgba(35,31,32,0.68);font-weight:500;">
-          Manage your student identity, class details, and profile photo.
-        </p>
-      </div>
-    </div>
-
-    <form action="/student/profile/update" method="POST" enctype="multipart/form-data">
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px;margin-bottom:18px;">
-        <div>
-          <label class="sx-ext-field-label">Student name</label>
-          <input type="text" name="name" value="{{ user.name }}" required class="sx-ext-field-input" />
-        </div>
-
-        <div>
-          <label class="sx-ext-field-label">Login ID / Email</label>
-          <input type="text" name="email" value="{{ user.email }}" required class="sx-ext-field-input" />
-        </div>
-
-        <div>
-          <label class="sx-ext-field-label">Class</label>
-          <input type="text" value="{{ user.class_name or 'Class 10' }}" disabled class="sx-ext-field-input" style="background:#ffffff;color:rgba(35,31,32,0.68);" />
-        </div>
-
-        <div>
-          <label class="sx-ext-field-label">Medium</label>
-          <input type="text" value="{{ user.medium or 'English' }}" disabled class="sx-ext-field-input" style="background:#ffffff;color:rgba(35,31,32,0.68);" />
-        </div>
-      </div>
-
-      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;padding-top:12px;border-top:1px solid rgba(35,31,32,0.1);">
-        <label style="display:inline-flex;align-items:center;gap:10px;cursor:pointer;font-size:0.86rem;font-weight:700;color:#231f20;">
-          <span class="material-symbols-outlined" style="font-size:18px;">photo_camera</span>
-          <span id="file-chosen-label">Change profile photo</span>
-          <input type="file" name="profile_picture" accept="image/*" style="display:none;"
-                 onchange="if(this.files[0]) document.getElementById('file-chosen-label').textContent = this.files[0].name;" />
-        </label>
-
-        <button type="submit" class="sx-ext-cta-yellow" style="min-height:44px;padding:10px 24px;font-size:0.9rem;">
-          Save profile
-        </button>
-      </div>
-    </form>
-  </section>
-
-  <!-- 2. AI TUTOR VOICE & PRIMARY LANGUAGE -->
-  <section id="voice-settings" class="sx-ext-surface">
-    <h2 style="font-family:var(--font-display);font-size:1.4rem;font-weight:800;margin:0 0 6px;color:#231f20;">
-      Teacher voice &amp; language
-    </h2>
-    <p style="margin:0 0 20px;font-size:0.88rem;color:rgba(35,31,32,0.68);font-weight:500;">
-      Pick the teacher who reads to you, and the language they use in tests and when you ask for help.
+{% block hero_banner %}
+<section class="sx-ext-hero">
+  <div class="sx-ext-hero-inner">
+    <h1 class="sx-ext-hero-title">
+      <span class="is-dark">My</span>
+      <span class="is-white">profile</span>
+    </h1>
+    <p class="sx-ext-hero-copy">
+      Pick your teacher, check your progress<br>
+      and keep your account safe.
     </p>
+  </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="/static/css/saxaz-pages.css?v=2">
+{% set ok = request.query_params.get('success') %}
+{% set err = request.query_params.get('error') %}
+
+<div class="sxp" x-data="profileVoiceSettings()">
+
+  {% if ok %}
+  <div class="sxp-flash" style="background:#f7b317;color:#231f20;">
+    <span style="display:flex;align-items:center;gap:8px;font-weight:800;">
+      <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+      {% if ok == 'password_updated' %}Password updated.{% elif ok == 'voice_updated' %}Teacher and language saved.{% else %}Details saved.{% endif %}
+    </span>
+  </div>
+  {% endif %}
+  {% if err %}
+  <div class="sxp-flash">
+    <span style="display:flex;align-items:center;gap:8px;font-weight:700;">
+      <span class="material-symbols-outlined" aria-hidden="true" style="color:#f7b317;">error</span>
+      {% if err == 'invalid_old_password' %}Your current password did not match. Please try again.
+      {% elif err == 'email_taken' %}That Login ID is already used by another account. Please pick a different one.
+      {% elif err == 'password_mismatch' %}The two new passwords did not match. Please type them again.
+      {% else %}Could not save. Please check your entries and try again.{% endif %}
+    </span>
+  </div>
+  {% endif %}
+
+  <!-- 1. Teacher, language and narration -->
+  <section class="sxp-sec" id="voice-settings">
+    <h2 class="sxp-h2">Your teacher<small>Tap a teacher to hear them. They read your lessons and help in tests.</small></h2>
 
     <form method="POST" action="/student/settings">
       <input type="hidden" name="redirect_to" value="profile">
@@ -113,175 +56,148 @@
       <input type="hidden" name="cursor_effect" value="{{ user.cursor_effect or 'none' }}">
       <input type="hidden" name="subject_intro_mode" value="{{ user.subject_intro_mode if user.subject_intro_mode is not none else 0 }}">
 
-      <!-- Primary Tutor Response Language -->
-      <div style="margin-bottom:20px;">
-        <label class="sx-ext-field-label">Language</label>
-        <div class="sx-seg sx-seg-wrap">
-          <label class="sx-seg-btn" :class="tutorLang === 'en' && 'is-active'" data-tip="Your teacher will use English">
-            <input type="radio" name="tutor_lang" value="en" class="sr-only" x-model="tutorLang" @change="playCurrentVoicePreview()" />
-            <span>English</span>
-          </label>
-          <label class="sx-seg-btn" :class="tutorLang === 'ml' && 'is-active'" data-tip="Your teacher will use Malayalam">
-            <input type="radio" name="tutor_lang" value="ml" class="sr-only" x-model="tutorLang" @change="playCurrentVoicePreview()" />
-            <span>Malayalam &middot; മലയാളം</span>
-          </label>
-          <label class="sx-seg-btn" :class="tutorLang === 'hi' && 'is-active'" data-tip="Your teacher will use Hindi">
-            <input type="radio" name="tutor_lang" value="hi" class="sr-only" x-model="tutorLang" @change="playCurrentVoicePreview()" />
-            <span>Hindi &middot; हिन्दी</span>
-          </label>
-          <label class="sx-seg-btn" :class="tutorLang === 'ta' && 'is-active'" data-tip="Your teacher will use Tamil">
-            <input type="radio" name="tutor_lang" value="ta" class="sr-only" x-model="tutorLang" @change="playCurrentVoicePreview()" />
-            <span>Tamil &middot; தமிழ்</span>
-          </label>
-          <label class="sx-seg-btn" :class="tutorLang === 'ar' && 'is-active'" data-tip="Your teacher will use Arabic">
-            <input type="radio" name="tutor_lang" value="ar" class="sr-only" x-model="tutorLang" @change="playCurrentVoicePreview()" />
-            <span>Arabic &middot; العربية</span>
-          </label>
-        </div>
+      <div class="sxp-teachers">
+        {% for vid, vname, vrole, vimg in [
+          ('af_bella', 'Bella', 'Biology buddy', 'bella'),
+          ('af_sarah', 'Sarah', 'Science explorer', 'sarah'),
+          ('am_adam', 'Adam', 'Space guide', 'adam'),
+          ('am_michael', 'Michael', 'Maths coach', 'michael')
+        ] %}
+        <label class="sxp-teacher" :class="voiceMode === '{{ vid }}' && 'is-picked'">
+          <input type="radio" name="tts_voice" value="{{ vid }}" class="sr-only" x-model="voiceMode" @change="playCurrentVoicePreview()">
+          <span class="sxp-teacher-tag" x-show="voiceMode === '{{ vid }}'" x-cloak>Your teacher</span>
+          <span class="sxp-teacher-art">
+            <img src="/static/images/saxaz_web/teachers/{{ vimg }}.webp" alt="{{ vname }}">
+            <span class="sxp-teacher-loading" x-cloak x-show="loadingVoice === '{{ vid }}'">
+              <span class="material-symbols-outlined" aria-hidden="true">graphic_eq</span>
+            </span>
+          </span>
+          <span class="sxp-teacher-name">{{ vname }}</span>
+          <span class="sxp-teacher-role">{{ vrole }}</span>
+        </label>
+        {% endfor %}
       </div>
 
-      <!-- AI Teacher Persona Cards -->
-      <div style="margin-bottom:20px;">
-        <label class="sx-ext-field-label">Teacher voice (tap to hear)</label>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));gap:12px;">
-          {% for vid, vname, vrole, vimg in [
-            ('af_bella', 'Bella', 'Biology Buddy', '/static/images/tts_af_bella.jpg'),
-            ('af_sarah', 'Sarah', 'Science Explorer', '/static/images/tts_af_sarah.jpg'),
-            ('am_adam', 'Adam', 'Space Guide', '/static/images/tts_am_adam.jpg'),
-            ('am_michael', 'Michael', 'Math Coach', '/static/images/tts_am_michael.jpg')
-          ] %}
-          <label style="cursor:pointer;" data-tip="Select {{ vname }} & preview voice">
-            <input type="radio" name="tts_voice" value="{{ vid }}" class="sr-only" x-model="voiceMode" @change="playCurrentVoicePreview()">
-            <div :style="voiceMode === '{{ vid }}' ? 'padding:12px;border-radius:16px;text-align:center;transition:all 0.15s;border:1px solid transparent;background:#f7b317;box-shadow:0 18px 36px rgba(79,70,229,0.18);' : 'padding:12px;border-radius:16px;text-align:center;transition:all 0.15s;border:1px solid rgba(35,31,32,0.14);background:#ffffff;'">
-              <div style="position:relative;width:72px;height:72px;margin:0 auto 8px;border-radius:50%;overflow:hidden;">
-                <img src="{{ vimg }}" alt="{{ vname }}" style="width:100%;height:100%;object-fit:cover;" />
-                <div x-cloak x-show="loadingVoice === '{{ vid }}'" style="display:none;position:absolute;inset:0;background:rgba(35,31,32,0.72);color:#ffffff;font-size:0.68rem;font-weight:800;align-items:center;justify-content:center;">...</div>
-              </div>
-              <div style="font-weight:800;font-size:0.95rem;color:#231f20;">{{ vname }}</div>
-              <div style="font-size:0.75rem;color:rgba(35,31,32,0.68);font-weight:600;">{{ vrole }}</div>
-            </div>
+      <div class="sxp-optrow">
+        <span class="sxp-optlabel">Language</span>
+        <div class="sxp-filters" style="margin:0;">
+          {% for code, label in [('en', 'English'), ('ml', 'Malayalam · മലയാളം'), ('hi', 'Hindi · हिन्दी'), ('ta', 'Tamil · தமிழ்'), ('ar', 'Arabic · العربية')] %}
+          <label class="sxp-filter" :class="tutorLang === '{{ code }}' && 'is-active'">
+            <input type="radio" name="tutor_lang" value="{{ code }}" class="sr-only" x-model="tutorLang" @change="playCurrentVoicePreview()">{{ label }}
           </label>
           {% endfor %}
         </div>
       </div>
 
-      <!-- Auto-Play Toggle + Save -->
-      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;padding-top:14px;border-top:1px solid rgba(35,31,32,0.1);">
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <span style="font-size:0.86rem;font-weight:700;color:rgba(35,31,32,0.72);">Voice Narration:</span>
-          <div class="sx-seg sx-seg-wrap">
-            <label class="sx-seg-btn" :class="ttsMode === 'auto' && 'is-active'" data-tip="Teacher reads aloud automatically">
-              <input type="radio" name="tts_mode" value="auto" class="sr-only" x-model="ttsMode" />Auto
-            </label>
-            <label class="sx-seg-btn" :class="ttsMode === 'manual' && 'is-active'" data-tip="Teacher reads when you tap">
-              <input type="radio" name="tts_mode" value="manual" class="sr-only" x-model="ttsMode" />Manual
-            </label>
-            <label class="sx-seg-btn" :class="ttsMode === 'off' && 'is-active'" data-tip="Teacher stays quiet">
-              <input type="radio" name="tts_mode" value="off" class="sr-only" x-model="ttsMode" />Off
-            </label>
-          </div>
+      <div class="sxp-optrow">
+        <span class="sxp-optlabel">Reading aloud</span>
+        <div class="sxp-filters" style="margin:0;">
+          <label class="sxp-filter" :class="ttsMode === 'auto' && 'is-active'"><input type="radio" name="tts_mode" value="auto" class="sr-only" x-model="ttsMode">By itself</label>
+          <label class="sxp-filter" :class="ttsMode === 'manual' && 'is-active'"><input type="radio" name="tts_mode" value="manual" class="sr-only" x-model="ttsMode">When I tap</label>
+          <label class="sxp-filter" :class="ttsMode === 'off' && 'is-active'"><input type="radio" name="tts_mode" value="off" class="sr-only" x-model="ttsMode">Off</label>
         </div>
-
-        <button type="submit" class="sx-ext-cta-yellow" style="min-height:44px;padding:10px 24px;font-size:0.9rem;">
-          Save voice settings
-        </button>
       </div>
-    </form>
-  </section>
 
-  <!-- 3. CHANGE PASSWORD CARD -->
-  <section class="sx-ext-surface" x-data="{ showPw: false, newPw: '', confirmPw: '' }">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
-      <h2 style="font-family:var(--font-display);font-size:1.4rem;font-weight:800;margin:0;color:#231f20;">
-        Change password
-      </h2>
-      <button type="button"
-              @click="showPw = !showPw"
-              class="sx-ext-cta-soft"
-              style="min-height:36px;padding:6px 14px;font-size:0.8rem;">
-        <span class="material-symbols-outlined" style="font-size:17px;" x-text="showPw ? 'visibility_off' : 'visibility'"></span>
-        <span x-text="showPw ? 'Hide Passwords' : 'Show Passwords'"></span>
+      <button type="submit" class="sxp-pill" style="margin-top:6px;">
+        Save my teacher<span class="material-symbols-outlined" aria-hidden="true">check</span>
       </button>
+    </form>
+  </section>
+
+  <!-- 2. My progress -->
+  <section class="sxp-sec">
+    <h2 class="sxp-h2">My progress<small>{{ user.class_name or 'Class 10' }}</small></h2>
+    {% if subjects is defined and subjects %}
+    <div class="sxp-rows">
+      {% for s in subjects %}
+      {% set sp = (s.progress_pct or 0)|round|int %}
+      {% set sname = (s.name or '')|lower %}
+      <a class="sxp-row" href="/student/exams?subject={{ s.id }}">
+        <span class="sxp-bubble {{ 'b-pink' if 'bio' in sname else ('b-purple' if 'phys' in sname else ('b-orange' if 'chem' in sname else ('b-teal' if 'math' in sname else 'b-blue'))) }}">{{ sp }}%</span>
+        <span>
+          <span class="sxp-row-title">{{ s.name }}</span>
+          <span class="sxp-bar"><span style="width: {{ sp }}%;"></span></span>
+        </span>
+        <span class="sxp-pill">{{ 'Carry on' if sp > 0 else 'Start' }}<span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></span>
+      </a>
+      {% endfor %}
     </div>
+    {% else %}
+    <p class="sxp-empty">Finish a chapter or a test to see your progress here.</p>
+    {% endif %}
+  </section>
 
-    <form action="/student/profile/password" method="POST">
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:16px;margin-bottom:14px;">
-        <div>
-          <label class="sx-ext-field-label">Current password</label>
-          <input :type="showPw ? 'text' : 'password'" name="old_password" placeholder="Enter current password" required class="sx-ext-field-input" />
-        </div>
-        <div>
-          <label class="sx-ext-field-label">New password</label>
-          <input :type="showPw ? 'text' : 'password'" name="new_password" x-model="newPw" minlength="6" placeholder="At least 6 characters" required class="sx-ext-field-input" />
-        </div>
-        <div>
-          <label class="sx-ext-field-label">Confirm new password</label>
-          <input :type="showPw ? 'text' : 'password'" name="confirm_password" x-model="confirmPw" minlength="6" placeholder="Re-enter new password" required class="sx-ext-field-input" />
-        </div>
+  <!-- 3. My details -->
+  <section class="sxp-sec">
+    <h2 class="sxp-h2">My details</h2>
+    <form action="/student/profile/update" method="POST" enctype="multipart/form-data" class="sxp-form">
+      <div class="sxp-fields">
+        <label class="sxp-field">
+          <span>Name</span>
+          <input type="text" name="name" value="{{ user.name }}" required>
+        </label>
+        <label class="sxp-field">
+          <span>Login ID</span>
+          <input type="text" name="email" value="{{ user.email }}" required>
+        </label>
+        <label class="sxp-field">
+          <span>Class</span>
+          <input type="text" value="{{ user.class_name or 'Class 10' }}" disabled>
+        </label>
+        <label class="sxp-field">
+          <span>Medium</span>
+          <input type="text" value="{{ user.medium or 'English' }}" disabled>
+        </label>
       </div>
+      <button type="submit" class="sxp-pill">Save details<span class="material-symbols-outlined" aria-hidden="true">check</span></button>
+    </form>
+  </section>
 
-      <p x-show="confirmPw.length > 0 && newPw !== confirmPw"
-         x-cloak
-         style="margin:0 0 12px;font-size:0.82rem;font-weight:700;color:#231f20;padding:8px 12px;border-radius:10px;background:#f7b317;border:1.5px solid #231f20;">
-        New password and confirm password do not match yet.
-      </p>
-
-      <div style="display:flex;justify-content:flex-end;">
-        <button type="submit"
-                :disabled="confirmPw.length > 0 && newPw !== confirmPw"
-                class="sx-ext-cta-dark"
-                style="min-height:44px;padding:10px 24px;font-size:0.9rem;">
-          Update password
-        </button>
+  <!-- 4. Password -->
+  <section class="sxp-sec" x-data="{ showPw: false, newPw: '', confirmPw: '' }">
+    <h2 class="sxp-h2">Password</h2>
+    <form action="/student/profile/password" method="POST" class="sxp-form is-gray">
+      <div class="sxp-fields is-three">
+        <label class="sxp-field">
+          <span>Current password</span>
+          <input :type="showPw ? 'text' : 'password'" name="old_password" required>
+        </label>
+        <label class="sxp-field">
+          <span>New password</span>
+          <input :type="showPw ? 'text' : 'password'" name="new_password" x-model="newPw" minlength="6" placeholder="6 or more" required>
+        </label>
+        <label class="sxp-field">
+          <span>Type it again</span>
+          <input :type="showPw ? 'text' : 'password'" name="confirm_password" x-model="confirmPw" minlength="6" required>
+        </label>
+      </div>
+      <p x-show="confirmPw.length > 0 && newPw !== confirmPw" x-cloak class="sxp-warn">The two new passwords do not match yet.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+        <button type="submit" class="sxp-pill" :disabled="confirmPw.length > 0 && newPw !== confirmPw">Change password<span class="material-symbols-outlined" aria-hidden="true">lock</span></button>
+        <button type="button" class="sxp-filter" @click="showPw = !showPw" x-text="showPw ? 'Hide passwords' : 'Show passwords'">Show passwords</button>
       </div>
     </form>
   </section>
 
-  <!-- 4. MY PROGRESS HORIZONTAL SUBJECT BARS -->
-  <section class="sx-ext-surface">
-    <h2 style="font-family:var(--font-display);font-size:1.45rem;font-weight:800;margin:0 0 16px;color:#231f20;">
-      My progress
-    </h2>
-
-    <div style="border:1px solid rgba(35,31,32,0.14);border-radius:18px;padding:20px 22px;">
-      <div style="font-size:1rem;font-weight:800;color:#231f20;margin-bottom:14px;">
-        {{ user.class_name or 'Class 10' }}
-      </div>
-
-      {% if subjects is defined and subjects %}
-      <div style="display:flex;flex-direction:column;gap:10px;">
-        {% for s in subjects %}
-        {% set sp = s.progress_pct or 0 %}
-        <a href="/student/exams?subject={{ s.id }}"
-           style="display:grid;grid-template-columns:minmax(110px,180px) minmax(0,1fr) auto;align-items:center;gap:14px;padding:10px 14px;border-radius:12px;border:1px solid rgba(35,31,32,0.12);background:#ffffff;text-decoration:none;color:#231f20;">
-          <span style="font-size:0.9rem;font-weight:800;color:#231f20;">{{ s.name }}</span>
-          <div style="height:8px;border-radius:999px;background:rgba(35,31,32,0.14);overflow:hidden;">
-            <div style="height:100%;width:{{ sp }}%;background:#f7b317;border-radius:999px;"></div>
-          </div>
-          <span style="font-size:0.84rem;font-weight:800;color:#231f20;text-align:right;white-space:nowrap;">{{ sp }}% &rarr;</span>
+  <!-- 5. Parent portal -->
+  <section class="sx-ext-dash-section">
+    <div class="sx-ext-resume-card" style="max-width:none;">
+      <div>
+        <a href="/auth/parent-portal" class="sx-ext-resume-pill">
+          <span>Parent portal</span>
+          <span class="sx-ext-resume-arrow">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </span>
         </a>
-        {% endfor %}
       </div>
-      {% else %}
-      <p style="margin:0;font-size:0.88rem;color:rgba(35,31,32,0.68);">Complete chapters and exams to track subject progress here.</p>
-      {% endif %}
+      <div>
+        <h2 class="sx-ext-resume-title">
+          <span class="is-dark">For your</span>
+          <span class="is-white">parents</span>
+        </h2>
+        <p class="sx-ext-resume-sub">Parents can see your progress and every test report here.</p>
+      </div>
     </div>
-  </section>
-
-  <!-- 5. SHARED-DEVICE PARENT PORTAL CARD -->
-  <section class="sx-ext-surface" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;border:1.5px solid #231f20;">
-    <div style="min-width:0;flex:1 1 260px;">
-      <span class="sx-ext-eyebrow" style="color:#231f20;">FOR PARENTS &amp; GUARDIANS</span>
-      <h2 style="font-family:var(--font-display);font-size:1.3rem;font-weight:800;margin:2px 0 4px;color:#231f20;">
-        Parent Progress &amp; Proctoring Portal
-      </h2>
-      <p style="margin:0;font-size:0.86rem;font-weight:600;color:rgba(35,31,32,0.72);">
-        Sharing this device? Parents can sign in to view detailed chapter mastery, official exam reports, and reward vouchers.
-      </p>
-    </div>
-    <a href="/auth/parent-portal" class="sx-ext-cta-yellow" style="min-height:44px;padding:10px 22px;font-size:0.9rem;">
-      Open Parent Portal &rarr;
-    </a>
   </section>
 
 </div>

@@ -156,3 +156,60 @@ a.sxp-row:hover { filter: brightness(0.97); transform: translateX(3px); }
 @media (prefers-reduced-motion: reduce) {
   .sxp-badge.is-unlocked .sxp-bubble { animation: none; }
 }
+
+/* ---- Profile page ---- */
+.sxp-teachers { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 22px; }
+.sxp-teacher {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 16px 10px 14px; border-radius: 4px; background: var(--sxp-gray); cursor: pointer;
+  border: 3px solid transparent; transition: transform .18s ease, background-color .18s ease, border-color .18s ease;
+}
+.sxp-teacher:nth-child(even) { background: var(--sxp-amber); }
+.sxp-teacher:hover { transform: translateY(-4px); }
+.sxp-teacher.is-picked { border-color: var(--sxp-ink); background: #ffffff; box-shadow: 0 14px 28px rgba(35, 31, 32, 0.18); }
+.sxp-teacher-art { position: relative; height: 170px; display: flex; align-items: flex-end; justify-content: center; }
+.sxp-teacher-art img { height: 100%; width: auto; filter: drop-shadow(0 8px 10px rgba(35, 31, 32, 0.2)); transition: transform .25s ease; }
+.sxp-teacher.is-picked .sxp-teacher-art img { transform: scale(1.06); }
+.sxp-teacher-loading {
+  position: absolute; inset: auto 0 0 auto; width: 40px; height: 40px; border-radius: 50%;
+  background: var(--sxp-ink); color: var(--sxp-amber); display: grid; place-items: center;
+}
+.sxp-teacher-loading .material-symbols-outlined { animation: sxp-pulse 0.8s ease-in-out infinite alternate; }
+@keyframes sxp-pulse { from { transform: scale(0.85); } to { transform: scale(1.1); } }
+.sxp-teacher-name { font-family: var(--font-heading); font-weight: 800; font-size: 1.25rem; letter-spacing: -0.02em; margin-top: 8px; }
+.sxp-teacher-role { font-size: 0.82rem; font-weight: 700; color: rgba(35, 31, 32, 0.7); }
+.sxp-teacher-tag {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 2; white-space: nowrap;
+  padding: 3px 10px; border-radius: 999px; background: var(--sxp-ink); color: var(--sxp-amber);
+  font-size: 0.7rem; font-weight: 900; letter-spacing: .04em; text-transform: uppercase;
+}
+.sxp-optrow { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 16px; }
+.sxp-optlabel { min-width: 120px; font-weight: 800; font-size: 0.95rem; }
+label.sxp-filter { display: inline-flex; align-items: center; }
+
+.sxp-form { padding: 22px; border-radius: 4px; background: var(--sxp-amber); }
+.sxp-form.is-gray { background: var(--sxp-gray); }
+.sxp-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 16px; }
+.sxp-fields.is-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sxp-field { display: flex; flex-direction: column; gap: 6px; }
+.sxp-field > span { font-weight: 800; font-size: 0.86rem; }
+.sxp-field input {
+  min-height: 50px; padding: 10px 16px; border-radius: 999px; border: 2px solid transparent; background: #ffffff;
+  font-family: inherit; font-size: 1rem; font-weight: 600; color: var(--sxp-ink); outline: none; width: 100%;
+}
+.sxp-field input:focus { border-color: var(--sxp-ink); }
+.sxp-field input:disabled { background: rgba(255, 255, 255, 0.6); color: rgba(35, 31, 32, 0.6); }
+.sxp-warn { margin: -4px 0 14px; padding: 8px 14px; border-radius: 999px; background: #ffffff; font-weight: 800; font-size: 0.86rem; display: inline-block; }
+.sxp-pill:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+.sxp-bar { display: block; margin-top: 8px; height: 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.7); overflow: hidden; max-width: 420px; }
+.sxp-bar > span { display: block; height: 100%; background: var(--sxp-ink); border-radius: 999px; }
+
+@media (max-width: 900px) {
+  .sxp-teachers { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sxp-fields.is-three { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .sxp-fields { grid-template-columns: 1fr; }
+  .sxp-teacher-art { height: 130px; }
+  .sxp-optlabel { min-width: 0; width: 100%; }
+}
