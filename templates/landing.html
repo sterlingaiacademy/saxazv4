@@ -97,141 +97,8 @@
     .ld-pill { min-height: 40px; padding: 8px 16px; font-size: 0.86rem; }
     .ld-top .is-ghost { display: none; }
   }
-
-  /* ---------- Our features (added sections) ---------- */
-  .ld-band { padding: clamp(44px, 6vw, 84px) clamp(16px, 3vw, 48px); text-align: center; }
-  .ld-band .ld-lede { margin-left: auto; margin-right: auto; max-width: 46ch; }
-  .ld-path { list-style: none; margin: clamp(26px, 3vw, 40px) auto 0; padding: 0; max-width: 1180px;
-    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: clamp(10px, 1.6vw, 22px); counter-reset: step; }
-  .ld-step { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-  .ld-step:not(:last-child)::after {
-    content: ""; position: absolute; top: 74px; left: calc(50% + 78px); width: calc(100% - 156px + clamp(10px, 1.6vw, 22px));
-    border-top: 4px dashed rgba(35,31,32,0.55);
-  }
-  .ld-step-disc {
-    position: relative; width: 148px; height: 148px; border-radius: 50%; background: #ffffff;
-    display: grid; place-items: center; box-shadow: 0 12px 26px rgba(35,31,32,0.16); border: 5px solid #ffffff;
-  }
-  .ld-step-disc img { width: 82%; height: 82%; object-fit: contain; }
-  .ld-step-num {
-    position: absolute; top: -4px; left: -4px; width: 40px; height: 40px; border-radius: 50%;
-    background: #231f20; color: #f7b317; display: grid; place-items: center; font-weight: 900; font-size: 1.05rem;
-  }
-  .ld-step:first-child .ld-step-disc { border-color: #231f20; animation: ld-glow 2.4s ease-in-out infinite; }
-  @keyframes ld-glow { 0%, 100% { box-shadow: 0 12px 26px rgba(35,31,32,0.16); transform: translateY(0); } 50% { box-shadow: 0 18px 34px rgba(35,31,32,0.26); transform: translateY(-5px); } }
-  .ld-step h3 { margin: 4px 0 0; font-family: var(--font-heading); font-weight: 800; font-size: 1.2rem; letter-spacing: -0.02em; }
-  .ld-step p { margin: 0; font-size: 0.92rem; font-weight: 600; line-height: 1.4; color: rgba(35,31,32,0.82); max-width: 20ch; }
-
-  .ld-feat { min-height: 520px; }
-  .ld-points { list-style: none; margin: 0 0 6px; padding: 0; display: flex; flex-direction: column; gap: 12px; max-width: 46ch; }
-  .ld-points li { display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: start; gap: 12px; font-size: 1.04rem; font-weight: 600; line-height: 1.4; }
-  .ld-points .material-symbols-outlined {
-    width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-size: 19px;
-    background: #231f20; color: #f7b317;
-  }
-  .ld-y .ld-points .material-symbols-outlined { background: #ffffff; color: #231f20; }
-  .ld-feat .ld-h2 { margin-bottom: 22px; }
-  .ld-art { display: grid; place-items: center; padding: clamp(28px, 4vw, 56px); position: relative; overflow: hidden; }
-
-  /* Teachers */
-  .ld-teachers { position: relative; width: min(100%, 560px); display: flex; align-items: flex-end; justify-content: center; gap: 4px; padding-bottom: 26px; }
-  .ld-teachers::after { content: ""; position: absolute; left: 4%; right: 4%; bottom: 0; height: 60px; border-radius: 50%; background: #f7b317; z-index: 0; }
-  .ld-teacher { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; }
-  .ld-teacher img { height: clamp(170px, 20vw, 250px); width: auto; display: block; filter: drop-shadow(0 10px 14px rgba(35,31,32,0.18)); }
-  .ld-teacher:nth-child(2) img { height: clamp(190px, 22.5vw, 280px); }
-  .ld-teacher:nth-child(odd) { animation: ld-bob 4.2s ease-in-out infinite; }
-  .ld-teacher:nth-child(even) { animation: ld-bob 4.2s ease-in-out -2.1s infinite; }
-  @keyframes ld-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-  .ld-teacher span { margin-top: -6px; padding: 4px 12px; border-radius: 999px; background: #231f20; color: #ffffff; font-weight: 800; font-size: 0.8rem; position: relative; z-index: 2; }
-  .ld-karaoke { margin-top: 18px; padding: 12px 18px; border-radius: 16px; background: #ffffff; box-shadow: 0 10px 24px rgba(35,31,32,0.12);
-    font-weight: 700; font-size: 1.02rem; max-width: 30ch; text-align: left; line-height: 1.5; }
-  .ld-karaoke b { background: #f7b317; border-radius: 6px; padding: 0 4px; }
-
-  /* Games collage */
-  .ld-games { position: relative; width: min(100%, 560px); aspect-ratio: 1 / 0.92; }
-  .ld-games .g { position: absolute; border-radius: 18px; overflow: hidden; box-shadow: 0 16px 30px rgba(35,31,32,0.2); background: #ffffff; }
-  .ld-games .g img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .ld-games .g1 { left: 0; top: 4%; width: 62%; aspect-ratio: 16 / 9; transform: rotate(-3deg); }
-  .ld-games .g2 { right: 0; top: 0; width: 38%; aspect-ratio: 3 / 4; transform: rotate(4deg); }
-  .ld-games .g3 { left: 14%; bottom: 0; width: 58%; aspect-ratio: 16 / 9; transform: rotate(2deg); }
-  .ld-games .g4 { right: 4%; bottom: 6%; width: 30%; aspect-ratio: 3 / 4; transform: rotate(-4deg); }
-  .ld-games .tok { position: absolute; width: 15%; filter: drop-shadow(0 8px 10px rgba(35,31,32,0.25)); animation: ld-bob 3.6s ease-in-out infinite; }
-  .ld-games .t1 { left: 50%; top: 36%; } .ld-games .t2 { left: 2%; top: 54%; animation-delay: -1.2s; } .ld-games .t3 { right: 34%; top: 2%; width: 12%; animation-delay: -2.2s; }
-  .ld-games .mascot { position: absolute; right: -2%; top: 38%; width: 26%; animation: ld-bob 3.2s ease-in-out -0.6s infinite; filter: drop-shadow(0 10px 12px rgba(35,31,32,0.25)); }
-
-  /* Test card mock */
-  .ld-test { position: relative; width: min(100%, 560px); padding: 74px 34px 70px; }
-  .ld-test-card { position: relative; z-index: 1; background: #ffffff; border-radius: 22px; padding: 20px; box-shadow: 0 18px 36px rgba(35,31,32,0.16); text-align: left; }
-  .ld-test-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
-  .ld-chip { white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: #f4f5f7; font-weight: 800; font-size: 0.8rem; }
-  .ld-chip.is-amber { background: #f7b317; }
-  .ld-chip .material-symbols-outlined { font-size: 16px; }
-  .ld-test-q { font-weight: 800; font-size: 1.04rem; line-height: 1.35; margin: 0 0 12px; }
-  .ld-opt { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; border: 2px solid rgba(35,31,32,0.14); font-weight: 700; margin-bottom: 8px; }
-  .ld-opt b { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: #f4f5f7; font-size: 0.8rem; flex: none; }
-  .ld-opt.is-right { border-color: #16a34a; background: rgba(22,163,74,0.08); }
-  .ld-opt.is-right b { background: #16a34a; color: #ffffff; }
-  .ld-feedback { margin-top: 10px; padding: 10px 12px; border-radius: 14px; background: #231f20; color: #ffffff; font-size: 0.9rem; font-weight: 600; line-height: 1.4; }
-  .ld-feedback strong { color: #f7b317; }
-  .ld-test .ld-tbadge { position: absolute; z-index: 2; width: 120px; filter: drop-shadow(0 10px 12px rgba(35,31,32,0.22)); }
-  .ld-test .b1 { left: 0; top: 0; transform: rotate(-8deg); animation: ld-bob 4s ease-in-out infinite; }
-  .ld-test .b2 { right: 0; bottom: 0; transform: rotate(6deg); animation: ld-bob 4s ease-in-out -2s infinite; }
-
-  /* Rewards */
-  .ld-reward { position: relative; width: min(100%, 520px); display: flex; flex-direction: column; align-items: center; gap: 14px; }
-  .ld-reward > img { width: 58%; filter: drop-shadow(0 16px 20px rgba(35,31,32,0.22)); animation: ld-bob 4.4s ease-in-out infinite; }
-  .ld-coins { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
-  .ld-coin { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px 7px 7px; border-radius: 999px; background: #231f20; color: #ffffff; font-weight: 800; font-size: 0.86rem; }
-  .ld-coin i { font-style: normal; width: 24px; height: 24px; border-radius: 50%; background: #f7b317; color: #231f20; display: grid; place-items: center; font-weight: 900; font-size: 0.75rem; }
-  .ld-tiers { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; width: 100%; }
-  .ld-tier { padding: 10px 8px; border-radius: 6px; background: #eef0f3; font-weight: 800; font-size: 0.86rem; text-align: center; }
-  .ld-tier.is-on { background: #f7b317; } .ld-tier.is-top { background: #231f20; color: #f7b317; }
-
-  /* Subjects */
-  .ld-subjects { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: clamp(8px, 1.5vw, 20px); max-width: 1180px; margin: clamp(24px, 3vw, 36px) auto 0; }
-  .ld-subjects img { width: 100%; height: auto; transition: transform .25s ease; }
-  .ld-subjects img:hover { transform: translateY(-6px) scale(1.04); }
-
-  /* Parent mock */
-  .ld-parent { width: min(100%, 520px); background: #ffffff; border-radius: 22px; overflow: hidden; box-shadow: 0 18px 36px rgba(35,31,32,0.16); text-align: left; }
-  .ld-parent-top { background: #f7b317; padding: 16px 18px; }
-  .ld-parent-top small { display: block; font-size: 0.72rem; font-weight: 900; letter-spacing: .08em; }
-  .ld-parent-top strong { font-family: var(--font-heading); font-size: 1.35rem; letter-spacing: -0.02em; }
-  .ld-parent-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 16px 18px 6px; }
-  .ld-parent-grid div { padding: 12px; border-radius: 14px; border: 1.5px solid rgba(35,31,32,0.12); }
-  .ld-parent-grid small { display: block; font-size: 0.68rem; font-weight: 900; letter-spacing: .06em; color: rgba(35,31,32,0.6); }
-  .ld-parent-grid b { font-family: var(--font-heading); font-size: 1.5rem; }
-  .ld-parent-note { margin: 10px 18px 18px; padding: 12px 14px; border-radius: 14px; background: #fff8e6; font-size: 0.9rem; font-weight: 600; line-height: 1.45; }
-  .ld-parent-note b { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; margin-bottom: 4px; }
-  .ld-parent-note .material-symbols-outlined { font-size: 17px; }
-
-  .ld-final { text-align: center; padding: clamp(48px, 6vw, 88px) 16px; }
-  .ld-final .ld-h2 { margin-bottom: 22px; }
-  .ld-final-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-  .ld-pill.is-white { background: #ffffff; color: #231f20; }
-
-  @media (max-width: 1100px) {
-    .ld-path { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 28px; }
-    .ld-step::after { display: none; }
-  }
-  @media (max-width: 860px) {
-    .ld-feat { min-height: 0; }
-    .ld-points { margin-left: auto; margin-right: auto; text-align: left; }
-    .ld-subjects { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .ld-art-first > .ld-art { order: -1; }
-    .ld-test { padding: 64px 10px 62px; } .ld-test .ld-tbadge { width: 96px; }
-  }
-  @media (max-width: 560px) {
-    .ld-path { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .ld-step:last-child { grid-column: 1 / -1; }
-    .ld-step-disc { width: 120px; height: 120px; }
-    .ld-parent-grid { grid-template-columns: 1fr 1fr; }
-    .ld-parent-grid div:last-child { grid-column: 1 / -1; }
-    .ld-teacher img { height: 130px; } .ld-teacher:nth-child(2) img { height: 150px; }
-  }
   @media (prefers-reduced-motion: reduce) {
     .ld-hero-art img { animation: none; }
-    .ld-step:first-child .ld-step-disc, .ld-teacher, .ld-games .tok, .ld-games .mascot, .ld-test .ld-tbadge, .ld-reward > img { animation: none !important; }
     .ld-reveal { opacity: 1; transform: none; transition: none; }
   }
 </style>
@@ -265,39 +132,8 @@
     </div>
   </section>
 
-  <!-- Our chapter path: five steps -->
-  <section class="ld-band ld-y">
-    <h2 class="ld-h2 ld-reveal">
-      <span class="d">Every chapter is a</span>
-      <span class="w">five-step adventure</span>
-    </h2>
-    <p class="ld-lede ld-reveal">The next step always glows, so you never wonder what to do next.</p>
-    <ol class="ld-path">
-      <li class="ld-step ld-reveal">
-        <span class="ld-step-disc"><span class="ld-step-num">1</span><img src="/static/images/saxaz_web/landing/teacher_sarah.webp" alt="" loading="lazy"></span>
-        <h3>Listen</h3><p>Your teacher tells the chapter as a story</p>
-      </li>
-      <li class="ld-step ld-reveal">
-        <span class="ld-step-disc"><span class="ld-step-num">2</span><img src="/static/images/saxaz_web/badge_chapter_summary_idle.webp" alt="" loading="lazy"></span>
-        <h3>Watch</h3><p>Short videos for every part</p>
-      </li>
-      <li class="ld-step ld-reveal">
-        <span class="ld-step-disc"><span class="ld-step-num">3</span><img src="/static/images/saxaz_web/heart_mascot.jpg" alt="" loading="lazy" style="border-radius:50%;"></span>
-        <h3>Play</h3><p>Drag-and-drop games inside the lesson</p>
-      </li>
-      <li class="ld-step ld-reveal">
-        <span class="ld-step-disc"><span class="ld-step-num">4</span><img src="/static/images/saxaz_web/badge_mock_exam_idle.webp" alt="" loading="lazy"></span>
-        <h3>Practise</h3><p>Mock tests with feedback on every answer</p>
-      </li>
-      <li class="ld-step ld-reveal">
-        <span class="ld-step-disc"><span class="ld-step-num">5</span><img src="/static/images/saxaz_web/badge_real_exam_idle.webp" alt="" loading="lazy"></span>
-        <h3>Prove it</h3><p>The real exam unlocks at 80%</p>
-      </li>
-    </ol>
-  </section>
-
   <!-- 2. Two statement blocks -->
-  <section class="ld-grid2">
+  <section class="ld-grid2 ld-swap-order">
     <div class="ld-cell ld-reveal">
       <h2 class="ld-h2">
         <span class="d">Is SAXAZ</span>
@@ -313,125 +149,6 @@
         <span class="w">of learning</span>
       </h2>
       <p class="ld-lede">Bright visuals, moving diagrams and a teacher who reads along with you make hard topics simple and fun.</p>
-    </div>
-  </section>
-
-  <!-- Feature: teachers who read with you -->
-  <section class="ld-grid2 ld-feat ld-art-first">
-    <div class="ld-cell ld-y ld-reveal">
-      <h2 class="ld-h2">
-        <span class="d">A teacher who</span>
-        <span class="w">reads with you</span>
-      </h2>
-      <ul class="ld-points">
-        <li><span class="material-symbols-outlined" aria-hidden="true">record_voice_over</span><span>Every chapter is told as a short story, read aloud.</span></li>
-        <li><span class="material-symbols-outlined" aria-hidden="true">format_color_text</span><span>Each word lights up as it is read, so you never lose your place.</span></li>
-        <li><span class="material-symbols-outlined" aria-hidden="true">group</span><span>Pick your teacher: Bella, Sarah, Adam or Michael.</span></li>
-        <li><span class="material-symbols-outlined" aria-hidden="true">translate</span><span>Get help in English, Malayalam, Hindi, Tamil or Arabic.</span></li>
-      </ul>
-    </div>
-    <div class="ld-art">
-      <div class="ld-reveal" style="display:flex;flex-direction:column;align-items:center;">
-        <div class="ld-teachers">
-          <div class="ld-teacher"><img src="/static/images/saxaz_web/landing/teacher_bella.webp" alt="Bella" loading="lazy"><span>Bella</span></div>
-          <div class="ld-teacher"><img src="/static/images/saxaz_web/landing/teacher_sarah.webp" alt="Sarah" loading="lazy"><span>Sarah</span></div>
-          <div class="ld-teacher"><img src="/static/images/saxaz_web/landing/teacher_adam.webp" alt="Adam" loading="lazy"><span>Adam</span></div>
-          <div class="ld-teacher"><img src="/static/images/saxaz_web/landing/teacher_michael.webp" alt="Michael" loading="lazy"><span>Michael</span></div>
-        </div>
-        <p class="ld-karaoke">Plants make their own food using <b>sunlight</b>, water and carbon dioxide.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Feature: games -->
-  <section class="ld-grid2 ld-feat ld-art-first">
-    <div class="ld-art">
-      <div class="ld-games ld-reveal">
-        <span class="g g1"><img src="/static/images/saxaz_web/games/stage_leaf.webp" alt="Leaf cross-section game" loading="lazy"></span>
-        <span class="g g2"><img src="/static/images/saxaz_web/games/stage_digestive.webp" alt="Digestive system game" loading="lazy"></span>
-        <span class="g g3"><img src="/static/images/saxaz_web/games/stage_blood.webp" alt="Blood cells game" loading="lazy"></span>
-        <span class="g g4"><img src="/static/images/saxaz_web/games/stage_kidney.webp" alt="Kidney game" loading="lazy"></span>
-        <img class="tok t1" src="/static/images/saxaz_web/games/tok_rbc.webp" alt="" loading="lazy">
-        <img class="tok t2" src="/static/images/saxaz_web/games/tok_o2.webp" alt="" loading="lazy">
-        <img class="tok t3" src="/static/images/saxaz_web/games/tok_glucose.webp" alt="" loading="lazy">
-        <img class="mascot" src="/static/images/saxaz_web/games/mascot_transport.webp" alt="" loading="lazy">
-      </div>
-    </div>
-    <div class="ld-cell ld-y ld-reveal">
-      <h2 class="ld-h2">
-        <span class="d">Drag, drop</span>
-        <span class="w">and discover</span>
-      </h2>
-      <ul class="ld-points">
-        <li><span class="material-symbols-outlined" aria-hidden="true">favorite</span><span>Build a beating heart, chamber by chamber.</span></li>
-        <li><span class="material-symbols-outlined" aria-hidden="true">touch_app</span><span>Guide food through the body, fill the lungs, sort blood cells and filter the kidneys.</span></li>
-        <li><span class="material-symbols-outlined" aria-hidden="true">biotech</span><span>Every game is built on real science diagrams, right inside the lesson.</span></li>
-        <li><span class="material-symbols-outlined" aria-hidden="true">smartphone</span><span>Works with a finger on a phone or a mouse on a computer.</span></li>
-      </ul>
-    </div>
-  </section>
-
-  <!-- Feature: tests that teach -->
-  <section class="ld-grid2 ld-feat ld-art-first">
-    <div class="ld-cell ld-y ld-reveal">
-      <h2 class="ld-h2">
-        <span class="d">Tests that</span>
-        <span class="w">teach you</span>
-      </h2>
-      <ul class="ld-points">
-        <li><span class="material-symbols-outlined" aria-hidden="true">fact_check</span><span>Marks and feedback on every answer, written or multiple choice.</span></li>
-        <li><span class="material-symbols-outlined" aria-hidden="true">volume_up</span><span>Hear any question read out loud.</span></li>
-        <li><span class="material-symbols-outlined" aria-hidden="true">chat</span><span>Stuck? Ask the tutor for a hint without giving the answer away.</span></li>
-        <li><span class="material-symbols-outlined" aria-hidden="true">lock_open</span><span>Score 80% in a mock test to unlock the timed real exam.</span></li>
-      </ul>
-    </div>
-    <div class="ld-art">
-      <div class="ld-test ld-reveal">
-        <img class="ld-tbadge b1" src="/static/images/saxaz_web/badge_mock_exam_idle.webp" alt="" loading="lazy">
-        <div class="ld-test-card">
-          <div class="ld-test-top">
-            <span class="ld-chip">Question 1 of 15</span>
-            <span style="display:flex;gap:6px;">
-              <span class="ld-chip"><span class="material-symbols-outlined" aria-hidden="true">volume_up</span>Listen</span>
-              <span class="ld-chip is-amber"><span class="material-symbols-outlined" aria-hidden="true">chat</span>Ask tutor</span>
-            </span>
-          </div>
-          <p class="ld-test-q">Which is the first product of photosynthesis?</p>
-          <div class="ld-opt"><b>A</b>Starch</div>
-          <div class="ld-opt is-right"><b>B</b>Glucose</div>
-          <div class="ld-feedback"><strong>Correct! +1 mark.</strong> Glucose is made first, then stored as starch.</div>
-        </div>
-        <img class="ld-tbadge b2" src="/static/images/saxaz_web/badge_real_exam_idle.webp" alt="" loading="lazy">
-      </div>
-    </div>
-  </section>
-
-  <!-- Feature: rewards -->
-  <section class="ld-grid2 ld-feat ld-art-first">
-    <div class="ld-art">
-      <div class="ld-reward ld-reveal">
-        <img src="/static/images/saxaz_web/store/qp_trophy_hero.webp" alt="Trophy" loading="lazy">
-        <div class="ld-coins">
-          <span class="ld-coin"><i>C</i>+10 Summary</span>
-          <span class="ld-coin"><i>C</i>+25 Heart game</span>
-          <span class="ld-coin"><i>C</i>+30 Mock test</span>
-        </div>
-        <div class="ld-tiers">
-          <span class="ld-tier is-on">Bronze</span><span class="ld-tier is-on">Silver</span><span class="ld-tier is-top">Gold</span><span class="ld-tier">Diamond</span>
-        </div>
-      </div>
-    </div>
-    <div class="ld-cell ld-y ld-reveal">
-      <h2 class="ld-h2">
-        <span class="d">Rewards that</span>
-        <span class="w">keep you going</span>
-      </h2>
-      <ul class="ld-points">
-        <li><span class="material-symbols-outlined" aria-hidden="true">paid</span><span>Earn coins for every story, video, game and test.</span></li>
-        <li><span class="material-symbols-outlined" aria-hidden="true">military_tech</span><span>Collect quiz points and climb from Bronze to Diamond.</span></li>
-        <li><span class="material-symbols-outlined" aria-hidden="true">workspace_premium</span><span>Unlock badges as you reach new goals.</span></li>
-        <li><span class="material-symbols-outlined" aria-hidden="true">redeem</span><span>Swap coins for books, kits and vouchers in the shop.</span></li>
-      </ul>
     </div>
   </section>
 
@@ -454,54 +171,6 @@
     </article>
   </section>
 
-  <!-- Subjects -->
-  <section class="ld-band">
-    <h2 class="ld-h2 ld-reveal">
-      <span class="d">All your</span>
-      <span class="a">Class 10 subjects</span>
-    </h2>
-    <p class="ld-lede ld-reveal">Biology is ready now. More subjects are on the way.</p>
-    <div class="ld-subjects ld-reveal">
-      <img src="/static/images/saxaz_web/badge_sub_biology_idle.webp" alt="Biology" loading="lazy">
-      <img src="/static/images/saxaz_web/badge_sub_physics_idle.webp" alt="Physics" loading="lazy">
-      <img src="/static/images/saxaz_web/badge_sub_chemistry_idle.webp" alt="Chemistry" loading="lazy">
-      <img src="/static/images/saxaz_web/badge_sub_maths_idle.webp" alt="Maths" loading="lazy">
-      <img src="/static/images/saxaz_web/badge_sub_social_idle.webp" alt="Social Science" loading="lazy">
-      <img src="/static/images/saxaz_web/badge_sub_english_idle.webp" alt="English" loading="lazy">
-    </div>
-  </section>
-
-  <!-- Feature: parents -->
-  <section class="ld-grid2 ld-feat ld-art-first">
-    <div class="ld-art">
-      <div class="ld-parent ld-reveal" aria-label="Example of the parent view">
-        <div class="ld-parent-top"><small>PARENT PORTAL</small><strong>Learning overview</strong></div>
-        <div class="ld-parent-grid">
-          <div><small>SYLLABUS</small><b>50%</b></div>
-          <div><small>BEST EXAM</small><b>92%</b></div>
-          <div><small>STREAK</small><b>14 days</b></div>
-        </div>
-        <div class="ld-parent-note"><b><span class="material-symbols-outlined" aria-hidden="true">volume_up</span>Progress note</b>Steady progress this week. Next step: revise the two answers that lost marks in Mock Test 1.</div>
-      </div>
-    </div>
-    <div class="ld-cell ld-y ld-reveal">
-      <h2 class="ld-h2">
-        <span class="d">Parents stay</span>
-        <span class="w">in the loop</span>
-      </h2>
-      <ul class="ld-points">
-        <li><span class="material-symbols-outlined" aria-hidden="true">monitoring</span><span>See progress, study time and best scores at a glance.</span></li>
-        <li><span class="material-symbols-outlined" aria-hidden="true">description</span><span>Open every test paper with the marks for each answer.</span></li>
-        <li><span class="material-symbols-outlined" aria-hidden="true">record_voice_over</span><span>A short progress note you can read or listen to, in your language.</span></li>
-        <li><span class="material-symbols-outlined" aria-hidden="true">lock</span><span>Keep the parent view private with a 4-digit PIN.</span></li>
-      </ul>
-      <a href="/login?role=parent" class="ld-pill is-dark ld-start" style="margin-top:22px;">
-        <span>Parent login</span>
-        <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
-      </a>
-    </div>
-  </section>
-
   <!-- 4. How SAXAZ makes learning easier -->
   <section class="ld-how">
     <h2 class="ld-h2 ld-reveal">
@@ -511,28 +180,22 @@
     <div class="ld-how-grid">
       <div class="ld-how-card ld-reveal">
         <img src="/static/images/saxaz_web/landing/learning-adventure-1.webp" alt="" loading="lazy">
-        <p>Always know your next step. The path in every chapter shows you where to go.</p>
+        <p>Chapter stories read aloud by your teacher, with words lighting up as you listen.</p>
       </div>
       <div class="ld-how-card ld-reveal">
         <img src="/static/images/saxaz_web/landing/learning-adventure-2.webp" alt="" loading="lazy">
-        <p>Learn on a phone, tablet or computer. Everything fits any screen.</p>
+        <p>Drag-and-play games inside the lesson, so you learn by doing.</p>
       </div>
       <div class="ld-how-card ld-reveal">
         <img src="/static/images/saxaz_web/landing/learning-adventure-3.webp" alt="" loading="lazy">
-        <p>Your progress is saved, so you can pick up right where you left off.</p>
+        <p>Mock tests with marks and feedback on every answer, then the real exam.</p>
       </div>
     </div>
-  </section>
-
-  <!-- Final call to action -->
-  <section class="ld-final ld-y">
-    <h2 class="ld-h2 ld-reveal">
-      <span class="d">Ready to learn,</span>
-      <span class="w">enjoy &amp; discover?</span>
-    </h2>
-    <div class="ld-final-actions ld-reveal">
-      <a href="/login" class="ld-pill is-dark"><span>Start here</span><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></a>
-      <a href="/register" class="ld-pill is-white">Create account</a>
+    <div class="ld-how-cta">
+      <a href="/login" class="ld-pill is-dark">
+        <span>Start learning</span>
+        <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+      </a>
     </div>
   </section>
 </div>
