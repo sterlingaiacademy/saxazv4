@@ -22,7 +22,7 @@
 {% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="/static/css/saxaz-pages.css?v=5">
+<link rel="stylesheet" href="/static/css/saxaz-pages.css?v=6">
 {% from "student/partials/summary_games.html" import molecule_defs, game_leaf, game_food, game_breathe, game_blood, game_pump, game_kidney, game_team %}
 {{ molecule_defs() }}
 <link rel="stylesheet" href="/static/css/summary-games.css?v=25">
@@ -1608,9 +1608,8 @@
            x-cloak
            @click.stop>
         <div class="sx-fsi-dialog sx-game-invite-card" role="dialog" aria-modal="true" aria-label="Do you want to play a fun game?">
-          <button type="button" class="sx-fsi-close" @click="dismissGamePrompt()">
+          <button type="button" class="sx-fsi-close" @click="dismissGamePrompt()" aria-label="Close and go back to the summary">
             <span class="material-symbols-outlined" aria-hidden="true">close</span>
-            <span>Back to Text</span>
           </button>
 
           <div class="sx-fsi-poster">
@@ -1628,27 +1627,29 @@
             <div class="sx-fsi-kicker-row">
               <span class="sx-fsi-kicker">
                 <span class="material-symbols-outlined" aria-hidden="true">sports_esports</span>
-                <span>Fun Mini-Game</span>
+                <span>Mini-game</span>
               </span>
               <span class="sx-fsi-coin-pill" x-show="!hasClaimed(gameKey(gamePromptId))">+5 Coins</span>
-              <span class="sx-fsi-coin-pill is-done" x-show="hasClaimed(gameKey(gamePromptId))" x-cloak>Completed</span>
+              <span class="sx-fsi-coin-pill is-done" x-show="hasClaimed(gameKey(gamePromptId))" x-cloak><span class="material-symbols-outlined" aria-hidden="true">check</span>Played</span>
             </div>
 
             <h2 class="sx-fsi-title">
-              <span x-text="tutorDisplay + ' asks:'"></span>
-              Do you want to play a fun game?
+              <span class="d">Want to play</span>
+              <span class="a">a game?</span>
             </h2>
 
-            <p class="sx-fsi-subtitle" x-text="gamePromptTitle"></p>
+            <p class="sx-fsi-subtitle">
+              <span class="sx-fsi-subtitle-ico material-symbols-outlined" aria-hidden="true">sports_esports</span>
+              <span x-text="gamePromptTitle"></span>
+            </p>
 
             <div class="sx-fsi-actions">
               <button type="button" class="sx-fsi-cta is-play" @click="openFullscreenGame(gamePromptId)">
-                <span class="material-symbols-outlined" aria-hidden="true">sports_esports</span>
-                <span x-text="hasClaimed(gameKey(gamePromptId)) ? 'Play Fun Game' : 'Play Fun Game (+5 Coins)'"></span>
+                <span x-text="hasClaimed(gameKey(gamePromptId)) ? 'Play again' : 'Play the game'"></span>
+                <span class="sx-fsi-cta-arrow" aria-hidden="true"><span class="material-symbols-outlined">arrow_forward</span></span>
               </button>
               <button type="button" class="sx-fsi-cta is-next" @click="proceedToNextSummaryPart()">
-                <span x-text="activeSlide + 1 < slidesMeta.length ? 'Proceed to Next Summary' : 'Finish Summary'"></span>
-                <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+                <span x-text="activeSlide + 1 < slidesMeta.length ? 'Skip to the next part' : 'Finish the summary'"></span>
               </button>
             </div>
           </div>
