@@ -1,13 +1,25 @@
-/* SAXAZ yellow cursor (mouse and trackpad only; touch screens are unaffected) */
+/* SAXAZ yellow cursor.
+   Applied with !important to every element (and the text inside buttons/links),
+   so no component style can swap it back to the system cursor.
+   Mouse/trackpad only; touch screens never show a cursor. */
 @media (pointer: fine) {
-  html, body { cursor: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2232%22 height=%2232%22 viewBox=%220 0 32 32%22%3E%3Cpath d=%22M6 5 L6 27 L12 21.5 L16 30 L20.2 28.1 L16.3 19.8 L24 19.8 Z%22 fill=%22%23231f20%22 fill-opacity=%220.22%22/%3E%3Cpath d=%22M4 3 L4 25 L10 19.5 L14 28 L18.2 26.1 L14.3 17.8 L22 17.8 Z%22 fill=%22%23f7b317%22 stroke=%22%23231f20%22 stroke-width=%222%22 stroke-linejoin=%22round%22/%3E%3Cpath d=%22M6.6 8.2 L6.6 17%22 stroke=%22%23ffffff%22 stroke-width=%221.6%22 stroke-linecap=%22round%22 stroke-opacity=%220.85%22/%3E%3C/svg%3E") 4 3, auto; }
-  a[href], button:not(:disabled), [role="button"], [role="link"], [role="tab"], label, select, summary,
-  .cursor-pointer, [data-card-href], [onclick],
-  [style*="cursor:pointer"], [style*="cursor: pointer"] {
+  html, body, *, *::before, *::after {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2232%22 height=%2232%22 viewBox=%220 0 32 32%22%3E%3Cpath d=%22M6 5 L6 27 L12 21.5 L16 30 L20.2 28.1 L16.3 19.8 L24 19.8 Z%22 fill=%22%23231f20%22 fill-opacity=%220.22%22/%3E%3Cpath d=%22M4 3 L4 25 L10 19.5 L14 28 L18.2 26.1 L14.3 17.8 L22 17.8 Z%22 fill=%22%23f7b317%22 stroke=%22%23231f20%22 stroke-width=%222%22 stroke-linejoin=%22round%22/%3E%3Cpath d=%22M6.6 8.2 L6.6 17%22 stroke=%22%23ffffff%22 stroke-width=%221.6%22 stroke-linecap=%22round%22 stroke-opacity=%220.85%22/%3E%3C/svg%3E") 4 3, auto !important;
+  }
+
+  /* Anything you can click or drag: the dark arrow with a yellow outline */
+  html body :is(a[href], button:not(:disabled), [role="button"], [role="link"], [role="tab"], [role="option"], [role="menuitem"], label, select, summary, .cursor-pointer, [data-card-href], [onclick], [\@click], [x-on\:click], [style*="cursor:pointer"], [style*="cursor: pointer"], [data-drag], [draggable="true"], .gx-token, input[type="checkbox"], input[type="radio"], input[type="button"], input[type="submit"], input[type="range"], input[type="file"]),
+  html body :is(a[href], button:not(:disabled), [role="button"], [role="link"], [role="tab"], [role="option"], [role="menuitem"], label, select, summary, .cursor-pointer, [data-card-href], [onclick], [\@click], [x-on\:click], [style*="cursor:pointer"], [style*="cursor: pointer"], [data-drag], [draggable="true"], .gx-token, input[type="checkbox"], input[type="radio"], input[type="button"], input[type="submit"], input[type="range"], input[type="file"]) * {
     cursor: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2232%22 height=%2232%22 viewBox=%220 0 32 32%22%3E%3Cpath d=%22M6 5 L6 27 L12 21.5 L16 30 L20.2 28.1 L16.3 19.8 L24 19.8 Z%22 fill=%22%23231f20%22 fill-opacity=%220.22%22/%3E%3Cpath d=%22M4 3 L4 25 L10 19.5 L14 28 L18.2 26.1 L14.3 17.8 L22 17.8 Z%22 fill=%22none%22 stroke=%22%23231f20%22 stroke-width=%225%22 stroke-linejoin=%22round%22/%3E%3Cpath d=%22M4 3 L4 25 L10 19.5 L14 28 L18.2 26.1 L14.3 17.8 L22 17.8 Z%22 fill=%22%23231f20%22 stroke=%22%23f7b317%22 stroke-width=%222%22 stroke-linejoin=%22round%22/%3E%3C/svg%3E") 4 3, pointer !important;
   }
-  input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="range"]):not([type="file"]),
-  textarea, [contenteditable="true"] {
+
+  /* Typing stays a normal text cursor */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="range"]):not([type="file"]):not(:disabled),
+  textarea:not(:disabled), [contenteditable="true"], [contenteditable="true"] * {
     cursor: text !important;
   }
+
+  /* Kept on purpose: drawing pad crosshair, and the hidden pointer while a video plays */
+  html body .scratchpad-canvas-wrap.scratchpad-canvas-wrap, html body .scratchpad-canvas-wrap.scratchpad-canvas-wrap * { cursor: crosshair !important; }
+  html body .sx-root.sx-playing:not(.sx-controls-awake) .sx-shield { cursor: none !important; }
 }
