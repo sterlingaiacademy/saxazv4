@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="winter">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
@@ -30,9 +30,10 @@
   {% set current_cursor_effect = user.get('parent_cursor_effect') if user and user.get('is_parent') else (user.get('cursor_effect') if user and user.get('cursor_effect') else 'none') %}
   
   <!-- Tailwind CSS + DaisyUI (compiled static, no CDN dependency) -->
-  <link rel="stylesheet" href="/static/css/app.css?v=99">
+  <link rel="stylesheet" href="/static/css/app.css?v=250">
 
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Anek+Malayalam:wght@400..700&family=Baloo+Chettan+2:wght@500..800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap" rel="stylesheet">
   
   <!-- HTMX -->
   <script src="https://unpkg.com/htmx.org@1.9.11"></script>
@@ -65,6 +66,11 @@
           }
         },
 
+        closeDropdown() {
+          this.dropdownOpen = false;
+          this.selectedIdx = -1;
+        },
+
         onInput() {
           this.dropdownOpen = true;
           this.selectedIdx = -1;
@@ -84,15 +90,9 @@
             this.fetchSuggestions(q);
           }, 140);
 
-          if (q.length >= 2) {
-            this.aiLoading = true;
-            this.aiTimer = setTimeout(() => {
-              this.fetchAiSearch(q);
-            }, 420);
-          } else {
-            this.aiData = null;
-            this.aiLoading = false;
-          }
+          // Live typing strictly uses 0-token instant local catalog suggestions (`fetchSuggestions`)
+          this.aiData = null;
+          this.aiLoading = false;
         },
 
         async fetchSuggestions(q) {
@@ -179,7 +179,7 @@
           return this.videoId ? `https://i.ytimg.com/vi/${this.videoId}/hqdefault.jpg` : '';
         },
         get embedUrl() {
-          return this.videoId ? `https://www.youtube.com/embed/${this.videoId}?rel=0` : '';
+          return this.videoId ? `https://www.youtube.com/embed/${this.videoId}?rel=0&cc_load_policy=0&iv_load_policy=3&vq=hd1080` : '';
         },
         init() {
           if (!this.url && this.$el && this.$el.dataset && this.$el.dataset.initialUrl) {
@@ -259,7 +259,17 @@
             }
           });
         },
-        clearVideo(autoSubmit = false) {
+        async clearVideo(autoSubmit = false) {
+          if (this.url && window.saxazConfirm) {
+            const res = await window.saxazConfirm({
+              title: 'Remove Video Link?',
+              text: 'Are you sure you want to remove this attached YouTube video link?',
+              tone: 'danger',
+              icon: 'delete',
+              confirmButtonText: 'Yes, Remove Video'
+            });
+            if (!res.isConfirmed) return;
+          }
           this.url = '';
           this.videoId = '';
           this.playing = false;
@@ -291,15 +301,44 @@
   <!-- Plyr (Video/Audio Player) & SAXAZ Protected Video Vault -->
   <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
   <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
-  <script defer src="/static/js/saxaz-player.js?v=4"></script>
+  <script defer src="/static/js/saxaz-player.js?v=515"></script>
   
   <!-- KaTeX for beautiful math and chemistry equations -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
   
-  <!-- Canvas Confetti for Exam & Achievement Celebrations -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+  <!-- Brand-Palette Confetti Helper (Strict #f7b317 / #231f20 / #ffffff) -->
+  <script>
+    window.saxazConfetti = window.saxazConfetti || function(opts = {}) {
+      if (typeof document === 'undefined' || !document.body) return;
+      const colors = ['#f7b317', '#231f20', '#ffffff'];
+      const count = Math.min(Number(opts && opts.particleCount) || 36, 60);
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:2147483647;overflow:hidden;';
+      document.body.appendChild(wrap);
+      const ox = (opts && opts.origin && typeof opts.origin.x === 'number' ? opts.origin.x : 0.5) * window.innerWidth;
+      const oy = (opts && opts.origin && typeof opts.origin.y === 'number' ? opts.origin.y : 0.45) * window.innerHeight;
+      for (let i = 0; i < count; i++) {
+        const p = document.createElement('span');
+        const c = colors[i % colors.length];
+        const size = 6 + (i % 5) * 2;
+        const dx = (Math.random() - 0.5) * 340;
+        const dy = -80 - Math.random() * 220;
+        const rot = (Math.random() - 0.5) * 540;
+        p.style.cssText = `position:absolute;left:${ox}px;top:${oy}px;width:${size}px;height:${size}px;background:${c};border:1px solid #231f20;border-radius:${i % 2 ? '2px' : '999px'};transition:transform 0.9s cubic-bezier(0.16,1,0.3,1),opacity 0.9s ease;`;
+        wrap.appendChild(p);
+        requestAnimationFrame(() => {
+          p.style.transform = `translate(${dx}px, ${dy + 260}px) rotate(${rot}deg)`;
+          p.style.opacity = '0';
+        });
+      }
+      setTimeout(() => wrap.remove(), 980);
+    };
+    window.confetti = function(opts) {
+      return window.saxazConfetti(opts || {});
+    };
+  </script>
   <script>
     function renderMathGlobal(el = document.body) {
       if (typeof renderMathInElement === 'function') {
@@ -337,22 +376,46 @@
   <script>
     const getCookie = (name) => document.cookie.split('; ').find(row => row.startsWith(name + '='))?.split('=')[1];
     
-    // Theme init
-    const savedTheme = localStorage.getItem('themeMode') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    
-    // Font Size (responsive-aware so large text modes never overflow narrow mobile screens)
-    window.applySaxazFontSize = (mode) => {
-      const m = Math.max(1, Math.min(4, parseInt(mode || 1)));
-      const isSmallScreen = window.innerWidth < 640;
-      const rootSize = isSmallScreen ? (13.5 + (m * 1.15)) : (14 + (m * 2));
-      document.documentElement.style.fontSize = `${rootSize}px`;
+    window.getSaxazTheme = () => {
+      const saved = localStorage.getItem('themeMode');
+      if (saved === 'dark' || saved === 'dracula') return 'dark';
+      if (saved === 'light' || saved === 'winter') return 'light';
+      const cookieTheme = getCookie('theme');
+      return (cookieTheme === 'dark') ? 'dark' : 'light';
     };
-    const fontSizeMode = parseInt(getCookie('fontSizeMode') || '1');
-    window.applySaxazFontSize(fontSizeMode);
+    window.applySaxazTheme = (mode) => {
+      const clean = (mode === 'dark') ? 'dark' : 'light';
+      localStorage.setItem('themeMode', clean);
+      document.cookie = `theme=${clean};path=/;max-age=31536000`;
+      document.documentElement.setAttribute('data-theme', clean);
+      document.documentElement.classList.toggle('dark', clean === 'dark');
+      document.documentElement.style.colorScheme = clean;
+      window.dispatchEvent(new CustomEvent('saxaz-theme-change', { detail: { theme: clean } }));
+      return clean;
+    };
+    window.applySaxazTheme(window.getSaxazTheme());
+    
+    // Font Size Engine (1 = Standard 100%, 2 = Large 110%, 3 = X-Large 120%, 4 = Max 135%)
+    window.getSaxazFontSize = () => {
+      const saved = localStorage.getItem('fontSizeMode') || getCookie('fontSizeMode') || '1';
+      return Math.max(1, Math.min(4, parseInt(saved, 10) || 1));
+    };
+    window.applySaxazFontSize = (mode) => {
+      const m = Math.max(1, Math.min(4, parseInt(mode || 1, 10)));
+      const isSmallScreen = window.innerWidth < 640;
+      const desktopSizes = { 1: 17.5, 2: 19.0, 3: 20.5, 4: 22.5 };
+      const mobileSizes  = { 1: 16.5, 2: 18.0, 3: 19.5, 4: 21.0 };
+      const rootSize = isSmallScreen ? mobileSizes[m] : desktopSizes[m];
+      document.documentElement.style.setProperty('font-size', `${rootSize}px`, 'important');
+      document.documentElement.setAttribute('data-font-size', String(m));
+      localStorage.setItem('fontSizeMode', String(m));
+      document.cookie = `fontSizeMode=${m};path=/;max-age=31536000`;
+      window.dispatchEvent(new CustomEvent('saxaz-fontsize-change', { detail: { mode: m } }));
+      return m;
+    };
+    window.applySaxazFontSize(window.getSaxazFontSize());
     window.addEventListener('resize', () => {
-      const curMode = parseInt(getCookie('fontSizeMode') || '1');
-      window.applySaxazFontSize(curMode);
+      window.applySaxazFontSize(window.getSaxazFontSize());
     }, { passive: true });
 
     // Sidebar initial state (always start closed on mobile < 768px so backdrop never covers screen)
@@ -370,19 +433,24 @@
       --apple-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     
-    html, body {
-      height: 100%;
-      overflow: hidden;
+    html {
+      height: auto !important;
+      overflow-x: clip !important;
+      overflow-y: auto !important;
       scroll-behavior: smooth;
-      overscroll-behavior: none !important;
-      overscroll-behavior-y: none !important;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    body {
+      min-height: 100dvh;
+      height: auto !important;
+      overflow: visible !important;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
     .main-content-wrapper,
     .main-content-wrapper > main {
-      overscroll-behavior: none !important;
-      overscroll-behavior-y: none !important;
+      overflow: visible !important;
     }
     .global-topbar {
       flex-shrink: 0 !important;
@@ -441,32 +509,34 @@
       --pc: 19.5% 0.006 260; /* Primary content: #151515 (Charcoal text on Gold) */
     }
     [data-theme="light"] {
-      --b2: 96.2% 0.014 85;  /* Warm cream base-200 */
-      --b3: 91.5% 0.022 85;  /* Warm sand base-300 */
+      --b1: 100% 0 0;        /* Crisp white base-100 */
+      --b2: 97.5% 0.005 250; /* Clean light surface base-200 */
+      --b3: 93.5% 0.008 250; /* Subtle border base-300 */
+      --bc: 20% 0.015 260;   /* Charcoal base-content */
+    }
+    [data-theme="dark"] {
+      --b1: 22% 0.018 260;   /* Dark slate card base-100 (#1b1f28) */
+      --b2: 18% 0.016 260;   /* Deeper surface base-200 (#131720) */
+      --b3: 28% 0.020 260;   /* Dark border base-300 (#272d3a) */
+      --bc: 96% 0.005 260;   /* Crisp white base-content (#f3f4f6) */
     }
     
-    /* Warm SAXAZ Cream & Ambient Glow Background (replaces stark white) */
+    /* Solid White & Clean SAXAZ Surface (Zero Gradients) */
     [data-theme="light"] .space-bg {
-      background-color: #f6f2e8;
-      background-image:
-        radial-gradient(circle at 0% 0%, rgba(248, 176, 0, 0.16), transparent 36%),
-        radial-gradient(circle at 100% 0%, rgba(155, 143, 217, 0.15), transparent 38%),
-        radial-gradient(circle at 100% 100%, rgba(43, 176, 230, 0.10), transparent 42%),
-        linear-gradient(180deg, #fffcf5 0%, #f3ede0 100%);
+      background-color: #ffffff;
+      background-image: none;
     }
     [data-theme="dark"] .space-bg {
-      background-color: #12151a;
-      background-image:
-        radial-gradient(circle at 0% 0%, rgba(248, 176, 0, 0.08), transparent 36%),
-        radial-gradient(circle at 100% 0%, rgba(43, 176, 230, 0.06), transparent 38%);
+      background-color: #151515;
+      background-image: none;
     }
 
-    /* SAXAZ Gold & Charcoal Signature Classes */
+    /* SAXAZ Gold & Charcoal Signature Classes (Solid Colors Only) */
     .saxaz-hero-banner {
-      background: linear-gradient(135deg, #f8b000 0%, #f0a200 100%) !important;
-      border: 2px solid rgba(21, 21, 21, 0.15) !important;
-      border-bottom: 6px solid #151515 !important;
-      box-shadow: 0 16px 36px rgba(248, 176, 0, 0.24), 0 6px 16px rgba(21, 21, 21, 0.08) !important;
+      background: #f7b317 !important;
+      border: 2px solid #231f20 !important;
+      border-bottom: 6px solid #231f20 !important;
+      box-shadow: 0 10px 26px rgba(35, 31, 32, 0.12) !important;
     }
     .saxaz-on-gold {
       color: #151515 !important;
@@ -485,9 +555,9 @@
       box-shadow: 0 8px 20px rgba(21, 21, 21, 0.22) !important;
     }
     [data-theme="dark"] .saxaz-dark-btn {
-      background-color: #f8b000 !important;
+      background-color: #f7b317 !important;
       color: #151515 !important;
-      border-color: #f8b000 !important;
+      border-color: #f7b317 !important;
       border-bottom-color: #b88200 !important;
     }
     [data-theme="dark"] .saxaz-dark-btn:hover {
@@ -527,7 +597,7 @@
       color: #ffffff !important;
     }
     .global-sidebar .menu li > a.bg-primary {
-      background-color: #f8b000 !important;
+      background-color: #f7b317 !important;
       color: #151515 !important;
       font-weight: 800 !important;
       box-shadow: 0 4px 14px rgba(248, 176, 0, 0.30) !important;
@@ -558,23 +628,13 @@
       color: #ffffff !important;
     }
     .global-topbar > div:last-child > .dropdown > button span.text-primary {
-      color: #f8b000 !important;
+      color: #f7b317 !important;
     }
     .global-topbar > div:first-child > button:hover,
     .global-topbar > div:last-child > button:not(.topbar-install-btn):hover,
     .global-topbar > div:last-child > .relative > button:hover,
     .global-topbar > div:last-child > .dropdown > button:hover {
       background-color: rgba(255, 255, 255, 0.10) !important;
-    }
-    .global-topbar .bg-orange-50 {
-      background-color: rgba(248, 176, 0, 0.16) !important;
-      border-color: rgba(248, 176, 0, 0.35) !important;
-      color: #f8b000 !important;
-    }
-    .global-topbar .bg-indigo-50 {
-      background-color: rgba(56, 189, 248, 0.15) !important;
-      border-color: rgba(56, 189, 248, 0.35) !important;
-      color: #38bdf8 !important;
     }
 
     .mobile-bottom-bar {
@@ -588,20 +648,40 @@
       color: #ffffff !important;
     }
     .mobile-bottom-bar > a.text-primary {
-      color: #f8b000 !important;
+      color: #f7b317 !important;
     }
 
     /* Dark Mode Global Overrides & Dual-Theme Contrast Protection */
-    [data-theme="dark"] .bg-white { background-color: #1f2937 !important; }
+    [data-theme="dark"] .bg-white:not(.saxaz-keep-white) { background-color: #1b1f28 !important; }
+    [data-theme="dark"] .page-module__oxIOsa__heroSection .bg-white,
+    [data-theme="dark"] .page-module__oxIOsa__quotePanelInner .bg-white,
+    [data-theme="dark"] .saxaz-keep-white {
+      background-color: #ffffff !important;
+      color: #16151a !important;
+    }
+    [data-theme="dark"] .page-module__oxIOsa__heroSection .bg-white input {
+      color: #16151a !important;
+    }
+    [data-theme="dark"] .page-module__oxIOsa__heroSection .saxaz-keep-white .text-gray-900,
+    [data-theme="dark"] .page-module__oxIOsa__heroSection .saxaz-keep-white .text-gray-800 {
+      color: #16151a !important;
+    }
+    [data-theme="dark"] .page-module__oxIOsa__heroSection .saxaz-keep-white .text-gray-500,
+    [data-theme="dark"] .page-module__oxIOsa__heroSection .saxaz-keep-white .text-gray-400 {
+      color: #6b7280 !important;
+    }
+    [data-theme="dark"] .page-module__oxIOsa__heroSection .saxaz-keep-white .bg-gray-100 {
+      background-color: #f3f4f6 !important;
+    }
     [data-theme="dark"] .bg-gray-50,
-    [data-theme="dark"] .bg-gray-100 { background-color: #111827 !important; }
-    [data-theme="dark"] .bg-gray-200 { background-color: #374151 !important; }
-    [data-theme="dark"] .bg-gray-300 { background-color: #4b5563 !important; }
+    [data-theme="dark"] .bg-gray-100 { background-color: #131720 !important; }
+    [data-theme="dark"] .bg-gray-200 { background-color: #272d3a !important; }
+    [data-theme="dark"] .bg-gray-300 { background-color: #374151 !important; }
     
     [data-theme="dark"] .bg-slate-50,
-    [data-theme="dark"] .bg-slate-100 { background-color: #111827 !important; }
-    [data-theme="dark"] .bg-slate-200 { background-color: #1f2937 !important; }
-    [data-theme="dark"] .bg-slate-300 { background-color: #374151 !important; }
+    [data-theme="dark"] .bg-slate-100 { background-color: #131720 !important; }
+    [data-theme="dark"] .bg-slate-200 { background-color: #1b1f28 !important; }
+    [data-theme="dark"] .bg-slate-300 { background-color: #272d3a !important; }
     
     [data-theme="dark"] .text-black,
     [data-theme="dark"] .text-gray-900,
@@ -650,38 +730,18 @@
     [data-theme="dark"] .hover\:bg-gray-50:hover,
     [data-theme="dark"] .hover\:bg-gray-100:hover { background-color: #374151 !important; }
 
-    /* Badges, Pills & Accent Text in Dark Mode */
-    [data-theme="dark"] .bg-orange-50 {
-      background-color: rgba(249, 115, 22, 0.15) !important;
-      border-color: rgba(249, 115, 22, 0.3) !important;
-    }
-    [data-theme="dark"] .text-orange-600,
-    [data-theme="dark"] .text-orange-700 { color: #fb923c !important; }
+    /* Badges & Accent Text in Dark Mode (Strict Palette Only) */
     [data-theme="dark"] .text-amber-600,
     [data-theme="dark"] .text-amber-700,
-    [data-theme="dark"] .text-amber-800 { color: #fbbf24 !important; }
-    
-    [data-theme="dark"] .bg-indigo-50 {
-      background-color: rgba(99, 102, 241, 0.15) !important;
-      border-color: rgba(99, 102, 241, 0.3) !important;
-    }
-    [data-theme="dark"] .text-indigo-600,
-    [data-theme="dark"] .text-indigo-700 { color: #818cf8 !important; }
+    [data-theme="dark"] .text-amber-800 { color: #f7b317 !important; }
     [data-theme="dark"] .text-emerald-600,
     [data-theme="dark"] .text-emerald-700,
-    [data-theme="dark"] .text-emerald-800 { color: #34d399 !important; }
-    [data-theme="dark"] .text-rose-600,
-    [data-theme="dark"] .text-rose-700 { color: #fb7185 !important; }
-    [data-theme="dark"] .text-purple-600,
-    [data-theme="dark"] .text-purple-700 { color: #c084fc !important; }
-    [data-theme="dark"] .text-sky-600,
-    [data-theme="dark"] .text-sky-700 { color: #38bdf8 !important; }
+    [data-theme="dark"] .text-emerald-800 { color: #16a34a !important; }
 
     /* ==========================================================================
        TOOLS BOX (MATH & SCIENCE PALETTE) — HIGH-PRECISION DUAL-THEME STYLING
        ========================================================================== */
     .math-tools-panel {
-      z-index: 100 !important;
       box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.05);
     }
     
@@ -696,7 +756,7 @@
     }
 
     [data-theme="dark"] .math-tools-header {
-      background: linear-gradient(to right, #111827, #1f2937, #111827) !important;
+      background: #231f20 !important;
       border-color: #374151 !important;
     }
     [data-theme="dark"] .math-tools-header h3 {
@@ -718,7 +778,7 @@
       color: #ffffff !important;
     }
     [data-theme="dark"] .math-tools-size-box button.bg-white {
-      background-color: #7c3aed !important;
+      background-color: #f7b317 !important;
       color: #ffffff !important;
     }
 
@@ -743,9 +803,9 @@
       color: #ffffff !important;
     }
     [data-theme="dark"] .math-tools-tabs button.bg-white {
-      background-color: #7c3aed !important;
+      background-color: #f7b317 !important;
       color: #ffffff !important;
-      border-color: #8b5cf6 !important;
+      border-color: #231f20 !important;
     }
 
     [data-theme="dark"] .math-tools-search-box {
@@ -769,7 +829,7 @@
       color: #e2e8f0 !important;
     }
     [data-theme="dark"] .math-tools-chem-search button:hover {
-      background-color: #7c3aed !important;
+      background-color: #f7b317 !important;
       color: #ffffff !important;
     }
 
@@ -785,10 +845,10 @@
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
     }
     [data-theme="dark"] .math-tools-btn:hover {
-      background-color: #7c3aed !important;
+      background-color: #f7b317 !important;
       color: #ffffff !important;
-      border-color: #8b5cf6 !important;
-      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4) !important;
+      border-color: #231f20 !important;
+      box-shadow: 0 4px 12px rgba(35, 31, 32, 0.4) !important;
     }
     [data-theme="dark"] .math-tools-btn span {
       color: #ffffff !important;
@@ -800,14 +860,14 @@
       border-color: #374151 !important;
     }
     [data-theme="dark"] .math-tools-formula-btn:hover {
-      background-color: rgba(124, 58, 237, 0.15) !important;
-      border-color: #7c3aed !important;
+      background-color: rgba(35, 31, 32, 0.15) !important;
+      border-color: #f7b317 !important;
     }
     [data-theme="dark"] .math-tools-formula-btn .text-slate-900 {
       color: #ffffff !important;
     }
     [data-theme="dark"] .math-tools-formula-btn .text-slate-600 {
-      color: #c4b5fd !important;
+      color: #f7b317 !important;
     }
 
     /* Footer in Dark Mode */
@@ -826,7 +886,7 @@
       color: #9ca3af !important;
     }
     [data-theme="dark"] .math-tools-resize-handle:hover {
-      background-color: #7c3aed !important;
+      background-color: #f7b317 !important;
       color: #ffffff !important;
     }
     
@@ -920,48 +980,52 @@
       /* Mobile Floating Action Buttons (FABs) pinned to bottom right, clear of question text */
       #math-tools-dock-wrap {
         top: auto !important;
-        bottom: 80px !important;
-        right: 12px !important;
+        bottom: 84px !important;
+        right: 10px !important;
         z-index: 45 !important;
       }
       #scratchpad-dock-wrap {
         top: auto !important;
-        bottom: 136px !important;
-        right: 12px !important;
+        bottom: 134px !important;
+        right: 10px !important;
         z-index: 45 !important;
       }
       #math-tools-dock-wrap button,
       #scratchpad-dock-wrap button {
-        width: 44px !important;
-        height: 44px !important;
+        width: 42px !important;
+        height: 42px !important;
+        min-width: 42px !important;
+        max-width: 42px !important;
         border-radius: 9999px !important;
         padding: 0 !important;
+        overflow: hidden !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4) !important;
-        border: 2px solid rgba(255, 255, 255, 0.5) !important;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.38) !important;
+        border: 2px solid rgba(255, 255, 255, 0.65) !important;
       }
+      #math-tools-dock-wrap button > *:not(:first-child),
+      #scratchpad-dock-wrap button > *:not(:first-child),
       #math-tools-dock-wrap button .flex-col,
-      #scratchpad-dock-wrap button .flex-col,
-      #math-tools-dock-wrap button .ml-0.5,
-      #scratchpad-dock-wrap button .ml-0.5 {
+      #scratchpad-dock-wrap button .flex-col {
         display: none !important;
       }
-      #math-tools-dock-wrap button .w-7,
-      #scratchpad-dock-wrap button .w-7 {
+      #math-tools-dock-wrap button > *:first-child,
+      #scratchpad-dock-wrap button > *:first-child {
         background: transparent !important;
         box-shadow: none !important;
         width: 100% !important;
         height: 100% !important;
+        margin: 0 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
       }
       #math-tools-dock-wrap button svg,
       #scratchpad-dock-wrap button svg {
-        width: 20px !important;
-        height: 20px !important;
+        width: 19px !important;
+        height: 19px !important;
       }
     }
 
@@ -1059,11 +1123,11 @@
     
     /* Brilliant 3D Card Styling with SAXAZ Tactile Borders & Warm Surface (Zero Layout Shift) */
     .brilliant-card {
-      border: 2px solid rgba(21, 21, 21, 0.10);
-      border-bottom: 6px solid rgba(21, 21, 21, 0.20);
+      border: 2px solid rgba(35, 31, 32, 0.12);
+      border-bottom: 6px solid #231f20;
       border-radius: 2rem;
-      background: linear-gradient(180deg, #ffffff 0%, #fffdf8 100%);
-      box-shadow: 0 10px 26px rgba(21, 21, 21, 0.06);
+      background: #ffffff;
+      box-shadow: 0 10px 26px rgba(35, 31, 32, 0.06);
       transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s ease, box-shadow 0.2s ease;
     }
     .brilliant-card:hover {
@@ -1076,14 +1140,14 @@
       transform: translateY(2px);
     }
     [data-theme="dark"] .brilliant-card {
-      background: #1f2937;
-      border-color: rgba(255, 255, 255, 0.08);
-      border-bottom-color: rgba(0, 0, 0, 0.45);
+      background: #1b1f28 !important;
+      border-color: rgba(255, 255, 255, 0.12);
+      border-bottom-color: rgba(0, 0, 0, 0.55);
       box-shadow: 0 8px 20px rgba(0,0,0,0.35);
     }
     [data-theme="dark"] .brilliant-card:hover {
       border-color: rgba(248, 176, 0, 0.7);
-      border-bottom-color: #f8b000;
+      border-bottom-color: #f7b317;
     }
 
     /* Comic Conversation Speech Bubble for Collapsed Sidebar */
@@ -1114,7 +1178,7 @@
       pointer-events: none;
       opacity: 0;
       visibility: hidden;
-      box-shadow: 4px 4px 0px #f8b000, 4px 4px 0px 2px #151515;
+      box-shadow: 4px 4px 0px #f7b317, 4px 4px 0px 2px #151515;
       transition: opacity 0.16s ease, transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1), visibility 0.16s;
       z-index: 9999;
     }
@@ -1157,40 +1221,14 @@
       z-index: 2147483646;
     }
     
-    /* Prevent text selection to protect content */
-    body {
-      user-select: none;
-      -webkit-user-select: none;
-      -ms-user-select: none;
+    [x-cloak] {
+      display: none !important;
     }
-    /* Allow selection in inputs and text areas so user can still type normally */
+    /* Allow natural text selection & copying across app pages (Shop voucher codes, notes, etc.) */
     input, textarea, [contenteditable="true"] {
       user-select: auto;
       -webkit-user-select: auto;
       -ms-user-select: auto;
-    }
-
-    /* SweetAlert2 Toast overrides for SAXAZ aesthetics */
-    div:where(.swal2-container) div:where(.swal2-toast) {
-      border-radius: 1.5rem !important;
-      box-shadow: 0 10px 30px -10px rgba(0,0,0,0.2) !important;
-      padding: 0.75rem 1rem !important;
-    }
-
-    /* Global Page Loader - shown by default to cover FOUC */
-    #global-loader {
-      position: fixed;
-      inset: 0;
-      z-index: 99999;
-      background-color: var(--fallback-b1,oklch(var(--b1)/1));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: opacity 0.4s ease-out;
-    }
-    #global-loader.hidden-loader {
-      opacity: 0;
-      pointer-events: none;
     }
 
     /* ==========================================================================
@@ -1224,13 +1262,13 @@
       }
     }
 
-    /* Topbar Install App Icon Button (matches bell & theme icon buttons) */
+    /* Topbar Install App Icon Button */
     .topbar-install-btn {
       color: #ffffff !important;
     }
     .topbar-install-btn:hover {
       background-color: rgba(255, 255, 255, 0.10) !important;
-      color: #f8b000 !important;
+      color: #f7b317 !important;
     }
     @media (display-mode: standalone) {
       .topbar-install-btn {
@@ -1238,8 +1276,17 @@
       }
     }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script>
+    window.Swal = window.Swal || {
+      fire: function(titleOrOpts, text, icon) {
+        if (!window.saxazConfirm) return Promise.resolve({ isConfirmed: false, isDismissed: true });
+        if (typeof titleOrOpts === 'string') {
+          return window.saxazConfirm({ title: titleOrOpts, text: text || '', icon: icon || 'info', showCancelButton: false });
+        }
+        return window.saxazConfirm(titleOrOpts || {});
+      }
+    };
+
     // Progressive Web App (Browser App) Registration & Install Handler
     window.isSaxazStandalone = () => (
       window.matchMedia('(display-mode: standalone)').matches ||
@@ -1327,7 +1374,7 @@
             <div class="text-left space-y-3 mt-2 bg-base-200/70 p-4 rounded-2xl border border-base-300 text-sm">
               <div class="flex items-start gap-3">
                 <span class="w-6 h-6 rounded-full bg-primary text-[#151515] font-black text-xs flex items-center justify-center shrink-0 mt-0.5">1</span>
-                <span>Tap the <b>Share</b> button <span class="inline-block px-1.5 py-0.5 rounded bg-base-300 font-bold text-xs">↑</span> in Safari.</span>
+                <span>Tap the <b>Share</b> button <span class="inline-flex items-center justify-center px-1.5 py-0.5 rounded bg-base-300 font-bold text-xs align-middle"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg></span> in Safari.</span>
               </div>
               <div class="flex items-start gap-3">
                 <span class="w-6 h-6 rounded-full bg-primary text-[#151515] font-black text-xs flex items-center justify-center shrink-0 mt-0.5">2</span>
@@ -1351,10 +1398,10 @@
 
       Swal.fire({
         title: 'SAXAZ App Already Installed',
-        html: `<p class="text-sm font-medium opacity-80 mb-3">Your browser reports that the <b>SAXAZ Web App</b> is already installed on this device (look for the <b>Open in App ↗</b> icon in your address bar).</p>
+        html: `<p class="text-sm font-medium opacity-80 mb-3">Your browser reports that the <b>SAXAZ Web App</b> is already installed on this device (look for the <b>Open in App</b> icon in your address bar).</p>
                <div class="text-left bg-base-200/70 p-3.5 rounded-2xl border border-base-300 text-xs space-y-1.5">
                  <div class="font-black text-base-content">Want a fresh install prompt with the new logo?</div>
-                 <div class="opacity-80">Click the <b>↗</b> icon in your address bar → open the app's <b>⋮</b> menu → click <b>Uninstall SAXAZ</b>, then click this download button again.</div>
+                 <div class="opacity-80">Click the <b>Open in App</b> icon in your address bar, open the app menu, click <b>Uninstall SAXAZ</b>, then click this download button again.</div>
                </div>`,
         imageUrl: '/static/images/pwa-icon-192.png?v=2',
         imageWidth: 64,
@@ -1375,773 +1422,1702 @@
     window.USER_SFX_MODE = {% if current_sfx_mode is not none %}{{ current_sfx_mode }}{% else %}1{% endif %};
     window.USER_SFX_CUSTOM_CONFIG = {% if current_sfx_custom %}{{ current_sfx_custom | safe }}{% else %}{}{% endif %};
     
-    {% if not user or user.get('role') != 'admin' %}
-    // Anti-copy/paste protection (allow inside inputs/textareas when not in exam-mode)
-    document.addEventListener('copy', (e) => {
-      const isInput = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable);
-      if (isInput && !document.body.classList.contains('exam-mode')) return;
-      e.preventDefault();
-      Swal.fire({
-        icon: 'warning',
-        title: 'Copying Disabled',
-        text: 'Copying content is disabled to protect academic integrity.',
-        toast: true,
-        position: 'bottom-end',
-        showConfirmButton: false,
-        timer: 3000,
-        timerProgressBar: true
-      });
-    });
-    document.addEventListener('cut', (e) => {
-      if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
-        e.preventDefault();
-      }
-    });
-    document.addEventListener('paste', (e) => {
-      const isInput = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable);
-      if (isInput && !document.body.classList.contains('exam-mode')) return;
-      e.preventDefault();
-      Swal.fire({
-        icon: 'warning',
-        title: 'Pasting Disabled',
-        text: 'Pasting is disabled to encourage original work.',
-        toast: true,
-        position: 'bottom-end',
-        showConfirmButton: false,
-        timer: 3000,
-        timerProgressBar: true
-      });
-    });
-    {% endif %}
+    // Anti-Copy/Paste Guard & Bottom-Right Corner Popup Toast
+    (function() {
+      let toastTimer = null;
+      let lastVoiceWarnTs = 0;
 
-    // Global loader: hide when page is ready or upon safety timeout to prevent UI freezes
-    const dismissGlobalLoader = () => {
-      const loader = document.getElementById('global-loader');
-      if (loader && !loader.classList.contains('hidden-loader')) {
-        loader.classList.add('hidden-loader');
-        setTimeout(() => { if (loader) loader.style.display = 'none'; }, 400);
+      function ensureNoPasteStyles() {
+        if (document.getElementById('saxaz-nopaste-styles')) return;
+        const st = document.createElement('style');
+        st.id = 'saxaz-nopaste-styles';
+        st.textContent = `
+          @keyframes sxNoPasteShake {
+            0%, 100% { transform: translateX(0); }
+            18% { transform: translateX(-7px); }
+            36% { transform: translateX(7px); }
+            54% { transform: translateX(-5px); }
+            72% { transform: translateX(5px); }
+            90% { transform: translateX(-2px); }
+          }
+          @keyframes sxNoPasteBar {
+            from { transform: scaleX(1); }
+            to { transform: scaleX(0); }
+          }
+          .sx-nopaste-shake {
+            animation: sxNoPasteShake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) both !important;
+            border-color: #f7b317 !important;
+            box-shadow: 0 0 0 4px rgba(247, 179, 23, 0.28) !important;
+          }
+          #saxaz-nopaste-toast {
+            position: fixed;
+            right: 22px;
+            bottom: 22px;
+            z-index: 2147483646;
+            width: 370px;
+            max-width: calc(100vw - 28px);
+            background: #ffffff;
+            color: #151515;
+            border: 2.5px solid #151515;
+            border-radius: 20px;
+            padding: 14px 16px 16px;
+            box-shadow: 5px 5px 0 #151515, 0 18px 42px rgba(0, 0, 0, 0.28);
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            overflow: hidden;
+            transform: translateY(24px) scale(0.92);
+            opacity: 0;
+            pointer-events: none;
+            transition: transform 0.26s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+            font-family: var(--sx-sans, 'Plus Jakarta Sans', system-ui, sans-serif);
+          }
+          [data-theme="dark"] #saxaz-nopaste-toast {
+            background: #1b202c;
+            color: #f9fafb;
+            border-color: #f7b317;
+            box-shadow: 5px 5px 0 #0a0d14, 0 20px 46px rgba(0, 0, 0, 0.65);
+          }
+          #saxaz-nopaste-toast.is-visible {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+            pointer-events: auto;
+          }
+          #saxaz-nopaste-toast.is-bouncing {
+            transform: translateY(-4px) scale(1.03);
+          }
+          .sx-nopaste-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            background: #231f20;
+            color: #ffffff;
+            border: 2px solid #151515;
+            box-shadow: 2px 2px 0 #151515;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 1px;
+          }
+          .sx-nopaste-content {
+            flex: 1;
+            min-width: 0;
+          }
+          .sx-nopaste-badge {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 2px 7px;
+            border-radius: 999px;
+            background: #f7b317;
+            color: #231f20;
+            border: 1px solid #231f20;
+            margin-bottom: 4px;
+          }
+          [data-theme="dark"] .sx-nopaste-badge {
+            background: #f7b317;
+            color: #231f20;
+            border-color: #231f20;
+          }
+          .sx-nopaste-title {
+            font-size: 0.98rem;
+            font-weight: 900;
+            line-height: 1.2;
+            letter-spacing: -0.01em;
+            margin: 0 0 3px;
+          }
+          .sx-nopaste-desc {
+            font-size: 0.79rem;
+            font-weight: 600;
+            line-height: 1.4;
+            opacity: 0.82;
+            margin: 0;
+          }
+          .sx-nopaste-close {
+            width: 26px;
+            height: 26px;
+            border-radius: 999px;
+            border: 1.5px solid rgba(21, 21, 21, 0.2);
+            background: transparent;
+            color: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 900;
+            flex-shrink: 0;
+            opacity: 0.65;
+            transition: opacity 0.15s ease, background 0.15s ease;
+          }
+          .sx-nopaste-close:hover {
+            opacity: 1;
+            background: #f7b317;
+            color: #231f20;
+          }
+          .sx-nopaste-progress {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 4px;
+            background: #f7b317;
+            transform-origin: left center;
+          }
+          @media (max-width: 640px) {
+            #saxaz-nopaste-toast {
+              right: 12px;
+              left: 12px;
+              bottom: 18px;
+              width: auto;
+              max-width: none;
+            }
+          }
+        `;
+        document.head.appendChild(st);
       }
-    };
-    window.addEventListener('load', dismissGlobalLoader);
-    document.addEventListener('DOMContentLoaded', dismissGlobalLoader);
-    window.addEventListener('pageshow', dismissGlobalLoader);
-    setTimeout(dismissGlobalLoader, 1500); // Safety fallback ensures user is never locked out
+
+        // Global Studio-Grade Google Gemini 3.8 Flash TTS Helper (`gemini-3.8-flash-tts` — Zero speechSynthesis / Zero Startup Pre-Warm)
+        window.__saxazTtsBlobCache = window.__saxazTtsBlobCache || new Map();
+        window.__saxazPcmCache = window.__saxazPcmCache || new Map();
+        window.__saxazTtsActiveAudio = window.__saxazTtsActiveAudio || null;
+        window.__saxazUserTtsMode = '{{ (user.parent_tts_mode if user and user.get("is_parent") else (user.tts_mode if user else "1")) | default("1") }}';
+        window.__saxazUserTtsVoice = '{{ (user.parent_tts_voice if user and user.get("is_parent") else (user.tts_voice if user else "af_bella")) | default("af_bella") }}';
+        window.__saxazUserTtsEngine = 'gemini';
+
+        const isTtsMuted = () => ['0', 'off'].includes(String(window.__saxazUserTtsMode || '').toLowerCase());
+        window.isTtsMuted = isTtsMuted;
+
+        window.saxazNotifyTtsBilling = function(statusCode) {
+          if (statusCode === 402) {
+            console.warn('[SAXAZ TTS] Gemini TTS returned 402.');
+          }
+        };
+
+        // Shared WebAudio 24kHz PCM Live Stream Player
+        window.__saxazGetAudioCtx = function() {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return null;
+          if (!window.__saxazPcmCtx || window.__saxazPcmCtx.state === 'closed') {
+            try { window.__saxazPcmCtx = new AC({ sampleRate: 24000 }); }
+            catch (e) { window.__saxazPcmCtx = new AC(); }
+          }
+          if (window.__saxazPcmCtx.state === 'suspended') {
+            window.__saxazPcmCtx.resume().catch(() => {});
+          }
+          return window.__saxazPcmCtx;
+        };
+        ['pointerdown', 'keydown', 'touchstart'].forEach((ev) => {
+          document.addEventListener(ev, () => {
+            if (window.__saxazPcmCtx && window.__saxazPcmCtx.state === 'suspended') {
+              window.__saxazPcmCtx.resume().catch(() => {});
+            }
+          }, { passive: true });
+        });
+
+        window.saxazStreamPcm = function(text, opts = {}) {
+          const clean = String(text || '').trim().slice(0, 1200);
+          if (!clean || (!opts.ignoreMute && isTtsMuted())) return null;
+          const voice = opts.voice || window.__saxazUserTtsVoice || 'af_bella';
+          const emotion = opts.emotion || 'teaching';
+          const speed = Math.min(1.5, Math.max(0.7, Number(opts.speed) || 1.0));
+          const pcmCacheKey = `${voice}|gemini|${emotion}|${speed.toFixed(2)}|${clean}`;
+          const ctx = window.__saxazGetAudioCtx();
+          if (!ctx) return null;
+
+          const abortCtrl = new AbortController();
+          const activeSources = [];
+          let cancelled = false;
+          let endTimer = null;
+          let resolveDone = null;
+
+          const cancel = () => {
+            if (cancelled) return;
+            cancelled = true;
+            if (endTimer) { clearTimeout(endTimer); endTimer = null; }
+            try { abortCtrl.abort(); } catch (e) {}
+            activeSources.forEach((s) => { try { s.stop(); s.disconnect(); } catch (e) {} });
+            activeSources.length = 0;
+            if (resolveDone) { const r = resolveDone; resolveDone = null; r(false); }
+          };
+
+          const playPcmBytes = (rawBytes, sampleRate) => {
+            const evenLen = rawBytes.byteLength & ~1;
+            const sampleCount = evenLen >> 1;
+            if (sampleCount <= 0) return 0;
+            const dv = new DataView(rawBytes.buffer, rawBytes.byteOffset, evenLen);
+            const floats = new Float32Array(sampleCount);
+            for (let i = 0; i < sampleCount; i++) {
+              floats[i] = dv.getInt16(i * 2, true) / 32768.0;
+            }
+            const audioBuf = ctx.createBuffer(1, sampleCount, sampleRate);
+            audioBuf.getChannelData(0).set(floats);
+            const src = ctx.createBufferSource();
+            src.buffer = audioBuf;
+            src.connect(ctx.destination);
+            activeSources.push(src);
+            const startAt = ctx.currentTime + 0.02;
+            src.start(startAt);
+            return startAt + audioBuf.duration;
+          };
+
+          const donePromise = new Promise(async (resolve) => {
+            resolveDone = resolve;
+            try {
+              if (ctx.state === 'suspended') { await ctx.resume(); }
+
+              // 0-token instant replay from client PCM RAM cache (persists across serverless cold starts!)
+              if (window.__saxazPcmCache.has(pcmCacheKey)) {
+                const cachedEntry = window.__saxazPcmCache.get(pcmCacheKey);
+                if (!cancelled && cachedEntry && cachedEntry.bytes && cachedEntry.bytes.byteLength >= 4) {
+                  const endAt = playPcmBytes(cachedEntry.bytes, cachedEntry.sampleRate || 24000);
+                  if (typeof opts.onPlay === 'function') opts.onPlay();
+                  const remainMs = Math.max(0, (endAt - ctx.currentTime) * 1000) + 25;
+                  endTimer = setTimeout(() => {
+                    activeSources.length = 0;
+                    if (resolveDone) { const r = resolveDone; resolveDone = null; r(true); }
+                  }, remainMs);
+                  return;
+                }
+              }
+
+              const res = await fetch('/api/tts/pcm-stream', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: clean, voice, engine: 'gemini', emotion, speed }),
+                signal: abortCtrl.signal
+              });
+              if (!res.ok || !res.body || !res.body.getReader) {
+                if (res.status === 402) window.saxazNotifyTtsBilling(402);
+                // Resolve false (NOT null) on HTTP errors so callers NEVER double-bill /api/tts!
+                resolveDone = null;
+                return resolve(res.ok ? null : false);
+              }
+              const sampleRate = parseInt(res.headers.get('X-Sample-Rate') || '24000', 10) || 24000;
+              const reader = res.body.getReader();
+              const collectedChunks = [];
+              let totalCollectedLen = 0;
+              let carryByte = null;
+              let scheduledEnd = 0;
+              let startedPlay = false;
+
+              while (!cancelled) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                if (!value || !value.byteLength) continue;
+
+                let chunkBytes = value;
+                if (carryByte !== null) {
+                  const merged = new Uint8Array(1 + value.byteLength);
+                  merged[0] = carryByte;
+                  merged.set(value, 1);
+                  chunkBytes = merged;
+                  carryByte = null;
+                }
+                if (chunkBytes.byteLength % 2 === 1) {
+                  carryByte = chunkBytes[chunkBytes.byteLength - 1];
+                  chunkBytes = chunkBytes.subarray(0, chunkBytes.byteLength - 1);
+                }
+                const sampleCount = chunkBytes.byteLength >> 1;
+                if (sampleCount <= 0) continue;
+
+                const savedSlice = new Uint8Array(chunkBytes.byteLength);
+                savedSlice.set(chunkBytes);
+                collectedChunks.push(savedSlice);
+                totalCollectedLen += savedSlice.byteLength;
+
+                const dv = new DataView(chunkBytes.buffer, chunkBytes.byteOffset, chunkBytes.byteLength);
+                const floats = new Float32Array(sampleCount);
+                for (let i = 0; i < sampleCount; i++) {
+                  floats[i] = dv.getInt16(i * 2, true) / 32768.0;
+                }
+
+                const audioBuf = ctx.createBuffer(1, sampleCount, sampleRate);
+                audioBuf.getChannelData(0).set(floats);
+                const src = ctx.createBufferSource();
+                src.buffer = audioBuf;
+                src.connect(ctx.destination);
+                activeSources.push(src);
+
+                const startAt = Math.max(ctx.currentTime + 0.02, scheduledEnd);
+                src.start(startAt);
+                scheduledEnd = startAt + audioBuf.duration;
+
+                if (!startedPlay) {
+                  startedPlay = true;
+                  if (typeof opts.onPlay === 'function') opts.onPlay();
+                }
+              }
+
+              if (cancelled) return;
+              if (!startedPlay) {
+                resolveDone = null;
+                return resolve(false);
+              }
+              if (totalCollectedLen >= 4) {
+                const fullBytes = new Uint8Array(totalCollectedLen);
+                let offset = 0;
+                for (const part of collectedChunks) {
+                  fullBytes.set(part, offset);
+                  offset += part.byteLength;
+                }
+                if (window.__saxazPcmCache.size >= 80) {
+                  const oldestKey = window.__saxazPcmCache.keys().next().value;
+                  if (oldestKey !== undefined) window.__saxazPcmCache.delete(oldestKey);
+                }
+                window.__saxazPcmCache.set(pcmCacheKey, { bytes: fullBytes, sampleRate });
+              }
+              const remainMs = Math.max(0, (scheduledEnd - ctx.currentTime) * 1000) + 25;
+              endTimer = setTimeout(() => {
+                activeSources.length = 0;
+                if (resolveDone) { const r = resolveDone; resolveDone = null; r(true); }
+              }, remainMs);
+            } catch (err) {
+              if (!cancelled && resolveDone) {
+                const r = resolveDone;
+                resolveDone = null;
+                r(false);
+              }
+            }
+          });
+
+          return { cancel, donePromise };
+        };
+
+        // Sample-Accurate WebAudio PCM Player with 60fps Lip-Sync RMS, Word Sync & 0-Token Instant Seeking
+        window.saxazCreateSyncedSpeechPlayer = function() {
+          let activeSources = [];
+          let abortCtrl = null;
+          let rafId = null;
+          let runId = 0;
+          let audioBuffer = null;
+          let fullFloats = null;
+          let liveChunks = [];
+          let liveSampleCount = 0;
+          let sampleRate = 24000;
+          let streamFinished = false;
+          let isPlaying = false;
+          let isPaused = false;
+          let isBuffering = false;
+          let startCtxTime = 0;
+          let startOffsetSec = 0;
+          let pausedFrac = 0;
+          let estimatedDurationSec = 10;
+          let pendingSeekFrac = null;
+          let cbProgress = null;
+          let cbEnded = null;
+          let cbState = null;
+
+          const stopRaf = () => {
+            if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+          };
+
+          const stopSources = () => {
+            activeSources.forEach((s) => { try { s.stop(); s.disconnect(); } catch (e) {} });
+            activeSources = [];
+          };
+
+          const emitState = () => {
+            if (typeof cbState === 'function') {
+              cbState({ playing: isPlaying, paused: isPaused, buffering: isBuffering, readyToSeek: Boolean(audioBuffer) });
+            }
+          };
+
+          const computeRmsAt = (timeSec) => {
+            const winSamples = 680; // ~28ms syllable window at 24kHz
+            const centerIdx = Math.max(0, Math.floor(timeSec * sampleRate));
+            if (fullFloats && fullFloats.length > 0) {
+              if (centerIdx >= fullFloats.length) return 0;
+              const end = Math.min(fullFloats.length, centerIdx + winSamples);
+              let sumSq = 0;
+              let cnt = 0;
+              for (let i = centerIdx; i < end; i += 2) {
+                const v = fullFloats[i];
+                sumSq += v * v;
+                cnt++;
+              }
+              return cnt > 0 ? Math.sqrt(sumSq / cnt) : 0;
+            }
+            if (liveChunks.length > 0 && centerIdx < liveSampleCount) {
+              let rem = centerIdx;
+              for (let c = 0; c < liveChunks.length; c++) {
+                const arr = liveChunks[c];
+                if (rem < arr.length) {
+                  const end = Math.min(arr.length, rem + winSamples);
+                  let sumSq = 0;
+                  let cnt = 0;
+                  for (let i = rem; i < end; i += 2) {
+                    const v = arr[i];
+                    sumSq += v * v;
+                    cnt++;
+                  }
+                  return cnt > 0 ? Math.sqrt(sumSq / cnt) : 0;
+                }
+                rem -= arr.length;
+              }
+            }
+            return 0;
+          };
+
+          const getDuration = () => {
+            if (audioBuffer) return audioBuffer.duration;
+            const bufferedSec = liveSampleCount / sampleRate;
+            return streamFinished ? Math.max(0.2, bufferedSec) : Math.max(bufferedSec + 0.35, estimatedDurationSec);
+          };
+
+          const getCurrentTime = () => {
+            const ctx = window.__saxazGetAudioCtx();
+            if (!ctx || !isPlaying) return pausedFrac * getDuration();
+            const raw = startOffsetSec + Math.max(0, ctx.currentTime - startCtxTime);
+            return Math.min(getDuration(), raw);
+          };
+
+          const startProgressLoop = (myRun) => {
+            stopRaf();
+            const tick = () => {
+              if (myRun !== runId || !isPlaying) return;
+              const dur = getDuration();
+              const cur = getCurrentTime();
+              const frac = dur > 0 ? Math.min(1, Math.max(0, cur / dur)) : 0;
+              const rms = isBuffering ? 0 : computeRmsAt(cur);
+              if (typeof cbProgress === 'function') {
+                cbProgress({ currentTime: cur, duration: dur, frac, rms, buffering: isBuffering });
+              }
+              if (streamFinished && dur > 0 && cur >= dur - 0.02) {
+                isPlaying = false;
+                isPaused = false;
+                pausedFrac = 1;
+                stopSources();
+                stopRaf();
+                if (typeof cbProgress === 'function') {
+                  cbProgress({ currentTime: dur, duration: dur, frac: 1, rms: 0, buffering: false });
+                }
+                emitState();
+                if (typeof cbEnded === 'function') cbEnded();
+                return;
+              }
+              rafId = requestAnimationFrame(tick);
+            };
+            rafId = requestAnimationFrame(tick);
+          };
+
+          const playFromBufferOffset = (frac) => {
+            const ctx = window.__saxazGetAudioCtx();
+            if (!ctx || !audioBuffer) return false;
+            stopSources();
+            const clampedFrac = Math.min(0.995, Math.max(0, Number(frac) || 0));
+            const offsetSec = clampedFrac * audioBuffer.duration;
+            const src = ctx.createBufferSource();
+            src.buffer = audioBuffer;
+            src.connect(ctx.destination);
+            activeSources.push(src);
+            const now = ctx.currentTime;
+            src.start(now + 0.01, offsetSec);
+            startCtxTime = now + 0.01;
+            startOffsetSec = offsetSec;
+            pausedFrac = clampedFrac;
+            isPlaying = true;
+            isPaused = false;
+            isBuffering = false;
+            emitState();
+            startProgressLoop(runId);
+            return true;
+          };
+
+          const buildFullBufferFromBytes = (ctx, bytes, sr) => {
+            const evenLen = bytes.byteLength & ~1;
+            const count = evenLen >> 1;
+            if (count <= 0) return null;
+            const dv = new DataView(bytes.buffer, bytes.byteOffset, evenLen);
+            const floats = new Float32Array(count);
+            for (let i = 0; i < count; i++) {
+              floats[i] = dv.getInt16(i * 2, true) / 32768.0;
+            }
+            const buf = ctx.createBuffer(1, count, sr);
+            buf.getChannelData(0).set(floats);
+            return { buf, floats };
+          };
+
+          const loadAndPlay = async (text, opts = {}) => {
+            const clean = String(text || '').trim().slice(0, 1200);
+            if (!clean) return false;
+            runId += 1;
+            const myRun = runId;
+            stopRaf();
+            stopSources();
+            if (abortCtrl) { try { abortCtrl.abort(); } catch (e) {} abortCtrl = null; }
+
+            cbProgress = opts.onProgress || null;
+            cbEnded = opts.onEnded || null;
+            cbState = opts.onStateChange || null;
+
+            const voice = opts.voice || window.__saxazUserTtsVoice || 'af_bella';
+            const emotion = opts.emotion || 'teaching';
+            const speed = Math.min(1.5, Math.max(0.7, Number(opts.speed) || 1.0));
+            const initFrac = Math.min(0.98, Math.max(0, Number(opts.startFrac) || 0));
+            const wordCount = clean.split(/\s+/).filter(Boolean).length;
+            estimatedDurationSec = Math.max(2.2, (wordCount / 2.62) / speed);
+            audioBuffer = null;
+            fullFloats = null;
+            liveChunks = [];
+            liveSampleCount = 0;
+            streamFinished = false;
+            pendingSeekFrac = initFrac > 0.005 ? initFrac : null;
+            pausedFrac = initFrac;
+
+            const ctx = window.__saxazGetAudioCtx();
+            if (!ctx) return false;
+            if (ctx.state === 'suspended') { try { await ctx.resume(); } catch (e) {} }
+            if (myRun !== runId) return false;
+
+            const pcmCacheKey = `${voice}|gemini|${emotion}|${speed.toFixed(2)}|${clean}`;
+            if (window.__saxazPcmCache.has(pcmCacheKey)) {
+              const cached = window.__saxazPcmCache.get(pcmCacheKey);
+              if (cached && cached.bytes && cached.bytes.byteLength >= 4) {
+                sampleRate = cached.sampleRate || 24000;
+                const built = buildFullBufferFromBytes(ctx, cached.bytes, sampleRate);
+                if (built) {
+                  audioBuffer = built.buf;
+                  fullFloats = built.floats;
+                  streamFinished = true;
+                  pendingSeekFrac = null;
+                  return playFromBufferOffset(initFrac);
+                }
+              }
+            }
+
+            isBuffering = true;
+            isPlaying = true;
+            isPaused = false;
+            emitState();
+
+            abortCtrl = new AbortController();
+            try {
+              const res = await fetch('/api/tts/pcm-stream', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: clean, voice, engine: 'gemini', emotion, speed }),
+                signal: abortCtrl.signal
+              });
+              if (myRun !== runId) return false;
+              if (!res.ok || !res.body || !res.body.getReader) {
+                if (res.status === 402) window.saxazNotifyTtsBilling(402);
+                isPlaying = false;
+                isBuffering = false;
+                emitState();
+                return false;
+              }
+              sampleRate = parseInt(res.headers.get('X-Sample-Rate') || '24000', 10) || 24000;
+              const reader = res.body.getReader();
+              const rawSlices = [];
+              let rawTotalBytes = 0;
+              let carryByte = null;
+              let scheduledEnd = 0;
+              let startedDirectStream = false;
+
+              while (myRun === runId) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                if (!value || !value.byteLength) continue;
+
+                let chunkBytes = value;
+                if (carryByte !== null) {
+                  const merged = new Uint8Array(1 + value.byteLength);
+                  merged[0] = carryByte;
+                  merged.set(value, 1);
+                  chunkBytes = merged;
+                  carryByte = null;
+                }
+                if (chunkBytes.byteLength % 2 === 1) {
+                  carryByte = chunkBytes[chunkBytes.byteLength - 1];
+                  chunkBytes = chunkBytes.subarray(0, chunkBytes.byteLength - 1);
+                }
+                const sc = chunkBytes.byteLength >> 1;
+                if (sc <= 0) continue;
+
+                const copyBytes = new Uint8Array(chunkBytes.byteLength);
+                copyBytes.set(chunkBytes);
+                rawSlices.push(copyBytes);
+                rawTotalBytes += copyBytes.byteLength;
+
+                const dv = new DataView(chunkBytes.buffer, chunkBytes.byteOffset, chunkBytes.byteLength);
+                const floats = new Float32Array(sc);
+                for (let i = 0; i < sc; i++) {
+                  floats[i] = dv.getInt16(i * 2, true) / 32768.0;
+                }
+                liveChunks.push(floats);
+                liveSampleCount += sc;
+
+                // Stream immediately from 0.00s unless user explicitly requested a mid-card seek before download finished
+                if (pendingSeekFrac === null && !isPaused) {
+                  const chunkBuf = ctx.createBuffer(1, sc, sampleRate);
+                  chunkBuf.getChannelData(0).set(floats);
+                  const src = ctx.createBufferSource();
+                  src.buffer = chunkBuf;
+                  src.connect(ctx.destination);
+                  activeSources.push(src);
+                  const startAt = Math.max(ctx.currentTime + 0.02, scheduledEnd);
+                  src.start(startAt);
+                  scheduledEnd = startAt + chunkBuf.duration;
+                  if (!startedDirectStream) {
+                    startedDirectStream = true;
+                    isBuffering = false;
+                    startCtxTime = startAt;
+                    startOffsetSec = 0;
+                    emitState();
+                    startProgressLoop(myRun);
+                  }
+                }
+              }
+
+              if (myRun !== runId) return false;
+              if (rawTotalBytes >= 4) {
+                const fullBytes = new Uint8Array(rawTotalBytes);
+                let off = 0;
+                for (const s of rawSlices) { fullBytes.set(s, off); off += s.byteLength; }
+                if (window.__saxazPcmCache.size >= 80) {
+                  const oldest = window.__saxazPcmCache.keys().next().value;
+                  if (oldest !== undefined) window.__saxazPcmCache.delete(oldest);
+                }
+                window.__saxazPcmCache.set(pcmCacheKey, { bytes: fullBytes, sampleRate });
+
+                const mergedFloats = new Float32Array(liveSampleCount);
+                let fOff = 0;
+                for (const fl of liveChunks) { mergedFloats.set(fl, fOff); fOff += fl.length; }
+                fullFloats = mergedFloats;
+                const fullBuf = ctx.createBuffer(1, liveSampleCount, sampleRate);
+                fullBuf.getChannelData(0).set(mergedFloats);
+                audioBuffer = fullBuf;
+                streamFinished = true;
+                emitState();
+
+                if (pendingSeekFrac !== null && !isPaused) {
+                  const target = pendingSeekFrac;
+                  pendingSeekFrac = null;
+                  return playFromBufferOffset(target);
+                }
+              } else {
+                isPlaying = false;
+                isBuffering = false;
+                emitState();
+                return false;
+              }
+              return true;
+            } catch (err) {
+              if (myRun === runId) {
+                isPlaying = false;
+                isBuffering = false;
+                emitState();
+              }
+              return false;
+            }
+          };
+
+          const seekToFrac = (frac) => {
+            const clamped = Math.min(0.995, Math.max(0, Number(frac) || 0));
+            pausedFrac = clamped;
+            if (audioBuffer) {
+              return playFromBufferOffset(clamped);
+            }
+            if (isPlaying || isBuffering) {
+              stopSources();
+              isBuffering = true;
+              pendingSeekFrac = clamped;
+              emitState();
+              return true;
+            }
+            return false;
+          };
+
+          const pause = () => {
+            if (!isPlaying) return;
+            const dur = getDuration();
+            const cur = getCurrentTime();
+            pausedFrac = dur > 0 ? Math.min(0.995, Math.max(0, cur / dur)) : 0;
+            isPlaying = false;
+            isPaused = true;
+            isBuffering = false;
+            stopSources();
+            stopRaf();
+            if (typeof cbProgress === 'function') {
+              cbProgress({ currentTime: cur, duration: dur, frac: pausedFrac, rms: 0, buffering: false });
+            }
+            emitState();
+          };
+
+          const resume = () => {
+            if (!isPaused) return false;
+            if (audioBuffer) {
+              return playFromBufferOffset(pausedFrac);
+            }
+            return false;
+          };
+
+          const stop = () => {
+            runId += 1;
+            isPlaying = false;
+            isPaused = false;
+            isBuffering = false;
+            pausedFrac = 0;
+            pendingSeekFrac = null;
+            stopRaf();
+            stopSources();
+            if (abortCtrl) { try { abortCtrl.abort(); } catch (e) {} abortCtrl = null; }
+            emitState();
+          };
+
+          return {
+            loadAndPlay,
+            seekToFrac,
+            pause,
+            resume,
+            stop,
+            isReadyToSeek: () => Boolean(audioBuffer),
+            getState: () => ({ playing: isPlaying, paused: isPaused, buffering: isBuffering, frac: pausedFrac })
+          };
+        };
+
+        window.saxazWarmSpeak = function(text, opts = {}) {
+          const clean = String(text || '').trim();
+          if (!clean || (!opts.ignoreMute && isTtsMuted())) return Promise.resolve(null);
+          const voice = opts.voice || window.__saxazUserTtsVoice || 'af_bella';
+          const emotion = opts.emotion || 'gentle_reminder';
+          const cacheKey = `${voice}|gemini|${emotion}|${clean}`;
+          if (window.__saxazTtsBlobCache.has(cacheKey)) {
+            return window.__saxazTtsBlobCache.get(cacheKey);
+          }
+          const job = fetch('/api/tts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: clean, voice, engine: 'gemini', emotion })
+          }).then(async (res) => {
+            if (!res.ok) {
+              if (res.status === 402 && !opts.silent) window.saxazNotifyTtsBilling(402);
+              throw new Error('Gemini TTS HTTP ' + res.status);
+            }
+            const blob = await res.blob();
+            return URL.createObjectURL(blob);
+          }).catch((err) => {
+            window.__saxazTtsBlobCache.delete(cacheKey);
+            throw err;
+          });
+          window.__saxazTtsBlobCache.set(cacheKey, job);
+          return job;
+        };
+
+        window.saxazSpeak = async function(text, opts = {}) {
+          const clean = String(text || '').trim();
+          if (!clean || (!opts.ignoreMute && isTtsMuted())) {
+            if (typeof opts.onEnd === 'function') opts.onEnd();
+            return false;
+          }
+          const tutorSpeaking = document.querySelector('[data-tutor-speaking="true"]');
+          if (tutorSpeaking && !opts.interrupt) {
+            if (typeof opts.onEnd === 'function') opts.onEnd();
+            return false;
+          }
+          try {
+            if (window.__saxazTtsActiveAudio) {
+              window.__saxazTtsActiveAudio.pause();
+              window.__saxazTtsActiveAudio.currentTime = 0;
+              window.__saxazTtsActiveAudio = null;
+            }
+            const blobUrl = await window.saxazWarmSpeak(clean, opts);
+            if (!blobUrl) {
+              if (typeof opts.onEnd === 'function') opts.onEnd();
+              return false;
+            }
+            const audio = new Audio(blobUrl);
+            window.__saxazTtsActiveAudio = audio;
+            const finish = () => {
+              if (window.__saxazTtsActiveAudio === audio) window.__saxazTtsActiveAudio = null;
+              if (typeof opts.onEnd === 'function') opts.onEnd();
+            };
+            audio.onended = finish;
+            audio.onerror = finish;
+            await audio.play();
+            return true;
+          } catch (ttsErr) {
+            if (typeof opts.onEnd === 'function') opts.onEnd();
+            return false;
+          }
+        };
+
+      window.saxazShowNoCopyPasteToast = function(action = 'paste', targetEl = null) {
+        ensureNoPasteStyles();
+
+        // Shake the target input/textarea if applicable
+        if (targetEl && (targetEl.tagName === 'TEXTAREA' || targetEl.tagName === 'INPUT')) {
+          targetEl.classList.remove('sx-nopaste-shake');
+          void targetEl.offsetWidth;
+          targetEl.classList.add('sx-nopaste-shake');
+          setTimeout(() => targetEl.classList.remove('sx-nopaste-shake'), 520);
+        }
+
+        // Play local error sound effect only (zero paid OpenAI TTS call on Ctrl+C / Ctrl+V)
+        try {
+          if (window.SFX && typeof window.SFX.playError === 'function') {
+            window.SFX.playError();
+          }
+        } catch (err) {}
+
+        let toast = document.getElementById('saxaz-nopaste-toast');
+        if (!toast) {
+          toast = document.createElement('div');
+          toast.id = 'saxaz-nopaste-toast';
+          toast.setAttribute('role', 'alert');
+          toast.setAttribute('aria-live', 'assertive');
+          document.body.appendChild(toast);
+        }
+
+        const isCopy = action === 'copy';
+        const badgeText = isCopy ? 'No Copying' : 'Type Your Answer';
+        const titleText = 'Copy-Pasting is Not Allowed!';
+        const descText = isCopy
+          ? 'Copying exam questions or answers is disabled. Write the answer in your own words!'
+          : 'Please type your answer yourself - typing it out in your own words helps you learn best!';
+
+        toast.innerHTML = `
+          <div class="sx-nopaste-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+            </svg>
+          </div>
+          <div class="sx-nopaste-content">
+            <span class="sx-nopaste-badge">${badgeText}</span>
+            <h4 class="sx-nopaste-title">${titleText}</h4>
+            <p class="sx-nopaste-desc">${descText}</p>
+          </div>
+          <button type="button" class="sx-nopaste-close" aria-label="Dismiss" onclick="document.getElementById('saxaz-nopaste-toast')?.classList.remove('is-visible')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+          <div class="sx-nopaste-progress" style="animation: sxNoPasteBar 3.4s linear forwards;"></div>
+        `;
+
+        if (toast.classList.contains('is-visible')) {
+          toast.classList.add('is-bouncing');
+          setTimeout(() => toast.classList.remove('is-bouncing'), 180);
+        } else {
+          requestAnimationFrame(() => toast.classList.add('is-visible'));
+        }
+
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          toast.classList.remove('is-visible');
+        }, 3400);
+      };
+
+      window.saxazBlockCopyPaste = function(e, action = 'paste') {
+        if (e) {
+          if (e.type === 'drop' && e.dataTransfer && e.dataTransfer.types && Array.from(e.dataTransfer.types).includes('application/x-saxaz-mathtool')) {
+            return true;
+          }
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        window.saxazShowNoCopyPasteToast(action, e ? e.target : null);
+        return false;
+      };
+
+      function isProtectedExamContext(target) {
+        const path = window.location.pathname || '';
+        if (target && target.closest && target.closest('[data-allow-copypaste="true"]')) {
+          return false;
+        }
+        if (target && target.closest && target.closest('[data-no-copypaste="true"], #exam-answer-input, #exam-question-card')) {
+          return true;
+        }
+        if (
+          /^\/student\/exams\/\d+/.test(path) ||
+          path.startsWith('/student/real-exams/') ||
+          path.startsWith('/student/digi-library/banks/') ||
+          document.body.classList.contains('exam-mode')
+        ) {
+          return true;
+        }
+        return false;
+      }
+
+      document.addEventListener('paste', (e) => {
+        if (isProtectedExamContext(e.target)) {
+          window.saxazBlockCopyPaste(e, 'paste');
+        }
+      }, true);
+
+      document.addEventListener('copy', (e) => {
+        if (isProtectedExamContext(e.target)) {
+          window.saxazBlockCopyPaste(e, 'copy');
+        }
+      }, true);
+
+      document.addEventListener('cut', (e) => {
+        if (isProtectedExamContext(e.target)) {
+          window.saxazBlockCopyPaste(e, 'cut');
+        }
+      }, true);
+
+      document.addEventListener('drop', (e) => {
+        const t = e.target;
+        if (isProtectedExamContext(t) && t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT' || t.isContentEditable)) {
+          window.saxazBlockCopyPaste(e, 'paste');
+        }
+      }, true);
+    })();
+
+    window.dismissGlobalLoader = () => {};
+    // Purge legacy service worker caches so fresh CSS/HTML always loads immediately
+    try {
+      if ('caches' in window) {
+        caches.keys().then(keys => {
+          keys.forEach(k => {
+            if (k !== 'saxaz-v4-studio-v540') caches.delete(k);
+          });
+        });
+      }
+    } catch (e) {}
   </script>
-  <script src="/static/js/sfx.js" defer></script>
+  <script src="/static/js/sfx.js?v=400" defer></script>
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   {% block extra_head %}{% endblock %}
-  <!-- SAXAZ V2 Hyper-Kinetic Cyber-Gold OS Stylesheet (loaded last for cascade authority) -->
-  <link rel="stylesheet" href="/static/css/v2-studio.css?v=99">
+  <!-- Exact SAXAZ.com Replica & 1:1 Extension Stylesheets -->
+  <link rel="stylesheet" href="/static/css/v2-studio.css?v=540">
+  <link rel="stylesheet" href="/static/css/saxaz-fun.css?v=540">
+  <link rel="stylesheet" href="/static/css/sx3.css?v=540">
+  <link rel="stylesheet" href="/static/css/saxaz-ext.css?v=540">
+  <link rel="stylesheet" href="/static/css/saxaz-match.css?v=2">
+  <script src="/static/js/fun.js?v=540" defer></script>
+  <script>
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.documentElement.classList.remove('dark');
+    document.documentElement.style.colorScheme = 'light';
+
+    window.saxazShowCoinToast = function(coinsAdded, newBalance, label) {
+      const added = Number(coinsAdded || 0);
+      if (newBalance !== undefined && newBalance !== null) {
+        document.querySelectorAll('[data-sx-coin-count]').forEach(el => {
+          el.textContent = String(newBalance);
+        });
+      }
+      if (added <= 0) return;
+      let toast = document.getElementById('sx-global-coin-toast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'sx-global-coin-toast';
+        toast.className = 'sx-coin-toast';
+        document.body.appendChild(toast);
+      }
+      toast.innerHTML = `
+        <span class="sx-coin-toast-badge">+${added} Coins</span>
+        <span style="font-size:0.86rem;font-weight:700;">${label || 'Reward unlocked!'}</span>
+      `;
+      requestAnimationFrame(() => toast.classList.add('is-visible'));
+      if (window.__sxCoinToastTimer) clearTimeout(window.__sxCoinToastTimer);
+      window.__sxCoinToastTimer = setTimeout(() => {
+        toast.classList.remove('is-visible');
+      }, 3400);
+    };
+
+    window.saxazClaimMilestone = async function(rewardKey) {
+      try {
+        const res = await fetch('/student/rewards/claim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ reward_key: rewardKey })
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (data && data.awarded && data.coins_added > 0) {
+          window.saxazShowCoinToast(data.coins_added, data.coin_balance, data.label);
+        } else if (data && data.coin_balance !== undefined) {
+          document.querySelectorAll('[data-sx-coin-count]').forEach(el => {
+            el.textContent = String(data.coin_balance);
+          });
+        }
+        return data;
+      } catch (e) {
+        return null;
+      }
+    };
+  </script>
 </head>
-<body class="v2-studio-body flex h-screen overflow-hidden font-sans text-base-content antialiased bg-base-100 transition-colors duration-300"
-    x-data="{ 
-     themeMode: localStorage.getItem('themeMode') || 'light',
-     fontSizeMode: parseInt(getCookie('fontSizeMode') || '1'),
-     sidebarOpen: false,
-     spotlightOpen: false,
-     openSpotlight() {
-       this.spotlightOpen = true;
-       this.$nextTick(() => {
-         if (this.$refs.globalSpotlightInput) {
-           this.$refs.globalSpotlightInput.focus();
-           this.$refs.globalSpotlightInput.select();
-         }
-       });
-     },
-     toggleTheme(event) {
-       const isDark = this.themeMode === 'light';
-       
-       if (!document.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-         this.themeMode = isDark ? 'dark' : 'light';
-         document.documentElement.setAttribute('data-theme', this.themeMode);
-         localStorage.setItem('themeMode', this.themeMode);
-         return;
-       }
+<body class="antialiased bg-white text-[#231f20]"
+    :data-reader-mode="readerMode"
+    @keydown.escape.window="drawerOpen = false"
+    x-data="{
+      themeMode: 'light',
+      readerMode: localStorage.getItem('saxaz_reader_mode') === 'reading' ? 'reading' : 'normal',
+      langMode: (localStorage.getItem('saxaz_lang') === 'ml') ? 'ml' : 'en',
+      fontSizeMode: window.getSaxazFontSize ? window.getSaxazFontSize() : 1,
+      drawerOpen: false,
+      setReaderMode(m) {
+        this.readerMode = (m === 'reading') ? 'reading' : 'normal';
+        localStorage.setItem('saxaz_reader_mode', this.readerMode);
+      }
+    }">
 
-       let x, y;
-       
-       if (event && event.clientX && event.clientY) {
-         x = event.clientX;
-         y = event.clientY;
-       } else {
-         const btn = document.getElementById('theme-toggle-btn');
-         if (btn) {
-           const rect = btn.getBoundingClientRect();
-           x = rect.left + rect.width / 2;
-           y = rect.top + rect.height / 2;
-         } else {
-           x = innerWidth / 2;
-           y = 0;
-         }
-       }
+  {% set _p = request.url.path %}
+  {% set _p_parts = _p.split('/') %}
+  {% set is_student = user and user.role == 'student' and not user.get('is_parent') %}
+  {% set is_parent = user and user.role == 'student' and user.get('is_parent') %}
+  {% set is_admin = user and user.role == 'admin' %}
+  {% set sx_home = '/student/dashboard' if is_student else ('/parent/dashboard' if is_parent else ('/admin/dashboard' if is_admin else '/login')) %}
 
-       const endRadius = Math.hypot(
-         Math.max(x, innerWidth - x),
-         Math.max(y, innerHeight - y)
-       );
+  {% set is_mock_exam_take = _p.startswith('/student/exams/') and (_p_parts | length > 3) and _p_parts[3].isdigit() %}
+  {% set is_proctored_real_exam = _p.startswith('/student/real-exams/attempts/') %}
+  {% set is_exam_focus = is_student and (is_mock_exam_take or _p.startswith('/student/digi-library/banks/') or is_proctored_real_exam) %}
 
-       const styleId = 'theme-transition-style';
-       let styleEl = document.getElementById(styleId);
-       if (!styleEl) {
-         styleEl = document.createElement('style');
-         styleEl.id = styleId;
-         document.head.appendChild(styleEl);
-       }
-       styleEl.innerHTML = `
-         ::view-transition-new(root) {
-           animation: portal-open 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
-         }
-         @keyframes portal-open {
-           0% { clip-path: circle(0px at ${x}px ${y}px); }
-           100% { clip-path: circle(${endRadius}px at ${x}px ${y}px); }
-         }
-       `;
+  {% set sx_nav = [] %}
+  {% if is_student %}
+    {% set sx_nav = [
+      ('/student/dashboard', 'Dashboard', 'grid', _p.startswith('/student/dashboard')),
+      ('/student/exams', 'Subjects & Exams', 'exams', (_p.startswith('/student/exams') or _p.startswith('/student/subjects') or _p.startswith('/student/chapters') or _p.startswith('/student/real-exams'))),
+      ('/student/attempts', 'Quiz Points', 'trophy', _p.startswith('/student/attempts')),
+      ('/student/shop', 'Rewards & Shop', 'shop', _p.startswith('/student/shop')),
+      ('/student/profile', 'Profile & Voice', 'user', (_p.startswith('/student/profile') or _p.startswith('/student/settings'))),
+      ('/auth/parent-portal', 'Parent Portal', 'portal', false)
+    ] %}
+  {% elif is_parent %}
+    {% set sx_nav = [
+      ('/parent/dashboard', 'Overview', 'grid', _p.startswith('/parent/dashboard')),
+      ('/parent/mock-exams', 'Mock Exams', 'exams', _p.startswith('/parent/mock-exams')),
+      ('/parent/real-exams', 'Real Exams', 'trophy', _p.startswith('/parent/real-exams')),
+      ('/parent/settings', 'Settings & PIN', 'user', _p.startswith('/parent/settings')),
+      ('/auth/switch-to-student', 'Student View', 'portal', false)
+    ] %}
+  {% elif is_admin %}
+    {% set sx_nav = [
+      ('/admin/dashboard', 'Overview', 'grid', (_p.startswith('/admin/dashboard') or _p == '/admin')),
+      ('/admin/curriculum', 'Curriculum', 'exams', _p.startswith('/admin/curriculum')),
+      ('/admin/digi-library', 'Question Banks', 'banks', _p.startswith('/admin/digi-library')),
+      ('/admin/analytics', 'Analytics', 'trophy', _p.startswith('/admin/analytics')),
+      ('/admin/settings', 'Settings', 'user', _p.startswith('/admin/settings'))
+    ] %}
+  {% endif %}
 
-       document.startViewTransition(() => {
-         this.themeMode = isDark ? 'dark' : 'light';
-         document.documentElement.setAttribute('data-theme', this.themeMode);
-         localStorage.setItem('themeMode', this.themeMode);
-       });
-     },
-     toggleSidebar() {
-       this.sidebarOpen = !this.sidebarOpen;
-     },
-     setSidebar(state) {
-       this.sidebarOpen = state;
-     },
-     setFontSize(mode) {
-       this.fontSizeMode = mode;
-       if (window.applySaxazFontSize) {
-         window.applySaxazFontSize(mode);
-       } else {
-         const rootSize = 14 + (mode * 2);
-         document.documentElement.style.fontSize = `${rootSize}px`;
-       }
-       document.cookie = `fontSizeMode=${this.fontSizeMode};path=/;max-age=31536000`;
-     }
-   }"
-   @keydown.window.ctrl.k.prevent="openSpotlight()"
-   @keydown.window.meta.k.prevent="openSpotlight()"
-   @open-saxaz-spotlight.window="openSpotlight()"
-   x-init="setTimeout(() => document.documentElement.classList.remove('sidebar-closed'), 50)">
+  {% macro nav_icon(kind) -%}
+    {% if kind == 'grid' %}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+    {% elif kind == 'exams' %}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/><path d="m9 9.5 2 2 4-4"/></svg>
+    {% elif kind == 'banks' %}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+    {% elif kind == 'trophy' %}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+    {% elif kind == 'shop' %}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+    {% elif kind == 'portal' %}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/><path d="m15 9 6-6"/></svg>
+    {% else %}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
+    {% endif %}
+  {%- endmacro %}
 
-  <!-- Global Page Loader -->
-  <div id="global-loader">
-    <span class="loading loading-infinity w-24 text-primary"></span>
-  </div>
+  <style>
+    .sx-ext-header {
+      background: #231f20 !important;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+    .sx-header-right {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+    .sx-header-user-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.3rem 0.75rem 0.3rem 0.35rem;
+      border-radius: 999px;
+      background: #231f20;
+      border: 1.5px solid #ffffff;
+      color: #ffffff !important;
+      font-size: 0.84rem;
+      font-weight: 800;
+      text-decoration: none;
+      line-height: 1;
+    }
+    .sx-header-user-initial {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: #f7b317;
+      color: #231f20;
+      font-size: 0.76rem;
+      font-weight: 900;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .sx-header-role-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.36rem 0.78rem;
+      border-radius: 999px;
+      background: #f7b317;
+      color: #231f20;
+      font-size: 0.74rem;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      line-height: 1;
+    }
+    .sx-header-switch-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.36rem 0.85rem;
+      border-radius: 999px;
+      background: #ffffff;
+      color: #231f20 !important;
+      border: 2px solid #f7b317;
+      font-size: 0.82rem;
+      font-weight: 800;
+      text-decoration: none;
+      white-space: nowrap;
+      line-height: 1;
+    }
+    .sx-header-switch-btn:hover {
+      background: #f7b317;
+    }
+    .sx-ext-header .sx-ext-menu-trigger {
+      display: none !important;
+    }
+    .sx-ext-canvas {
+      min-width: 0;
+    }
+    .sx-ext-canvas .page-module__oxIOsa__page {
+      min-height: auto !important;
+      padding-bottom: 0 !important;
+    }
+    @media (max-width: 1100px) {
+      .sx-ext-header .sx-ext-menu-trigger {
+        display: inline-flex !important;
+        align-items: center;
+        gap: 0.36rem;
+        padding: 0.4rem 0.85rem;
+        border-radius: 999px;
+        background: #f7b317;
+        color: #231f20;
+        border: 2px solid #f7b317;
+        font-size: 0.84rem;
+        font-weight: 900;
+        cursor: pointer;
+        white-space: nowrap;
+        line-height: 1;
+      }
+    }
+    @media (max-width: 560px) {
+      .sx-header-user-name {
+        display: none;
+      }
+      .sx-header-user-badge {
+        padding: 0.25rem;
+      }
+      .sx-header-role-badge {
+        font-size: 0.66rem;
+        padding: 0.3rem 0.55rem;
+      }
+      .sx-header-switch-btn {
+        font-size: 0.76rem;
+        padding: 0.34rem 0.65rem;
+      }
+    }
+  </style>
 
-  <!-- Interactive 60FPS Golden Constellation Canvas & Perspective Cyber-Grid -->
-  <canvas id="v2-particle-canvas"></canvas>
-  <div class="v2-cyber-grid-bg"></div>
-  <div id="v2-cursor-ring"></div>
+  <div class="sx-ext-shell main-content-wrapper">
+    <span class="sr-only">{% block topbar_title %}SAXAZ{% endblock %}{% block nav_items %}{% endblock %}</span>
 
-  <!-- Main Content Area (SAXAZ V2 Spatial OS Shell — No Top Bar, No Left Sidebar!) -->
-  <div class="flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 main-content-wrapper relative z-10 w-full">
-    
-    <!-- FLOATING SPATIAL TOP HUD PODS (Left Brand Cube Pod • Center AI Reactor Orb • Right System Pod) -->
-    <div class="v2-hud-top-wrap">
-      
-      <!-- Left HUD Pod: 3D Rotating Gold Wireframe Cube + Brand Logo + Live OS Status -->
-      <a href="/" class="v2-hud-pod group no-underline">
-        <div class="v2-cube-scene">
-          <div class="v2-cube">
-            <div class="v2-cube-face front">SX</div>
-            <div class="v2-cube-face back">V2</div>
-            <div class="v2-cube-face right">AI</div>
-            <div class="v2-cube-face left">OS</div>
-            <div class="v2-cube-face top">⚡</div>
-            <div class="v2-cube-face bottom">★</div>
+    {% if is_exam_focus %}
+      <!-- Focused Exam Shell (ONLY active Mock Exam /student/exams/<id>, Question Bank /student/digi-library/banks/*, or Proctored Real Exam /student/real-exams/attempts/*) -->
+      <header class="sx-ext-header sx-ext-header--issue">
+        <a class="sx-ext-logo-link"
+           href="{{ sx_home }}"
+           aria-label="SAXAZ Home"
+           {% if is_proctored_real_exam %}
+           data-confirm="Leaving now may forfeit or submit your active Real Exam attempt. Are you sure you want to exit?"
+           data-confirm-title="Leave Proctored Exam?"
+           data-confirm-btn="Leave Exam"
+           data-confirm-cancel="Continue Exam"
+           {% endif %}>
+          <img src="/static/images/saxaz_web/logo.png" alt="SAXAZ" class="sx-ext-logo-img">
+        </a>
+        {% if not is_proctored_real_exam %}
+        <div class="sx-header-right">
+          <a href="/student/shop" class="sx-coin-pill" title="Rewards & Shop">
+            <span class="sx-coin-disc">C</span>
+            <span data-sx-coin-count>{{ user.coin_balance or 0 }}</span>
+            <span>Coins</span>
+          </a>
+          <a href="{{ ('/student/chapters/' ~ exam.chapter_id) if (exam is defined and exam and exam.chapter_id) else '/student/exams' }}" class="sx-ext-header-back" style="margin-left:0;">
+            <span class="material-symbols-outlined" style="font-size: 18px;">arrow_back</span>
+            <span>{{ 'CHAPTER' if (exam is defined and exam and exam.chapter_id) else 'EXAMS' }}</span>
+          </a>
+        </div>
+        {% endif %}
+      </header>
+
+      <main class="flex-1 w-full bg-white max-w-[1280px] mx-auto px-3 sm:px-6 py-4">
+        {{ self.content() }}
+      </main>
+
+    {% else %}
+      <!-- Standard App Shell (Persistent Left Sidebar >1100px + Header Mobile Menu <=1100px + Footer) -->
+      <header class="sx-ext-header">
+        <a class="sx-ext-logo-link" href="{{ sx_home }}" aria-label="SAXAZ Home">
+          <img src="/static/images/saxaz_web/logo.png" alt="SAXAZ" class="sx-ext-logo-img">
+        </a>
+
+        <div class="sx-header-right">
+          {% if is_student %}
+            <a href="/student/shop" class="sx-coin-pill" title="Rewards & Shop">
+              <span class="sx-coin-disc">C</span>
+              <span data-sx-coin-count>{{ user.coin_balance or 0 }}</span>
+              <span>Coins</span>
+            </a>
+            <a href="/student/profile" class="sx-header-user-badge" title="Profile & Voice">
+              <span class="sx-header-user-initial">{{ ((user.name or 'S').strip().split()[0][0]) | upper }}</span>
+              <span class="sx-header-user-name">{{ (user.name or 'Student').strip().split()[0] }}</span>
+            </a>
+          {% elif is_parent %}
+            <span class="sx-header-role-badge">PARENT PORTAL</span>
+            <a href="/auth/switch-to-student" class="sx-header-switch-btn">
+              <span class="material-symbols-outlined" style="font-size: 16px;">swap_horiz</span>
+              <span>Student View</span>
+            </a>
+          {% elif is_admin %}
+            <span class="sx-header-role-badge">ADMIN</span>
+          {% endif %}
+
+          {% if user %}
+            <button type="button" class="sx-ext-menu-trigger" @click="drawerOpen = true" aria-label="Open navigation menu">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              <span>Menu</span>
+            </button>
+          {% endif %}
+        </div>
+      </header>
+
+      {% block hero_banner %}{% endblock %}
+
+      {% if user %}
+      <!-- Mobile Slide Drawer (<= 1100px) -->
+      <div x-show="drawerOpen" x-cloak>
+        <div class="sx-ext-drawer-backdrop" @click="drawerOpen = false"></div>
+        <aside class="sx-ext-drawer" aria-label="Mobile navigation">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:2px 6px 8px;">
+            <img src="/static/images/saxaz_web/logo.png" alt="SAXAZ" style="height:28px;width:auto;">
+            <button type="button" @click="drawerOpen = false" style="background:#ffffff;border:2px solid #231f20;border-radius:999px;width:36px;height:36px;display:grid;place-items:center;cursor:pointer;color:#231f20;" aria-label="Close menu">
+              <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+            </button>
           </div>
-        </div>
-        <div class="w-18 sm:w-24 transition-transform duration-300 group-hover:scale-105">
-          {% include "logo.html" %}
-        </div>
-        <span class="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-[#f8b000] text-[#111111]">
-          <span class="w-1.5 h-1.5 rounded-full bg-[#111111] animate-ping"></span>
-          KINETIC OS
-        </span>
-        <div class="hidden xl:flex items-center gap-2 pl-2 border-l border-white/20 text-[11px] font-extrabold text-[#f8b000] truncate max-w-[160px]">
-          {% block topbar_title %}<span>Command Deck</span>{% endblock %}
-        </div>
-      </a>
-
-      <!-- Center Floating AI Reactor Orb (Opens Global ⌘K Spotlight) -->
-      {% if user and user.role == 'student' and not user.get('is_parent') %}
-      <button type="button"
-              @click="openSpotlight()"
-              class="v2-ai-orb-btn"
-              title="Open AI Command Spotlight (Ctrl+K)">
-        <span class="w-7 h-7 rounded-full bg-[#f8b000] text-[#111111] flex items-center justify-center font-black text-xs shrink-0 shadow-sm">⚡</span>
-        <span class="hidden sm:inline text-xs font-black tracking-wide" style="font-family:'Space Grotesk',sans-serif;">Ask AI Co-Pilot or Teleport Anywhere...</span>
-        <span class="sm:hidden text-xs font-black" style="font-family:'Space Grotesk',sans-serif;">AI Teleport</span>
-        <kbd class="hidden md:inline-flex px-2 py-0.5 rounded-md bg-white/15 text-[#f8b000] text-[10px] font-black border border-white/20">⌘K</kbd>
-      </button>
+          <div class="sx-ext-nav-list">
+            {% for href, label, ico, active in sx_nav %}
+            <a href="{{ href }}" class="sx-ext-nav-pill {% if active %}is-active{% endif %}" @click="drawerOpen = false">
+              {{ nav_icon(ico) }}
+              <span>{{ label }}</span>
+            </a>
+            {% endfor %}
+          </div>
+          <a href="/logout" class="sx-ext-nav-pill sx-ext-nav-pill--logout">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>Logout</span>
+          </a>
+        </aside>
+      </div>
       {% endif %}
 
-      <!-- Right HUD Pod: PWA Install, Live Activity Radar, Theme Portal, Text Scale, Profile -->
-      <div class="v2-hud-pod !gap-1.5 sm:!gap-2">
-        {% block nav_items %}{% endblock %}
-
-        <!-- Install Browser Web App Icon Button -->
-        <button type="button"
-                @click="window.triggerSaxazAppInstall && window.triggerSaxazAppInstall()"
-                class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 hover:bg-[#f8b000] text-white hover:text-[#111111] flex items-center justify-center transition-all cursor-pointer topbar-install-btn"
-                title="Install SAXAZ Web App">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-        </button>
-
-        {% if user and user.role == 'student' and not user.get('is_parent') %}
-        <!-- Notifications Radar Bell -->
-        <div class="relative" x-data="{
-          open: false,
-          unreadCount: 0,
-          notifications: [],
-          async fetchNotifs() {
-            try {
-              const res = await fetch('/student/api/notifications');
-              const data = await res.json();
-              this.notifications = data.notifications || [];
-              this.unreadCount = data.unreadCount || 0;
-            } catch(e) {}
-          },
-          async markRead() {
-            if (this.unreadCount === 0) return;
-            try {
-              await fetch('/student/api/notifications/read', { method: 'POST' });
-              this.unreadCount = 0;
-              this.notifications.forEach(n => n.is_read = 1);
-            } catch(e) {}
-          }
-        }" x-init="fetchNotifs(); setInterval(() => fetchNotifs(), 30000)">
-          <button @click="open = !open; if(open) markRead()" @click.outside="open = false" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 hover:bg-[#f8b000] text-white hover:text-[#111111] flex items-center justify-center relative transition-all cursor-pointer">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
-            <span x-show="unreadCount > 0" class="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5" style="display: none;">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f8b000] opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-[#f8b000] text-[9px] font-black text-[#111111] items-center justify-center" x-text="unreadCount"></span>
-            </span>
-          </button>
-          
-          <!-- Dropdown -->
-          <div tabindex="0" class="fixed sm:absolute left-3 right-3 sm:left-auto sm:right-0 top-16 sm:top-auto sm:mt-4 bg-white border-2 border-[#111111] rounded-3xl shadow-2xl w-auto sm:w-80 max-h-[75dvh] sm:max-h-96 overflow-y-auto z-50 flex flex-col"
-               x-show="open" x-transition style="display: none;">
-            <div class="px-5 py-4 border-b-2 border-[#111111]/10 bg-[#111111] text-white rounded-t-3xl sticky top-0 z-10 flex items-center justify-between">
-              <h3 class="font-black text-[#f8b000] tracking-wide uppercase text-xs">Live Activity Telemetry</h3>
-            </div>
-            <div class="p-2 space-y-1 bg-white">
-              <template x-for="n in notifications" :key="n.id">
-                <div class="p-3 rounded-2xl transition-colors hover:bg-base-50 flex items-start gap-3 relative overflow-hidden" :class="!n.is_read ? 'bg-primary/10' : ''">
-                  <div class="w-9 h-9 rounded-xl bg-[#f8b000] text-[#111111] flex items-center justify-center shrink-0 font-black text-xs">⚡</div>
-                  <div>
-                    <h4 class="text-sm font-bold text-gray-900" x-text="n.title"></h4>
-                    <p class="text-xs text-gray-500 font-medium leading-snug" x-text="n.message"></p>
-                  </div>
-                </div>
-              </template>
-              <template x-if="notifications.length === 0">
-                <div class="text-center p-8 text-gray-400">
-                  <p class="text-xs font-bold uppercase tracking-widest">All telemetry nominal</p>
-                </div>
-              </template>
-            </div>
-          </div>
-        </div>
-        {% endif %}
-        
-        <!-- Theme Portal Toggle -->
-        <button id="theme-toggle-btn" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 hover:bg-[#f8b000] text-white hover:text-[#111111] flex items-center justify-center transition-all cursor-pointer" @click="toggleTheme($event)" title="Switch Light / Dark Cyber Theme">
-          <svg x-show="themeMode === 'dark'" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="display: none;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-          <svg x-show="themeMode === 'light'" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
-        </button>
-        
-        <!-- Font Scale Switcher -->
-        <div class="dropdown dropdown-end" x-data="{ open: false }" @click.outside="open = false">
-          <button tabindex="0" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 hover:bg-[#f8b000] text-white hover:text-[#111111] flex items-center justify-center transition-all cursor-pointer" @click="open = !open">
-            <span class="font-black text-xs sm:text-sm leading-none flex items-start">
-              A<span class="text-[9px] ml-[1px] text-[#f8b000]" x-text="fontSizeMode === 1 ? '' : '+' + (fontSizeMode-1)"></span>
-            </span>
-          </button>
-          <div tabindex="0" class="dropdown-content z-[80] mt-4 p-2 bg-white text-[#111111] border-2 border-[#111111] rounded-2xl shadow-xl w-44"
-               x-show="open" x-transition style="display: none;">
-            <div class="px-3 py-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest">HUD Scale</div>
-            <div class="space-y-1">
-              <button @click="setFontSize(1); open = false" class="w-full text-left px-3 py-1.5 rounded-xl text-xs font-bold flex items-center justify-between" :class="fontSizeMode === 1 ? 'bg-[#f8b000] text-[#111111] font-black' : 'hover:bg-gray-100'">100% Default <span>A</span></button>
-              <button @click="setFontSize(2); open = false" class="w-full text-left px-3 py-1.5 rounded-xl text-xs font-bold flex items-center justify-between" :class="fontSizeMode === 2 ? 'bg-[#f8b000] text-[#111111] font-black' : 'hover:bg-gray-100'">110% Large <span>A+</span></button>
-              <button @click="setFontSize(3); open = false" class="w-full text-left px-3 py-1.5 rounded-xl text-xs font-bold flex items-center justify-between" :class="fontSizeMode === 3 ? 'bg-[#f8b000] text-[#111111] font-black' : 'hover:bg-gray-100'">120% XL <span>A++</span></button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Profile Pill & Dropdown -->
+      <div class="sx-ext-workspace">
         {% if user %}
-        <div class="dropdown dropdown-end">
-          <div tabindex="0" role="button" class="flex items-center gap-2 p-0.5 sm:pr-2.5 rounded-full bg-[#f8b000] text-[#111111] hover:bg-[#ffd000] transition-all cursor-pointer shadow-sm">
-            <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-[#111111] overflow-hidden shrink-0 bg-[#111111] text-[#f8b000] flex items-center justify-center font-black text-xs">
-              {% if user.profile_picture %}
-                <img src="{{ user.profile_picture }}" alt="Profile" class="w-full h-full object-cover" />
-              {% else %}
-                {{ user.name[:2].upper() }}
-              {% endif %}
-            </div>
-            <span class="hidden lg:inline text-xs font-black text-[#111111] truncate max-w-[90px]">{{ user.name }}</span>
-          </div>
-          <ul tabindex="0" class="mt-3 z-[80] p-2 shadow-2xl menu menu-sm dropdown-content bg-white text-[#111111] rounded-2xl w-56 border-2 border-[#111111]">
-            <li class="menu-title text-[11px] font-black uppercase tracking-wider text-gray-400 px-3 py-1"><span>{{ user.name }}</span></li>
-            {% if user.role == 'student' and not user.get('is_parent') %}
-            <li><a href="/student/profile" class="font-bold rounded-xl py-2">My Profile &amp; Badges</a></li>
-            <li><a href="/student/settings" class="font-bold rounded-xl py-2">Studio Control Center</a></li>
-            {% elif user.get('is_parent') %}
-            <li><a href="/parent/settings" class="font-bold rounded-xl py-2">Parent Settings</a></li>
-            {% elif user.role == 'admin' %}
-            <li><a href="/admin/settings" class="font-bold rounded-xl py-2">Admin Settings</a></li>
-            {% endif %}
-            <li class="mt-1 pt-1 border-t border-gray-200"><a href="/logout" class="text-error font-black rounded-xl py-2">Sign Out</a></li>
-          </ul>
-        </div>
-        {% endif %}
-      </div>
-    </div>
-
-    {% if user and user.role == 'student' and not user.get('is_parent') %}
-    <!-- GLOBAL ⌘K / Ctrl+K AI SPOTLIGHT MODAL -->
-    <div x-show="spotlightOpen"
-         x-transition.opacity.duration.200ms
-         style="display: none;"
-         class="fixed inset-0 z-[200] bg-black/75 backdrop-blur-md flex items-start justify-center p-3 sm:p-6 pt-14 sm:pt-20"
-         @click.self="spotlightOpen = false"
-         @keydown.escape.window="spotlightOpen = false">
-      <div class="w-full max-w-2xl bg-white rounded-[2rem] border-3 border-[#111111] shadow-[0_14px_0_#f8b000,0_30px_70px_rgba(0,0,0,0.65)] overflow-hidden apple-popup"
-           x-data="saxazAiSearchBar('')"
-           x-init="$watch('spotlightOpen', v => { if(v) openDropdown(); })">
-        <!-- Spotlight Input Bar -->
-        <div class="bg-[#111111] p-3 sm:p-4 flex items-center gap-3 border-b-2 border-[#f8b000]">
-          <div class="w-10 h-10 rounded-2xl bg-[#f8b000] text-[#111111] flex items-center justify-center shrink-0 shadow-sm">
-            <svg x-show="!submitting && !aiLoading" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.8"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-            <svg x-show="submitting || aiLoading" style="display: none;" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-          </div>
-          <form action="/student/search" method="GET" class="flex-1 flex items-center gap-2 min-w-0" @submit="handleSubmit($event)">
-            <input type="text"
-                   x-ref="globalSpotlightInput"
-                   name="q"
-                   x-model="query"
-                   autocomplete="off"
-                   spellcheck="false"
-                   @input="onInput()"
-                   @keydown.down.prevent="moveSelection(1)"
-                   @keydown.up.prevent="moveSelection(-1)"
-                   placeholder="Teleport to any chapter, subject, book, or ask AI anything..."
-                   class="w-full bg-transparent border-none focus:ring-0 focus:outline-none text-white font-extrabold placeholder-white/45 text-sm sm:text-base min-w-0"
-                   required>
-            <button type="submit" class="px-4 py-2 rounded-full bg-[#f8b000] text-[#111111] font-black text-xs uppercase tracking-wider shrink-0 hover:bg-[#ffd000] transition-colors">
-              Teleport
-            </button>
-          </form>
-          <button type="button" @click="spotlightOpen = false" class="w-8 h-8 rounded-full bg-white/10 text-white/70 hover:text-white flex items-center justify-center text-xs font-black">
-            ✕
-          </button>
-        </div>
-
-        <!-- Spotlight Results Body -->
-        <div class="max-h-[65dvh] overflow-y-auto divide-y divide-gray-100 bg-white">
-          <template x-if="query.trim().length > 0 && aiData && aiData.primary_destination">
-            <div class="p-4 bg-[#fffbeb] border-b-2 border-[#f8b000]">
-              <div class="flex items-center justify-between gap-2 mb-1">
-                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-[#111111] text-[#f8b000]">AI Smart Match</span>
-                <span class="text-[10px] font-black uppercase text-amber-800" x-text="aiData.primary_destination.category || 'Direct Jump'"></span>
-              </div>
-              <p class="text-xs sm:text-sm font-black text-[#111111] mb-1.5" x-text="aiData.understood_intent"></p>
-              <p x-show="aiData.ai_answer" class="text-xs text-gray-700 mb-3 leading-relaxed" x-text="aiData.ai_answer"></p>
-              <div class="flex flex-wrap gap-2">
-                <a :href="aiData.primary_destination.url" class="v2-btn-gold px-4 py-1.5 text-xs">
-                  <span x-text="'Launch ' + aiData.primary_destination.title"></span>
-                  <span>&rarr;</span>
-                </a>
-                <a :href="'/student/tutor?ask=' + encodeURIComponent(query.trim()) + '&autosend=1'" class="v2-btn-black px-4 py-1.5 text-xs">
-                  <span>Open in AI Co-Pilot</span>
-                </a>
-              </div>
-            </div>
-          </template>
-
-          <div class="px-4 py-2 bg-gray-50 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-500">
-            <span x-text="query.trim().length > 0 ? 'Instant Destinations' : 'Quick Studio Teleports'"></span>
-            <span x-show="aiLoading" class="text-amber-600 flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span> AI Routing...
-            </span>
-          </div>
-
-          <template x-for="(item, idx) in displayItems" :key="item.id || item.url || idx">
-            <a :href="item.url"
-               class="flex items-center justify-between gap-3 px-4 py-3 hover:bg-[#fffbeb] transition-colors group"
-               :class="selectedIdx === idx ? 'bg-[#fffbeb]' : ''">
-              <div class="min-w-0 flex-1">
-                <div class="flex items-center gap-2 mb-0.5">
-                  <span class="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-[#111111] text-[#f8b000]" x-text="item.badge || item.category || 'Studio'"></span>
-                  <span class="text-[10px] font-bold text-gray-400 uppercase truncate" x-text="item.category"></span>
-                </div>
-                <div class="text-sm font-black text-[#111111] group-hover:text-amber-600 truncate" x-text="item.title"></div>
-                <div class="text-xs text-gray-500 line-clamp-1" x-text="item.description"></div>
-              </div>
-              <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-gray-100 text-[#111111] group-hover:bg-[#f8b000] transition-colors shrink-0">Teleport &rarr;</span>
+        <aside class="sx-ext-sidebar" aria-label="Primary navigation">
+          <div class="sx-ext-nav-list">
+            {% for href, label, ico, active in sx_nav %}
+            <a href="{{ href }}" class="sx-ext-nav-pill {% if active %}is-active{% endif %}">
+              {{ nav_icon(ico) }}
+              <span>{{ label }}</span>
             </a>
-          </template>
-        </div>
-      </div>
-    </div>
-    {% endif %}
+            {% endfor %}
+          </div>
+          <a href="/logout" class="sx-ext-nav-pill sx-ext-nav-pill--logout">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>Logout</span>
+          </a>
+        </aside>
+        {% endif %}
 
-    {% set is_active_exam = (request.url.path.startswith('/student/exams/') or request.url.path.startswith('/student/real-exams') or request.url.path.startswith('/student/digi-library/banks/') or '/take' in request.url.path) %}
-    <!-- Main Scrollable Viewport -->
-    <main class="flex-1 overflow-y-auto flex flex-col justify-between relative">
-      <div class="w-full flex-1 p-3 sm:p-5 md:px-8 md:pt-4 {% if not is_active_exam %}pb-28{% else %}pb-8{% endif %}">
-        {% block content %}{% endblock %}
+        <main class="sx-ext-canvas">
+          {% block content %}{% endblock %}
+        </main>
       </div>
-      {% if request.url.path.rstrip('/') == '/student/dashboard' %}
+
+      {% if is_student or is_parent or not user %}
         {% include "footer.html" %}
       {% endif %}
-    </main>
-
-    <!-- VISION-OS / MAC-OS FLOATING MAGNETIC BOTTOM DOCK (Desktop & Mobile!) -->
-    {% if user and not is_active_exam %}
-    <div class="v2-spatial-dock-wrap">
-      <nav class="v2-spatial-dock">
-        {% if user.role == 'student' and not user.get('is_parent') %}
-          <a href="/student/dashboard" class="v2-dock-item {% if request.url.path.startswith('/student/dashboard') %}is-active{% endif %}">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 sm:w-5 sm:h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-            </svg>
-            <span>Command Deck</span>
-          </a>
-          <a href="/student/exams" class="v2-dock-item {% if request.url.path.startswith('/student/exams') or request.url.path.startswith('/student/subjects') or request.url.path.startswith('/student/chapters') or request.url.path.startswith('/student/attempts') %}is-active{% endif %}">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 sm:w-5 sm:h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-            </svg>
-            <span>Course Matrix</span>
-          </a>
-          <a href="/student/tutor" class="v2-dock-item {% if request.url.path.startswith('/student/tutor') %}is-active{% endif %}">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 sm:w-5 sm:h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            <span>AI Co-Pilot</span>
-          </a>
-          <a href="/student/digi-library" class="v2-dock-item {% if request.url.path.startswith('/student/digi-library') %}is-active{% endif %}">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 sm:w-5 sm:h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
-            <span>Digi-Vault</span>
-          </a>
-          <a href="/student/settings" class="v2-dock-item {% if request.url.path.startswith('/student/settings') %}is-active{% endif %}">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 sm:w-5 sm:h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <span>Config</span>
-          </a>
-        {% elif user.role == 'student' and user.get('is_parent') %}
-          <a href="/parent/dashboard" class="v2-dock-item {% if request.url.path.startswith('/parent/dashboard') %}is-active{% endif %}"><span>Overview</span></a>
-          <a href="/parent/mock-exams" class="v2-dock-item {% if request.url.path.startswith('/parent/mock-exams') %}is-active{% endif %}"><span>Mock Exams</span></a>
-          <a href="/parent/real-exams" class="v2-dock-item {% if request.url.path.startswith('/parent/real-exams') %}is-active{% endif %}"><span>Real Exams</span></a>
-          <a href="/parent/settings" class="v2-dock-item {% if request.url.path.startswith('/parent/settings') %}is-active{% endif %}"><span>Settings</span></a>
-        {% elif user.role == 'admin' %}
-          <a href="/admin/dashboard" class="v2-dock-item {% if request.url.path.startswith('/admin/dashboard') or request.url.path == '/admin' %}is-active{% endif %}"><span>Studio Hub</span></a>
-          <a href="/admin/curriculum" class="v2-dock-item {% if request.url.path.startswith('/admin/curriculum') %}is-active{% endif %}"><span>Curriculum</span></a>
-          <a href="/admin/digi-library" class="v2-dock-item {% if request.url.path.startswith('/admin/digi-library') %}is-active{% endif %}"><span>Digi Library</span></a>
-          <a href="/admin/analytics" class="v2-dock-item {% if request.url.path.startswith('/admin/analytics') %}is-active{% endif %}"><span>Analytics</span></a>
-          <a href="/admin/settings" class="v2-dock-item {% if request.url.path.startswith('/admin/settings') %}is-active{% endif %}"><span>Settings</span></a>
-        {% endif %}
-      </nav>
-    </div>
     {% endif %}
-
   </div>
 
-  <!-- SAXAZ V2 HYPER-KINETIC PHYSICS ENGINE (60FPS Particle Constellation + 3D Card Tilt + Magnetic Cursor + Shockwave Ripples) -->
-  <script>
-    (function() {
-      // 1. Unregister stale V1 service worker caches so V2 styles always render fresh
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(regs => {
-          regs.forEach(r => r.update());
-        }).catch(() => {});
-      }
-
-      // 2. Magnetic Cursor Ring + 3D Perspective Tilt + Specular Glare
-      const cursorRing = document.getElementById('v2-cursor-ring');
-      let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
-      let ringX = mouseX, ringY = mouseY;
-
-      document.addEventListener('mousemove', (e) => {
-        mouseX = e.clientX;
-        mouseY = e.clientY;
-
-        // Hover state for magnetic ring
-        if (cursorRing) {
-          const interactive = e.target && e.target.closest('a, button, input, select, [role="button"], .v2-spotlight-card');
-          cursorRing.classList.toggle('is-hovering', !!interactive);
-        }
-
-        // 3D Tilt & Specular Spotlight on cards
-        const cards = document.querySelectorAll('.v2-spotlight-card, [data-v2-tilt]');
-        for (const card of cards) {
-          const rect = card.getBoundingClientRect();
-          if (rect.bottom < 0 || rect.top > window.innerHeight) continue;
-          const x = e.clientX - rect.left;
-          const y = e.clientY - rect.top;
-          card.style.setProperty('--mouse-x', `${x}px`);
-          card.style.setProperty('--mouse-y', `${y}px`);
-
-          if (card.hasAttribute('data-v2-tilt') && x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
-            const centerX = rect.width / 2;
-            const centerY = rect.height / 2;
-            const rotateX = ((y - centerY) / centerY) * -6;
-            const rotateY = ((x - centerX) / centerX) * 6;
-            card.style.transform = `perspective(900px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translateY(-4px)`;
-          } else if (card.hasAttribute('data-v2-tilt')) {
-            card.style.transform = '';
-          }
-        }
-      }, { passive: true });
-
-      function animateCursor() {
-        if (cursorRing) {
-          ringX += (mouseX - ringX) * 0.22;
-          ringY += (mouseY - ringY) * 0.22;
-          cursorRing.style.left = `${ringX}px`;
-          cursorRing.style.top = `${ringY}px`;
-        }
-        requestAnimationFrame(animateCursor);
-      }
-      requestAnimationFrame(animateCursor);
-
-      // 3. Click Shockwave Ripple
-      document.addEventListener('pointerdown', (e) => {
-        const ripple = document.createElement('div');
-        ripple.className = 'v2-click-ripple';
-        ripple.style.left = `${e.clientX}px`;
-        ripple.style.top = `${e.clientY}px`;
-        document.body.appendChild(ripple);
-        setTimeout(() => ripple.remove(), 650);
-      }, { passive: true });
-
-      // 4. 60FPS Interactive Golden Constellation Canvas
-      const canvas = document.getElementById('v2-particle-canvas');
-      if (canvas) {
-        const ctx = canvas.getContext('2d');
-        let width = canvas.width = window.innerWidth;
-        let height = canvas.height = window.innerHeight;
-        window.addEventListener('resize', () => {
-          width = canvas.width = window.innerWidth;
-          height = canvas.height = window.innerHeight;
-        });
-
-        const count = window.innerWidth < 768 ? 24 : 48;
-        const particles = Array.from({ length: count }, () => ({
-          x: Math.random() * width,
-          y: Math.random() * height,
-          vx: (Math.random() - 0.5) * 0.65,
-          vy: (Math.random() - 0.5) * 0.65,
-          r: Math.random() * 2.2 + 1.2
-        }));
-
-        function drawParticles() {
-          ctx.clearRect(0, 0, width, height);
-          const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-          const dotColor = isDark ? 'rgba(248, 176, 0, 0.55)' : 'rgba(248, 176, 0, 0.65)';
-          const lineBase = isDark ? '248, 176, 0' : '17, 17, 17';
-
-          for (let i = 0; i < particles.length; i++) {
-            const p = particles[i];
-            p.x += p.vx;
-            p.y += p.vy;
-            if (p.x < 0 || p.x > width) p.vx *= -1;
-            if (p.y < 0 || p.y > height) p.vy *= -1;
-
-            // Subtle magnetic pull toward cursor
-            const dxMouse = mouseX - p.x;
-            const dyMouse = mouseY - p.y;
-            const distMouse = Math.hypot(dxMouse, dyMouse);
-            if (distMouse < 180) {
-              ctx.beginPath();
-              ctx.moveTo(p.x, p.y);
-              ctx.lineTo(mouseX, mouseY);
-              ctx.strokeStyle = `rgba(248, 176, 0, ${(1 - distMouse / 180) * 0.45})`;
-              ctx.lineWidth = 1.2;
-              ctx.stroke();
-            }
-
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-            ctx.fillStyle = dotColor;
-            ctx.fill();
-
-            for (let j = i + 1; j < particles.length; j++) {
-              const p2 = particles[j];
-              const d = Math.hypot(p.x - p2.x, p.y - p2.y);
-              if (d < 135) {
-                ctx.beginPath();
-                ctx.moveTo(p.x, p.y);
-                ctx.lineTo(p2.x, p2.y);
-                ctx.strokeStyle = `rgba(${lineBase}, ${(1 - d / 135) * (isDark ? 0.16 : 0.08)})`;
-                ctx.lineWidth = 1;
-                ctx.stroke();
-              }
-            }
-          }
-          requestAnimationFrame(drawParticles);
-        }
-        requestAnimationFrame(drawParticles);
-      }
-    })();
-  </script>
-
-  <!-- Global Toast Container for Notifications -->
-<script>
-  const swalTailwindConfig = {
-    buttonsStyling: false,
-    customClass: {
-      popup: 'rounded-[2rem] border border-base-300 shadow-2xl bg-base-100 p-6',
-      title: 'text-2xl font-black text-base-content tracking-tight mt-4',
-      htmlContainer: 'text-base-content/70 font-medium text-sm',
-      confirmButton: 'btn btn-error rounded-full px-8 shadow-[0_0_15px_rgba(239,68,68,0.4)] text-white',
-      cancelButton: 'btn btn-ghost rounded-full px-8',
-      actions: 'gap-4 mt-6 flex justify-center w-full'
-    }
-  };
-
-  window.alert = function(message) { 
-    Swal.fire({
-      ...swalTailwindConfig,
-      text: message, 
-      icon: "info",
-      customClass: {
-        ...swalTailwindConfig.customClass,
-        confirmButton: 'btn btn-primary rounded-full px-8 shadow-[0_0_15px_rgba(244,170,0,0.4)] text-[#1a1a1a]'
-      },
-      confirmButtonText: "OK" 
-    }); 
-  }; 
-  
-  document.addEventListener("htmx:confirm", function(evt) { 
-    if (!evt.detail.question) return; // Only show popup if hx-confirm is set
-    evt.preventDefault(); 
-    Swal.fire({ 
-      ...swalTailwindConfig,
-      title: "Are you sure?", 
-      text: evt.detail.question, 
-      icon: "warning", 
-      showCancelButton: true, 
-      confirmButtonText: "Yes, delete it!" 
-    }).then((result) => { 
-      if(result.isConfirmed) { 
-        evt.detail.issueRequest(true); 
-      } 
-    }); 
-  });
-</script>
-
+  <!-- Global SAXAZ Tactile Confirmation & Toast Modal Engine (Strict #f7b317 / #231f20 / #ffffff) -->
 <style>
-  /* Global custom cursor */
-  body.custom-cursor-active * {
-    cursor: url('data:image/svg+xml;utf8,<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><defs><filter id="glow"><feGaussianBlur stdDeviation="1" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><path d="M2 2 L20 8 L12 12 L8 20 Z" fill="%23F4AA00" stroke="%23ffffff" stroke-width="1.5" filter="url(%23glow)"/></svg>') 2 2, auto !important;
-  }
-  body.custom-cursor-active a, body.custom-cursor-active button, body.custom-cursor-active [role="button"], body.custom-cursor-active input[type="submit"], body.custom-cursor-active input[type="button"], body.custom-cursor-active label {
-    cursor: url('data:image/svg+xml;utf8,<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><defs><filter id="glow"><feGaussianBlur stdDeviation="1.5" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><path d="M4 2 L12 24 L15 15 L24 12 Z" fill="%233B82F6" stroke="%23ffffff" stroke-width="1.5" filter="url(%23glow)"/></svg>') 4 2, pointer !important;
-  }
-
-  /* Trail particles */
-  body.custom-cursor-active .magic-trail {
+  .sx-confirm-backdrop {
     position: fixed;
-    border-radius: 50%;
+    inset: 0;
+    z-index: 2147483645;
+    background: rgba(35, 31, 32, 0.72);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+  }
+  .sx-confirm-backdrop.sx-open {
+    opacity: 1;
+  }
+  .sx-confirm-card {
+    width: 100%;
+    max-width: 410px;
+    background: #ffffff;
+    color: #231f20;
+    border: 3px solid #231f20;
+    border-radius: 28px;
+    padding: 28px 26px 24px;
+    box-shadow: 0 24px 64px rgba(35, 31, 32, 0.28);
+    text-align: center;
+    transform: translateY(10px) scale(0.96);
+    transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+    font-family: var(--font-body);
+  }
+  .sx-confirm-backdrop.sx-open .sx-confirm-card {
+    transform: translateY(0) scale(1);
+  }
+  .sx-confirm-icon {
+    width: 58px;
+    height: 58px;
+    border-radius: 20px;
+    margin: 0 auto 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #231f20;
+    box-shadow: 0 4px 0 #231f20;
+  }
+  .sx-confirm-icon.is-warning,
+  .sx-confirm-icon.is-question,
+  .sx-confirm-icon.is-info,
+  .sx-confirm-icon.is-success {
+    background: #f7b317;
+    color: #231f20;
+  }
+  .sx-confirm-icon.is-danger,
+  .sx-confirm-icon.is-error {
+    background: #231f20;
+    color: #f7b317;
+  }
+  .sx-confirm-title {
+    font-family: var(--sx-display, 'Bricolage Grotesque', system-ui, sans-serif);
+    font-size: 1.32rem;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+    margin: 0 0 8px;
+    color: #231f20;
+  }
+  .sx-confirm-body {
+    font-size: 0.92rem;
+    font-weight: 600;
+    line-height: 1.5;
+    color: #231f20;
+    margin: 0 0 20px;
+    word-break: break-word;
+  }
+  .sx-confirm-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap-reverse;
+  }
+  .sx-confirm-btn {
+    flex: 1 1 130px;
+    min-height: 44px;
+    padding: 10px 18px;
+    border-radius: 16px;
+    font-size: 0.88rem;
+    font-weight: 800;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s ease;
+    border: 2px solid #231f20;
+  }
+  .sx-confirm-btn:active {
+    transform: translateY(2px);
+  }
+  .sx-confirm-btn-cancel {
+    background: #ffffff;
+    color: #231f20 !important;
+    border: 2px solid #231f20;
+    box-shadow: 0 3px 0 #231f20;
+  }
+  .sx-confirm-btn-primary {
+    background: #f7b317;
+    color: #231f20 !important;
+    border: 2px solid #231f20;
+    box-shadow: 0 4px 0 #231f20;
+  }
+  .sx-confirm-btn-danger {
+    background: #231f20;
+    color: #ffffff !important;
+    border: 2px solid #231f20;
+    box-shadow: 0 4px 0 #f7b317;
+  }
+  .sx-toast-pill {
+    position: fixed;
+    right: 16px;
+    bottom: 88px;
+    z-index: 2147483645;
+    max-width: calc(100vw - 32px);
+    background: #231f20;
+    color: #ffffff;
+    border: 2px solid #f7b317;
+    border-radius: 18px;
+    padding: 12px 16px;
+    box-shadow: 0 14px 32px rgba(35, 31, 32, 0.45);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.84rem;
+    font-weight: 700;
+    transform: translateY(12px);
+    opacity: 0;
+    transition: all 0.2s ease;
     pointer-events: none;
-    z-index: 999999;
-    transform: translate(-50%, -50%);
-    animation: spark 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
   }
-
-  @keyframes spark {
-    0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
-    100% { transform: translate(-50%, -50%) scale(0) rotate(90deg); opacity: 0; }
-  }
-  @keyframes bubble {
-    0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
-    100% { transform: translate(-50%, calc(-50% - 40px)) scale(1.5); opacity: 0; }
-  }
-  @keyframes drop {
-    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-    100% { transform: translate(-50%, calc(-50% + 50px)) scale(0); opacity: 0; }
+  .sx-toast-pill.sx-open {
+    transform: translateY(0);
+    opacity: 1;
   }
 </style>
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    let lastX = 0, lastY = 0;
-    let lastTime = 0;
-    
-    document.addEventListener('mousemove', (e) => {
-      if (!document.body.classList.contains('custom-cursor-active')) return;
-      const now = Date.now();
-      const dist = Math.hypot(e.clientX - lastX, e.clientY - lastY);
-      const effectType = document.querySelector('select[name="cursor_effect"]')?.value || '{{ current_cursor_effect or "magic" }}';
-      
-      if (effectType === 'none') return;
-      
-      if (dist > 15 || now - lastTime > 100) {
-        const particle = document.createElement('div');
-        particle.className = 'magic-trail';
-        
-        const offsetX = (Math.random() - 0.5) * 10;
-        const offsetY = (Math.random() - 0.5) * 10;
-        particle.style.left = (e.clientX + offsetX) + 'px';
-        particle.style.top = (e.clientY + offsetY) + 'px';
-        
-        if (effectType === 'bubbles') {
-          const size = Math.random() * 8 + 6;
-          particle.style.width = size + 'px';
-          particle.style.height = size + 'px';
-          particle.style.background = 'transparent';
-          particle.style.border = '1.5px solid rgba(59, 130, 246, 0.7)';
-          particle.style.boxShadow = 'inset 0 0 4px rgba(255, 255, 255, 0.8)';
-          particle.style.animation = 'bubble 0.8s ease-out forwards';
-          document.body.appendChild(particle);
-          setTimeout(() => particle.remove(), 800);
-        } else if (effectType === 'sparks') {
-          const size = Math.random() * 3 + 2;
-          particle.style.width = size + 'px';
-          particle.style.height = size + 'px';
-          particle.style.background = '#ff4500';
-          particle.style.boxShadow = '0 0 8px #ff8c00';
-          particle.style.animation = 'drop 0.6s ease-in forwards';
-          document.body.appendChild(particle);
-          setTimeout(() => particle.remove(), 600);
-        } else {
-          // Default magic
-          const size = Math.random() * 6 + 4;
-          particle.style.width = size + 'px';
-          particle.style.height = size + 'px';
-          if (Math.random() > 0.7) {
-            particle.style.clipPath = 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)';
-          }
-          const colors = ['#F4AA00', '#3B82F6', '#10B981', '#facc15'];
-          particle.style.background = colors[Math.floor(Math.random() * colors.length)];
-          particle.style.boxShadow = `0 0 8px ${particle.style.background}`;
-          particle.style.animation = 'spark 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards';
-          document.body.appendChild(particle);
-          setTimeout(() => particle.remove(), 600);
-        }
-        
-        lastX = e.clientX;
-        lastY = e.clientY;
-        lastTime = now;
+  (function() {
+    function getIconSvg(type) {
+      if (type === 'danger' || type === 'error') {
+        return '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
       }
-    }, { passive: true });
-  });
+      if (type === 'success') {
+        return '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+      }
+      if (type === 'info') {
+        return '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
+      }
+      return '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+    }
+
+    window.saxazConfirm = function(opts = {}) {
+      if (opts.toast) {
+        return new Promise((resolve) => {
+          const toast = document.createElement('div');
+          toast.className = 'sx-toast-pill';
+          toast.innerHTML = `<span style="color:#f7b317;display:flex;">${getIconSvg(opts.icon || 'warning')}</span><div><div style="font-weight:900;">${opts.title || ''}</div>${opts.text ? `<div style="opacity:0.8;font-size:0.78rem;">${opts.text}</div>` : ''}</div>`;
+          document.body.appendChild(toast);
+          requestAnimationFrame(() => toast.classList.add('sx-open'));
+          setTimeout(() => {
+            toast.classList.remove('sx-open');
+            setTimeout(() => toast.remove(), 220);
+            resolve({ isConfirmed: false, isDismissed: true });
+          }, opts.timer || 3000);
+        });
+      }
+
+      return new Promise((resolve) => {
+        const existing = document.getElementById('sx-global-confirm-modal');
+        if (existing) existing.remove();
+
+        const showCancel = opts.showCancelButton !== false;
+        const rawText = (opts.text || '') + ' ' + (opts.title || '');
+        const isDestructive = opts.tone === 'danger' || /delete|remove|log\s*out|sign\s*out|clear|discard|reset|unlink|disable/i.test(rawText);
+        const iconType = opts.icon || (isDestructive ? 'danger' : 'warning');
+        const confirmLabel = opts.confirmButtonText || (showCancel ? (isDestructive ? 'Yes, Confirm' : 'Yes, Continue') : 'OK');
+        const cancelLabel = opts.cancelButtonText || 'Cancel';
+
+        const backdrop = document.createElement('div');
+        backdrop.id = 'sx-global-confirm-modal';
+        backdrop.className = 'sx-confirm-backdrop';
+        backdrop.innerHTML = `
+          <div class="sx-confirm-card" role="dialog" aria-modal="true">
+            <div class="sx-confirm-icon is-${iconType}">
+              ${opts.imageUrl ? `<img src="${opts.imageUrl}" alt="" style="width:40px;height:40px;border-radius:10px;object-fit:contain;">` : getIconSvg(iconType)}
+            </div>
+            <h3 class="sx-confirm-title">${opts.title || 'Are you sure?'}</h3>
+            <div class="sx-confirm-body">${opts.html ? opts.html : (opts.text || '')}</div>
+            <div class="sx-confirm-actions">
+              ${showCancel ? `<button type="button" class="sx-confirm-btn sx-confirm-btn-cancel" data-sx-act="cancel">${cancelLabel}</button>` : ''}
+              <button type="button" class="sx-confirm-btn ${isDestructive && showCancel ? 'sx-confirm-btn-danger' : 'sx-confirm-btn-primary'}" data-sx-act="confirm">${confirmLabel}</button>
+            </div>
+          </div>
+        `;
+
+        const close = (confirmed) => {
+          window.removeEventListener('keydown', onKey, true);
+          backdrop.classList.remove('sx-open');
+          setTimeout(() => backdrop.remove(), 180);
+          resolve({ isConfirmed: confirmed, isDismissed: !confirmed, value: confirmed });
+        };
+
+        const onKey = (e) => {
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            e.stopPropagation();
+            close(false);
+          } else if (e.key === 'Enter') {
+            e.preventDefault();
+            e.stopPropagation();
+            close(true);
+          }
+        };
+        window.addEventListener('keydown', onKey, true);
+
+        backdrop.addEventListener('click', (e) => {
+          if (e.target === backdrop) close(false);
+          const btn = e.target.closest('[data-sx-act]');
+          if (btn) {
+            close(btn.getAttribute('data-sx-act') === 'confirm');
+          }
+        });
+
+        document.body.appendChild(backdrop);
+        requestAnimationFrame(() => {
+          backdrop.classList.add('sx-open');
+          const confirmBtn = backdrop.querySelector('[data-sx-act="confirm"]');
+          if (confirmBtn) confirmBtn.focus();
+        });
+      });
+    };
+
+    // Provide full Swal.fire compatibility so every existing Swal.fire call works natively
+    window.Swal = window.Swal || {
+      fire: function(titleOrOpts, text, icon) {
+        if (typeof titleOrOpts === 'string') {
+          return window.saxazConfirm({ title: titleOrOpts, text: text || '', icon: icon || 'info', showCancelButton: false });
+        }
+        return window.saxazConfirm(titleOrOpts || {});
+      }
+    };
+
+    window.alert = function(message) {
+      window.saxazConfirm({
+        title: 'Notice',
+        text: String(message || ''),
+        icon: 'info',
+        showCancelButton: false,
+        confirmButtonText: 'OK'
+      });
+    };
+
+    // HTMX hx-confirm global interceptor
+    document.addEventListener('htmx:confirm', function(evt) {
+      if (!evt.detail.question) return;
+      evt.preventDefault();
+      const q = evt.detail.question;
+      const elt = evt.detail.elt;
+      const isDel = /delete|remove/i.test(q) || (elt && elt.hasAttribute('hx-delete'));
+      window.saxazConfirm({
+        title: (elt && elt.dataset.confirmTitle) || (isDel ? 'Delete Item?' : 'Please Confirm'),
+        text: q,
+        tone: isDel ? 'danger' : 'warning',
+        confirmButtonText: (elt && elt.dataset.confirmBtn) || (isDel ? 'Yes, Delete' : 'Yes, Confirm'),
+        cancelButtonText: (elt && elt.dataset.confirmCancel) || 'Cancel',
+        showCancelButton: true
+      }).then((res) => {
+        if (res.isConfirmed) evt.detail.issueRequest(true);
+      });
+    });
+
+    // Global delegated interceptor for /logout links and any [data-confirm] links/buttons
+    document.addEventListener('click', function(e) {
+      const target = e.target && e.target.closest ? e.target.closest('a[href], button[data-confirm]') : null;
+      if (!target) return;
+      if (target.dataset.sxConfirmed === '1') {
+        delete target.dataset.sxConfirmed;
+        return;
+      }
+      const href = target.getAttribute('href') || '';
+      const isLogout = href === '/logout' || href.endsWith('/logout');
+      const customConfirm = target.getAttribute('data-confirm');
+      if (!isLogout && !customConfirm) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      const title = target.getAttribute('data-confirm-title') || (isLogout ? 'Log Out of SAXAZ?' : 'Are you sure?');
+      const text = customConfirm || 'Are you sure you want to log out of your study session?';
+      const confirmBtn = target.getAttribute('data-confirm-btn') || (isLogout ? 'Yes, Log Out' : 'Yes, Continue');
+      const cancelBtn = target.getAttribute('data-confirm-cancel') || (isLogout ? 'Stay Logged In' : 'Cancel');
+      const tone = target.getAttribute('data-confirm-tone') || (isLogout ? 'danger' : 'warning');
+
+      window.saxazConfirm({
+        title: title,
+        text: text,
+        tone: tone,
+        confirmButtonText: confirmBtn,
+        cancelButtonText: cancelBtn,
+        showCancelButton: true
+      }).then((res) => {
+        if (res.isConfirmed) {
+          if (target.tagName === 'A' && href && href !== '#') {
+            window.location.href = href;
+          } else {
+            target.dataset.sxConfirmed = '1';
+            target.click();
+          }
+        }
+      });
+    }, true);
+
+    // Global delegated interceptor for <form data-confirm="...">
+    document.addEventListener('submit', function(e) {
+      const form = e.target;
+      if (!form || form.tagName !== 'FORM') return;
+      const customConfirm = form.getAttribute('data-confirm');
+      if (!customConfirm) return;
+      if (form.dataset.sxConfirmed === '1') {
+        delete form.dataset.sxConfirmed;
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      window.saxazConfirm({
+        title: form.getAttribute('data-confirm-title') || 'Confirm Action',
+        text: customConfirm,
+        tone: form.getAttribute('data-confirm-tone') || 'warning',
+        confirmButtonText: form.getAttribute('data-confirm-btn') || 'Yes, Save',
+        cancelButtonText: form.getAttribute('data-confirm-cancel') || 'Cancel',
+        showCancelButton: true
+      }).then((res) => {
+        if (res.isConfirmed) {
+          form.dataset.sxConfirmed = '1';
+          if (typeof form.requestSubmit === 'function') form.requestSubmit();
+          else form.submit();
+        }
+      });
+    }, true);
+  })();
 </script>
 
 <!-- Global Image Modal -->
 <div x-data="{ showImage: false, imageUrl: '' }" @open-image-modal.window="imageUrl = $event.detail; showImage = true">
-  <div x-show="showImage" x-transition.opacity.duration.300ms class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-md p-4" style="display: none;" @click="showImage = false">
+  <div x-show="showImage" x-cloak x-transition.opacity.duration.300ms class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4" @click="showImage = false">
     <img :src="imageUrl" class="max-w-full max-h-full rounded-xl shadow-2xl" @click.stop />
   </div>
 </div>
@@ -2199,6 +3175,36 @@
           navigator.sendBeacon('/student/api/track-time', blob);
         } catch(e) {}
       }
+    });
+  })();
+
+  // Universal Full-Card Clickable Navigation ([data-card-href])
+  (function() {
+    const INTERACTIVE_SEL = 'a, button, input, select, textarea, label, summary, [role="button"], [data-no-card-nav]';
+    document.addEventListener('click', function(e) {
+      if (e.defaultPrevented || e.button !== 0) return;
+      const card = e.target.closest('[data-card-href]');
+      if (!card) return;
+      const innerInteractive = e.target.closest(INTERACTIVE_SEL);
+      if (innerInteractive && innerInteractive !== card && card.contains(innerInteractive)) return;
+      const sel = window.getSelection ? String(window.getSelection()) : '';
+      if (sel && sel.trim().length > 0) return;
+      const href = card.getAttribute('data-card-href');
+      if (!href) return;
+      if (e.metaKey || e.ctrlKey) {
+        window.open(href, '_blank', 'noopener');
+      } else {
+        window.location.href = href;
+      }
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const card = e.target.closest('[data-card-href]');
+      if (!card || e.target !== card) return;
+      const href = card.getAttribute('data-card-href');
+      if (!href) return;
+      e.preventDefault();
+      window.location.href = href;
     });
   })();
 </script>

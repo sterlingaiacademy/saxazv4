@@ -1,366 +1,1578 @@
 {% extends "base.html" %}
-
-{% block title %}{{ chapter.name }} — SAXAZ Chapter Studio{% endblock %}
-{% block topbar_title %}<span>{{ chapter.name }}</span>{% endblock %}
+{% block title %}{{ chapter.name }} | SAXAZ{% endblock %}
 
 {% block content %}
-<script>window.SAXAZ_SUBJECT_ID = {{ chapter.subject_id }};</script>
+{% from "student/partials/summary_games.html" import molecule_defs, game_leaf, game_food, game_breathe, game_blood, game_pump, game_kidney, game_team %}
+{{ molecule_defs() }}
+<link rel="stylesheet" href="/static/css/summary-games.css?v=23">
+<script src="/static/js/summary-games.js?v=22"></script>
+{% set content_list = chapter.content if chapter and chapter.content is defined and chapter.content is iterable and chapter.content is not string else (modules if modules is defined else []) %}
+{% set exam_list = available_exams if available_exams is defined else (exams if exams is defined else []) %}
+{% set done_ids = completed_content_ids if completed_content_ids is defined else [] %}
+{% set first_name = (user.name or 'Friend').strip().split(' ')[0] | capitalize %}
+{% set active_tutor = tutor_name if tutor_name is defined else 'bella' %}
+{% set active_tutor_display = {'bella': 'Bella', 'sarah': 'Sarah', 'adam': 'Adam', 'michael': 'Michael'}.get(active_tutor, 'Bella') %}
 
-<div class="max-w-7xl mx-auto space-y-6 pb-24" x-data="chapterStudio()">
-
-  <!-- 1. TOP KINETIC CHAPTER COMMAND HEADER -->
-  <div class="v2-obsidian-hero p-5 sm:p-8 relative v2-enter">
-    <div class="absolute -right-10 -bottom-10 w-44 h-44 rounded-full border-[12px] border-[#f8b000]/15 v2-anim-spin-slow pointer-events-none"></div>
-
-    <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-      <div class="space-y-3 max-w-3xl">
-        <div class="flex flex-wrap items-center gap-2">
-          <a href="/student/subjects/{{ chapter.subject_id }}"
-             class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-black bg-white/10 hover:bg-[#f8b000] text-white hover:text-[#111111] transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-            <span>Back to Subject</span>
-          </a>
-          <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-[#f8b000] text-[#111111]">
-            4-Stage Learning Pipeline
-          </span>
-        </div>
-
-        <h1 class="text-2xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-tight">
-          {{ chapter.name }}
-        </h1>
-
-        <p class="text-xs sm:text-sm text-white/75 font-medium leading-relaxed max-w-2xl">
-          {{ chapter.description or "Master the core concepts, watch real-world applications, review smart modules, and test yourself in the exam arena." }}
-        </p>
-      </div>
-
-      <!-- Right Actions: AI Voice Briefing + Direct Exam Jump -->
-      <div class="flex flex-wrap sm:flex-nowrap items-center gap-3 shrink-0">
-        <button type="button"
-                @click="toggleSpeech()"
-                class="v2-btn-gold px-5 py-3 text-xs sm:text-sm">
-          <template x-if="!isSpeaking">
-            <span class="inline-flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
-              <span>Voice Briefing</span>
-            </span>
-          </template>
-          <template x-if="isSpeaking">
-            <span class="inline-flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-[#111111] animate-ping"></span>
-              <span>Stop Briefing</span>
-            </span>
-          </template>
-        </button>
-
-        <a href="/student/chapters/{{ chapter.id }}/exams"
-           class="px-5 py-3 rounded-full bg-white text-[#111111] hover:bg-[#f8b000] font-black text-xs sm:text-sm border-2 border-white transition-all inline-flex items-center gap-2">
-          <span>Exam Arena ({{ available_exams|length }})</span>
-          <span>&rarr;</span>
-        </a>
-      </div>
-    </div>
-  </div>
-
-  <!-- 2. INTERACTIVE 4-STAGE PIPELINE SWITCHER -->
-  <div class="v2-stage-pipeline v2-enter v2-delay-1">
-    <button type="button"
-            @click="switchStage('video')"
-            class="v2-stage-pill"
-            :class="stage === 'video' ? 'active' : ''">
-      <span class="v2-stage-step-num">01</span>
-      <span>Concept &amp; Real-Life Videos</span>
-    </button>
-
-    <button type="button"
-            @click="switchStage('modules')"
-            class="v2-stage-pill"
-            :class="stage === 'modules' ? 'active' : ''">
-      <span class="v2-stage-step-num">02</span>
-      <span>Study Modules ({{ chapter.content|length }})</span>
-    </button>
-
-    <button type="button"
-            @click="switchStage('exams')"
-            class="v2-stage-pill"
-            :class="stage === 'exams' ? 'active' : ''">
-      <span class="v2-stage-step-num">03</span>
-      <span>Practice &amp; Exams ({{ available_exams|length }})</span>
-    </button>
-
-    <button type="button"
-            @click="switchStage('copilot')"
-            class="v2-stage-pill"
-            :class="stage === 'copilot' ? 'active' : ''">
-      <span class="v2-stage-step-num">04</span>
-      <span>AI Chapter Co-Pilot</span>
-    </button>
-  </div>
-
-  <!-- =========================================================================
-       STAGE 01: CONCEPT & REAL-LIFE VIDEO STUDIO
-       ========================================================================= -->
-  <div x-show="stage === 'video'"
-       x-transition.opacity.duration.250ms
-       class="space-y-6 v2-enter v2-delay-2">
-
-    <!-- Video Mode Selector Pills -->
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <div class="inline-flex items-center gap-2 p-1.5 rounded-2xl bg-[#111111] text-white border-2 border-[#111111]">
-        <button type="button"
-                @click="switchVideoTab('concept')"
-                :class="videoTab === 'concept' ? 'bg-[#f8b000] text-[#111111]' : 'text-white/75 hover:text-white'"
-                class="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2">
-          <span>🎬 Concept Video</span>
-        </button>
-        <button type="button"
-                @click="switchVideoTab('reallife')"
-                :class="videoTab === 'reallife' ? 'bg-[#f8b000] text-[#111111]' : 'text-white/75 hover:text-white'"
-                class="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2">
-          <span>🌍 Real-Life Application</span>
-        </button>
-      </div>
-
-      <button type="button"
-              @click="switchStage('modules')"
-              class="v2-btn-black px-5 py-2.5 text-xs">
-        <span>Next: Study Modules</span>
-        <span>&rarr;</span>
-      </button>
-    </div>
-
-    <!-- Concept Video Theatre -->
-    <div x-show="videoTab === 'concept'" class="v2-bento-card overflow-hidden bg-[#111111] p-3 sm:p-5">
-      {% if chapter.video_description_url %}
-        <div class="w-full rounded-2xl overflow-hidden border-2 border-[#f8b000]/40 bg-black" style="aspect-ratio: 16/9;">
-          <div class="w-full h-full" data-saxaz-video="{{ chapter.video_description_url | video_vault_token }}"></div>
-        </div>
-      {% else %}
-        <div class="py-16 px-4 text-center text-white space-y-3">
-          <div class="w-16 h-16 rounded-2xl bg-[#f8b000] text-[#111111] flex items-center justify-center mx-auto text-2xl font-black">🎬</div>
-          <h3 class="text-xl font-black">Concept Video Coming Soon</h3>
-          <p class="text-xs text-white/60 max-w-md mx-auto">Continue to Stage 02 to explore the study modules or launch the Exam Arena directly.</p>
-        </div>
-      {% endif %}
-    </div>
-
-    <!-- Real Life Application Video Theatre -->
-    <div x-show="videoTab === 'reallife'" style="display: none;" class="v2-bento-card overflow-hidden bg-[#111111] p-3 sm:p-5">
-      {% if chapter.real_life_url %}
-        <div class="w-full rounded-2xl overflow-hidden border-2 border-[#f8b000]/40 bg-black" style="aspect-ratio: 16/9;">
-          <div class="w-full h-full" data-saxaz-video="{{ chapter.real_life_url | video_vault_token }}"></div>
-        </div>
-      {% else %}
-        <div class="py-16 px-4 text-center text-white space-y-3">
-          <div class="w-16 h-16 rounded-2xl bg-[#f8b000] text-[#111111] flex items-center justify-center mx-auto text-2xl font-black">🌍</div>
-          <h3 class="text-xl font-black">Real-Life Application Video Coming Soon</h3>
-          <p class="text-xs text-white/60 max-w-md mx-auto">Ask your AI Co-Pilot in Stage 04 for real-world examples of {{ chapter.name }}!</p>
-        </div>
-      {% endif %}
-    </div>
-  </div>
-
-  <!-- =========================================================================
-       STAGE 02: INTERACTIVE STUDY MODULES & NOTES
-       ========================================================================= -->
-  <div x-show="stage === 'modules'"
-       style="display: none;"
-       x-transition.opacity.duration.250ms
-       class="space-y-5">
-    <div class="flex items-center justify-between">
-      <h2 class="text-xl sm:text-2xl font-black text-[#111111]">Chapter Study Modules</h2>
-      <button type="button" @click="switchStage('exams')" class="v2-btn-gold px-5 py-2 text-xs">
-        <span>Proceed to Stage 03: Exams</span>
-        <span>&rarr;</span>
-      </button>
-    </div>
-
-    {% if chapter.content %}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-      {% for item in chapter.content %}
-      <a href="/student/content/{{ item.id }}"
-         class="v2-bento-card v2-spotlight-card p-5 flex flex-col justify-between gap-4 group">
-        <div class="flex items-center justify-between gap-2">
-          <span class="w-9 h-9 rounded-xl bg-[#111111] text-[#f8b000] font-mono-num font-black text-xs flex items-center justify-center">
-            0{{ loop.index }}
-          </span>
-          <div class="flex items-center gap-2">
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-[#fffbeb] text-[#111111] border border-[#111111]">
-              {{ item.type }}
-            </span>
-            {% if item.id in completed_content_ids %}
-            <span class="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-black" title="Completed">✓</span>
-            {% endif %}
-          </div>
-        </div>
-
-        <div class="space-y-1">
-          <h3 class="text-lg font-black text-[#111111] group-hover:text-amber-600 transition-colors line-clamp-2">
-            {{ item.title }}
-          </h3>
-          <p class="text-xs font-bold text-gray-500">Click to open interactive viewer &rarr;</p>
-        </div>
-      </a>
-      {% endfor %}
-    </div>
-    {% else %}
-    <div class="v2-bento-card p-10 text-center space-y-3">
-      <div class="w-14 h-14 rounded-2xl bg-[#fffbeb] border-2 border-[#111111] flex items-center justify-center mx-auto text-2xl">📑</div>
-      <h3 class="text-lg font-black text-[#111111]">No separate module files in this chapter</h3>
-      <p class="text-xs font-bold text-gray-500">Jump straight to Stage 03 to practice chapter exams!</p>
-    </div>
+{% set ns = namespace(videos=[], video_payloads=[], mocks=[], reals=[], best_mock=none, best_real=none, first_mock_id=none, first_real_id=none, real_unlocked=false) %}
+{% for ex in exam_list %}
+  {% if ex.type == 'real' %}
+    {% set ns.reals = ns.reals + [ex] %}
+    {% if ns.first_real_id is none %}{% set ns.first_real_id = ex.id %}{% endif %}
+    {% if ex.highest_score is defined and ex.highest_score is not none %}
+      {% set sc = ex.highest_score|round|int %}
+      {% if ns.best_real is none or sc > ns.best_real %}{% set ns.best_real = sc %}{% endif %}
     {% endif %}
-  </div>
-
-  <!-- =========================================================================
-       STAGE 03: PRACTICE & EXAM ARENA
-       ========================================================================= -->
-  <div x-show="stage === 'exams'"
-       style="display: none;"
-       x-transition.opacity.duration.250ms
-       class="space-y-5">
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-      <div>
-        <h2 class="text-xl sm:text-2xl font-black text-[#111111]">Chapter Practice &amp; Mock Exams</h2>
-        <p class="text-xs font-bold text-gray-500">Select any exam below or launch the full chapter exam hub.</p>
-      </div>
-      <a href="/student/chapters/{{ chapter.id }}/exams" class="v2-btn-black px-5 py-2.5 text-xs">
-        <span>Open Full Chapter Exam Arena</span>
-        <span>&rarr;</span>
-      </a>
-    </div>
-
-    {% if available_exams %}
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-      {% for ex in available_exams %}
-      <div class="v2-bento-card v2-spotlight-card p-5 sm:p-6 flex flex-col justify-between gap-4">
-        <div class="flex items-start justify-between gap-3">
-          <div class="space-y-1">
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-[#f8b000] text-[#111111] border border-[#111111]">
-              {{ ex.exam_mode | default('Practice Arena') }}
-            </span>
-            <h3 class="text-lg sm:text-xl font-black text-[#111111] mt-1">{{ ex.title }}</h3>
-          </div>
-          {% if ex.best_pct is defined and ex.best_pct is not none %}
-          <div class="px-3 py-1 rounded-xl bg-[#111111] text-[#f8b000] font-mono-num text-xs font-black">
-            Best: {{ ex.best_pct }}%
-          </div>
-          {% endif %}
-        </div>
-
-        <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-gray-100">
-          <div class="text-xs font-extrabold text-gray-500">
-            Instant AI grading &amp; step-by-step solutions
-          </div>
-          <form action="/student/exams/{{ ex.id }}/start" method="POST">
-            <button type="submit" class="v2-btn-gold px-5 py-2 text-xs">
-              <span>Start Exam</span>
-              <span>&rarr;</span>
-            </button>
-          </form>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-    <div class="v2-bento-card p-10 text-center space-y-3">
-      <h3 class="text-lg font-black text-[#111111]">No practice exams published for this chapter yet</h3>
-      <a href="/student/chapters/{{ chapter.id }}/exams" class="v2-btn-gold px-5 py-2 text-xs">Check Exam Hub</a>
-    </div>
+  {% else %}
+    {% set ns.mocks = ns.mocks + [ex] %}
+    {% if ns.first_mock_id is none %}{% set ns.first_mock_id = ex.id %}{% endif %}
+    {% if ex.highest_score is defined and ex.highest_score is not none %}
+      {% set sc = ex.highest_score|round|int %}
+      {% if ns.best_mock is none or sc > ns.best_mock %}{% set ns.best_mock = sc %}{% endif %}
     {% endif %}
-  </div>
+  {% endif %}
+{% endfor %}
+{% set real_unlocked = (ns.best_mock is not none and ns.best_mock >= 80) or (ns.best_real is not none) or (ns.mocks|length == 0) %}
+{% set ns.real_unlocked = real_unlocked %}
 
-  <!-- =========================================================================
-       STAGE 04: AI CHAPTER CO-PILOT LAUNCHPAD
-       ========================================================================= -->
-  <div x-show="stage === 'copilot'"
-       style="display: none;"
-       x-transition.opacity.duration.250ms
-       class="v2-bento-card p-6 sm:p-8 space-y-6">
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      <div class="space-y-1">
-        <span class="px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-[#111111] text-[#f8b000]">AI Co-Pilot</span>
-        <h2 class="text-2xl font-black text-[#111111]">Master "{{ chapter.name }}" with AI</h2>
-        <p class="text-xs sm:text-sm font-bold text-gray-500">Pick a 1-click prompt below to launch your Split-Screen AI Tutor &amp; Smart Scratchpad.</p>
-      </div>
-      <a href="/student/tutor?subject_id={{ chapter.subject_id }}" class="v2-btn-black px-5 py-3 text-xs shrink-0">
-        <span>Open Full AI Co-Pilot Studio</span>
-        <span>&rarr;</span>
-      </a>
-    </div>
-
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <a href="/student/tutor?subject_id={{ chapter.subject_id }}&ask={{ ('Explain the chapter ' ~ chapter.name ~ ' in simple bullet points with examples.') | urlencode }}&autosend=1"
-         class="p-4 rounded-2xl bg-[#fffbeb] border-2 border-[#111111] shadow-[0_4px_0_#111111] hover:-translate-y-1 transition-all space-y-2">
-        <div class="text-xs font-black uppercase text-amber-700">⚡ Concept Summary</div>
-        <div class="text-sm font-black text-[#111111]">"Explain {{ chapter.name }} in simple bullet points"</div>
-      </a>
-
-      <a href="/student/tutor?subject_id={{ chapter.subject_id }}&ask={{ ('Draw a clear labeled diagram on the scratchpad for ' ~ chapter.name) | urlencode }}&autosend=1"
-         class="p-4 rounded-2xl bg-[#fffbeb] border-2 border-[#111111] shadow-[0_4px_0_#111111] hover:-translate-y-1 transition-all space-y-2">
-        <div class="text-xs font-black uppercase text-amber-700">🎨 Visual Blueprint</div>
-        <div class="text-sm font-black text-[#111111]">"Draw a labeled diagram on the Scratchpad for {{ chapter.name }}"</div>
-      </a>
-
-      <a href="/student/tutor?subject_id={{ chapter.subject_id }}&ask={{ ('Quiz me with 5 rapid-fire exam questions from ' ~ chapter.name) | urlencode }}&autosend=1"
-         class="p-4 rounded-2xl bg-[#fffbeb] border-2 border-[#111111] shadow-[0_4px_0_#111111] hover:-translate-y-1 transition-all space-y-2">
-        <div class="text-xs font-black uppercase text-amber-700">🎯 Rapid-Fire Quiz</div>
-        <div class="text-sm font-black text-[#111111]">"Quiz me with 5 rapid-fire questions from {{ chapter.name }}"</div>
-      </a>
-    </div>
-  </div>
-
-</div>
+{% for item in content_list %}
+  {% if item.type in ['youtube', 'video'] %}
+    {% set clean_t = item.title.split('•')[-1].strip() if '•' in item.title else item.title %}
+    {% set p_obj = {
+      'id': item.id,
+      'part': (ns.videos|length) + 1,
+      'title': clean_t,
+      'full_title': item.title,
+      'vault_token': item.vault_token or '',
+      'media_url': item.media_url or '',
+      'thumbnail_url': item.thumbnail_url or '',
+      'duration_str': item.duration_str or '4:45'
+    } %}
+    {% set ns.videos = ns.videos + [item] %}
+    {% set ns.video_payloads = ns.video_payloads + [p_obj] %}
+  {% endif %}
+{% endfor %}
 
 <script>
-  document.addEventListener('alpine:init', () => {
-    Alpine.data('chapterStudio', () => ({
-      stage: 'video',
-      videoTab: 'concept',
-      isSpeaking: false,
-      currentAudio: null,
-      description: {{ (chapter.description or ("Welcome to " ~ chapter.name ~ ". Choose any stage in the pipeline to begin.")) | tojson | safe }},
+  window.SAXAZ_SUBJECT_ID = {{ chapter.subject_id }};
+  window.saxazChapterPage = function() {
+    const initClaimed = {{ (claimed_keys if claimed_keys is defined else []) | tojson | safe }};
+    const chId = {{ chapter.id }};
+    return {
+      activeVideo: null,
+      tutorName: '{{ active_tutor }}',
+      tutorDisplay: '{{ active_tutor_display }}',
+      videos: {{ ns.video_payloads | tojson | safe }},
+      firstMockExamId: {{ ns.first_mock_id | tojson | safe }},
+      firstRealExamId: {{ ns.first_real_id | tojson | safe }},
+      realUnlocked: {{ 'true' if real_unlocked else 'false' }},
+      doneIds: {{ (completed_content_ids if completed_content_ids is defined else []) | tojson | safe }},
+      claimedKeys: initClaimed,
 
-      switchStage(newStage) {
-        if (this.stage === 'video' && newStage !== 'video') {
-          window.SaxazVideoVault?.pauseAll();
+      // 1. Unified Tutor-Synced Chapter Summary Storyboard (1 Card at a Time + Live Word Highlight + Seek + 60fps Lip-Sync)
+      nutshellHover: false,
+      nutshellExpanded: false,
+      nutshellLit: false,
+      nutshellPaused: false,
+      nutshellBuffering: false,
+      nutshellBeatIdx: -1,
+      activeSlide: 0,
+      nutshellEmotion: 'base',
+      idlePose: 'base',
+      tutorScale: 1,
+      smoothRms: 0,
+      eqBars: [4, 7, 5, 8, 4],
+      seekProgress: 0,
+      syncPlayer: null,
+      slidesReady: false,
+      slideData: [],
+      lastHighlightedSlide: -1,
+      lastHighlightedWord: -1,
+      nutshellRunToken: 0,
+
+      // Mini-games shown in spacious Full-Screen Overlay after Tutor invitation
+      gameMap: {{ ({1: ['leaf'], 2: ['food'], 3: ['breathe'], 6: ['heart'], 7: ['blood'], 8: ['pump'], 9: ['kidney'], 11: ['team']} if chapter.id == 3 else {}) | tojson | safe }},
+      gameCall: null,
+      gameGateMode: 'next',
+      gamePassed: [],
+      activeGameModal: null,
+      gamePromptActive: false,
+      gamePromptId: '',
+      gamePromptTitle: '',
+      inviteSpeaking: false,
+      promptDismissedSlide: -1,
+      wasVoiceReading: false,
+      summaryFs: false,
+      slidesMeta: {{ (
+        [
+          {'idx': 0,  'label': 'Intro',             'ttsEmotion': 'friendly_greeting', 'game': none,      'gameTitle': ''},
+          {'idx': 1,  'label': '1. Photosynthesis', 'ttsEmotion': 'teaching',          'game': 'leaf',    'gameTitle': 'Make Plant Food: Photosynthesis Drag & Drop'},
+          {'idx': 2,  'label': 'Human Digestion',   'ttsEmotion': 'teaching',          'game': 'food',    'gameTitle': 'Food Journey: Match the 5 Digestive Organs'},
+          {'idx': 3,  'label': '2. Respiration',    'ttsEmotion': 'curious_question',  'game': 'breathe', 'gameTitle': 'Breathing & ATP Energy: Drag & Match'},
+          {'idx': 4,  'label': 'Muscles & O2',      'ttsEmotion': 'teaching',          'game': none,      'gameTitle': ''},
+          {'idx': 5,  'label': 'Brain Control',     'ttsEmotion': 'curious_question',  'game': none,      'gameTitle': ''},
+          {'idx': 6,  'label': '3. Heart & Vessels','ttsEmotion': 'teaching',          'game': 'heart',   'gameTitle': 'Build & Pump the Human Heart'},
+          {'idx': 7,  'label': 'Blood & Plants',    'ttsEmotion': 'teaching',          'game': 'blood',   'gameTitle': 'Inside a Blood Vessel: Meet the Blood Crew'},
+          {'idx': 8,  'label': 'Oh my Heart',       'ttsEmotion': 'excited_progress',  'game': 'pump',    'gameTitle': 'Heart Super-Pump: Shoot Blood 30 Feet High'},
+          {'idx': 9,  'label': '4. Kidneys',        'ttsEmotion': 'teaching',          'game': 'kidney',  'gameTitle': 'Kidney Filter Sort: Drag Waste Out'},
+          {'idx': 10, 'label': 'Body Filters',      'ttsEmotion': 'teaching',          'game': none,      'gameTitle': ''},
+          {'idx': 11, 'label': 'Conclusion',        'ttsEmotion': 'celebrating',       'game': 'team',    'gameTitle': 'The 4 Life-Process Heroes: Team Match'}
+        ] if chapter.id == 3 else [
+          {'idx': 0, 'label': '1. Nutrition',      'ttsEmotion': 'friendly_greeting', 'game': none, 'gameTitle': ''},
+          {'idx': 1, 'label': '2. Respiration',    'ttsEmotion': 'curious_question',  'game': none, 'gameTitle': ''},
+          {'idx': 2, 'label': '3. Transportation', 'ttsEmotion': 'memory_trick',      'game': none, 'gameTitle': ''},
+          {'idx': 3, 'label': '4. Excretion',      'ttsEmotion': 'celebrating',       'game': none, 'gameTitle': ''}
+        ]
+      ) | tojson | safe }},
+      nutshellBeats: [
+        {
+          tag: '1. Nutrition',
+          short: 'Food For Energy And Growth',
+          slideIdx: {{ 1 if chapter.id == 3 else 0 }},
+          emotion: 'laughing',
+          ttsEmotion: 'friendly_greeting',
+          text: "1. Nutrition - Food For Energy And Growth. Nutrition means taking in food and using it for energy, growth, and repair of the body. Plants make glucose and oxygen by Photosynthesis using sunlight, water, and carbon dioxide. Humans use Heterotrophic Nutrition starting in the mouth, stomach, and small intestine."
+        },
+        {
+          tag: '2. Respiration',
+          short: 'Breathing to get Energy',
+          slideIdx: {{ 3 if chapter.id == 3 else 1 }},
+          emotion: 'thinking',
+          ttsEmotion: 'curious_question',
+          text: "2. Respiration - Breathing to get Energy. Inside every cell, glucose is broken down with oxygen to store energy as ATP, the energy currency of the cell."
+        },
+        {
+          tag: '3. Transportation',
+          short: 'Delivery System Of The Body',
+          slideIdx: {{ 6 if chapter.id == 3 else 2 }},
+          emotion: 'serious',
+          ttsEmotion: 'memory_trick',
+          text: "3. Transportation - Delivery System Of The Body. The 4-chambered Heart pumps blood through arteries, veins, and capillaries, while Xylem and Phloem transport water and food in plants."
+        },
+        {
+          tag: '4. Excretion',
+          short: 'Cleaning The Body',
+          slideIdx: {{ 9 if chapter.id == 3 else 3 }},
+          emotion: 'talking',
+          ttsEmotion: 'celebrating',
+          text: "4. Excretion - Cleaning The Body. About 1 million Nephrons in each Kidney filter urea and extra water from blood to keep our body clean."
         }
-        this.stage = newStage;
+      ],
+
+      // 2. Let's Discuss — Dual-Avatar Tutor + Living Animated Heart Companion
+      discussIdx: 1,
+      discussInput: '',
+      discussLoading: false,
+      discussTutorEmotion: 'talking',
+      discussHeartMood: 'pumping',
+      discussReply: "Hey {{ first_name }}! Lub-Dub the Heart and I have a fun question for you — pick a prompt below and share what you think!",
+      discussPrompts: [
+        { idx: 1, q: "Why does the human heart have 4 separate chambers instead of letting blood mix?" },
+        { idx: 2, q: "Why do your heart and breathing speed up right away when you sprint?" }
+      ],
+
+      init() {
+        // Preload all 5 high-res 1024x1024 Tutor poses so 60fps mouth & emotion sync has 0ms swap latency
+        ['base', 'talking', 'laughing', 'thinking', 'serious'].forEach((pose) => {
+          const im = new Image();
+          im.src = `/static/images/avatars/${this.tutorName}_${pose}.png`;
+        });
+        // Playful living idle animation cycle so Tutor smiles & reacts naturally even before clicking Play
+        const idleCycle = ['base', 'laughing', 'base', 'base', 'thinking', 'base', 'laughing', 'base'];
+        let idleIdx = 0;
+        setInterval(() => {
+          if (!this.nutshellLit && !document.hidden) {
+            idleIdx = (idleIdx + 1) % idleCycle.length;
+            this.idlePose = idleCycle[idleIdx];
+          }
+        }, 2100);
+        this.$nextTick(() => {
+          this.ensureSlideWordsInitialized();
+        });
+        document.addEventListener('fullscreenchange', () => {
+          if (!document.fullscreenElement && this.summaryFs) {
+            this.summaryFs = false;
+            document.documentElement.classList.remove('sx-fs-lock');
+          }
+        });
+        const h = window.location.hash || '';
+        if (h === '#heart-activity' && this.slidesMeta.length > 6) {
+          this.nutshellExpanded = true;
+          this.ensureSlideWordsInitialized();
+          this.goToSlide(6, false);
+          setTimeout(() => { this.openFullscreenGame('heart'); }, 180);
+        } else if (h === '#chapter-videos' || h === '#chapter-exams' || h === '#chapter-nutshell') {
+          setTimeout(() => {
+            const el = document.getElementById(h.slice(1));
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 120);
+        }
       },
 
-      switchVideoTab(tab) {
-        window.SaxazVideoVault?.pauseAll();
-        this.videoTab = tab;
+      hasClaimed(key) {
+        return this.claimedKeys.includes(key);
       },
 
-      async toggleSpeech() {
-        if (this.isSpeaking && this.currentAudio) {
-          this.currentAudio.pause();
-          this.isSpeaking = false;
-          this.currentAudio = null;
+      // ---------- Full-Screen Summary Mini-Games & Tutor Game Prompt ----------
+      gameKey(id) {
+        if (id === 'heart') return 'heart_s2:ch:' + chId;
+        return 'game:ch:' + chId + ':' + id;
+      },
+
+      slideGames(sIdx) {
+        return this.gameMap[sIdx] || [];
+      },
+
+      gameMascotSrc(id) {
+        const map = {
+          leaf: 'mascot_nutrition_cheer',
+          food: 'mascot_nutrition_cheer',
+          breathe: 'mascot_respiration_cheer',
+          heart: 'mascot_transport_cheer',
+          blood: 'mascot_transport_cheer',
+          pump: 'mascot_transport_cheer',
+          kidney: 'mascot_excretion_cheer',
+          team: 'mascot_excretion_cheer'
+        };
+        return '/static/images/saxaz_web/games/' + (map[id] || 'mascot_nutrition_cheer') + '.webp?v=22';
+      },
+
+      triggerTutorGamePrompt(sIdx, fromVoice = true) {
+        const sm = this.slidesMeta[sIdx];
+        if (!sm || !sm.game) return;
+        if (this.syncPlayer) this.syncPlayer.stop();
+        this.nutshellRunToken += 1;
+        this.nutshellLit = false;
+        this.nutshellPaused = false;
+        this.nutshellEmotion = 'laughing';
+        this.tutorScale = 1;
+        this.clearWordHighlights(sIdx);
+        this.gamePromptId = sm.game;
+        this.gamePromptTitle = sm.gameTitle || 'Interactive 3D Mini-Game';
+        this.gamePromptActive = true;
+        this.wasVoiceReading = Boolean(fromVoice);
+        document.documentElement.classList.add('sx-fs-lock');
+        if (!['0', 'off'].includes(String(window.__saxazUserTtsMode || '').toLowerCase())) {
+          if (window.__gameInvitePcm && window.__gameInvitePcm.cancel) window.__gameInvitePcm.cancel();
+          const line = 'Hey {{ first_name }}! Do you want to play a fun game, or go to the next summary?';
+          const s = window.saxazStreamPcm ? window.saxazStreamPcm(line, {
+            emotion: 'friendly_greeting',
+            speed: 0.94,
+            onPlay: () => { this.inviteSpeaking = true; }
+          }) : null;
+          if (s) {
+            window.__gameInvitePcm = s;
+            s.donePromise.then(() => { this.inviteSpeaking = false; });
+          }
+        }
+      },
+
+      dismissGamePrompt() {
+        if (window.__gameInvitePcm && window.__gameInvitePcm.cancel) window.__gameInvitePcm.cancel();
+        this.inviteSpeaking = false;
+        this.gamePromptActive = false;
+        this.wasVoiceReading = false;
+        this.promptDismissedSlide = this.activeSlide;
+        if (!this.summaryFs && !this.activeGameModal) {
+          document.documentElement.classList.remove('sx-fs-lock');
+        }
+      },
+
+      handlePartNextClick(sIdx) {
+        const sm = this.slidesMeta[sIdx];
+        if (sm && sm.game && this.promptDismissedSlide !== sIdx && !this.gamePassed.includes(sm.game)) {
+          this.triggerTutorGamePrompt(sIdx, Boolean(this.nutshellLit && !this.nutshellPaused));
           return;
         }
-        this.isSpeaking = true;
-        try {
-          const response = await fetch('/api/tts/prepare', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: this.description })
-          });
-          if (response.ok) {
-            const data = await response.json();
-            this.currentAudio = new Audio('/api/tts/stream/' + data.audio_id);
-            this.currentAudio.onended = () => { this.isSpeaking = false; };
-            this.currentAudio.onerror = () => { this.isSpeaking = false; };
-            this.currentAudio.play();
-          } else {
-            this.isSpeaking = false;
-          }
-        } catch (e) {
-          this.isSpeaking = false;
+        this.proceedToNextSummaryPart();
+      },
+
+      openFullscreenGame(id) {
+        if (!id) return;
+        if (window.__gameInvitePcm && window.__gameInvitePcm.cancel) window.__gameInvitePcm.cancel();
+        this.inviteSpeaking = false;
+        if (this.nutshellLit) this.wasVoiceReading = true;
+        if (this.syncPlayer) this.syncPlayer.stop();
+        this.nutshellRunToken += 1;
+        this.nutshellLit = false;
+        this.nutshellPaused = false;
+        this.gamePromptActive = false;
+        this.activeGameModal = id;
+        document.documentElement.classList.add('sx-fs-lock');
+        this.wakeActiveSlideIllustration();
+      },
+
+      closeFullscreenGame(advanceNext = false) {
+        this.activeGameModal = null;
+        if (!this.summaryFs && !this.gamePromptActive) {
+          document.documentElement.classList.remove('sx-fs-lock');
         }
+        if (advanceNext) {
+          this.proceedToNextSummaryPart();
+        }
+      },
+
+      proceedToNextSummaryPart() {
+        if (window.__gameInvitePcm && window.__gameInvitePcm.cancel) window.__gameInvitePcm.cancel();
+        const resumeVoice = Boolean(this.wasVoiceReading || (this.nutshellLit && !this.nutshellPaused));
+        this.inviteSpeaking = false;
+        this.gamePromptActive = false;
+        this.wasVoiceReading = false;
+        this.promptDismissedSlide = -1;
+        if (!this.summaryFs && !this.activeGameModal) {
+          document.documentElement.classList.remove('sx-fs-lock');
+        }
+        if (this.activeSlide + 1 < this.slidesMeta.length) {
+          this.goToSlide(this.activeSlide + 1, resumeVoice);
+        } else {
+          this.stopNutshellVoice();
+          if (this.summaryFs) this.toggleSummaryFullscreen(false);
+        }
+      },
+
+      callGame(id) {
+        this.openFullscreenGame(id);
+      },
+
+      onGameWon(id, cheer) {
+        if (!this.gamePassed.includes(id)) this.gamePassed.push(id);
+        const k = this.gameKey(id);
+        if (!this.claimedKeys.includes(k)) {
+          this.claimedKeys.push(k);
+          if (window.saxazClaimMilestone) window.saxazClaimMilestone(k);
+        }
+        if (cheer && !this.nutshellLit && !['0', 'off'].includes(String(window.__saxazUserTtsMode || '').toLowerCase())) {
+          const s = window.saxazStreamPcm ? window.saxazStreamPcm(cheer, { emotion: 'celebrating', speed: 0.95 }) : null;
+          if (!s && window.saxazSpeak) window.saxazSpeak(cheer, { emotion: 'celebrating', interrupt: true });
+        }
+      },
+
+      skipGame() {
+        this.closeFullscreenGame(true);
+      },
+
+      // ---------- Full-screen summary ----------
+      toggleSummaryFullscreen(force) {
+        const card = this.$root.querySelector('.sx-nutshell-card');
+        const want = typeof force === 'boolean' ? force : !this.summaryFs;
+        if (want && !this.nutshellExpanded) {
+          this.nutshellExpanded = true;
+          this.ensureSlideWordsInitialized();
+          this.wakeActiveSlideIllustration();
+        }
+        this.summaryFs = want;
+        document.documentElement.classList.toggle('sx-fs-lock', want);
+        if (want) {
+          if (card && card.requestFullscreen && !document.fullscreenElement) {
+            card.requestFullscreen().catch(() => {});
+          }
+          this.$nextTick(() => { if (card) card.scrollTop = 0; });
+        } else if (document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      },
+
+      tutorMotionStyle() {
+        if (!this.nutshellLit || this.nutshellPaused) return '';
+        return `transform: scale(${this.tutorScale.toFixed(3)});`;
+      },
+
+      detectSentenceMood(sentText) {
+        const s = (sentText || '').trim();
+        const low = s.toLowerCase();
+        if (s.includes('?') || low.startsWith('how is') || low.startsWith('do you know')) return 'question';
+        if (low.includes('cannot survive') || low.includes('poison') || low.includes('muscle pain') || low.includes('will die') || low.includes('team fails')) return 'serious';
+        if (s.includes('!') || low.startsWith('hey ') || low.includes('30 feet') || low.includes('oh my heart') || low.includes('like a team') || low.includes('called life processes')) return 'excited';
+        return 'teaching';
+      },
+
+      ensureSlideWordsInitialized() {
+        if (this.slidesReady) return;
+        const sheet = document.getElementById('chapter-nutshell-sheet');
+        if (!sheet) return;
+        const slideEls = sheet.querySelectorAll('[data-sx-slide]');
+        if (!slideEls.length) return;
+        this.slidesReady = true;
+        const builtSlides = [];
+
+        slideEls.forEach((slideEl, sIdx) => {
+          const proseBlocks = slideEl.querySelectorAll('[data-sx-sync-prose]');
+          const wordItems = [];
+          const spokenTokens = [];
+
+          proseBlocks.forEach((block) => {
+            const blockText = (block.textContent || '').replace(/\s+/g, ' ').trim();
+            const sentences = blockText.match(/[^.!?]+[.!?]*/g) || [blockText];
+            let sentIdx = 0;
+            let sentCharBudget = (sentences[0] || '').length;
+            let consumedChars = 0;
+
+            const currentMood = () => this.detectSentenceMood(sentences[Math.min(sentIdx, sentences.length - 1)] || blockText);
+
+            const advanceSentenceTracker = (visStr) => {
+              consumedChars += visStr.length + 1;
+              while (sentIdx < sentences.length - 1 && consumedChars >= sentCharBudget) {
+                sentIdx += 1;
+                sentCharBudget += (sentences[sentIdx] || '').length + 1;
+              }
+            };
+
+            const registerWordSpan = (spanEl, visWord, spkWord) => {
+              const mood = currentMood();
+              advanceSentenceTracker(visWord);
+              const coreLen = spkWord.replace(/[^a-zA-Z0-9]/g, '').length || 1;
+              let weight = Math.max(2.0, coreLen * 0.84);
+              if (/[,;:\u2014\-]$/.test(visWord)) weight += 3.6;
+              if (/[\.\!\?]$/.test(visWord)) weight += 7.2;
+              const wIndex = wordItems.length;
+              spanEl.classList.add('sx-sync-word');
+              spanEl.setAttribute('data-w-idx', String(wIndex));
+              spanEl.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                this.seekOrStartAtWord(sIdx, wIndex);
+              });
+              wordItems.push({ el: spanEl, vis: visWord, spk: spkWord, weight, mood, startFrac: 0, endFrac: 1 });
+              spokenTokens.push(spkWord);
+            };
+
+            const walkNode = (node) => {
+              if (!node) return;
+              if (node.nodeType === 1) {
+                if (node.hasAttribute('data-sx-atomic-word')) {
+                  const vis = (node.textContent || '').trim();
+                  const spk = (node.getAttribute('data-sx-speak') || vis).trim();
+                  if (vis) registerWordSpan(node, vis, spk);
+                  return;
+                }
+                Array.from(node.childNodes).forEach(walkNode);
+              } else if (node.nodeType === 3) {
+                const raw = node.nodeValue || '';
+                if (!raw.trim()) return;
+                const frag = document.createDocumentFragment();
+                const parts = raw.split(/(\s+)/);
+                parts.forEach((p) => {
+                  if (!p) return;
+                  if (/^\s+$/.test(p)) {
+                    frag.appendChild(document.createTextNode(p));
+                  } else {
+                    const sp = document.createElement('span');
+                    sp.textContent = p;
+                    registerWordSpan(sp, p, p);
+                    frag.appendChild(sp);
+                  }
+                });
+                if (node.parentNode) node.parentNode.replaceChild(frag, node);
+              }
+            };
+
+            walkNode(block);
+            if (wordItems.length > 0 && /^H[1-6]$/i.test(block.tagName || '')) {
+              const lastW = wordItems[wordItems.length - 1];
+              if (lastW && !/[\.\!\?]$/.test(lastW.vis)) {
+                lastW.weight += 6.2;
+                spokenTokens[spokenTokens.length - 1] = spokenTokens[spokenTokens.length - 1] + '.';
+              }
+            }
+          });
+
+          const totalWeight = wordItems.reduce((acc, w) => acc + w.weight, 0) || 1;
+          let cum = 0;
+          wordItems.forEach((w) => {
+            w.startFrac = cum / totalWeight;
+            cum += w.weight;
+            w.endFrac = cum / totalWeight;
+          });
+
+          // Where each mini-game sits inside the narration: pause once the
+          // tutor has read every word that comes before it.
+          const gates = [];
+          slideEl.querySelectorAll('[data-sx-game]').forEach((gEl) => {
+            let before = 0;
+            for (const w of wordItems) {
+              if (gEl.compareDocumentPosition(w.el) & Node.DOCUMENT_POSITION_PRECEDING) before += 1;
+              else break;
+            }
+            if (before > 0) {
+              gates.push({ id: gEl.getAttribute('data-sx-game'), frac: wordItems[before - 1].endFrac, atEnd: before >= wordItems.length });
+            }
+          });
+
+          builtSlides[sIdx] = {
+            words: wordItems,
+            gates,
+            spokenText: spokenTokens.join(' ').replace(/\s+/g, ' ').trim()
+          };
+        });
+
+        this.slideData = builtSlides;
+      },
+
+      clearWordHighlights(sIdx = null) {
+        const targets = sIdx !== null ? [this.slideData[sIdx]] : this.slideData;
+        (targets || []).forEach((sl) => {
+          if (!sl || !sl.words) return;
+          sl.words.forEach((w) => {
+            w.el.classList.remove('is-current', 'is-spoken', 'is-upcoming');
+          });
+        });
+        this.lastHighlightedSlide = -1;
+        this.lastHighlightedWord = -1;
+      },
+
+      applyWordHighlightAtFrac(sIdx, frac) {
+        this.ensureSlideWordsInitialized();
+        const sl = this.slideData[sIdx];
+        if (!sl || !sl.words || !sl.words.length) return 'teaching';
+        const words = sl.words;
+        let activeIdx = words.length - 1;
+        for (let i = 0; i < words.length; i++) {
+          if (frac <= words[i].endFrac) {
+            activeIdx = i;
+            break;
+          }
+        }
+        if (this.lastHighlightedSlide !== sIdx || this.lastHighlightedWord !== activeIdx) {
+          if (this.lastHighlightedSlide !== sIdx && this.lastHighlightedSlide >= 0) {
+            this.clearWordHighlights(this.lastHighlightedSlide);
+          }
+          for (let i = 0; i < words.length; i++) {
+            const cl = words[i].el.classList;
+            if (i < activeIdx) {
+              cl.add('is-spoken');
+              cl.remove('is-current', 'is-upcoming');
+            } else if (i === activeIdx) {
+              cl.add('is-current');
+              cl.remove('is-spoken', 'is-upcoming');
+            } else {
+              cl.add('is-upcoming');
+              cl.remove('is-current', 'is-spoken');
+            }
+          }
+          this.lastHighlightedSlide = sIdx;
+          this.lastHighlightedWord = activeIdx;
+        }
+        return words[activeIdx]?.mood || 'teaching';
+      },
+
+      updateTutorLipSync(rms, mood) {
+        if (!this.nutshellLit || this.nutshellPaused || this.nutshellBuffering) {
+          this.nutshellEmotion = mood === 'question' ? 'thinking' : 'base';
+          this.tutorScale = 1;
+          this.eqBars = [4, 6, 4, 6, 4];
+          return;
+        }
+        this.smoothRms = this.smoothRms * 0.76 + rms * 0.24;
+        const isSilence = rms < 0.013;
+        const isSyllableClosure = rms < Math.max(0.022, this.smoothRms * 0.68);
+
+        if (isSilence) {
+          this.nutshellEmotion = mood === 'question' ? 'thinking' : (mood === 'serious' ? 'serious' : 'base');
+        } else if (isSyllableClosure) {
+          this.nutshellEmotion = mood === 'serious' ? 'serious' : 'base';
+        } else if (mood === 'excited' && (rms > 0.075 || Math.sin(performance.now() / 240) > 0.2)) {
+          this.nutshellEmotion = 'laughing';
+        } else {
+          this.nutshellEmotion = 'talking';
+        }
+
+        this.tutorScale = 1 + Math.min(0.042, rms * 0.22);
+        const energy = Math.min(1, rms * 8.5);
+        const t = performance.now() / 90;
+        this.eqBars = [0, 1, 2, 3, 4].map((i) =>
+          Math.round(3 + energy * (6 + 5 * Math.abs(Math.sin(t + i * 1.1))))
+        );
+      },
+
+      wakeActiveSlideIllustration() {
+        this.$nextTick(() => {
+          if (window.saxazWakeLivingIllustrations) window.saxazWakeLivingIllustrations();
+        });
+      },
+
+      toggleNutshellExpand() {
+        this.nutshellExpanded = !this.nutshellExpanded;
+        if (this.nutshellExpanded) {
+          this.ensureSlideWordsInitialized();
+          this.wakeActiveSlideIllustration();
+        } else {
+          this.stopNutshellVoice();
+          if (this.summaryFs) this.toggleSummaryFullscreen(false);
+        }
+      },
+
+      goToSlide(sIdx, autoPlay = null) {
+        if (window.__gameInvitePcm && window.__gameInvitePcm.cancel) window.__gameInvitePcm.cancel();
+        const maxIdx = this.slidesMeta.length - 1;
+        const target = Math.max(0, Math.min(maxIdx, sIdx));
+        const shouldPlay = autoPlay !== null ? autoPlay : (this.nutshellLit && !this.nutshellPaused);
+        this.gameCall = null;
+        this.inviteSpeaking = false;
+        this.gamePromptActive = false;
+        this.promptDismissedSlide = -1;
+        if (!this.summaryFs && !this.activeGameModal) {
+          document.documentElement.classList.remove('sx-fs-lock');
+        }
+        this.activeSlide = target;
+        this.seekProgress = 0;
+        this.$nextTick(() => {
+          const row = this.$refs.slideTabs;
+          const tabEl = row && row.querySelector('.sx-slide-tab.is-active');
+          if (row && tabEl) row.scrollTo({ left: tabEl.offsetLeft - row.clientWidth / 2 + tabEl.clientWidth / 2, behavior: 'smooth' });
+        });
+        this.clearWordHighlights();
+        this.wakeActiveSlideIllustration();
+        if (shouldPlay) {
+          this.startReadingSlide(target, 0);
+        } else if (this.syncPlayer) {
+          this.syncPlayer.stop();
+          this.nutshellLit = false;
+          this.nutshellPaused = false;
+        }
+      },
+
+      toggleNutshellLightbulb() {
+        if (!this.nutshellExpanded) {
+          this.nutshellExpanded = true;
+          this.wakeActiveSlideIllustration();
+          this.$nextTick(() => this.startReadingSlide(this.activeSlide, 0));
+          return;
+        }
+        if (this.nutshellLit && !this.nutshellPaused) {
+          if (this.syncPlayer) this.syncPlayer.pause();
+          this.nutshellPaused = true;
+          this.updateTutorLipSync(0, 'teaching');
+          return;
+        }
+        // Tapping the tutor while she waits at a game = "skip it, keep reading"
+        if (this.gameCall) {
+          this.skipGame(this.gameCall);
+          return;
+        }
+        if (this.nutshellPaused && this.syncPlayer && this.syncPlayer.resume()) {
+          this.nutshellLit = true;
+          this.nutshellPaused = false;
+          return;
+        }
+        this.startReadingSlide(this.activeSlide, this.seekProgress >= 0.98 ? 0 : this.seekProgress);
+      },
+
+      playNutshellFromBeat(bIdx) {
+        const beat = this.nutshellBeats[bIdx];
+        const targetSlide = beat && typeof beat.slideIdx === 'number' ? beat.slideIdx : bIdx;
+        this.nutshellExpanded = true;
+        this.activeSlide = targetSlide;
+        this.wakeActiveSlideIllustration();
+        this.$nextTick(() => this.startReadingSlide(targetSlide, 0));
+      },
+
+      seekOrStartAtWord(sIdx, wIdx) {
+        this.ensureSlideWordsInitialized();
+        const sl = this.slideData[sIdx];
+        if (!sl || !sl.words || !sl.words[wIdx]) return;
+        const targetFrac = sl.words[wIdx].startFrac;
+        this.nutshellExpanded = true;
+        if (this.activeSlide === sIdx && this.syncPlayer && (this.nutshellLit || this.nutshellPaused) && this.syncPlayer.seekToFrac(targetFrac)) {
+          this.nutshellLit = true;
+          this.nutshellPaused = false;
+          this.seekProgress = targetFrac;
+          this.applyWordHighlightAtFrac(sIdx, targetFrac + 0.0005);
+          return;
+        }
+        this.activeSlide = sIdx;
+        this.wakeActiveSlideIllustration();
+        this.startReadingSlide(sIdx, targetFrac);
+      },
+
+      stopNutshellVoice() {
+        if (window.__gameInvitePcm && window.__gameInvitePcm.cancel) window.__gameInvitePcm.cancel();
+        this.gameCall = null;
+        this.inviteSpeaking = false;
+        this.gamePromptActive = false;
+        this.wasVoiceReading = false;
+        if (!this.summaryFs && !this.activeGameModal) {
+          document.documentElement.classList.remove('sx-fs-lock');
+        }
+        this.nutshellRunToken += 1;
+        this.nutshellLit = false;
+        this.nutshellPaused = false;
+        this.nutshellBuffering = false;
+        this.nutshellBeatIdx = -1;
+        this.nutshellEmotion = 'base';
+        this.tutorScale = 1;
+        this.seekProgress = 0;
+        if (this.syncPlayer) this.syncPlayer.stop();
+        this.clearWordHighlights();
+      },
+
+      async startReadingSlide(sIdx, startFrac = 0) {
+        if (window.__gameInvitePcm && window.__gameInvitePcm.cancel) window.__gameInvitePcm.cancel();
+        this.ensureSlideWordsInitialized();
+        if (!this.syncPlayer && window.saxazCreateSyncedSpeechPlayer) {
+          this.syncPlayer = window.saxazCreateSyncedSpeechPlayer();
+        }
+        if (!this.syncPlayer) return;
+
+        this.nutshellRunToken += 1;
+        const myToken = this.nutshellRunToken;
+        this.activeSlide = sIdx;
+        this.gamePromptActive = false;
+        this.wasVoiceReading = true;
+        this.nutshellLit = true;
+        this.nutshellPaused = false;
+        this.seekProgress = startFrac;
+        this.wakeActiveSlideIllustration();
+
+        const meta = this.slidesMeta[sIdx] || { label: 'Summary', ttsEmotion: 'teaching' };
+        const sl = this.slideData[sIdx];
+        const spokenText = (sl && sl.spokenText) ? sl.spokenText : (this.nutshellBeats[sIdx]?.text || '');
+        if (!spokenText) return;
+
+        this.applyWordHighlightAtFrac(sIdx, startFrac);
+
+        const ok = await this.syncPlayer.loadAndPlay(spokenText, {
+          emotion: meta.ttsEmotion || 'teaching',
+          speed: 0.90,
+          startFrac,
+          onStateChange: (st) => {
+            if (myToken !== this.nutshellRunToken) return;
+            this.nutshellBuffering = Boolean(st.buffering);
+          },
+          onProgress: ({ frac, rms, buffering }) => {
+            if (myToken !== this.nutshellRunToken) return;
+            this.seekProgress = frac;
+            const wordMood = this.applyWordHighlightAtFrac(sIdx, frac);
+            this.updateTutorLipSync(buffering ? 0 : rms, wordMood);
+          },
+          onEnded: async () => {
+            if (myToken !== this.nutshellRunToken) return;
+            // Award +10 Coins milestone once student completes at least 1 slide
+            const rKey = 'nutshell:ch:' + chId;
+            if (!this.hasClaimed(rKey) && window.saxazClaimMilestone) {
+              window.saxazClaimMilestone(rKey).then((rw) => {
+                if (rw && !this.claimedKeys.includes(rKey)) this.claimedKeys.push(rKey);
+              });
+            }
+            // If this summary part has a game, Tutor asks whether to play the fun game or go to next summary!
+            if (meta.game) {
+              this.triggerTutorGamePrompt(sIdx);
+              return;
+            }
+            if (sIdx + 1 < this.slidesMeta.length) {
+              setTimeout(() => {
+                if (myToken !== this.nutshellRunToken) return;
+                this.startReadingSlide(sIdx + 1, 0);
+              }, 850);
+            } else {
+              this.nutshellLit = false;
+              this.nutshellPaused = false;
+              this.wasVoiceReading = false;
+              this.nutshellEmotion = 'laughing';
+              this.tutorScale = 1;
+              this.clearWordHighlights(sIdx);
+            }
+          }
+        });
+
+        if (!ok && myToken === this.nutshellRunToken) {
+          this.nutshellLit = false;
+          this.nutshellBuffering = false;
+          this.updateTutorLipSync(0, 'teaching');
+        }
+      },
+
+      selectDiscussPrompt(pIdx) {
+        this.discussIdx = pIdx;
+        this.discussInput = '';
+        this.discussTutorEmotion = 'thinking';
+      },
+
+      currentDiscussQuestion() {
+        const found = this.discussPrompts.find(p => p.idx === this.discussIdx);
+        return found ? found.q : this.discussPrompts[0].q;
+      },
+
+      async submitDiscuss() {
+        const replyTxt = (this.discussInput || '').trim();
+        if (!replyTxt || this.discussLoading) return;
+        if (this.nutshellLit) this.stopNutshellVoice();
+        this.discussLoading = true;
+        this.discussTutorEmotion = 'thinking';
+        try {
+          const res = await fetch('/student/chapters/' + chId + '/discuss', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({
+              prompt_idx: this.discussIdx,
+              question: this.currentDiscussQuestion(),
+              student_reply: replyTxt
+            })
+          });
+          const data = await res.json();
+          if (data && data.reply) {
+            this.discussReply = data.reply;
+            this.discussTutorEmotion = data.emotion || 'laughing';
+            this.discussHeartMood = data.heart_mood || 'excited';
+            if (data.reward && data.reward.awarded && data.reward.coins_added > 0) {
+              if (window.saxazShowCoinToast) {
+                window.saxazShowCoinToast(data.reward.coins_added, data.reward.coin_balance, data.reward.label);
+              }
+              const dk = 'discuss:ch:' + chId + ':q' + this.discussIdx;
+              if (!this.claimedKeys.includes(dk)) this.claimedKeys.push(dk);
+            }
+            if (!['0', 'off'].includes(String(window.__saxazUserTtsMode || '').toLowerCase())) {
+              const s = window.saxazStreamPcm ? window.saxazStreamPcm(data.reply, { emotion: 'celebrating' }) : null;
+              if (s) {
+                s.donePromise.then(ok => {
+                  if (ok === null && window.saxazSpeak) window.saxazSpeak(data.reply, { emotion: 'celebrating', interrupt: true });
+                });
+              } else if (window.saxazSpeak) {
+                window.saxazSpeak(data.reply, { emotion: 'celebrating', interrupt: true });
+              }
+            }
+          }
+        } catch (e) {}
+        this.discussLoading = false;
+      },
+
+      async handleRealExamClick(ev) {
+        if (this.realUnlocked && this.firstRealExamId) {
+          return;
+        }
+        if (ev) ev.preventDefault();
+        const promptMsg = 'Score 80% or higher in any Mock Test first to unlock the Official 40-Minute Real Exam! Start Mock Test 1 now?';
+        const confirmed = window.saxazConfirm
+          ? await window.saxazConfirm(promptMsg)
+          : window.confirm(promptMsg);
+        if (confirmed && this.firstMockExamId) {
+          window.location.href = '/student/exams/' + this.firstMockExamId;
+        }
+      },
+
+      isDone(id) {
+        return this.doneIds.includes(Number(id));
+      },
+      completedVideosCount() {
+        return this.videos.filter(v => this.isDone(v.id)).length;
+      },
+      openSummaryVideos() {
+        if (!this.videos || !this.videos.length) return;
+        const firstUnwatched = this.videos.find(v => !this.isDone(v.id));
+        this.playBrief(firstUnwatched || this.videos[0], true);
+      },
+      getVideoById(id) {
+        return this.videos.find(v => Number(v.id) === Number(id)) || null;
+      },
+      getNextVideo(id) {
+        const idx = this.videos.findIndex(v => Number(v.id) === Number(id));
+        return (idx >= 0 && idx + 1 < this.videos.length) ? this.videos[idx + 1] : null;
+      },
+      getPrevVideo(id) {
+        const idx = this.videos.findIndex(v => Number(v.id) === Number(id));
+        return idx > 0 ? this.videos[idx - 1] : null;
+      },
+      async proceedToNextSummary(currentId) {
+        if (currentId) await this.markBriefDone(currentId);
+        const nextVid = this.getNextVideo(currentId);
+        if (nextVid) {
+          this.playBrief(nextVid, true);
+        } else {
+          this.activeVideo = null;
+          const nextStepEl = document.getElementById('chapter-exams');
+          if (nextStepEl) {
+            nextStepEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
+      },
+      playBrief(item, forceOpen = false) {
+        if (!item) return;
+        if (this.nutshellLit) this.stopNutshellVoice();
+        const resolved = this.getVideoById(item.id) || item;
+        if (!forceOpen && this.activeVideo && Number(this.activeVideo.id) === Number(resolved.id)) {
+          this.activeVideo = null;
+          return;
+        }
+        this.activeVideo = resolved;
+        this.$nextTick(() => {
+          const box = document.getElementById('ch-inline-player-host');
+          if (!box) return;
+          box.innerHTML = '';
+          const nextVid = this.getNextVideo(resolved.id);
+          const nextLabel = nextVid ? 'Next Video' : 'Finish Videos';
+          if (resolved.vault_token && resolved.vault_token.startsWith('vtok_')) {
+            const div = document.createElement('div');
+            div.style.width = '100%';
+            div.style.height = '100%';
+            div.setAttribute('data-saxaz-video', resolved.vault_token);
+            div.setAttribute('data-content-id', String(resolved.id));
+            div.setAttribute('data-autoplay', 'true');
+            if (nextLabel) {
+              div.setAttribute('data-has-next', 'true');
+              div.setAttribute('data-next-label', nextLabel);
+            }
+            div.addEventListener('saxaz:proceed-next', (ev) => {
+              ev.preventDefault();
+              this.proceedToNextSummary(resolved.id);
+            });
+            div.addEventListener('saxaz:video-ended', () => {
+              this.markBriefDone(resolved.id);
+            });
+            box.appendChild(div);
+            if (window.SaxazVideoVault && typeof window.SaxazVideoVault.scan === 'function') {
+              window.SaxazVideoVault.scan(box);
+            } else if (window.saxazMountVaultPlayers) {
+              window.saxazMountVaultPlayers(box);
+            }
+          } else if (resolved.media_url) {
+            const v = document.createElement('video');
+            v.src = resolved.media_url;
+            v.controls = true;
+            v.autoplay = true;
+            v.playsInline = true;
+            v.style.width = '100%';
+            v.style.height = '100%';
+            v.addEventListener('ended', () => { this.markBriefDone(resolved.id); });
+            box.appendChild(v);
+          }
+        });
+      },
+      async markBriefDone(id) {
+        try {
+          const res = await fetch(`/student/content/${id}/complete`, {
+            method: 'POST',
+            headers: { 'Accept': 'application/json' }
+          });
+          if (res.ok) {
+            if (!this.doneIds.includes(Number(id))) {
+              this.doneIds.push(Number(id));
+            }
+            const data = await res.json().catch(() => null);
+            if (data && data.reward && data.reward.awarded && data.reward.coins_added > 0 && window.saxazShowCoinToast) {
+              window.saxazShowCoinToast(data.reward.coins_added, data.reward.coin_balance, data.reward.label);
+            }
+          }
+        } catch (e) {}
       }
-    }));
-  });
+    };
+  };
 </script>
+
+<div class="sx-issue-wrap" x-data="saxazChapterPage()" @keydown.escape.window="if (activeGameModal) { closeFullscreenGame(false); } else if (gamePromptActive) { dismissGamePrompt(); } else if (activeVideo) { activeVideo = null; } else { stopNutshellVoice(); if (summaryFs) toggleSummaryFullscreen(false); }">
+
+  <!-- Clean Clickable Breadcrumb Bar -->
+  <nav aria-label="Breadcrumb" style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:16px;font-size:0.84rem;font-weight:700;color:rgba(35,31,32,0.72);">
+    <a href="/student/dashboard" style="color:#231f20;text-decoration:none;padding:5px 12px;border-radius:999px;background:#ffffff;border:1px solid rgba(35,31,32,0.16);">Dashboard</a>
+    <span aria-hidden="true">&rarr;</span>
+    <a href="/student/exams?subject={{ chapter.subject_id }}" style="color:#231f20;text-decoration:none;padding:5px 12px;border-radius:999px;background:#ffffff;border:1px solid rgba(35,31,32,0.16);">{{ chapter.subject_name or 'Biology' }}</a>
+    <span aria-hidden="true">&rarr;</span>
+    <span style="color:#231f20;font-weight:800;padding:5px 14px;border-radius:999px;background:#f7b317;border:1.5px solid #231f20;">{{ chapter.name }}</span>
+  </nav>
+
+  <!-- UNIFIED CHAPTER SUMMARY CARD (Notes + Voice + 4 Summary Videos in ONE Simple Card) -->
+  <section id="chapter-nutshell" class="sx-nutshell-wrap" style="margin-bottom:26px;">
+    <div class="sx-nutshell-card"
+         :class="[nutshellLit && 'is-lit', summaryFs && 'is-fullscreen']"
+         @mouseenter="nutshellHover = true"
+         @mouseleave="nutshellHover = false">
+
+      <!-- Part A1: Playful SAXAZ Yellow Poster Stage (Bold Two-Tone Title + Giant Borderless Living Tutor + Speech Bubble) -->
+      <div class="sx-nutshell-hero-band" x-show="!nutshellExpanded">
+        <div class="sx-nutshell-grid">
+          <div class="sx-nutshell-hero-copy">
+            <h1 class="sx-nutshell-hero-title">
+              <span class="is-dark">{{ chapter.name }}</span>
+              <span class="is-white">in a Nutshell!</span>
+            </h1>
+
+            <div style="margin-top:24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+              <button type="button"
+                      data-confetti
+                      @click="toggleNutshellLightbulb()"
+                      class="sx-fun-btn-dark">
+                <span class="material-symbols-outlined" style="font-size:20px;">play_circle</span>
+                <span x-text="hasClaimed('nutshell:ch:{{ chapter.id }}') ? ('Play Story with ' + tutorDisplay) : ('Play Story (+10 Coins)')"></span>
+              </button>
+
+              <button type="button"
+                      @click="toggleNutshellExpand()"
+                      class="sx-nutshell-viewall-btn"
+                      :aria-expanded="nutshellExpanded ? 'true' : 'false'">
+                <span>View All</span>
+                <span class="material-symbols-outlined sx-nutshell-viewall-chev">expand_more</span>
+              </button>
+
+              <button type="button" class="sx-fs-btn is-icon" @click="toggleSummaryFullscreen(true)"
+                      aria-label="Open the summary full screen" title="Full screen">
+                <span class="material-symbols-outlined" aria-hidden="true">open_in_full</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Giant Borderless Cutout Tutor + Playful Comic Speech Bubble -->
+          <div class="sx-tutor-pop"
+               data-confetti
+               role="button"
+               tabindex="0"
+               @click="toggleNutshellLightbulb()"
+               @keydown.enter.prevent="toggleNutshellLightbulb()"
+               @keydown.space.prevent="toggleNutshellLightbulb()">
+            <div class="sx-tutor-speech-bubble">
+              Hey {{ first_name }}! Tap me for a fun 2-min tour!
+            </div>
+            <div class="sx-tutor-pop-avatar">
+              <img :src="'/static/images/avatars/' + tutorName + '_' + (nutshellHover ? 'laughing' : idlePose) + '.png'"
+                   :alt="tutorDisplay">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Part A2: Tutor-Synced Card-by-Card Interactive Storyboard (1 Card at a Time + Karaoke Highlight + Seek) -->
+      <div id="chapter-nutshell-sheet"
+           class="sx-nutshell-sheet"
+           :class="(nutshellLit || nutshellPaused) && 'is-sync-active'"
+           style="margin-top:0;padding-top:0;border-top:0;"
+           x-show="nutshellExpanded"
+           x-cloak
+           @click.stop
+           @keydown.enter.stop
+           @keydown.space.stop>
+
+        <!-- Top Slide Switcher Pills + Fold Button -->
+        <div class="sx-sync-topbar">
+          <div class="sx-slide-tabs" role="tablist" aria-label="Chapter Summary Cards" x-ref="slideTabs">
+            <template x-for="sm in slidesMeta" :key="'tab-' + sm.idx">
+              <button type="button"
+                      role="tab"
+                      class="sx-slide-tab"
+                      :class="activeSlide === sm.idx && 'is-active'"
+                      :aria-selected="activeSlide === sm.idx ? 'true' : 'false'"
+                      @click="goToSlide(sm.idx)"
+                      x-text="sm.label"></button>
+            </template>
+          </div>
+
+          <div class="sx-sync-topbar-actions">
+            <button type="button" class="sx-icon-btn" @click.stop="toggleSummaryFullscreen()"
+                    :aria-label="summaryFs ? 'Exit full screen' : 'Full screen'" :title="summaryFs ? 'Exit full screen' : 'Full screen'">
+              <span class="material-symbols-outlined" aria-hidden="true" x-text="summaryFs ? 'close_fullscreen' : 'open_in_full'"></span>
+            </button>
+            <button type="button" class="sx-icon-btn" x-show="!summaryFs" @click.stop="toggleNutshellExpand()"
+                    aria-label="Close summary" title="Close summary">
+              <span class="material-symbols-outlined" aria-hidden="true">expand_less</span>
+            </button>
+          </div>
+        </div>
+
+        {% macro render_sync_tutor(eq_id) %}
+            <div class="sx-sync-tutor-card" @click="toggleNutshellLightbulb()" style="cursor:pointer;">
+              <div class="sx-sync-tutor-figure" :class="(nutshellLit && !nutshellPaused) && 'is-speaking'">
+                <img :src="'/static/images/avatars/' + tutorName + '_' + ((nutshellLit && !nutshellPaused) ? nutshellEmotion : idlePose) + '.png'" :alt="tutorDisplay" :style="tutorMotionStyle()">
+              </div>
+              <span class="sx-tutor-voice-pill" :class="[(nutshellLit && !nutshellPaused) && 'is-live', nutshellPaused && 'is-paused']">
+                <span class="sx-eq-bars" x-show="nutshellLit && !nutshellPaused">
+                  <template x-for="(h, ei) in eqBars" :key="'{{ eq_id }}-' + ei"><span class="sx-eq-bar" :style="'height:' + h + 'px'"></span></template>
+                </span>
+                <span class="material-symbols-outlined" style="font-size:16px;" x-show="!nutshellBuffering" x-text="(nutshellLit && !nutshellPaused) ? 'pause' : 'play_arrow'"></span>
+                <span x-text="nutshellBuffering ? 'Loading Voice...' : ((nutshellLit && !nutshellPaused) ? ('Pause ' + tutorDisplay) : (nutshellPaused ? ('Resume ' + tutorDisplay) : ('Tap ' + tutorDisplay + ' or Any Word')))"></span>
+              </span>
+            </div>
+        {% endmacro %}
+
+        {% macro render_part_footer(s_idx, game_id='', game_title='') %}
+          <div class="sx-part-step-bar">
+            <span class="sx-part-counter">Part {{ s_idx + 1 }} of 12</span>
+            <div class="sx-part-nav-btns">
+              <button type="button" class="sx-step-btn" x-show="activeSlide > 0" @click="goToSlide(activeSlide - 1)">
+                <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+                <span>Prev</span>
+              </button>
+              {% if game_id %}
+              <button type="button" class="sx-step-btn" @click="openFullscreenGame('{{ game_id }}')" title="{{ game_title }}">
+                <span class="material-symbols-outlined" aria-hidden="true">sports_esports</span>
+                <span>Game</span>
+              </button>
+              {% endif %}
+              <button type="button" class="sx-step-btn is-gold" @click="handlePartNextClick({{ s_idx }})">
+                <span>{{ 'Finish Summary' if s_idx == 11 else 'Next' }}</span>
+                <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+              </button>
+            </div>
+          </div>
+        {% endmacro %}
+
+        {% if chapter.id == 3 %}
+        <!-- PART 1 of 12: Intro -->
+        <div class="sx-sync-stage" data-sx-slide="0" x-show="activeSlide === 0">
+          <div>
+            <div style="font-size:0.76rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#231f20;margin-bottom:8px;">CHAPTER IN A NUT SHELL</div>
+            <p data-sx-sync-prose style="margin:0;font-size:1.04rem;line-height:1.78;color:#231f20;font-weight:500;">
+              Hey {{ first_name }}! Do you know why we are alive? Inside our body, four very important jobs are happening all the time, even when we are sleeping, sitting, or playing. We call them Life Processes. If even one of them stops, we cannot survive. Let us understand each one in detail.
+            </p>
+            {{ render_part_footer(0) }}
+          </div>
+          <div class="sx-sync-visual-stack">
+            {{ render_sync_tutor('eq0') }}
+            <div class="sx-living-illus is-wide" data-sx-pop-illus="team">
+              <img class="sx-illus-img" src="/static/images/saxaz_web/syllabus/nutshell_p1_img1.webp?v=540" alt="Life Processes Team">
+              <canvas class="sx-illus-canvas" width="408" height="272" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="/static/images/saxaz_web/syllabus/nutshell_p1_img1_sheet.webp?v=540"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- PART 2 of 12: 1. Photosynthesis (Autotrophic Nutrition) -->
+        <div class="sx-sync-stage" data-sx-slide="1" x-show="activeSlide === 1" x-cloak>
+          <div>
+            <h3 data-sx-sync-prose style="font-family:var(--font-display);font-size:1.26rem;font-weight:800;margin:0 0 10px;color:#231f20;">1. Nutrition - Food For Energy And Growth</h3>
+            <p data-sx-sync-prose style="margin:0;font-size:0.99rem;line-height:1.74;color:#231f20;">
+              Nutrition means taking in food and using it for energy, growth, and repair of the body. There are two types. In plants, it is called Autotrophic Nutrition. Plants make their own food by a process called Photosynthesis. They take sunlight, water from roots, and carbon dioxide from air, and in the leaves, with the help of chlorophyll, they make glucose and release oxygen. The equation is:
+            </p>
+            <div class="sx-nutshell-eq" data-sx-sync-prose>
+              <div>Carbon dioxide + Water + Sunlight <span data-sx-atomic-word data-sx-speak="gives">&rarr;</span> Glucose + Oxygen.</div>
+              <div style="margin-top:4px;"><span data-sx-atomic-word data-sx-speak="6 C O 2">6CO<sub>2</sub></span> + <span data-sx-atomic-word data-sx-speak="12 H 2 O">12H<sub>2</sub>O</span> <span data-sx-atomic-word data-sx-speak="with Chlorophyll and Sunlight gives">&mdash;(Chlorophyll / Sunlight)&rarr;</span> <span data-sx-atomic-word data-sx-speak="C 6 H 12 O 6">C<sub>6</sub>H<sub>12</sub>O<sub>6</sub></span> (Glucose) + <span data-sx-atomic-word data-sx-speak="6 O 2">6O<sub>2</sub></span> + <span data-sx-atomic-word data-sx-speak="6 H 2 O">6H<sub>2</sub>O</span></div>
+            </div>
+            {{ render_part_footer(1, 'leaf', 'Make Plant Food: Photosynthesis Drag & Drop') }}
+          </div>
+          <div class="sx-sync-visual-stack">
+            {{ render_sync_tutor('eq1') }}
+            <div class="sx-living-illus is-wide" data-sx-pop-illus="leaf_team">
+              <img class="sx-illus-img" src="/static/images/saxaz_web/syllabus/nutshell_p1_img1.webp?v=540" alt="Photosynthesis and Life Processes">
+              <canvas class="sx-illus-canvas" width="408" height="272" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="/static/images/saxaz_web/syllabus/nutshell_p1_img1_sheet.webp?v=540"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- PART 3 of 12: Human Digestion (Heterotrophic Nutrition) -->
+        <div class="sx-sync-stage" data-sx-slide="2" x-show="activeSlide === 2" x-cloak>
+          <div>
+            <p data-sx-sync-prose style="margin:0 0 12px;font-size:0.99rem;line-height:1.74;color:#231f20;">
+              In humans and animals, it is called Heterotrophic Nutrition, because we cannot make our own food, we depend on plants and animals. In humans, digestion starts in the mouth, where teeth chew food and saliva breaks down starch. Then food goes to the stomach, where acid and enzymes break down proteins. Then it goes to the small intestine, where most digestion and absorption happens. The digested food goes into the blood, and undigested waste goes to the large intestine and is removed. So nutrition gives us the fuel to live.
+            </p>
+            <div data-sx-sync-prose style="padding:10px 14px;border-radius:12px;background:#ffffff;border:1.5px solid rgba(35,31,32,0.14);font-size:0.92rem;color:#231f20;">
+              <strong>Mouth:</strong> The human digestive system starts from the mouth. The mouth is the first major part.
+            </div>
+            {{ render_part_footer(2, 'food', 'Food Journey: Match the 5 Digestive Organs') }}
+          </div>
+          <div class="sx-sync-visual-stack">
+            {{ render_sync_tutor('eq2') }}
+            <div class="sx-living-illus" data-sx-pop-illus="mouth">
+              <img class="sx-illus-img" src="/static/images/saxaz_web/syllabus/nutshell_p1_img0.webp?v=540" alt="Mouth - Digestion begins here">
+              <canvas class="sx-illus-canvas" width="360" height="240" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="/static/images/saxaz_web/syllabus/nutshell_p1_img0_sheet.webp?v=540"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- PART 4 of 12: 2. Respiration & ATP Energy -->
+        <div class="sx-sync-stage" data-sx-slide="3" x-show="activeSlide === 3" x-cloak>
+          <div>
+            <h3 data-sx-sync-prose style="font-family:var(--font-display);font-size:1.26rem;font-weight:800;margin:0 0 10px;color:#231f20;">Respiration- Breathing to get Energy</h3>
+            <p data-sx-sync-prose style="margin:0;font-size:0.99rem;line-height:1.74;color:#231f20;">
+              Respiration is not just breathing. Breathing is only taking in oxygen and giving out carbon dioxide. Real respiration happens inside every cell. The food we eat, mainly glucose, is broken down with the help of oxygen to release energy. This energy is stored in a molecule called ATP, which is called the energy currency of the cell. The equation is:
+            </p>
+            <div class="sx-nutshell-eq" data-sx-sync-prose>
+              Glucose + Oxygen <span data-sx-atomic-word data-sx-speak="gives">&rarr;</span> Carbon dioxide + Water + Energy (ATP).
+            </div>
+            {{ render_part_footer(3, 'breathe', 'Breathing & ATP Energy: Drag & Match') }}
+          </div>
+          <div class="sx-sync-visual-stack">
+            {{ render_sync_tutor('eq3') }}
+            <div class="sx-living-illus" data-sx-pop-illus="lungs">
+              <img class="sx-illus-img" src="/static/images/saxaz_web/syllabus/nutshell_p2_img0.webp?v=540" alt="Lungs, Trachea and Diaphragm" style="border-radius:14px;">
+              <canvas class="sx-illus-canvas" width="270" height="360" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="/static/images/saxaz_web/syllabus/nutshell_p2_img0_sheet.webp?v=540" style="border-radius:14px;"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- PART 5 of 12: Human Breathing & Muscle Exercise -->
+        <div class="sx-sync-stage" data-sx-slide="4" x-show="activeSlide === 4" x-cloak>
+          <div>
+            <p data-sx-sync-prose style="margin:0;font-size:1.02rem;line-height:1.78;color:#231f20;">
+              In humans, air enters through the nose, goes to the trachea, then to the lungs, where oxygen goes into the blood and carbon dioxide comes out. The blood carries oxygen to all cells. If we do heavy exercise, sometimes we get less oxygen, then anaerobic respiration happens in muscles and produces lactic acid, which is why we feel muscle pain. Without respiration, we will not get energy, even if we eat a lot of food.
+            </p>
+            {{ render_part_footer(4) }}
+          </div>
+          <div class="sx-sync-visual-stack">
+            {{ render_sync_tutor('eq4') }}
+            <div class="sx-living-illus" data-sx-pop-illus="lungs2">
+              <img class="sx-illus-img" src="/static/images/saxaz_web/syllabus/nutshell_p2_img0.webp?v=540" alt="Lungs, Trachea and Diaphragm" style="border-radius:14px;">
+              <canvas class="sx-illus-canvas" width="270" height="360" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="/static/images/saxaz_web/syllabus/nutshell_p2_img0_sheet.webp?v=540" style="border-radius:14px;"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- PART 6 of 12: Brain Control -->
+        <div class="sx-sync-stage" data-sx-slide="5" x-show="activeSlide === 5" x-cloak>
+          <div>
+            <h4 data-sx-sync-prose style="font-family:var(--font-display);font-size:1.22rem;font-weight:800;margin:0 0 10px;color:#231f20;">How is Breathing Controlled?</h4>
+            <p data-sx-sync-prose style="margin:0;font-size:1.03rem;line-height:1.78;color:#231f20;">
+              Breathing is controlled by the brain. There are special centres in the brain that control breathing. There are two centres in the Pons and two centres in the Medulla that control breathing.
+            </p>
+            {{ render_part_footer(5) }}
+          </div>
+          <div class="sx-sync-visual-stack">
+            {{ render_sync_tutor('eq5') }}
+            <div class="sx-living-illus" data-sx-pop-illus="brain">
+              <img class="sx-illus-img" src="/static/images/saxaz_web/syllabus/nutshell_p2_img1.webp?v=540" alt="How is Breathing Controlled">
+              <canvas class="sx-illus-canvas" width="360" height="270" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="/static/images/saxaz_web/syllabus/nutshell_p2_img1_sheet.webp?v=540"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- PART 7 of 12: 3. Transportation (Heart & Blood Vessels) -->
+        <div class="sx-sync-stage" data-sx-slide="6" x-show="activeSlide === 6" x-cloak>
+          <div>
+            <h3 data-sx-sync-prose style="font-family:var(--font-display);font-size:1.26rem;font-weight:800;margin:0 0 10px;color:#231f20;">3. Transportation - Delivery System Of The Body</h3>
+            <p data-sx-sync-prose style="margin:0;font-size:0.99rem;line-height:1.74;color:#231f20;">
+              Transportation means carrying useful substances to every part of the body and taking waste away. In humans, the main organ is the Heart. It is like a pump with 4 chambers - right atrium, right ventricle, left atrium, left ventricle. The heart pumps blood through three types of blood vessels. Arteries carry oxygen-rich blood from heart to body, Veins carry carbon dioxide-rich blood from body to heart, and Capillaries are very thin vessels where exchange of oxygen, food, and waste happens between blood and cells.
+            </p>
+            {{ render_part_footer(6, 'heart', 'Build & Pump the Human Heart') }}
+          </div>
+          <div class="sx-sync-visual-stack">
+            {{ render_sync_tutor('eq6') }}
+            <div class="sx-living-illus" data-sx-pop-illus="heart">
+              <img class="sx-illus-img" src="/static/images/saxaz_web/syllabus/nutshell_p2_img2.webp?v=540" alt="Human Heart">
+              <canvas class="sx-illus-canvas" width="262" height="360" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="/static/images/saxaz_web/syllabus/nutshell_p2_img2_sheet.webp?v=540"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- PART 8 of 12: Blood Crew & Plant Transport -->
+        <div class="sx-sync-stage" data-sx-slide="7" x-show="activeSlide === 7" x-cloak>
+          <div>
+            <p data-sx-sync-prose style="margin:0 0 10px;font-size:0.99rem;line-height:1.72;color:#231f20;">
+              Blood has RBC which carries oxygen, WBC which fights disease, Platelets which help in clotting, and Plasma which carries food, hormones, and waste.
+            </p>
+            <p data-sx-sync-prose style="margin:0 0 10px;font-size:0.99rem;line-height:1.72;color:#231f20;">
+              In plants, transportation happens through two tissues. Xylem carries water and minerals from roots to leaves, upwards. Phloem carries food made in leaves to all other parts of the plant, both upwards and downwards. This is called translocation.
+            </p>
+            <p data-sx-sync-prose style="margin:0;font-size:0.99rem;line-height:1.72;color:#231f20;">
+              Without transportation, food and oxygen will stay in one place and other parts will die.
+            </p>
+            {{ render_part_footer(7, 'blood', 'Inside a Blood Vessel: Meet the Blood Crew') }}
+          </div>
+          <div class="sx-sync-visual-stack">
+            {{ render_sync_tutor('eq7') }}
+            <div class="sx-living-illus" data-sx-pop-illus="heart2">
+              <img class="sx-illus-img" src="/static/images/saxaz_web/syllabus/nutshell_p2_img2.webp?v=540" alt="Blood and Transportation">
+              <canvas class="sx-illus-canvas" width="262" height="360" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="/static/images/saxaz_web/syllabus/nutshell_p2_img2_sheet.webp?v=540"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- PART 9 of 12: Oh my Heart -->
+        <div class="sx-sync-stage" data-sx-slide="8" x-show="activeSlide === 8" x-cloak>
+          <div>
+            <h4 data-sx-sync-prose style="font-family:var(--font-display);font-size:1.22rem;font-weight:800;margin:0 0 10px;color:#231f20;">Oh my Heart...</h4>
+            <p data-sx-sync-prose style="margin:0;font-size:1.04rem;line-height:1.78;color:#231f20;">
+              A human heart beats about 250 crore times in a lifetime. The pressure created by the heart is so great that it can pump blood up to a height of 30 feet!
+            </p>
+            {{ render_part_footer(8, 'pump', 'Heart Super-Pump: Shoot Blood 30 Feet High') }}
+          </div>
+          <div class="sx-sync-visual-stack">
+            {{ render_sync_tutor('eq8') }}
+            <div class="sx-living-illus" data-sx-pop-illus="heart_facts">
+              <img class="sx-illus-img" src="/static/images/saxaz_web/syllabus/nutshell_p3_img2.webp?v=540" alt="Oh my Heart - 250 crore times">
+              <canvas class="sx-illus-canvas" width="360" height="240" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="/static/images/saxaz_web/syllabus/nutshell_p3_img2_sheet.webp?v=540"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- PART 10 of 12: 4. Excretion (Kidneys & Nephrons) -->
+        <div class="sx-sync-stage" data-sx-slide="9" x-show="activeSlide === 9" x-cloak>
+          <div>
+            <h3 data-sx-sync-prose style="font-family:var(--font-display);font-size:1.26rem;font-weight:800;margin:0 0 10px;color:#231f20;">4. Excretion - Cleaning The Body</h3>
+            <p data-sx-sync-prose style="margin:0;font-size:0.99rem;line-height:1.74;color:#231f20;">
+              Excretion means removing harmful waste products from the body. When our body uses food and energy, it produces waste like urea, extra water, salts, and carbon dioxide. If these stay inside, they will poison us. In humans, the main excretory organs are the Kidneys. We have two kidneys. Blood comes to the kidney, and inside the kidney there are small filtering units called Nephrons. Each kidney has about 1 million nephrons. Nephrons filter the blood, remove urea and extra water, and form urine.
+            </p>
+            {{ render_part_footer(9, 'kidney', 'Kidney Filter Sort: Drag Waste Out') }}
+          </div>
+          <div class="sx-sync-visual-stack">
+            {{ render_sync_tutor('eq9') }}
+            <div class="sx-living-illus" data-sx-pop-illus="kidneys">
+              <img class="sx-illus-img" src="/static/images/saxaz_web/syllabus/nutshell_p3_img0.webp?v=540" alt="Kidneys and Urinary Bladder">
+              <canvas class="sx-illus-canvas" width="328" height="360" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="/static/images/saxaz_web/syllabus/nutshell_p3_img0_sheet.webp?v=540"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- PART 11 of 12: Urinary Path, Plant Excretion & Body Filters -->
+        <div class="sx-sync-stage" data-sx-slide="10" x-show="activeSlide === 10" x-cloak>
+          <div>
+            <p data-sx-sync-prose style="margin:0 0 12px;font-size:0.98rem;line-height:1.72;color:#231f20;">
+              Urine goes from kidney through ureter to urinary bladder, and then out through urethra. Other ways of excretion are lungs removing carbon dioxide, skin removing sweat, and liver removing extra bile pigments. In plants, there is no special excretory system. Plants remove waste through transpiration from stomata, by storing waste in old leaves which fall off, and as resins and gums in bark. So excretion keeps our body clean from inside.
+            </p>
+            <h4 data-sx-sync-prose style="font-family:var(--font-display);font-size:1.15rem;font-weight:800;margin:0 0 6px;color:#231f20;">We are the Filters of the Body</h4>
+            <p data-sx-sync-prose style="margin:0;font-size:0.98rem;line-height:1.72;color:#231f20;">
+              Kidneys are called the filters of the body because they clean our blood. They remove waste, extra salt, and dirty things from the blood and send them out as urine, while keeping the good and useful things inside the body.
+            </p>
+            {{ render_part_footer(10) }}
+          </div>
+          <div class="sx-sync-visual-stack">
+            {{ render_sync_tutor('eq10') }}
+            <div class="sx-living-illus" data-sx-pop-illus="filters">
+              <img class="sx-illus-img" src="/static/images/saxaz_web/syllabus/nutshell_p3_img1.webp?v=540" alt="We are the Filters of the Body">
+              <canvas class="sx-illus-canvas" width="360" height="260" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="/static/images/saxaz_web/syllabus/nutshell_p3_img1_sheet.webp?v=540"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- PART 12 of 12: Conclusion -->
+        <div class="sx-sync-stage" data-sx-slide="11" x-show="activeSlide === 11" x-cloak>
+          <div>
+            <div data-sx-sync-prose style="padding:16px 18px;border-radius:16px;background:#ffffff;border:1.5px solid rgba(35,31,32,0.14);border-left:4px solid #f7b317;">
+              <strong style="display:block;margin-bottom:6px;font-size:1.05rem;color:#231f20;">Conclusion:</strong>
+              <span style="font-size:1.01rem;line-height:1.76;color:#231f20;">
+                So, Nutrition gives us food, Respiration gives us energy from that food, Transportation delivers food and oxygen to every cell, and Excretion removes the waste. All four work together like a team. If one team member fails, the whole team fails. That is why they are called Life Processes.
+              </span>
+            </div>
+            {{ render_part_footer(11, 'team', 'The 4 Life-Process Heroes: Team Match') }}
+          </div>
+          <div class="sx-sync-visual-stack">
+            {{ render_sync_tutor('eq11') }}
+            <div class="sx-living-illus is-wide" data-sx-pop-illus="team_end">
+              <img class="sx-illus-img" src="/static/images/saxaz_web/syllabus/nutshell_p1_img1.webp?v=540" alt="Life Processes Team">
+              <canvas class="sx-illus-canvas" width="408" height="272" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="/static/images/saxaz_web/syllabus/nutshell_p1_img1_sheet.webp?v=540"></canvas>
+            </div>
+          </div>
+        </div>
+        {% else %}
+        <template x-for="(b, bIdx) in nutshellBeats" :key="'gen-slide-' + bIdx">
+          <div class="sx-sync-stage" :data-sx-slide="bIdx" x-show="activeSlide === bIdx">
+            <div>
+              <h3 data-sx-sync-prose style="font-family:var(--font-display);font-size:1.26rem;font-weight:800;margin:0 0 10px;color:#231f20;" x-text="b.tag + ' — ' + b.short"></h3>
+              <p data-sx-sync-prose style="margin:0;font-size:1.0rem;line-height:1.75;color:#231f20;" x-text="b.text"></p>
+            </div>
+            <div class="sx-sync-visual-stack">
+              <div class="sx-sync-tutor-card" @click="toggleNutshellLightbulb()" style="cursor:pointer;">
+                <div class="sx-sync-tutor-figure" :class="(nutshellLit && !nutshellPaused) && 'is-speaking'">
+                  <img :src="'/static/images/avatars/' + tutorName + '_' + ((nutshellLit && !nutshellPaused) ? nutshellEmotion : idlePose) + '.png'" :alt="tutorDisplay" :style="tutorMotionStyle()">
+                </div>
+                <span class="sx-tutor-voice-pill" :class="[(nutshellLit && !nutshellPaused) && 'is-live', nutshellPaused && 'is-paused']">
+                  <span class="material-symbols-outlined" style="font-size:16px;" x-show="!nutshellBuffering" x-text="(nutshellLit && !nutshellPaused) ? 'pause' : 'play_arrow'"></span>
+                  <span x-text="nutshellBuffering ? 'Loading Voice...' : ((nutshellLit && !nutshellPaused) ? ('Pause ' + tutorDisplay) : (nutshellPaused ? ('Resume ' + tutorDisplay) : ('Tap ' + tutorDisplay + ' or Any Word')))"></span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </template>
+        {% endif %}
+
+      </div>
+
+      <!-- Full-Screen Tutor Game Invitation Popup ("Do you want to play a fun game?") -->
+      {% if chapter.id == 3 %}
+      <div class="sx-fullscreen-invite-modal"
+           x-show="gamePromptActive"
+           x-cloak
+           @click.stop>
+        <div class="sx-fsi-dialog sx-game-invite-card" role="dialog" aria-modal="true" aria-label="Do you want to play a fun game?">
+          <button type="button" class="sx-fsi-close" @click="dismissGamePrompt()">
+            <span class="material-symbols-outlined" aria-hidden="true">close</span>
+            <span>Back to Text</span>
+          </button>
+
+          <div class="sx-fsi-poster">
+            <div class="sx-fsi-speech">Game Time, {{ first_name }}!</div>
+            <div class="sx-fsi-tutor-wrap">
+              <img :src="'/static/images/avatars/' + tutorName + '_' + (inviteSpeaking ? 'talking' : 'laughing') + '.png'"
+                   :alt="tutorDisplay">
+            </div>
+            <div class="sx-fsi-mascot-pill">
+              <img :src="gameMascotSrc(gamePromptId)" alt="" draggable="false">
+            </div>
+          </div>
+
+          <div class="sx-fsi-content">
+            <div class="sx-fsi-kicker-row">
+              <span class="sx-fsi-kicker">
+                <span class="material-symbols-outlined" aria-hidden="true">sports_esports</span>
+                <span>Fun Mini-Game</span>
+              </span>
+              <span class="sx-fsi-coin-pill" x-show="!hasClaimed(gameKey(gamePromptId))">+5 Coins</span>
+              <span class="sx-fsi-coin-pill is-done" x-show="hasClaimed(gameKey(gamePromptId))" x-cloak>Completed</span>
+            </div>
+
+            <h2 class="sx-fsi-title">
+              <span x-text="tutorDisplay + ' asks:'"></span>
+              Do you want to play a fun game?
+            </h2>
+
+            <p class="sx-fsi-subtitle" x-text="gamePromptTitle"></p>
+
+            <div class="sx-fsi-actions">
+              <button type="button" class="sx-fsi-cta is-play" @click="openFullscreenGame(gamePromptId)">
+                <span class="material-symbols-outlined" aria-hidden="true">sports_esports</span>
+                <span x-text="hasClaimed(gameKey(gamePromptId)) ? 'Play Fun Game' : 'Play Fun Game (+5 Coins)'"></span>
+              </button>
+              <button type="button" class="sx-fsi-cta is-next" @click="proceedToNextSummaryPart()">
+                <span x-text="activeSlide + 1 < slidesMeta.length ? 'Proceed to Next Summary' : 'Finish Summary'"></span>
+                <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dedicated Spacious Full-Screen Mini-Game Overlay (Zero Claustrophobia!) -->
+      <div class="sx-fullscreen-game-modal"
+           x-show="activeGameModal"
+           x-cloak
+           @click.stop
+           @sx-game-next.window="closeFullscreenGame(true)">
+        <div class="sx-fsg-topbar">
+          <button type="button" class="sx-step-btn" @click="closeFullscreenGame(false)">
+            <span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>
+            <span>Back to Summary</span>
+          </button>
+          <div class="sx-fsg-topbar-right">
+            <button type="button" class="sx-step-btn is-gold" @click="closeFullscreenGame(true)">
+              <span x-text="activeSlide + 1 < slidesMeta.length ? 'Proceed to Next Summary' : 'Finish Summary'"></span>
+              <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="sx-fsg-stage-host">
+          <div x-show="activeGameModal === 'leaf'" x-cloak>{{ game_leaf() }}</div>
+          <div x-show="activeGameModal === 'food'" x-cloak>{{ game_food() }}</div>
+          <div x-show="activeGameModal === 'breathe'" x-cloak>{{ game_breathe() }}</div>
+          <div x-show="activeGameModal === 'heart'" x-cloak>{% include "student/partials/heart_activity.html" %}</div>
+          <div x-show="activeGameModal === 'blood'" x-cloak>{{ game_blood() }}</div>
+          <div x-show="activeGameModal === 'pump'" x-cloak>{{ game_pump() }}</div>
+          <div x-show="activeGameModal === 'kidney'" x-cloak>{{ game_kidney() }}</div>
+          <div x-show="activeGameModal === 'team'" x-cloak>{{ game_team() }}</div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Part B: Playful 4-Episode Video Strip (Zero Text Clutter — Moving 3D Badge + 4 Tactile Episode Pills) -->
+      {% if ns.videos %}
+      <div id="chapter-videos" class="sx-summary-vid-strip" @click.stop>
+        <button type="button"
+                @click="openSummaryVideos()"
+                data-sx-surf-badge
+                class="sx-issue-badge-card sx-summary-vid-badge">
+          <span class="sx-badge-stage" style="max-width:126px;">
+            <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_chapter_summary_idle.webp?v=540" alt="Chapter Summary">
+            <canvas class="sx-badge-canvas" width="340" height="340" data-sx-sheet="/static/images/saxaz_web/badge_chapter_summary_sheet.webp?v=540"></canvas>
+          </span>
+        </button>
+
+        <div class="sx-summary-vid-pills">
+          <template x-for="vp in videos" :key="'vid-pill-' + vp.id">
+            <button type="button"
+                    @click="playBrief(vp, true)"
+                    class="sx-summary-vid-pill"
+                    :class="isDone(vp.id) && 'is-watched'">
+              <span class="sx-summary-vid-play" :class="isDone(vp.id) && 'is-watched'">
+                <span class="material-symbols-outlined" style="font-size:16px;" x-text="isDone(vp.id) ? 'check' : 'play_arrow'"></span>
+              </span>
+              <span style="display:flex;flex-direction:column;align-items:flex-start;min-width:0;">
+                <strong style="font-size:0.88rem;font-weight:800;color:#231f20;line-height:1.15;" x-text="'Video ' + vp.part"></strong>
+                <span style="font-size:0.75rem;font-weight:800;color:rgba(35,31,32,0.72);margin-top:2px;"
+                      x-text="vp.duration_str + (isDone(vp.id) ? ' · Watched' : ' · +5 Coins')"></span>
+              </span>
+            </button>
+          </template>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </section>
+
+  <!-- Theater Video Modal (Clear Active Title + Part Switcher + Previous / Next Video Controls) -->
+  <template x-if="activeVideo">
+    <div style="position:fixed;inset:0;z-index:6000;display:grid;place-items:center;padding:16px;">
+      <div @click="activeVideo = null" style="position:absolute;inset:0;background:rgba(35,31,32,0.84);backdrop-filter:blur(4px);cursor:pointer;"></div>
+      <div style="position:relative;z-index:1;width:min(100%,920px);background:#231f20;color:#ffffff;border:2px solid #f7b317;border-radius:22px;overflow:hidden;box-shadow:0 30px 90px rgba(35,31,32,0.5);">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px 18px 10px;">
+          <div style="min-width:0;flex:1;">
+            <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:800;color:#ffffff;margin-bottom:8px;"
+                 x-text="'Part ' + activeVideo.part + ': ' + activeVideo.title"></div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <template x-for="vp in videos" :key="vp.id">
+                <button type="button"
+                        @click="playBrief(vp, true)"
+                        :style="Number(activeVideo.id) === Number(vp.id)
+                          ? 'padding:5px 12px;border-radius:999px;border:0;background:#f7b317;color:#231f20;font-size:0.78rem;font-weight:800;cursor:pointer;'
+                          : 'padding:5px 12px;border-radius:999px;border:1px solid rgba(255,255,255,0.22);background:transparent;color:#ffffff;font-size:0.78rem;font-weight:700;cursor:pointer;'"
+                        x-text="'Part ' + vp.part + (isDone(vp.id) ? ' (Watched)' : '')">
+                </button>
+              </template>
+            </div>
+          </div>
+          <button type="button" @click="activeVideo = null" aria-label="Close video"
+                  style="width:36px;height:36px;border-radius:999px;border:0;background:rgba(255,255,255,0.14);color:#ffffff;display:grid;place-items:center;cursor:pointer;flex-shrink:0;">
+            <span class="material-symbols-outlined" style="font-size:20px;">close</span>
+          </button>
+        </div>
+
+        <div style="padding:4px 18px 12px;">
+          <div id="ch-inline-player-host" style="width:100%;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:#231f20;"></div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:0 18px 16px;">
+          <button type="button"
+                  :disabled="!getPrevVideo(activeVideo.id)"
+                  @click="getPrevVideo(activeVideo.id) && playBrief(getPrevVideo(activeVideo.id), true)"
+                  :style="getPrevVideo(activeVideo.id)
+                    ? 'min-height:40px;padding:8px 16px;border-radius:999px;border:1.5px solid rgba(255,255,255,0.32);background:transparent;color:#ffffff;font-family:inherit;font-size:0.84rem;font-weight:800;cursor:pointer;'
+                    : 'min-height:40px;padding:8px 16px;border-radius:999px;border:1.5px solid rgba(255,255,255,0.14);background:transparent;color:rgba(255,255,255,0.38);font-family:inherit;font-size:0.84rem;font-weight:700;cursor:not-allowed;'">
+            &larr; Previous
+          </button>
+
+          <span style="font-size:0.8rem;font-weight:700;color:rgba(255,255,255,0.78);"
+                x-text="isDone(activeVideo.id) ? 'Completed (+5 Coins)' : 'Watch to earn +5 Coins'"></span>
+
+          <button type="button"
+                  @click="proceedToNextSummary(activeVideo.id)"
+                  class="sx-ext-cta-yellow"
+                  style="min-height:40px;padding:8px 18px;font-size:0.86rem;">
+            <span x-text="getNextVideo(activeVideo.id) ? 'Next Video' : 'Finish Videos'"></span> &rarr;
+          </button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- PRACTICE MOCK TESTS & OFFICIAL REAL EXAM (Giant Standalone 3D Emblem Buttons — Zero Card Wrapper) -->
+  <section id="chapter-exams" style="margin-bottom:28px;">
+    <div class="sx-issue-badges-row">
+      <a href="{{ '/student/exams/' ~ ns.first_mock_id if ns.first_mock_id else '#chapter-exams' }}"
+         aria-label="Mock Exam"
+         data-sx-surf-badge
+         class="sx-issue-badge-card">
+        <span class="sx-badge-stage">
+          <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_mock_exam_idle.webp?v=540" alt="Mock Exam">
+          <canvas class="sx-badge-canvas" width="340" height="340" data-sx-sheet="/static/images/saxaz_web/badge_mock_exam_sheet.webp?v=540"></canvas>
+        </span>
+      </a>
+
+      {% if ns.first_real_id and real_unlocked %}
+      <a href="/student/real-exams/{{ ns.first_real_id }}/intro"
+         aria-label="Real Exam"
+         data-sx-surf-badge
+         class="sx-issue-badge-card">
+        <span class="sx-badge-stage">
+          <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_real_exam_idle.webp?v=540" alt="Real Exam">
+          <canvas class="sx-badge-canvas" width="340" height="340" data-sx-sheet="/static/images/saxaz_web/badge_real_exam_sheet.webp?v=540"></canvas>
+        </span>
+      </a>
+      {% else %}
+      <a href="#chapter-exams"
+         aria-label="Real Exam"
+         @click.prevent="handleRealExamClick($event)"
+         data-sx-surf-badge
+         class="sx-issue-badge-card">
+        <span class="sx-badge-stage">
+          <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_real_exam_idle.webp?v=540" alt="Real Exam">
+          <canvas class="sx-badge-canvas" width="340" height="340" data-sx-sheet="/static/images/saxaz_web/badge_real_exam_sheet.webp?v=540"></canvas>
+        </span>
+      </a>
+      {% endif %}
+    </div>
+
+  </section>
+
+
+</div>
 {% endblock %}

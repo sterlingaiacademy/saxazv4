@@ -1,0 +1,4103 @@
+/* ==========================================================================
+   SAXAZ.COM 1:1 EXTENSION DESIGN SYSTEM (saxaz-ext.css)
+   Matches upstream https://saxaz.com typography, colors, shell, and cards.
+   ========================================================================== */
+
+@font-face {
+  font-family: "saxazSoraFont";
+  src: url("/static/fonts/sora_latin_wght_normal-s.p.0uvwhxzorthdc.woff2") format("woff2");
+  font-weight: 100 800;
+  font-display: swap;
+}
+
+[x-cloak] {
+  display: none !important;
+}
+
+:root,
+html,
+html[data-theme="light"],
+html[data-theme="dark"] {
+  --sx-header-bg: #231f20;
+  --sx-issue-bar-bg: #231f20;
+  --sx-sidebar-bg: #dfe4e8;
+  --sx-sidebar-pill: #c9cfd5;
+  --sx-yellow: #f7b317;
+  --sx-yellow-issue: #f7b317;
+  --sx-yellow-login: #f7b317;
+  --sx-canvas: #ffffff;
+  --sx-subpage-bg: #ffffff;
+  --sx-reading-bg: #ffffff;
+  --sx-reading-card: #ffffff;
+  --sx-reading-border: rgba(35, 31, 32, 0.22);
+  --sx-ink: #231f20;
+  --sx-text: #231f20;
+  --sx-muted: rgba(35, 31, 32, 0.68);
+  --sx-ring-track: rgba(35, 31, 32, 0.16);
+  --sx-card-border: rgba(35, 31, 32, 0.16);
+  --sx-field-border: rgba(35, 31, 32, 0.32);
+  --sx-row-gray: #ffffff;
+  --font-body: "saxazBodyFont", "Manrope", "Segoe UI", sans-serif;
+  --font-display: "saxazSoraFont", "saxazBodyFont", "Segoe UI", sans-serif;
+  --font-heading: "dashboardFont", "Montserrat", "Arial Black", sans-serif;
+  --font-condensed: "Helvetica Neue Std", "saxazSpaceFont", "Space Grotesk", "Arial Narrow", sans-serif;
+
+  /* Override legacy Sunny v3 CSS variables so existing inner components align automatically */
+  --sx-bg: #ffffff !important;
+  --sx-bg-2: #ffffff !important;
+  --sx-card: #ffffff !important;
+  --sx-line: rgba(35, 31, 32, 0.15) !important;
+  --sx-mute: rgba(35, 31, 32, 0.68) !important;
+  --sx-faint: rgba(35, 31, 32, 0.42) !important;
+  --sx-gold: #f7b317 !important;
+  --sx-shadow: 0 12px 28px rgba(35, 31, 32, 0.06) !important;
+  color-scheme: light !important;
+}
+
+html {
+  background: #ffffff !important;
+  color: #231f20 !important;
+  font-family: var(--font-body) !important;
+  margin: 0;
+  padding: 0;
+  height: auto !important;
+  overflow-x: clip !important;
+  overflow-y: auto !important;
+  overscroll-behavior-y: auto !important;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: #ffffff !important;
+  color: #231f20 !important;
+  font-family: var(--font-body) !important;
+  font-weight: 500;
+  margin: 0;
+  padding: 0;
+  min-height: 100dvh;
+  height: auto !important;
+  overflow: visible !important;
+  overscroll-behavior-y: auto !important;
+  -webkit-font-smoothing: antialiased;
+}
+
+[data-theme="light"] main,
+.sx-ext-shell main,
+main.sx-ext-canvas {
+  background: #ffffff !important;
+  overflow: visible !important;
+}
+
+/* ==========================================================================
+   1. TOP DARK BRAND HEADER (#231f20 / #231f20 — Logo Only or Back Link)
+   ========================================================================== */
+.sx-ext-header {
+  background: var(--sx-header-bg);
+  min-height: 80px;
+  padding: 15px 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  z-index: 60;
+}
+
+.sx-ext-header--issue {
+  background: var(--sx-issue-bar-bg);
+  min-height: 74px;
+  padding: 16px 28px;
+}
+
+.sx-ext-logo-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.sx-ext-logo-img {
+  width: 210px;
+  max-width: 52vw;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.sx-ext-header-back {
+  color: var(--sx-yellow-issue);
+  font-family: var(--font-condensed);
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.sx-ext-header-back:hover {
+  opacity: 0.9;
+  text-decoration: underline;
+  transform: translateX(-2px);
+}
+
+@media (max-width: 760px) {
+  .sx-ext-header,
+  .sx-ext-header--issue {
+    min-height: 68px;
+    padding: 13px 18px;
+  }
+  .sx-ext-logo-img {
+    width: 164px;
+  }
+  .sx-ext-header-back {
+    font-size: 0.86rem;
+  }
+}
+
+/* ==========================================================================
+   2. FULL-BLEED DASHBOARD YELLOW HERO (#f7b317)
+   ========================================================================== */
+.sx-ext-hero {
+  background: var(--sx-yellow);
+  padding: 36px 38px 40px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sx-ext-hero-inner {
+  max-width: 1360px;
+  margin: 0;
+}
+
+.sx-ext-hero-title {
+  font-family: var(--font-heading) !important;
+  font-size: clamp(2.85rem, 5.8vw, 4.35rem) !important;
+  font-weight: 800 !important;
+  line-height: 0.94 !important;
+  letter-spacing: -0.04em !important;
+  margin: 0 !important;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sx-ext-hero-title .is-dark {
+  color: #231f20;
+  display: block;
+}
+
+.sx-ext-hero-title .is-white {
+  color: #ffffff;
+  display: block;
+}
+
+.sx-ext-hero-copy {
+  font-family: var(--font-condensed) !important;
+  font-size: clamp(1.18rem, 1.9vw, 1.72rem) !important;
+  font-weight: 700 !important;
+  line-height: 1.18 !important;
+  color: #231f20 !important;
+  margin: 20px 0 0 !important;
+  max-width: 680px;
+}
+
+@media (max-width: 760px) {
+  .sx-ext-hero {
+    padding: 26px 18px 30px;
+  }
+}
+
+/* ==========================================================================
+   3. PERSISTENT LEFT PILL SIDEBAR SHELL (#dfe4e8 + #c9cfd5 / #f7b317 Pills)
+   ========================================================================== */
+.sx-ext-shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+}
+
+.sx-ext-mobile-bar {
+  display: none;
+  background: var(--sx-sidebar-bg);
+  padding: 14px 18px;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  z-index: 50;
+}
+
+.sx-ext-menu-trigger {
+  appearance: none;
+  background: #ffffff !important;
+  color: #231f20 !important;
+  border: 2px solid #231f20 !important;
+  border-radius: 999px !important;
+  padding: 9px 20px !important;
+  min-height: 44px;
+  font-family: var(--font-body) !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  box-shadow: none !important;
+}
+
+.sx-ext-workspace {
+  display: grid;
+  grid-template-columns: clamp(220px, 23vw, 296px) minmax(0, 1fr);
+  flex: 1;
+  width: 100%;
+  min-height: calc(100dvh - 80px);
+}
+
+.sx-ext-sidebar {
+  background: var(--sx-sidebar-bg);
+  padding: 28px 18px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: sticky;
+  top: 0;
+  height: calc(100dvh - 80px);
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.sx-ext-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+}
+
+.sx-ext-nav-pill {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 10px 22px;
+  border-radius: 999px;
+  border: 3px solid #ffffff;
+  background: var(--sx-sidebar-pill);
+  color: #231f20 !important;
+  font-family: var(--font-body) !important;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-decoration: none !important;
+  transition: background-color 0.16s ease, transform 0.14s ease;
+  box-sizing: border-box;
+}
+
+.sx-ext-nav-pill:hover {
+  background: rgba(247, 179, 23, 0.52);
+}
+
+.sx-ext-nav-pill.is-active {
+  background: var(--sx-yellow) !important;
+  font-weight: 700;
+}
+
+.sx-ext-nav-pill--logout {
+  margin-top: auto;
+}
+
+.sx-ext-nav-pill svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  stroke-width: 1.9;
+}
+
+.sx-ext-canvas {
+  background: #ffffff;
+  padding: 34px 38px 48px 36px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.sx-ext-canvas--tinted {
+  background: #ffffff;
+}
+
+/* Mobile Slide Drawer (<= 1100px) */
+.sx-ext-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(24, 20, 24, 0.42);
+  backdrop-filter: blur(4px);
+  z-index: 90;
+}
+
+.sx-ext-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(340px, calc(100vw - 48px));
+  background: var(--sx-sidebar-bg);
+  padding: 22px 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 100;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+  overflow-y: auto;
+}
+
+@media (max-width: 1100px) {
+  .sx-ext-mobile-bar {
+    display: flex;
+  }
+  .sx-ext-workspace {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+  .sx-ext-sidebar {
+    display: none;
+  }
+  .sx-ext-canvas {
+    padding: 24px 18px 40px;
+  }
+}
+
+/* ==========================================================================
+   4. DASHBOARD: RESUME LESSON BLOCK + CONIC PROGRESS RING + MY SUBJECTS CARDS
+   ========================================================================== */
+.sx-ext-dash-section {
+  max-width: 1080px;
+  margin-bottom: 42px;
+}
+
+.sx-ext-section-h2 {
+  font-family: var(--font-heading) !important;
+  font-size: clamp(1.85rem, 2.5vw, 2.45rem) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.03em !important;
+  color: #231f20 !important;
+  margin: 0 0 20px !important;
+  line-height: 1.05 !important;
+}
+
+.sx-ext-resume-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 232px;
+  align-items: center;
+  gap: 34px;
+  max-width: 1040px;
+}
+
+.sx-ext-resume-card {
+  background: var(--sx-yellow);
+  min-height: 226px;
+  padding: 26px 30px;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 18px;
+  text-decoration: none !important;
+  box-sizing: border-box;
+}
+
+.sx-ext-resume-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  width: fit-content;
+  background: #231f20;
+  color: #ffffff !important;
+  border-radius: 999px;
+  padding: 8px 10px 8px 24px;
+  font-family: var(--font-heading) !important;
+  font-size: 1.12rem;
+  font-weight: 800;
+  text-decoration: none !important;
+  transition: transform 0.16s ease, background-color 0.16s ease;
+}
+
+.sx-ext-resume-pill:hover {
+  background: #231f20;
+  transform: translateY(-2px);
+}
+
+.sx-ext-resume-arrow {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2.5px solid #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sx-ext-resume-title {
+  font-family: var(--font-heading) !important;
+  font-size: clamp(1.65rem, 2.5vw, 2.2rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.05 !important;
+  letter-spacing: -0.03em !important;
+  margin: 0 !important;
+}
+
+.sx-ext-resume-title .is-dark {
+  color: #231f20;
+  display: block;
+}
+
+.sx-ext-resume-title .is-white {
+  color: #ffffff;
+  display: block;
+}
+
+.sx-ext-resume-sub {
+  font-family: var(--font-body) !important;
+  font-size: 1.08rem;
+  font-weight: 500;
+  color: #231f20;
+  margin: 4px 0 0 !important;
+}
+
+.sx-ext-conic-ring {
+  width: 224px;
+  height: 224px;
+  border-radius: 50%;
+  background: #ffffff; border: 18px solid #f7b317; box-shadow: inset 0 0 0 2px #231f20;
+  display: grid;
+  place-items: center;
+  margin: 0 auto;
+  flex-shrink: 0;
+}
+
+.sx-ext-conic-inner {
+  width: 152px;
+  height: 152px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.sx-ext-conic-inner b {
+  font-family: var(--font-heading);
+  font-size: 2.25rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #231f20;
+}
+
+.sx-ext-conic-inner span {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #231f20;
+  margin-top: 4px;
+}
+
+@media (max-width: 820px) {
+  .sx-ext-resume-row {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .sx-ext-conic-ring {
+    width: 196px;
+    height: 196px;
+  }
+  .sx-ext-conic-inner {
+    width: 132px;
+    height: 132px;
+  }
+}
+
+/* Square-cornered Illustrated Subject Cards (1:1 My Issues Grid) */
+.sx-ext-issues-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+  gap: 28px;
+  max-width: 1040px;
+}
+
+.sx-ext-issue-card {
+  position: relative;
+  display: block;
+  border-radius: 0;
+  border: 2px solid #231f20;
+  aspect-ratio: 7 / 6;
+  overflow: hidden;
+  background: #ffffff;
+  text-decoration: none !important;
+  color: #231f20 !important;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.22s ease, border-color 0.2s ease;
+}
+
+.sx-ext-issue-card:hover {
+  transform: translateY(-6px) scale(1.03);
+  border-color: #f7b317;
+  box-shadow: 0 18px 36px rgba(36, 31, 33, 0.14);
+}
+
+.sx-ext-issue-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  animation: none;
+  transform-origin: center center;
+}
+
+/* Compact Single-Row Side-by-Side 3D Animated Subject Emblems (Never Wraps Down) */
+.sx-subject-badges-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 164px));
+  gap: 14px;
+  align-items: center;
+  justify-content: start;
+  width: 100%;
+  max-width: 1060px;
+  margin-top: 2px;
+  padding: 10px 2px 8px;
+}
+
+@media (max-width: 720px) {
+  .sx-subject-badges-grid {
+    grid-template-columns: repeat(6, 132px);
+    gap: 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .sx-subject-badges-grid::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.sx-issue-badge-card.is-subject-badge {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 5px;
+  width: 100%;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.sx-badge-stage.is-subject-stage {
+  width: 100%;
+  max-width: 164px;
+  aspect-ratio: 1 / 1;
+  margin: 0 0 -6px;
+}
+
+.sx-subject-pct-pill {
+  display: inline-block;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: #f1f3f5;
+  border: 1px solid rgba(35, 31, 32, 0.14);
+  color: #231f20;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.sx-subject-soon-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 13px;
+  border-radius: 999px;
+  background: #231f20;
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.sx-subject-soon-cta {
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: #f7b317;
+  color: #231f20 !important;
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-decoration: none !important;
+}
+
+@keyframes sxAlwaysBreathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.038); }
+}
+
+@keyframes sxAlwaysFloat {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-5px) scale(1.022); }
+}
+
+.sx-ext-issue-top {
+  position: relative;
+  z-index: 2;
+  padding: 14px 16px 10px;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.sx-ext-issue-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-family: var(--font-heading);
+  font-size: clamp(1.18rem, 1.55vw, 1.48rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: #231f20;
+  text-transform: uppercase;
+}
+
+.sx-ext-issue-medium {
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #231f20;
+  margin-top: 3px;
+}
+
+.sx-ext-issue-bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  padding: 16px;
+  background: rgba(35, 31, 32, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sx-ext-issue-chip {
+  background: rgba(255, 255, 255, 0.94);
+  color: #231f20;
+  border-radius: 999px;
+  padding: 6px 15px;
+  font-family: var(--font-body);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   5. INNER PAGES: DARK BACK PILL + WARM BREADCRUMB + CLEAN .sx-ext-surface
+   ========================================================================== */
+.sx-ext-inner-wrap {
+  max-width: 1060px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.sx-ext-back-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 24px;
+  border-radius: 999px;
+  background: #231f20;
+  color: #ffffff !important;
+  text-decoration: none !important;
+  box-sizing: border-box;
+  margin-bottom: 14px;
+}
+
+.sx-ext-back-link {
+  color: #ffffff !important;
+  text-decoration: none !important;
+  font-size: 0.96rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sx-ext-back-link:hover {
+  color: var(--sx-yellow) !important;
+}
+
+.sx-ext-crumb-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 11px 22px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1.5px solid rgba(35, 31, 32, 0.16);
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #231f20;
+  margin-bottom: 18px;
+  box-sizing: border-box;
+}
+
+.sx-ext-crumb-bar a {
+  color: #231f20;
+  text-decoration: underline;
+  text-decoration-color: #f7b317;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  font-weight: 800;
+}
+
+.sx-ext-surface {
+  background: #ffffff;
+  border: 1.5px solid rgba(35, 31, 32, 0.16);
+  border-radius: 22px;
+  padding: 24px 28px;
+  box-shadow: 0 12px 28px rgba(35, 31, 32, 0.05);
+  box-sizing: border-box;
+}
+
+[data-reader-mode="reading"] .sx-ext-surface,
+.sx-ext-surface.is-reading {
+  background: #ffffff !important;
+  border-color: #231f20 !important;
+  color: #231f20 !important;
+}
+
+.sx-ext-mode-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1.5px solid rgba(35, 31, 32, 0.18);
+}
+
+.sx-ext-mode-switch button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #231f20;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 6px 15px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.sx-ext-mode-switch button.is-active {
+  background: var(--sx-yellow);
+  color: #231f20;
+}
+
+.sx-ext-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #231f20;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.sx-ext-cta-yellow {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 50px;
+  padding: 12px 28px;
+  border-radius: 999px;
+  border: 0;
+  background: var(--sx-yellow) !important;
+  color: #231f20 !important;
+  font-family: var(--font-body) !important;
+  font-size: 0.98rem;
+  font-weight: 800;
+  text-decoration: none !important;
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.sx-ext-cta-yellow:hover {
+  filter: brightness(0.97);
+  transform: translateY(-1px);
+}
+
+.sx-ext-cta-dark {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 11px 24px;
+  border-radius: 999px;
+  border: 0;
+  background: #231f20 !important;
+  color: #ffffff !important;
+  font-family: var(--font-body) !important;
+  font-size: 0.94rem;
+  font-weight: 700;
+  text-decoration: none !important;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.sx-ext-cta-dark:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.sx-ext-cta-soft {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  border: 1.5px solid #231f20;
+  background: #ffffff !important;
+  color: #231f20 !important;
+  font-family: var(--font-body) !important;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none !important;
+  cursor: pointer;
+}
+
+/* Profile & Form Inputs (1:1 saxaz.com/dashboard/profile) */
+.sx-ext-field-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #231f20;
+  margin-bottom: 6px;
+}
+
+.sx-ext-field-input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(35, 31, 32, 0.26);
+  background: #ffffff;
+  color: #231f20;
+  font-family: var(--font-body);
+  font-size: 0.96rem;
+  font-weight: 500;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sx-ext-field-input:focus {
+  border-color: #f7b317;
+  box-shadow: 0 0 0 4px rgba(247, 179, 23, 0.18);
+}
+
+/* ==========================================================================
+   6. ISSUE-STYLE SUBJECT / CHAPTER PAGE OVERRIDES
+   Restores crisp saxaz.com 2x2 video grid, 3 feature badges, and accordions
+   ========================================================================== */
+.sx-issue-wrap {
+  max-width: 1220px;
+  margin: 0 auto;
+  padding: 16px 28px 56px;
+  box-sizing: border-box;
+}
+
+.sx-issue-label {
+  text-align: right;
+  font-family: var(--font-condensed);
+  font-size: clamp(1.1rem, 1.45vw, 1.55rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #231f20;
+  margin: 0 0 22px;
+}
+
+.sx-issue-video-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+  margin-bottom: 48px;
+}
+
+.sx-issue-video-card {
+  cursor: pointer;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  display: block;
+  width: 100%;
+}
+
+.sx-issue-video-thumb {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #231f20;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+}
+
+.sx-issue-video-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.25s ease;
+}
+
+.sx-issue-video-card:hover .sx-issue-video-thumb img {
+  transform: scale(1.03);
+}
+
+.sx-issue-video-play {
+  position: absolute;
+  inset: 0;
+  background: rgba(35, 31, 32, 0.34);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sx-issue-video-play-circle {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: rgba(247, 181, 18, 0.95);
+  color: #231f20;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32);
+}
+
+.sx-issue-video-caption {
+  margin-top: 10px;
+  font-family: var(--font-condensed);
+  font-size: clamp(1.08rem, 1.3vw, 1.38rem);
+  font-weight: 700;
+  line-height: 1.2;
+  color: #231f20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sx-issue-video-card:hover .sx-issue-video-caption span:first-child {
+  text-decoration: underline;
+}
+
+/* Standalone Giant 3D Animated Emblem Buttons (Zero Outer Card Box, Pure 3D Button) */
+.sx-issue-badges-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  justify-items: center;
+  align-items: center;
+  gap: 20px;
+  max-width: 940px;
+  margin: 0 auto 10px;
+}
+
+.sx-issue-badges-row.is-four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.sx-issue-badge-card {
+  appearance: none;
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  font-family: var(--font-body);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  text-decoration: none !important;
+  color: #231f20 !important;
+  box-shadow: none !important;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  will-change: transform;
+}
+
+.sx-issue-badge-card:hover,
+.sx-issue-badge-card.is-surfing,
+.sx-issue-badge-card:focus-visible {
+  z-index: 6;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: none;
+}
+
+.sx-badge-stage {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 410px);
+  max-width: 410px;
+  aspect-ratio: 1 / 1;
+  margin: -18px 0 -34px;
+  display: grid;
+  place-items: center;
+  background: transparent !important;
+  will-change: transform;
+}
+
+.sx-summary-vid-badge .sx-badge-stage {
+  margin: 0;
+  max-width: 126px;
+}
+
+.sx-badge-stage .sx-badge-idle,
+.sx-badge-stage .sx-badge-canvas,
+.sx-issue-badge-card > img {
+  grid-area: 1 / 1;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  display: block;
+  background: transparent !important;
+  pointer-events: none;
+  user-select: none;
+}
+
+.sx-badge-stage .sx-badge-canvas {
+  opacity: 0;
+}
+
+.sx-issue-badge-card.is-sprite-active .sx-badge-stage .sx-badge-canvas {
+  opacity: 1;
+}
+
+.sx-issue-badge-card.is-sprite-active .sx-badge-stage .sx-badge-idle {
+  opacity: 0;
+}
+
+@media (max-width: 640px) {
+  .sx-badge-stage {
+    width: min(100%, 300px);
+    max-width: 300px;
+    margin: -10px 0 -22px;
+  }
+}
+
+/* Mock Test 1 / 2 / 3 Switcher Pills (Solid Yellow / Black / White) */
+.sx-mock-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sx-mock-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-decoration: none !important;
+  background: #ffffff;
+  color: #231f20 !important;
+  border: 1.5px solid rgba(35, 31, 32, 0.18);
+  transition: transform 0.16s ease, background-color 0.16s ease, border-color 0.16s ease;
+}
+
+.sx-mock-tab:hover {
+  border-color: #231f20;
+  transform: translateY(-1px);
+}
+
+.sx-mock-tab.is-active {
+  background: #f7b317;
+  color: #231f20 !important;
+  border-color: #231f20;
+}
+
+/* Living Animated Syllabus Illustrations & Verbatim Chapter Summary Sheet */
+.sx-nutshell-sheet {
+  margin-top: 22px;
+  padding-top: 22px;
+  border-top: 2px solid rgba(35, 31, 32, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  cursor: default;
+  user-select: text;
+}
+
+.sx-nutshell-sec {
+  background: #ffffff;
+  border: 1.5px solid rgba(35, 31, 32, 0.14);
+  border-radius: 22px;
+  padding: 22px 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(220px, 0.85fr);
+  gap: 24px;
+  align-items: center;
+}
+
+.sx-nutshell-sec.is-stack {
+  grid-template-columns: 1fr;
+}
+
+@media (max-width: 820px) {
+  .sx-nutshell-sec {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+}
+
+.sx-nutshell-eq {
+  margin: 12px 0;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1.5px solid rgba(35, 31, 32, 0.14);
+  border-left: 4px solid #f7b317;
+  font-weight: 800;
+  color: #231f20;
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+.sx-living-illus {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  max-width: 340px;
+  margin: 0 auto;
+  padding: 10px;
+  border-radius: 22px;
+  background: transparent;
+  border: 2px solid transparent;
+  cursor: pointer;
+  will-change: transform;
+  transition: border-color 0.2s ease, box-shadow 0.22s ease, background-color 0.2s ease;
+}
+
+.sx-living-illus.is-wide {
+  max-width: 540px;
+}
+
+.sx-living-illus:hover,
+.sx-living-illus.is-popping {
+  background: #ffffff;
+  border-color: #f7b317;
+  box-shadow: 0 18px 38px rgba(35, 31, 32, 0.12);
+  z-index: 4;
+}
+
+.sx-living-illus .sx-illus-img,
+.sx-living-illus .sx-illus-canvas {
+  grid-area: 1 / 1;
+  width: 100%;
+  height: auto;
+  max-height: 290px;
+  object-fit: contain;
+  display: block;
+  background: transparent !important;
+  pointer-events: none;
+  user-select: none;
+}
+
+.sx-living-illus.is-wide .sx-illus-img,
+.sx-living-illus.is-wide .sx-illus-canvas {
+  max-height: 330px;
+}
+
+.sx-living-illus .sx-illus-canvas {
+  opacity: 0;
+}
+
+.sx-living-illus.is-anim-live .sx-illus-canvas {
+  opacity: 1;
+}
+
+.sx-living-illus.is-anim-live .sx-illus-img {
+  opacity: 0;
+}
+
+/* 2-Column Alternating Subject/Chapter Accordion + Quote Card (1:1 saxaz.com/dashboard/part) */
+.sx-issue-bottom-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 370px);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.sx-issue-acc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.sx-issue-acc-bar {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 14px;
+  min-height: 58px;
+  padding: 4px 16px 4px 12px;
+  border-radius: 3px;
+  background: #c5c8cc;
+  border: 0;
+  color: #231f20;
+  cursor: pointer;
+  user-select: none;
+  transition: filter 0.14s ease, transform 0.12s ease;
+}
+
+.sx-issue-acc-bar:hover {
+  filter: brightness(0.98);
+}
+
+.sx-issue-acc-bar.is-yellow {
+  background: #f7b317;
+  border: 0;
+}
+
+.sx-issue-acc-bubble {
+  width: 52px;
+  height: 52px;
+  margin: -2px 0;
+  border-radius: 50%;
+  border: 2.5px solid #ffffff;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  box-shadow: 0 3px 10px rgba(35, 31, 32, 0.16);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.sx-issue-acc-bubble svg {
+  width: 30px;
+  height: 30px;
+  display: block;
+}
+
+.sx-issue-acc-bubble.is-sub-english     { background: #fef3c7; color: #1f2937; }
+.sx-issue-acc-bubble.is-sub-chemistry   { background: #ef4444; }
+.sx-issue-acc-bubble.is-sub-physics     { background: #ea580c; }
+.sx-issue-acc-bubble.is-sub-biology     { background: #9333ea; }
+.sx-issue-acc-bubble.is-sub-mathematics { background: #22c55e; }
+.sx-issue-acc-bubble.is-sub-history     { background: #0ea5e9; }
+.sx-issue-acc-bubble.is-sub-geography   { background: #db2777; }
+.sx-issue-acc-bubble.is-sub-economics   { background: #b91c1c; }
+.sx-issue-acc-bubble.is-sub-political   { background: #16a34a; }
+.sx-issue-acc-bubble.is-sub-malayalam   { background: #84cc16; }
+.sx-issue-acc-bubble.is-sub-hindi       { background: #4f46e5; }
+
+.sx-issue-acc-title {
+  font-family: var(--font-condensed);
+  font-size: clamp(1.22rem, 1.55vw, 1.48rem);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  line-height: 1.05;
+  color: #231f20;
+}
+
+.sx-issue-acc-chev {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid #231f20;
+  display: grid;
+  place-items: center;
+  transition: transform 0.18s ease;
+}
+
+.sx-issue-acc-chev .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.sx-issue-acc-chev.is-open {
+  transform: rotate(180deg);
+}
+
+.sx-issue-acc-body {
+  background: #ffffff;
+  border: 1.5px solid rgba(35, 31, 32, 0.14);
+  border-radius: 0 0 10px 10px;
+  padding: 14px 16px;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sx-issue-ch-card {
+  background: #ffffff;
+  border: 1.5px solid rgba(35, 31, 32, 0.14);
+  border-radius: 18px;
+  padding: 16px 18px;
+  box-shadow: 0 10px 24px rgba(35, 31, 32, 0.06);
+}
+
+.sx-issue-quote-box {
+  background: #f7b317;
+  padding: 28px 26px 0;
+  min-height: 680px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  border-radius: 3px;
+}
+
+.sx-issue-quote-text {
+  text-align: right;
+  font-family: var(--font-heading);
+  font-size: clamp(1.55rem, 2.05vw, 2.18rem);
+  font-weight: 800;
+  line-height: 1.04;
+  letter-spacing: -0.025em;
+  color: #231f20;
+  margin: 0;
+}
+
+.sx-issue-quote-author {
+  text-align: right;
+  font-family: var(--font-condensed);
+  font-size: 1.12rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #231f20;
+  margin: 14px 0 8px;
+}
+
+.sx-issue-quote-img {
+  width: min(100%, 300px);
+  height: auto;
+  display: block;
+  margin-top: auto;
+  margin-left: -10px;
+}
+
+@media (max-width: 960px) {
+  .sx-issue-wrap {
+    padding: 14px 18px 42px;
+  }
+  .sx-issue-video-grid {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .sx-issue-badges-row,
+  .sx-issue-badges-row.is-four {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+  @media (max-width: 540px) {
+    .sx-issue-badges-row,
+    .sx-issue-badges-row.is-four {
+      grid-template-columns: 1fr;
+    }
+  }
+  .sx-issue-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+  .sx-issue-quote-box {
+    min-height: 0;
+  }
+}
+
+/* ==========================================================================
+   7. CLEAN OVERRIDES FOR LEGACY .sx-tile / .brilliant-card / .sx-btn
+   Removes heavy comic borders across Parent, Admin & shared modals
+   ========================================================================== */
+.sx-tile,
+.brilliant-card {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(35, 31, 32, 0.15) !important;
+  border-bottom-width: 1.5px !important;
+  border-radius: 20px !important;
+  box-shadow: 0 10px 26px rgba(35, 31, 32, 0.05) !important;
+}
+
+.sx-btn-gold {
+  background: var(--sx-yellow) !important;
+  color: #231f20 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 999px !important;
+}
+
+.sx-btn-soft,
+.sx-btn-ghost {
+  background: #ffffff !important;
+  color: #231f20 !important;
+  border: 1.5px solid #231f20 !important;
+  box-shadow: none !important;
+  border-radius: 999px !important;
+}
+
+/* ==========================================================================
+   8. PHASE 2: STRICT YELLOW / BLACK / WHITE PALETTE + EXAM RED & GREEN ONLY
+   ========================================================================== */
+
+/* Neutralize pastel purple / blue / orange banners from legacy sx3.css */
+.sx-banner-hots,
+.sx-banner-powerup {
+  background: #231f20 !important;
+  color: #ffffff !important;
+  border: 0 !important;
+  border-bottom: 3px solid var(--sx-yellow) !important;
+  border-radius: 22px 22px 0 0 !important;
+  padding: 12px 20px !important;
+}
+
+.sx-banner-hots .sx-banner-tag,
+.sx-banner-powerup .sx-banner-tag {
+  background: var(--sx-yellow) !important;
+  color: #231f20 !important;
+  border: 0 !important;
+  font-weight: 800 !important;
+}
+
+.sx-banner-hots .sx-banner-title,
+.sx-banner-powerup .sx-banner-title {
+  color: #ffffff !important;
+}
+
+.sx-banner-hots .sx-banner-meta,
+.sx-banner-powerup .sx-banner-meta {
+  background: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
+  border: 0 !important;
+}
+
+.sx-banner-subpill {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.24) !important;
+}
+
+.sx-banner-subpill.is-active {
+  background: var(--sx-yellow) !important;
+  color: #231f20 !important;
+  border-color: var(--sx-yellow) !important;
+}
+
+/* Header Coin Balance Pill & Celebration Toast */
+.sx-header-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+}
+
+.sx-coin-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 16px 7px 10px;
+  border-radius: 999px;
+  background: var(--sx-yellow);
+  color: #231f20 !important;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-decoration: none !important;
+  border: 2px solid #ffffff;
+  transition: transform 0.16s ease, filter 0.16s ease;
+}
+
+.sx-coin-pill:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+.sx-coin-disc {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #231f20;
+  color: var(--sx-yellow);
+  display: inline-grid;
+  place-items: center;
+  font-size: 0.72rem;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.sx-coin-toast {
+  position: fixed;
+  top: 22px;
+  right: 22px;
+  z-index: 2147483646;
+  background: #231f20;
+  color: #ffffff;
+  border: 2px solid var(--sx-yellow);
+  border-radius: 999px;
+  padding: 10px 20px 10px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.34);
+  font-family: var(--font-body);
+  transform: translateY(-18px) scale(0.95);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+}
+
+.sx-coin-toast.is-visible {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+.sx-coin-toast-badge {
+  background: var(--sx-yellow);
+  color: #231f20;
+  font-weight: 900;
+  font-size: 0.86rem;
+  padding: 5px 12px;
+  border-radius: 999px;
+}
+
+/* ==========================================================================
+   9. CHAPTER IN A NUTSHELL — SPACIOUS STORY CARD + POPUP EMOTION TUTOR
+   ========================================================================== */
+.sx-nutshell-wrap {
+  position: relative;
+  margin-bottom: 38px;
+}
+
+.sx-nutshell-card {
+  position: relative;
+  background: #ffffff;
+  border: 2.5px solid #231f20;
+  border-radius: 28px;
+  padding: 0;
+  overflow: hidden;
+  cursor: default;
+  box-shadow: 0 7px 0 #231f20;
+  transition: box-shadow 0.2s ease;
+}
+
+.sx-nutshell-card.is-lit {
+  border-color: #231f20;
+  box-shadow: 0 8px 0 #231f20;
+}
+
+/* Top Solid SAXAZ Yellow Poster Stage (Contracted Hero) */
+.sx-nutshell-hero-band {
+  background: #f7b317;
+  padding: 30px 36px 0;
+  position: relative;
+}
+
+.sx-nutshell-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 24px;
+}
+
+.sx-nutshell-hero-copy {
+  padding-bottom: 32px;
+}
+
+.sx-nutshell-hero-title {
+  font-family: var(--font-heading) !important;
+  font-size: clamp(2.0rem, 3.6vw, 2.95rem) !important;
+  font-weight: 800 !important;
+  line-height: 0.98 !important;
+  letter-spacing: -0.03em !important;
+  margin: 0 !important;
+}
+
+.sx-nutshell-hero-title .is-dark {
+  color: #231f20;
+  display: block;
+}
+
+.sx-nutshell-hero-title .is-white {
+  color: #ffffff;
+  display: block;
+  margin-top: 3px;
+}
+
+/* Tactile Bouncy 3D Comic-Shadow Buttons (Strict Solid Yellow / Black / White) */
+.sx-fun-btn-dark,
+.sx-nutshell-viewall-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 10px 24px;
+  border-radius: 999px;
+  border: 2px solid #231f20;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #231f20;
+  transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.14s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.sx-fun-btn-dark {
+  background: #231f20;
+  color: #f7b317;
+}
+
+.sx-nutshell-viewall-btn {
+  background: #ffffff;
+  color: #231f20;
+}
+
+.sx-fun-btn-dark:hover,
+.sx-nutshell-viewall-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 7px 0 #231f20;
+}
+
+.sx-fun-btn-dark:active,
+.sx-nutshell-viewall-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #231f20;
+}
+
+.sx-nutshell-viewall-btn.is-open {
+  min-height: 40px;
+  padding: 7px 18px;
+  font-size: 0.84rem;
+  background: #231f20;
+  color: #ffffff;
+  box-shadow: 0 3px 0 #231f20;
+}
+
+.sx-nutshell-viewall-chev {
+  font-size: 18px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.sx-nutshell-viewall-btn.is-open .sx-nutshell-viewall-chev {
+  transform: rotate(180deg);
+}
+
+/* Giant Borderless Cutout Tutor + Comic Speech Bubble */
+.sx-tutor-pop {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.sx-tutor-speech-bubble {
+  position: relative;
+  max-width: 195px;
+  background: #ffffff;
+  color: #231f20;
+  border: 2px solid #231f20;
+  border-radius: 20px;
+  padding: 11px 15px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1.3;
+  box-shadow: 0 4px 0 #231f20;
+  margin-bottom: 118px;
+  margin-right: -14px;
+  z-index: 3;
+  animation: sxAlwaysFloat 2.8s ease-in-out infinite;
+  transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sx-tutor-speech-bubble::after {
+  content: "";
+  position: absolute;
+  right: -9px;
+  bottom: 16px;
+  width: 14px;
+  height: 14px;
+  background: #ffffff;
+  border-right: 2px solid #231f20;
+  border-bottom: 2px solid #231f20;
+  transform: rotate(-45deg);
+}
+
+.sx-tutor-pop:hover .sx-tutor-speech-bubble {
+  transform: translateY(-4px) scale(1.03);
+}
+
+@keyframes sxTutorStandBreathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.032); }
+}
+
+.sx-tutor-pop-avatar {
+  position: relative;
+  width: 248px;
+  height: 262px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: visible;
+  z-index: 2;
+  transform-origin: center bottom;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sx-tutor-pop:hover .sx-tutor-pop-avatar {
+  transform: scale(1.05);
+}
+
+.sx-tutor-pop-avatar img {
+  width: 108%;
+  height: 108%;
+  max-width: none;
+  object-fit: contain;
+  object-position: center bottom;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+  transform-origin: center bottom;
+  animation: sxTutorStandBreathe 3.4s ease-in-out infinite;
+}
+
+/* Integrated Bottom Video Episode Bar */
+.sx-summary-vid-strip {
+  margin-top: 0;
+  padding: 18px 28px 22px;
+  background: #ffffff;
+  border-top: 2.5px solid #231f20;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.sx-summary-vid-badge {
+  width: auto !important;
+  flex: 0 0 118px;
+  padding: 2px !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.sx-summary-vid-badge:hover,
+.sx-summary-vid-badge.is-surfing {
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.sx-summary-vid-pills {
+  flex: 1;
+  min-width: 240px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 860px) {
+  .sx-summary-vid-pills {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .sx-summary-vid-strip {
+    padding: 16px 18px 20px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .sx-summary-vid-badge {
+    align-self: center;
+  }
+  .sx-summary-vid-pills {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.sx-summary-vid-pill {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 2px solid #231f20;
+  box-shadow: 0 3px 0 #231f20;
+  font-family: var(--font-body);
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.14s ease, background-color 0.15s ease;
+}
+
+.sx-summary-vid-pill:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 0 #231f20;
+}
+
+.sx-summary-vid-pill:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 0 #231f20;
+}
+
+.sx-summary-vid-pill.is-watched {
+  background: #f7b317;
+}
+
+.sx-summary-vid-play {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #f7b317;
+  color: #231f20;
+  border: 2px solid #231f20;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.sx-summary-vid-play.is-watched {
+  background: #231f20;
+  color: #f7b317;
+}
+
+/* Live 5-Bar Equalizer & Play/Pause Nameplate Badge Under Tutor */
+.sx-tutor-voice-pill {
+  position: relative;
+  z-index: 4;
+  margin-top: -12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #231f20;
+  border: 2px solid #231f20;
+  box-shadow: 0 3px 0 #231f20;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.14s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.sx-sync-tutor-card:hover .sx-tutor-voice-pill {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 0 #231f20;
+}
+
+.sx-tutor-voice-pill.is-live {
+  background: #231f20;
+  color: #f7b317;
+}
+
+.sx-tutor-voice-pill.is-paused {
+  background: #f7b317;
+  color: #231f20;
+}
+
+.sx-eq-bars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2.5px;
+  height: 14px;
+}
+
+.sx-eq-bar {
+  width: 3px;
+  border-radius: 999px;
+  background: #f7b317;
+  transition: height 0.05s linear;
+}
+
+/* Expanded Interactive Storyboard (Yellow Header Bar + Open Borderless Character Stage) */
+.sx-sync-topbar {
+  background: #f7b317;
+  border-bottom: 2.5px solid #231f20;
+  padding: 16px 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 0;
+}
+
+.sx-slide-tabs {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.sx-slide-tab {
+  appearance: none;
+  padding: 6px 13px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #231f20;
+  border: 2px solid #231f20;
+  box-shadow: 0 2px 0 #231f20;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.12s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.sx-slide-tab:hover {
+  transform: translateY(-2px);
+}
+
+.sx-slide-tab.is-active {
+  background: #231f20;
+  color: #f7b317;
+}
+
+.sx-sync-stage {
+  background: #ffffff;
+  border: 0;
+  border-radius: 0;
+  padding: 28px 32px 28px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.28fr) minmax(240px, 0.92fr);
+  gap: 28px;
+  align-items: center;
+}
+
+.sx-sync-visual-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.sx-sync-tutor-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.sx-sync-tutor-figure {
+  position: relative;
+  width: 228px;
+  height: 240px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: visible;
+  cursor: pointer;
+}
+
+.sx-sync-tutor-figure.is-speaking {
+  border: 0;
+  box-shadow: none;
+}
+
+.sx-sync-tutor-figure img {
+  width: 112%;
+  height: 112%;
+  max-width: none;
+  object-fit: contain;
+  object-position: center bottom;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+  transform-origin: center bottom;
+  will-change: transform;
+  transition: transform 0.05s linear;
+}
+
+.sx-sync-tutor-figure:not(.is-speaking) img {
+  animation: sxTutorStandBreathe 3.4s ease-in-out infinite;
+}
+
+/* Synchronized Click-to-Seek Karaoke Words */
+.sx-sync-word {
+  cursor: pointer;
+  border-radius: 5px;
+  padding: 1px 2px;
+  margin: 0 -1px;
+  transition: background-color 0.08s ease, color 0.12s ease;
+}
+
+.sx-sync-word:hover {
+  background: rgba(247, 179, 23, 0.34);
+}
+
+.sx-nutshell-sheet.is-sync-active .sx-sync-word.is-upcoming {
+  color: rgba(35, 31, 32, 0.50);
+}
+
+.sx-nutshell-sheet.is-sync-active .sx-sync-word.is-spoken {
+  color: #231f20;
+}
+
+.sx-sync-word.is-current {
+  background: #f7b317 !important;
+  color: #231f20 !important;
+  font-weight: 700;
+  box-shadow: 0 0 0 2px #f7b317;
+}
+
+@media (max-width: 860px) {
+  .sx-sync-stage {
+    grid-template-columns: 1fr;
+    padding: 20px 18px 22px;
+    gap: 16px;
+  }
+  .sx-sync-visual-stack {
+    order: -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .sx-nutshell-hero-band {
+    padding: 24px 20px 0;
+  }
+  .sx-nutshell-hero-copy {
+    padding-bottom: 12px;
+  }
+  .sx-nutshell-grid {
+    grid-template-columns: 1fr;
+    text-align: left;
+    gap: 8px;
+  }
+  .sx-tutor-pop {
+    justify-content: center;
+  }
+  .sx-tutor-speech-bubble {
+    margin-bottom: 92px;
+    max-width: 170px;
+  }
+  .sx-tutor-pop-avatar {
+    width: 190px;
+    height: 204px;
+  }
+}
+
+/* ==========================================================================
+   10. REALISTIC CARDIAC ANIMATIONS & VISUAL HEART DIAGRAM PUZZLE
+   ========================================================================== */
+@keyframes sxRealHeartCycle {
+  0%, 100% { transform: scale(1, 1); }
+  11% { transform: scale(1.028, 0.982); }
+  20% { transform: scale(0.992, 1.006); }
+  30% { transform: scale(0.968, 1.038) translateY(-2px); }
+  46% { transform: scale(1.014, 0.992); }
+  68% { transform: scale(1, 1); }
+}
+
+@keyframes sxHeartPulseWave {
+  0% { transform: translate(-50%, -50%) scale(0.78); opacity: 0.48; }
+  75% { transform: translate(-50%, -50%) scale(1.14); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(1.14); opacity: 0; }
+}
+
+@keyframes sxBloodStream {
+  from { stroke-dashoffset: 28; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes sxEcgSweep {
+  0% { stroke-dashoffset: 260; }
+  100% { stroke-dashoffset: 0; }
+}
+
+@keyframes sxPinBounce {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.09); }
+}
+
+@keyframes sxHeartLubDub {
+  0%, 100% { transform: scale(1); }
+  14% { transform: scale(1.07, 0.96); }
+  28% { transform: scale(0.98, 1.02); }
+  40% { transform: scale(1.04, 1.05); }
+  65% { transform: scale(1); }
+}
+
+@keyframes sxHeartExcited {
+  0%, 100% { transform: scale(1) translateY(0); }
+  25% { transform: scale(1.10) translateY(-4px); }
+  50% { transform: scale(1.01) translateY(0); }
+  75% { transform: scale(1.08) translateY(-3px); }
+}
+
+.sx-heart-char {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  animation: sxHeartLubDub 1.35s ease-in-out infinite;
+  transform-origin: center center;
+}
+
+.sx-heart-char.is-excited {
+  animation: sxHeartExcited 0.7s ease-in-out infinite;
+}
+
+.sx-heart-game {
+  background: #ffffff;
+  border: 1.5px solid rgba(35, 31, 32, 0.10);
+  border-radius: 28px;
+  padding: 32px 36px;
+  margin-bottom: 42px;
+  box-shadow: 0 14px 38px rgba(15, 23, 42, 0.05);
+}
+
+.sx-heart-board-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 410px) minmax(0, 1fr);
+  align-items: center;
+  gap: 36px;
+  margin-top: 18px;
+}
+
+.sx-heart-stage-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+  display: grid;
+  place-items: center;
+}
+
+.sx-heart-pulse-halo {
+  position: absolute;
+  top: 52%;
+  left: 50%;
+  width: 78%;
+  height: 78%;
+  border-radius: 50%;
+  border: 2px solid rgba(247, 179, 23, 0.35);
+  pointer-events: none;
+  animation: sxHeartPulseWave 1.35s ease-out infinite;
+}
+
+.sx-heart-organ {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 56%;
+  animation: sxRealHeartCycle 1.35s ease-in-out infinite;
+  will-change: transform;
+}
+
+.sx-heart-organ.is-fast {
+  animation-duration: 0.92s;
+}
+
+.sx-heart-flow-path {
+  fill: none;
+  stroke-width: 2.1;
+  stroke-linecap: round;
+  stroke-dasharray: 5 4;
+  animation: sxBloodStream 0.85s linear infinite;
+}
+
+.sx-heart-pin {
+  appearance: none;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  min-width: 38px;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 2px solid #231f20;
+  background: #ffffff;
+  color: #231f20;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(35, 31, 32, 0.16);
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+  z-index: 6;
+  white-space: nowrap;
+}
+
+.sx-heart-pin.is-ready {
+  border-color: var(--sx-yellow);
+  background: #ffffff;
+  animation: sxPinBounce 1.2s ease-in-out infinite;
+}
+
+.sx-heart-pin.is-done {
+  background: #16a34a;
+  border-color: #ffffff;
+  color: #ffffff;
+}
+
+.sx-heart-pin.is-wrong {
+  background: #dc2626;
+  border-color: #ffffff;
+  color: #ffffff;
+}
+
+.sx-heart-pieces-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.sx-heart-piece-card {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 18px;
+  border: 1.5px solid rgba(35, 31, 32, 0.16);
+  background: #ffffff;
+  color: #231f20;
+  font-family: var(--font-body);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.16s ease, border-color 0.16s ease, background-color 0.16s ease, opacity 0.2s ease;
+}
+
+.sx-heart-piece-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--sx-yellow);
+}
+
+.sx-heart-piece-card.is-selected {
+  background: #f7b317;
+  border: 2px solid #231f20;
+  box-shadow: 0 8px 20px rgba(35, 31, 32, 0.12);
+}
+
+.sx-heart-piece-card.is-placed {
+  opacity: 0.42;
+  background: #ffffff;
+  pointer-events: none;
+}
+
+.sx-heart-piece-crop {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background-image: url('/static/images/saxaz_web/human_heart_anatomy.jpg');
+  background-repeat: no-repeat;
+  border: 1px solid rgba(35, 31, 32, 0.14);
+  flex-shrink: 0;
+}
+
+.sx-ecg-line {
+  fill: none;
+  stroke: #f7b317;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 260;
+  animation: sxEcgSweep 2.2s linear infinite;
+}
+
+@media (max-width: 860px) {
+  .sx-heart-game {
+    padding: 22px 18px;
+  }
+  .sx-heart-board-grid {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .sx-heart-pieces-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .sx-heart-pieces-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   11. SPACIOUS LET'S DISCUSS STAGE & REWARDS SHOP
+   ========================================================================== */
+.sx-discuss-card {
+  background: #ffffff;
+  border: 1.5px solid rgba(35, 31, 32, 0.14);
+  border-radius: 28px;
+  padding: 30px 34px;
+  margin-bottom: 46px;
+  box-shadow: 0 14px 38px rgba(35, 31, 32, 0.05);
+}
+
+.sx-discuss-stage {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 22px;
+  border-radius: 22px;
+  background: #ffffff;
+  border: 1.5px solid rgba(35, 31, 32, 0.14);
+  color: #231f20;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 640px) {
+  .sx-discuss-card {
+    padding: 22px 18px;
+  }
+  .sx-discuss-stage {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.sx-shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 18px;
+}
+
+.sx-shop-card {
+  background: #ffffff;
+  border: 1.5px solid #231f20;
+  border-radius: 20px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* ==========================================================================
+   12. MINIMAL SPACIOUS EXAM COACH CARD (CLEAN LEFT ACCENT + ZERO SUB-BOXES)
+   ========================================================================== */
+.sx-quiz-coach-card {
+  border-radius: 16px;
+  padding: 22px 26px;
+  background: #ffffff;
+  border: 1px solid rgba(35, 31, 32, 0.12);
+  border-left: 5px solid #231f20;
+  margin-top: 18px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.sx-quiz-coach-card.is-pass {
+  border-left-color: #16a34a;
+}
+
+.sx-quiz-coach-card.is-miss {
+  border-left-color: #dc2626;
+}
+
+.sx-coach-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sx-coach-who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.sx-coach-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1.5px solid #231f20;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.sx-coach-avatar.is-speaking {
+  box-shadow: 0 0 0 3px var(--sx-yellow);
+}
+
+.sx-coach-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sx-coach-status {
+  font-family: var(--font-heading);
+  font-size: 1.02rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.sx-coach-status.is-pass {
+  color: #16a34a;
+}
+
+.sx-coach-status.is-miss {
+  color: #dc2626;
+}
+
+.sx-coach-score {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #ffffff;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.sx-coach-score.is-pass {
+  background: #16a34a;
+}
+
+.sx-coach-score.is-miss {
+  background: #dc2626;
+}
+
+.sx-coach-why {
+  margin: 12px 0 0;
+  font-size: 0.98rem;
+  font-weight: 500;
+  line-height: 1.6;
+  color: #231f20;
+}
+
+.sx-coach-points-wrap {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(35, 31, 32, 0.08);
+}
+
+.sx-coach-points-title {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #231f20;
+  margin-bottom: 8px;
+}
+
+.sx-keypoint-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.sx-keypoint-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  font-size: 0.94rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #231f20;
+}
+
+.sx-keypoint-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sx-yellow);
+  flex-shrink: 0;
+  transform: translateY(-1px);
+}
+
+.sx-memory-pill {
+  margin-top: 14px;
+  padding: 0 0 0 11px;
+  border-left: 3px solid var(--sx-yellow);
+  background: transparent;
+  color: #231f20;
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+/* ==========================================================================
+   13. UNIFIED SIMPLE MOCK EXAM HUB CARD (SINGLE COMBINED BAR + 1..N PILLS)
+   ========================================================================== */
+.sx-exam-hub {
+  background: #ffffff;
+  border: 1.5px solid rgba(35, 31, 32, 0.16);
+  border-radius: 20px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+.sx-exam-hub-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.sx-exam-hub-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.sx-exam-hub-title {
+  font-family: var(--font-heading);
+  font-size: clamp(1.05rem, 1.45vw, 1.32rem);
+  font-weight: 800;
+  color: #231f20;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.sx-exam-hub-count {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1.5px solid rgba(35, 31, 32, 0.16);
+  color: #231f20;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.sx-exam-hub-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sx-exam-timer-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 13px;
+  border-radius: 999px;
+  background: #231f20;
+  color: #ffffff;
+  border: 1.5px solid #231f20;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.12s ease;
+}
+
+.sx-exam-timer-btn:hover {
+  opacity: 0.92;
+}
+
+.sx-exam-timer-btn.is-paused {
+  background: #ffffff;
+  color: #231f20;
+  border-color: #231f20;
+}
+
+.sx-exam-timer-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--sx-yellow);
+  flex-shrink: 0;
+}
+
+.sx-exam-timer-btn.is-paused .sx-exam-timer-dot {
+  background: #231f20;
+}
+
+.sx-exam-ghost-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 13px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #231f20;
+  border: 1.5px solid rgba(35, 31, 32, 0.18);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.sx-exam-ghost-btn:hover {
+  border-color: #231f20;
+}
+
+.sx-exam-finish-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: var(--sx-yellow);
+  color: #231f20;
+  border: 1.5px solid #231f20;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.12s ease, filter 0.15s ease;
+}
+
+.sx-exam-finish-btn:hover {
+  filter: brightness(0.97);
+  transform: translateY(-1px);
+}
+
+.sx-exam-hub-progress {
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(35, 31, 32, 0.12);
+  overflow: hidden;
+}
+
+.sx-exam-hub-progress-bar {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--sx-yellow);
+  transition: width 0.25s ease;
+}
+
+.sx-exam-hub-qrow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.sx-exam-qnum {
+  appearance: none;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 9px;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #231f20;
+  border: 1.5px solid rgba(35, 31, 32, 0.16);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.sx-exam-qnum:hover {
+  border-color: #231f20;
+}
+
+.sx-exam-qnum.is-current {
+  background: var(--sx-yellow) !important;
+  color: #231f20 !important;
+  border: 2px solid #231f20 !important;
+  transform: translateY(-1px);
+}
+
+.sx-exam-qnum.is-solved {
+  background: #16a34a !important;
+  color: #ffffff !important;
+  border-color: #16a34a !important;
+}
+
+.sx-exam-qnum.is-review {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border-color: #dc2626 !important;
+}
+
+@media (max-width: 640px) {
+  .sx-exam-hub {
+    padding: 13px 14px;
+    gap: 10px;
+  }
+  .sx-exam-hub-qrow {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+  .sx-exam-qnum {
+    flex-shrink: 0;
+  }
+}
+
+/* Clean Exam Results Partial Badge & Model Answer Box Overrides (Strict Solid Yellow / Black / White) */
+.sx-qnum-badge.is-partial {
+  background: #f7b317 !important;
+  color: #231f20 !important;
+  border: 1.5px solid #231f20 !important;
+}
+
+.sx-ans-box.is-model {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(35, 31, 32, 0.16) !important;
+  border-left: 4px solid #f7b317 !important;
+}
+
+/* ==========================================================================
+   14. QUIZ POINTS CHAMPIONSHIP ARENA (/student/attempts)
+   Strict Solid Palette (Yellow #f7b317 / Ink #231f20 / White #ffffff) — Zero Gradients
+   ========================================================================== */
+.sx-qp-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sx-qp-hero {
+  background: #f7b317;
+  border: 2.5px solid #231f20;
+  border-radius: 28px;
+  box-shadow: 0 7px 0 #231f20;
+  overflow: hidden;
+  color: #231f20;
+}
+
+.sx-qp-hero-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(220px, 290px);
+  align-items: center;
+  gap: 24px;
+  padding: 28px 32px 24px;
+}
+
+.sx-qp-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.sx-qp-pill-dark {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #231f20;
+  color: #f7b317;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sx-qp-pill-light {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #231f20;
+  border: 2px solid #231f20;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sx-qp-hero-title {
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 3.3vw, 2.85rem);
+  font-weight: 900;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  color: #231f20;
+  margin: 0 0 10px;
+}
+
+.sx-qp-hero-sub {
+  font-size: 0.96rem;
+  font-weight: 700;
+  line-height: 1.45;
+  color: rgba(35, 31, 32, 0.86);
+  margin: 0 0 20px;
+  max-width: 560px;
+}
+
+.sx-qp-hero-ctas {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.sx-qp-btn-dark,
+.sx-qp-btn-white,
+.sx-qp-btn-yellow {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 10px 22px;
+  border-radius: 999px;
+  border: 2px solid #231f20;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-decoration: none !important;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #231f20;
+  transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.14s ease;
+}
+
+.sx-qp-btn-dark {
+  background: #231f20;
+  color: #f7b317 !important;
+}
+
+.sx-qp-btn-white {
+  background: #ffffff;
+  color: #231f20 !important;
+}
+
+.sx-qp-btn-yellow {
+  background: #f7b317;
+  color: #231f20 !important;
+}
+
+.sx-qp-btn-dark:hover,
+.sx-qp-btn-white:hover,
+.sx-qp-btn-yellow:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 7px 0 #231f20;
+}
+
+.sx-qp-btn-dark:active,
+.sx-qp-btn-white:active,
+.sx-qp-btn-yellow:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 0 #231f20;
+}
+
+.sx-qp-trophy-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.sx-qp-trophy-img {
+  width: 220px;
+  height: 220px;
+  object-fit: contain;
+  display: block;
+  animation: sxAlwaysFloat 3.1s ease-in-out infinite;
+  pointer-events: none;
+  user-select: none;
+}
+
+.sx-qp-xp-floating-chip {
+  margin-top: -12px;
+  position: relative;
+  z-index: 2;
+  background: #231f20;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  padding: 7px 18px;
+  font-size: 0.92rem;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 6px 16px rgba(35, 31, 32, 0.22);
+}
+
+.sx-qp-xp-floating-chip strong {
+  color: #f7b317;
+  font-size: 1.05rem;
+}
+
+/* Dark Ink 4-Tier League Track Strip */
+.sx-qp-league-strip {
+  background: #231f20;
+  color: #ffffff;
+  padding: 20px 32px 24px;
+  border-top: 2.5px solid #231f20;
+}
+
+.sx-qp-league-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.sx-qp-league-label {
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f7b317;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sx-qp-league-next {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.sx-qp-track-rail {
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.sx-qp-track-fill {
+  height: 100%;
+  background: #f7b317;
+  border-radius: 999px;
+  transition: width 0.35s ease;
+}
+
+.sx-qp-tiers-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.sx-qp-tier-node {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1.5px solid rgba(255, 255, 255, 0.14);
+}
+
+.sx-qp-tier-node.is-reached {
+  background: rgba(247, 179, 23, 0.16);
+  border-color: #f7b317;
+}
+
+.sx-qp-tier-node.is-current {
+  background: #f7b317;
+  color: #231f20;
+  border-color: #ffffff;
+}
+
+.sx-qp-tier-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  color: #f7b317;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.sx-qp-tier-node.is-current .sx-qp-tier-icon {
+  background: #231f20;
+  color: #f7b317;
+}
+
+.sx-qp-tier-name {
+  font-size: 0.84rem;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.sx-qp-tier-xp {
+  font-size: 0.72rem;
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+/* 4 Visual Stat Cards with Radial Rings & Episode Segments */
+.sx-qp-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.sx-qp-stat-card {
+  background: #ffffff;
+  border: 2px solid #231f20;
+  border-radius: 22px;
+  padding: 20px 18px;
+  box-shadow: 0 5px 0 #231f20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  justify-content: space-between;
+  gap: 10px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sx-qp-stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 0 #231f20;
+}
+
+.sx-qp-stat-card.is-dark {
+  background: #231f20;
+  color: #ffffff;
+}
+
+.sx-qp-stat-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(35, 31, 32, 0.72);
+}
+
+.sx-qp-stat-card.is-dark .sx-qp-stat-eyebrow {
+  color: #f7b317;
+}
+
+.sx-qp-ring-box {
+  position: relative;
+  width: 92px;
+  height: 92px;
+  display: grid;
+  place-items: center;
+}
+
+.sx-qp-ring-svg {
+  width: 92px;
+  height: 92px;
+  transform: rotate(-90deg);
+}
+
+.sx-qp-ring-val {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-heading);
+  font-size: 1.45rem;
+  font-weight: 900;
+  color: #231f20;
+}
+
+.sx-qp-stat-big {
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1.05;
+  color: #231f20;
+}
+
+.sx-qp-stat-card.is-dark .sx-qp-stat-big {
+  color: #ffffff;
+}
+
+.sx-qp-ep-bars {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  width: 100%;
+  max-width: 150px;
+  margin: 4px auto 0;
+}
+
+.sx-qp-ep-seg {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(35, 31, 32, 0.14);
+  border: 1px solid rgba(35, 31, 32, 0.2);
+}
+
+.sx-qp-ep-seg.is-on {
+  background: #f7b317;
+  border-color: #231f20;
+}
+
+.sx-qp-stat-foot {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: rgba(35, 31, 32, 0.72);
+}
+
+.sx-qp-stat-card.is-dark .sx-qp-stat-foot {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.sx-qp-stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: #f7b317;
+  color: #231f20;
+  border: 1.5px solid #231f20;
+}
+
+.sx-qp-stat-card.is-dark .sx-qp-stat-chip {
+  border-color: #f7b317;
+}
+
+/* Unlockable Achievement Medals Shelf */
+.sx-qp-medals-card {
+  background: #ffffff;
+  border: 2px solid #231f20;
+  border-radius: 24px;
+  padding: 22px 26px;
+  box-shadow: 0 5px 0 #231f20;
+}
+
+.sx-qp-medals-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.sx-qp-medal {
+  border-radius: 18px;
+  padding: 16px 12px;
+  text-align: center;
+  border: 1.5px dashed rgba(35, 31, 32, 0.24);
+  background: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.15s ease;
+}
+
+.sx-qp-medal.is-unlocked {
+  border: 2px solid #231f20;
+  background: #fffbeb;
+  box-shadow: 0 4px 0 #231f20;
+}
+
+.sx-qp-medal.is-unlocked:hover {
+  transform: translateY(-3px);
+}
+
+.sx-qp-medal-disc {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(35, 31, 32, 0.1);
+  color: rgba(35, 31, 32, 0.45);
+  display: inline-grid;
+  place-items: center;
+  border: 2px solid rgba(35, 31, 32, 0.18);
+}
+
+.sx-qp-medal.is-unlocked .sx-qp-medal-disc {
+  background: #f7b317;
+  color: #231f20;
+  border-color: #231f20;
+}
+
+.sx-qp-medal-title {
+  font-size: 0.84rem;
+  font-weight: 900;
+  color: #231f20;
+  line-height: 1.2;
+}
+
+.sx-qp-medal-sub {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(35, 31, 32, 0.68);
+  line-height: 1.3;
+}
+
+.sx-qp-medal-tag {
+  margin-top: auto;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(35, 31, 32, 0.1);
+  color: rgba(35, 31, 32, 0.65);
+}
+
+.sx-qp-medal.is-unlocked .sx-qp-medal-tag {
+  background: #231f20;
+  color: #f7b317;
+}
+
+/* Score Ticket Recent Attempts List */
+.sx-qp-attempts-card {
+  background: #ffffff;
+  border: 2px solid #231f20;
+  border-radius: 24px;
+  padding: 24px 26px;
+  box-shadow: 0 5px 0 #231f20;
+}
+
+.sx-qp-attempt-ticket {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 20px;
+  border-radius: 18px;
+  border: 2px solid rgba(35, 31, 32, 0.16);
+  background: #ffffff;
+  cursor: pointer;
+  transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.sx-qp-attempt-ticket:hover {
+  transform: translateY(-2px);
+  border-color: #231f20;
+  box-shadow: 0 4px 0 #231f20;
+}
+
+.sx-qp-score-badge {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  border: 2px solid #231f20;
+  background: #f8f9fa;
+  color: #231f20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sx-qp-score-badge.is-high {
+  background: #f7b317;
+  color: #231f20;
+}
+
+.sx-qp-score-badge.is-live {
+  background: #231f20;
+  color: #f7b317;
+}
+
+.sx-qp-score-num {
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.sx-qp-score-lbl {
+  font-size: 0.62rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 3px;
+}
+
+.sx-qp-marks-rail {
+  width: 100%;
+  max-width: 240px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(35, 31, 32, 0.12);
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.sx-qp-marks-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: #f7b317;
+}
+
+.sx-qp-marks-fill.is-high {
+  background: #16a34a;
+}
+
+@media (max-width: 980px) {
+  .sx-qp-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sx-qp-medals-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .sx-qp-tiers-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .sx-qp-hero-main {
+    grid-template-columns: 1fr;
+    padding: 22px 20px 18px;
+    text-align: left;
+  }
+  .sx-qp-trophy-img {
+    width: 176px;
+    height: 176px;
+  }
+  .sx-qp-league-strip {
+    padding: 18px 20px 20px;
+  }
+  .sx-qp-medals-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sx-qp-attempt-ticket {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .sx-qp-attempt-cta {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  .sx-qp-stats-grid,
+  .sx-qp-tiers-grid,
+  .sx-qp-medals-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   15. GOOGLE PLAY BOOKS & PLAY STORE REWARDS SHOP (/student/shop)
+   Clean App-Store & Book-Shelf Architecture — Zero Gradients
+   ========================================================================== */
+.sx-play-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Play Store App-Bar, Search & Category Navigation */
+.sx-play-topbar {
+  background: #ffffff;
+  border: 2px solid #231f20;
+  border-radius: 24px;
+  padding: 20px 24px 0;
+  box-shadow: 0 5px 0 #231f20;
+}
+
+.sx-play-brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.sx-play-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sx-play-brand-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: #f7b317;
+  color: #231f20;
+  border: 2px solid #231f20;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  box-shadow: 0 3px 0 #231f20;
+}
+
+.sx-play-search-wrap {
+  position: relative;
+  flex: 1 1 260px;
+  max-width: 420px;
+}
+
+.sx-play-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(35, 31, 32, 0.56);
+  font-size: 20px;
+  pointer-events: none;
+}
+
+.sx-play-search-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 16px 0 44px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(35, 31, 32, 0.22);
+  background: #f8f9fa;
+  color: #231f20;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.sx-play-search-input:focus {
+  background: #ffffff;
+  border-color: #231f20;
+}
+
+.sx-play-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 0;
+  border-top: 1px solid rgba(35, 31, 32, 0.1);
+  padding-top: 8px;
+}
+
+.sx-play-tab {
+  appearance: none;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px 13px;
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  color: rgba(35, 31, 32, 0.72);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.sx-play-tab:hover {
+  color: #231f20;
+}
+
+.sx-play-tab.is-active {
+  color: #231f20;
+  border-bottom-color: #f7b317;
+}
+
+/* Compact Play Points Wallet Strip */
+.sx-play-wallet-card {
+  background: #231f20;
+  color: #ffffff;
+  border: 2px solid #231f20;
+  border-radius: 24px;
+  padding: 20px 24px;
+  box-shadow: 0 5px 0 #f7b317;
+}
+
+.sx-play-wallet-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(220px, 1.3fr);
+  gap: 16px;
+  align-items: center;
+}
+
+.sx-play-wallet-stat {
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.sx-play-wallet-stat.is-yellow {
+  background: #f7b317;
+  color: #231f20;
+  border-color: #f7b317;
+}
+
+.sx-play-wallet-eyebrow {
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.82;
+}
+
+.sx-play-wallet-val {
+  font-family: var(--font-heading);
+  font-size: 1.55rem;
+  font-weight: 900;
+  line-height: 1.12;
+  margin-top: 3px;
+}
+
+.sx-play-wallet-sub {
+  font-size: 0.76rem;
+  font-weight: 700;
+  opacity: 0.82;
+  margin-top: 2px;
+}
+
+.sx-play-wallet-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Featured Play Store Spotlight Banner */
+.sx-play-spotlight {
+  background: #f7b317;
+  border: 2.5px solid #231f20;
+  border-radius: 26px;
+  padding: 26px 30px;
+  box-shadow: 0 6px 0 #231f20;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(220px, 320px);
+  align-items: center;
+  gap: 24px;
+  color: #231f20;
+}
+
+.sx-play-spotlight-covers {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.sx-play-spot-book {
+  width: 132px;
+  aspect-ratio: 3 / 4;
+  border-radius: 8px 14px 14px 8px;
+  overflow: hidden;
+  border: 2.5px solid #231f20;
+  box-shadow: -5px 8px 0 #231f20;
+  background: #231f20;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sx-play-spot-book:first-child {
+  transform: rotate(-4deg);
+}
+
+.sx-play-spot-book:last-child {
+  transform: rotate(4deg) translateY(8px);
+}
+
+.sx-play-spot-book:hover {
+  transform: translateY(-6px) scale(1.04);
+}
+
+.sx-play-spot-book img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Section Headers (Play Store Shelf Style) */
+.sx-play-section {
+  background: #ffffff;
+  border: 2px solid #231f20;
+  border-radius: 26px;
+  padding: 24px 26px 28px;
+  box-shadow: 0 5px 0 #231f20;
+}
+
+.sx-play-sec-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.sx-play-sec-title {
+  font-family: var(--font-heading);
+  font-size: 1.45rem;
+  font-weight: 900;
+  color: #231f20;
+  margin: 2px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sx-play-sec-sub {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: rgba(35, 31, 32, 0.68);
+  margin: 4px 0 0;
+}
+
+/* Google Play Books Shelf (Vertical 3:4 Book Covers with Spine Crease) */
+.sx-playbooks-shelf {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.sx-playbook-card {
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+
+.sx-playbook-cover {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: 6px 16px 16px 6px;
+  overflow: hidden;
+  border: 2px solid #231f20;
+  background: #231f20;
+  box-shadow: -4px 6px 0 #231f20, 0 12px 24px rgba(35, 31, 32, 0.12);
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease;
+}
+
+.sx-playbook-card:hover .sx-playbook-cover {
+  transform: translateY(-6px);
+  box-shadow: -6px 11px 0 #231f20, 0 18px 30px rgba(35, 31, 32, 0.18);
+}
+
+.sx-playbook-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Realistic Hardcover Left Spine Crease */
+.sx-playbook-spine {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 10px;
+  width: 3px;
+  background: rgba(255, 255, 255, 0.28);
+  border-left: 1px solid rgba(0, 0, 0, 0.42);
+  pointer-events: none;
+}
+
+.sx-playbook-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #231f20;
+  color: #f7b317;
+  border: 1.5px solid #ffffff;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sx-playbook-info {
+  padding: 12px 2px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.sx-playbook-title {
+  font-family: var(--font-heading);
+  font-size: 1.02rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #231f20;
+  margin: 0;
+}
+
+.sx-playbook-author {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: rgba(35, 31, 32, 0.66);
+}
+
+.sx-playbook-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(35, 31, 32, 0.1);
+}
+
+.sx-play-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #231f20;
+}
+
+.sx-play-rating .material-symbols-outlined {
+  font-size: 16px;
+  color: #f7b317;
+  font-variation-settings: 'FILL' 1, 'wght' 700;
+}
+
+.sx-play-price-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: #f7b317;
+  color: #231f20;
+  border: 1.5px solid #231f20;
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+/* Google Play Store Gear & Passes Shelf (.sx-shop-grid) */
+.sx-playstore-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.sx-playstore-card {
+  background: #ffffff;
+  border: 2px solid #231f20;
+  border-radius: 22px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 4px 0 #231f20;
+  transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.16s ease;
+}
+
+.sx-playstore-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 0 #231f20;
+}
+
+.sx-playstore-art {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #f8f9fa;
+  border-bottom: 2px solid #231f20;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.sx-playstore-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.24s ease;
+}
+
+.sx-playstore-card:hover .sx-playstore-art img {
+  transform: scale(1.04);
+}
+
+.sx-playstore-cat-chip {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #231f20;
+  color: #f7b317;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sx-playstore-inr-chip {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #231f20;
+  border: 1.5px solid #231f20;
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.sx-playstore-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  flex: 1;
+}
+
+.sx-playstore-title {
+  font-family: var(--font-heading);
+  font-size: 1.02rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #231f20;
+  margin: 0 0 4px;
+  cursor: pointer;
+}
+
+.sx-playstore-sub {
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: rgba(35, 31, 32, 0.7);
+  margin: 0;
+}
+
+.sx-playstore-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(35, 31, 32, 0.1);
+}
+
+/* Coin Quests Grid */
+.sx-play-quests-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.sx-play-quest-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1.5px solid rgba(35, 31, 32, 0.18);
+  background: #ffffff;
+  transition: border-color 0.14s ease, transform 0.14s ease;
+}
+
+.sx-play-quest-card:hover {
+  border-color: #231f20;
+  transform: translateY(-2px);
+}
+
+.sx-play-quest-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #fffbeb;
+  border: 1.5px solid #231f20;
+  color: #231f20;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.sx-play-quest-card.is-done .sx-play-quest-icon {
+  background: #231f20;
+  color: #f7b317;
+}
+
+/* Play Books / Play Store Item Preview Drawer Modal */
+.sx-play-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483600;
+  background: rgba(35, 31, 32, 0.68);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.sx-play-modal-dialog {
+  width: 100%;
+  max-width: 760px;
+  background: #ffffff;
+  border: 2.5px solid #231f20;
+  border-radius: 28px;
+  box-shadow: 0 10px 0 #231f20, 0 28px 60px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  color: #231f20;
+}
+
+.sx-play-modal-top {
+  background: #f7b317;
+  border-bottom: 2px solid #231f20;
+  padding: 14px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sx-play-modal-body {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 26px;
+  padding: 26px;
+  align-items: start;
+}
+
+.sx-play-modal-art {
+  width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 2px solid #231f20;
+  box-shadow: -4px 6px 0 #231f20;
+  background: #f8f9fa;
+}
+
+.sx-play-modal-art img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.sx-play-modal-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 14px;
+  text-align: center;
+}
+
+.sx-play-modal-stat-box {
+  padding: 8px 6px;
+  border-radius: 12px;
+  background: #f8f9fa;
+  border: 1px solid rgba(35, 31, 32, 0.14);
+}
+
+@media (max-width: 1020px) {
+  .sx-play-wallet-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sx-playbooks-shelf,
+  .sx-playstore-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sx-play-quests-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .sx-play-spotlight {
+    grid-template-columns: 1fr;
+    padding: 22px 20px;
+  }
+  .sx-play-modal-body {
+    grid-template-columns: 1fr;
+    padding: 20px;
+  }
+  .sx-play-modal-art {
+    max-width: 210px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 500px) {
+  .sx-play-wallet-grid,
+  .sx-playbooks-shelf,
+  .sx-playstore-grid {
+    grid-template-columns: 1fr;
+  }
+}

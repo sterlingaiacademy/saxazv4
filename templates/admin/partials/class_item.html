@@ -1,5 +1,5 @@
 <div class="brilliant-card bg-base-100 overflow-hidden group transition-all" id="class-{{ c.id }}" x-data="{ open: {{ 'true' if start_open else 'false' }}, editingName: false, editingDesc: false }">
-  <div class="flex flex-wrap items-center justify-between gap-3 p-5 cursor-pointer bg-gradient-to-r from-amber-500/5 via-base-100 to-base-100 hover:from-amber-500/10 transition-colors" @click="if($event.target.closest('button, form, input, textarea, a, label')) return; if(!editingName && !editingDesc) open = !open">
+  <div class="flex flex-wrap items-center justify-between gap-3 p-5 cursor-pointer bg-white hover:from-amber-500/10 transition-colors" @click="if($event.target.closest('button, form, input, textarea, a, label')) return; if(!editingName && !editingDesc) open = !open">
     <div class="flex items-center gap-4 min-w-0 flex-1">
       <div class="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-700 border-2 border-amber-500/25 flex items-center justify-center shrink-0 shadow-xs">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform duration-300" :class="{'rotate-90': open}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
@@ -78,21 +78,21 @@
           {% include "admin/partials/subject_item.html" %}
         {% endfor %}
         
-        <form hx-post="/admin/curriculum/classes/{{ c.id }}/subjects" hx-target="#subjects-for-{{ c.id }}" hx-swap="beforeend" hx-encoding="multipart/form-data" enctype="multipart/form-data" class="flex flex-col gap-3 mt-5 bg-base-100 p-4 rounded-2xl border-2 border-dashed border-base-300 hover:border-indigo-500/40 transition-all shadow-xs" hx-on::after-request="if(event.detail.successful) this.reset()">
-           <div class="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-indigo-600">
+        <form hx-post="/admin/curriculum/classes/{{ c.id }}/subjects" hx-target="#subjects-for-{{ c.id }}" hx-swap="beforeend" hx-encoding="multipart/form-data" enctype="multipart/form-data" class="flex flex-col gap-3 mt-5 bg-base-100 p-4 rounded-2xl border-2 border-dashed border-base-300 hover:border-[#231f20]/25 transition-all shadow-xs" hx-on::after-request="if(event.detail.successful) this.reset()">
+           <div class="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-[#231f20]">
              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" /></svg>
              Add Subject to {{ c.name }}
            </div>
            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-             <input type="text" name="name" placeholder="New Subject Name (e.g., Mathematics)" class="input input-sm input-bordered bg-base-100 text-base-content border-2 border-base-300 focus:border-indigo-500 font-bold rounded-xl" required>
-             <input type="text" name="description" placeholder="Subject Description (optional)" class="input input-sm input-bordered bg-base-100 text-base-content border-2 border-base-300 focus:border-indigo-500 font-medium rounded-xl">
+             <input type="text" name="name" placeholder="New Subject Name (e.g., Mathematics)" class="input input-sm input-bordered bg-base-100 text-base-content border-2 border-base-300 focus:border-[#231f20]/25 font-bold rounded-xl" required>
+             <input type="text" name="description" placeholder="Subject Description (optional)" class="input input-sm input-bordered bg-base-100 text-base-content border-2 border-base-300 focus:border-[#231f20]/25 font-medium rounded-xl">
            </div>
           <div class="flex flex-wrap gap-3 items-center justify-between pt-1">
             <label class="flex items-center gap-2 text-xs font-bold text-base-content/60">
               <span>Thumbnail (Optional):</span>
               <input type="file" name="thumbnail" accept="image/*" class="file-input file-input-bordered file-input-xs bg-base-200 text-base-content/80 rounded-lg">
             </label>
-            <button type="submit" class="btn btn-sm bg-indigo-600 hover:bg-indigo-700 text-white border-none rounded-xl font-black px-5 tactile-btn">
+            <button type="submit" class="btn btn-sm bg-[#f7b317]/20 hover:bg-[#f7b317]/20 text-white border-none rounded-xl font-black px-5 tactile-btn">
               + Add Subject
             </button>
           </div>

@@ -1,14 +1,15 @@
 <style>
   .saxaz-site-footer {
-    background: #000000;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: #231f20;
+    border-top: 2px solid #f7b317;
     justify-content: space-between;
     align-items: center;
     gap: 24px;
-    padding: 32px 40px;
+    padding: 28px 40px;
     display: flex;
     width: 100%;
     flex-shrink: 0;
+    box-sizing: border-box;
   }
   body.exam-mode .saxaz-site-footer {
     display: none !important;
@@ -23,8 +24,8 @@
     gap: 24px;
   }
   .saxaz-footer-brand {
-    color: rgba(255, 255, 255, 0.7);
-    letter-spacing: -0.03em;
+    color: #ffffff;
+    letter-spacing: -0.02em;
     background: transparent;
     border: 0;
     align-items: center;
@@ -38,23 +39,23 @@
   }
   .saxaz-footer-logo {
     width: auto;
-    height: 2.5rem;
+    height: 2.35rem;
     object-fit: contain;
     display: block;
   }
   .saxaz-footer-tagline {
-    letter-spacing: -0.03em;
-    color: rgba(255, 255, 255, 0.7);
-    max-width: 28ch;
+    letter-spacing: -0.01em;
+    color: #ffffff;
+    max-width: 32ch;
     font-size: 0.875rem;
-    line-height: 1.5rem;
+    line-height: 1.45rem;
     margin: 0;
   }
   .saxaz-hide-mobile {
     display: block;
   }
   .saxaz-footer-meta {
-    color: rgba(255, 255, 255, 0.55);
+    color: #ffffff;
     flex-wrap: wrap;
     align-items: center;
     gap: 20px;
@@ -63,31 +64,29 @@
     flex-shrink: 0;
   }
   .saxaz-footer-link {
-    color: rgba(255, 255, 255, 0.7);
+    color: #231f20;
     font: inherit;
     cursor: pointer;
-    background: transparent;
-    border: 0;
-    border-radius: 0;
+    background: #f7b317;
+    border: 2px solid #f7b317;
+    border-radius: 999px;
     justify-content: center;
     align-items: center;
-    padding: 0;
-    font-size: 0.875rem;
-    font-weight: 500;
+    padding: 6px 16px;
+    font-size: 0.85rem;
+    font-weight: 800;
     text-decoration: none;
-    transition: color 0.15s ease;
+    transition: opacity 0.15s ease;
     display: inline-flex;
   }
   .saxaz-footer-link:hover {
-    color: #ffffff;
+    opacity: 0.92;
   }
 
-  /* Exact SAXAZ Support Popup Dialog */
+  /* SAXAZ Support & FAQ Dialog (Strict Solid #ffffff / #f7b317 / #231f20) */
   .saxaz-support-overlay {
     z-index: 9999;
-    -webkit-backdrop-filter: blur(6px);
-    backdrop-filter: blur(6px);
-    background: rgba(15, 12, 5, 0.62);
+    background: rgba(35, 31, 32, 0.72);
     justify-content: center;
     align-items: center;
     padding: 16px;
@@ -96,37 +95,15 @@
     inset: 0;
   }
   .saxaz-support-dialog {
-    color: #111111;
-    background:
-      radial-gradient(circle at 0 0, rgba(255, 247, 214, 0.16), transparent 28%),
-      radial-gradient(circle at 100% 100%, rgba(255, 210, 94, 0.22), transparent 34%),
-      linear-gradient(160deg, #8d5f00 0%, #d99800 34%, #f8b000 68%, #ffca28 100%);
-    border: 1px solid rgba(255, 239, 186, 0.34);
-    border-radius: 30px;
-    width: min(540px, 100vw - 32px);
-    padding: 28px;
+    color: #231f20;
+    background: #ffffff;
+    border: 3px solid #231f20;
+    border-radius: 28px;
+    width: min(560px, 100vw - 32px);
+    padding: 26px;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 30px 90px rgba(0, 0, 0, 0.38);
-  }
-  .saxaz-support-glow,
-  .saxaz-support-sheen {
-    pointer-events: none;
-    position: absolute;
-  }
-  .saxaz-support-glow {
-    opacity: 0.85;
-    filter: blur(24px);
-    background: radial-gradient(circle, rgba(255, 247, 196, 0.56), rgba(255, 235, 153, 0) 70%);
-    border-radius: 999px;
-    width: 288px;
-    height: 288px;
-    top: -64px;
-    right: -48px;
-  }
-  .saxaz-support-sheen {
-    background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.12) 30%, transparent 58%);
-    inset: 0;
+    box-shadow: 0 24px 60px rgba(35, 31, 32, 0.35);
   }
   .saxaz-support-head,
   .saxaz-support-contacts,
@@ -138,6 +115,8 @@
     justify-content: space-between;
     align-items: center;
     gap: 16px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #231f20;
     display: flex;
   }
   .saxaz-support-head-leading {
@@ -148,87 +127,98 @@
   }
   .saxaz-support-eyebrow {
     text-transform: uppercase;
-    letter-spacing: 0.14em;
-    color: #231300 !important;
+    letter-spacing: 0.12em;
+    color: #231f20 !important;
+    background: #f7b317;
+    border: 2px solid #231f20;
+    border-radius: 999px;
+    padding: 6px 14px;
     margin: 0;
-    font-size: 1rem;
+    font-size: 0.85rem;
     font-weight: 900;
     line-height: 1;
+    display: inline-flex;
+    align-items: center;
   }
   .saxaz-support-close {
-    color: #5e4100 !important;
+    color: #ffffff !important;
     font: inherit;
     cursor: pointer;
-    background: linear-gradient(135deg, #ffe07a 0%, #ffd14d 46%, #ffc531 100%);
-    border: 1px solid rgba(49, 34, 0, 0.45);
+    background: #231f20;
+    border: 2px solid #231f20;
     border-radius: 999px;
     flex: none;
     padding: 8px 16px;
-    font-size: 0.9rem;
-    font-weight: 700;
-    box-shadow: 0 8px 22px rgba(110, 74, 0, 0.12);
+    font-size: 0.88rem;
+    font-weight: 800;
   }
   .saxaz-support-back {
-    color: #231300 !important;
+    color: #231f20 !important;
     font: inherit;
     cursor: pointer;
-    background: rgba(255, 255, 255, 0.22);
-    border: 1px solid rgba(49, 34, 0, 0.38);
+    background: #ffffff;
+    border: 2px solid #231f20;
     border-radius: 999px;
     flex: none;
-    padding: 8px 14px;
+    padding: 7px 14px;
     font-size: 0.85rem;
     font-weight: 800;
-    box-shadow: inset 0 1px rgba(255, 255, 255, 0.35);
   }
   .saxaz-support-back:hover {
-    background: rgba(255, 255, 255, 0.32);
+    background: #f7b317;
   }
   .saxaz-support-contacts {
-    gap: 14px;
-    margin-top: 28px;
+    gap: 12px;
+    margin-top: 20px;
     display: grid;
   }
   .saxaz-support-contact-card {
     box-sizing: border-box;
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
-    background: linear-gradient(135deg, rgba(255, 240, 153, 0.4), rgba(255, 199, 36, 0.26));
-    border: 1px solid rgba(255, 245, 196, 0.38);
-    border-radius: 22px;
+    background: #f7b317;
+    border: 2px solid #231f20;
+    border-radius: 18px;
     width: 100%;
-    max-width: 26rem;
-    padding: 18px 22px;
-    box-shadow: inset 0 1px rgba(255, 255, 255, 0.34), 0 10px 22px rgba(102, 68, 0, 0.12);
+    max-width: 100%;
+    padding: 16px 20px;
+    display: block;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+  }
+  .saxaz-support-contact-card:hover {
+    transform: translateY(-2px);
   }
   .saxaz-support-contact-card p {
-    color: #111111 !important;
+    color: #231f20 !important;
     align-items: center;
-    gap: 12px;
+    flex-wrap: wrap;
+    gap: 8px 12px;
     margin: 0;
-    font-size: 1.12rem;
-    font-weight: 700;
+    font-size: 1.05rem;
+    font-weight: 800;
     line-height: 1.35;
     display: flex;
+    min-width: 0;
   }
   .saxaz-support-contact-card span {
-    color: #090909 !important;
+    color: #231f20 !important;
     margin: 0;
     font-weight: 800;
   }
-  .saxaz-support-contact-card a {
-    color: #111111 !important;
+  .saxaz-support-contact-card a,
+  .saxaz-support-contact-val {
+    color: #231f20 !important;
     text-underline-offset: 4px;
-    white-space: nowrap;
     min-width: 0;
-    font-weight: 800;
-    text-decoration: underline rgba(17, 17, 17, 0.4);
-    display: flex;
+    overflow-wrap: anywhere;
+    font-weight: 900;
+    text-decoration: underline;
+    display: inline-flex;
   }
   .saxaz-support-actions {
     flex-wrap: wrap;
     gap: 12px;
-    margin-top: 28px;
+    margin-top: 20px;
     display: flex;
   }
   .saxaz-support-secondary-action {
@@ -236,22 +226,22 @@
     border-radius: 999px;
     justify-content: center;
     align-items: center;
-    min-width: 170px;
-    padding: 14px 20px;
-    font-size: 0.96rem;
+    min-width: min(100%, 190px);
+    padding: 12px 22px;
+    font-size: 0.94rem;
     font-weight: 900;
     text-decoration: none;
     display: inline-flex;
     cursor: pointer;
-    color: #111111 !important;
-    background: linear-gradient(135deg, #ffe07a 0%, #ffd14d 46%, #ffc531 100%);
-    border: 1px solid rgba(49, 34, 0, 0.2);
+    color: #ffffff !important;
+    background: #231f20;
+    border: 2px solid #231f20;
   }
   .saxaz-support-faq-scroll {
-    scrollbar-color: rgba(49, 34, 0, 0.35) transparent;
+    scrollbar-color: #231f20 transparent;
     gap: 12px;
-    max-height: min(60vh, 480px);
-    margin-top: 20px;
+    max-height: min(60vh, 460px);
+    margin-top: 18px;
     padding-right: 4px;
     display: grid;
     overflow-y: auto;
@@ -259,58 +249,60 @@
     z-index: 1;
   }
   .saxaz-support-faq-item {
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
-    background: linear-gradient(135deg, rgba(255, 240, 153, 0.4), rgba(255, 199, 36, 0.26));
-    border: 1px solid rgba(255, 245, 196, 0.38);
-    border-radius: 22px;
-    padding: 16px 20px;
-    box-shadow: inset 0 1px rgba(255, 255, 255, 0.34), 0 10px 22px rgba(102, 68, 0, 0.12);
+    background: #ffffff;
+    border: 2px solid #231f20;
+    border-left: 6px solid #f7b317;
+    border-radius: 18px;
+    padding: 16px 18px;
   }
   .saxaz-support-faq-question {
-    color: #090909 !important;
-    letter-spacing: -0.02em;
-    margin: 0 0 10px;
-    font-size: 1.05rem;
+    color: #231f20 !important;
+    letter-spacing: -0.01em;
+    margin: 0 0 8px;
+    font-size: 1.02rem;
     font-weight: 900;
     line-height: 1.35;
   }
   .saxaz-support-faq-answer {
-    color: #1a1a1a !important;
+    color: #231f20 !important;
     margin: 0;
-    font-size: 0.95rem;
+    font-size: 0.92rem;
     font-weight: 600;
-    line-height: 1.6;
+    line-height: 1.55;
   }
   .saxaz-support-faq-answer p {
-    color: #1a1a1a !important;
-    margin: 0 0 10px;
+    color: #231f20 !important;
+    margin: 0 0 8px;
   }
   .saxaz-support-faq-answer p:last-child {
     margin-bottom: 0;
+  }
+  .saxaz-support-faq-answer a {
+    color: #231f20 !important;
+    font-weight: 800;
+    text-decoration: underline;
+    text-decoration-color: #f7b317;
+    text-decoration-thickness: 2px;
   }
 
   @media (max-width: 639px) {
     .saxaz-site-footer {
       width: 100%;
-      padding: 24px 16px;
-    }
-    .main-content-wrapper .saxaz-site-footer {
-      padding-bottom: calc(24px + 4.5rem);
+      padding: 20px 16px;
     }
     .saxaz-footer-meta {
-      gap: 14px;
+      gap: 12px;
     }
     .saxaz-footer-logo {
-      width: 40vw;
-      max-width: 180px;
+      width: 38vw;
+      max-width: 160px;
       height: auto;
     }
     .saxaz-hide-mobile {
       display: none;
     }
     .saxaz-support-dialog {
-      padding: 22px 20px;
+      padding: 20px 18px;
     }
     .saxaz-support-contact-card,
     .saxaz-support-secondary-action {
@@ -318,20 +310,16 @@
       max-width: none;
     }
     .saxaz-support-contact-card p {
-      font-size: 1rem;
+      font-size: 0.98rem;
     }
   }
   @media (min-width: 640px) and (max-width: 767px) {
     .saxaz-site-footer {
-      padding-left: 24px;
-      padding-right: 24px;
-    }
-    .main-content-wrapper .saxaz-site-footer {
-      padding-bottom: calc(28px + 4.5rem);
+      padding: 24px;
     }
     .saxaz-footer-logo {
       width: auto;
-      height: 2.75rem;
+      height: 2.5rem;
     }
     .saxaz-hide-mobile {
       display: none;
@@ -339,12 +327,12 @@
   }
   @media (min-width: 768px) and (max-width: 1023px) {
     .saxaz-site-footer {
-      padding-left: 32px;
-      padding-right: 32px;
+      padding-left: 28px;
+      padding-right: 28px;
     }
     .saxaz-footer-logo {
       width: auto;
-      height: 2.75rem;
+      height: 2.5rem;
     }
   }
 </style>
@@ -354,32 +342,29 @@
     <div class="saxaz-footer-content">
       <div class="saxaz-footer-brand">
         <a href="/" aria-label="Go to homepage" class="shrink-0">
-          <img src="/static/img/saxaz_logo.png" alt="SAXAZ" width="180" height="56" loading="lazy" class="saxaz-footer-logo" />
+          <img src="/static/images/saxaz_web/saxas_writing.png" alt="SAXAZ" width="180" height="56" loading="lazy" class="saxaz-footer-logo" />
         </a>
-        <p class="saxaz-hide-mobile saxaz-footer-tagline">A brighter place for students to learn, play, and grow every day.</p>
+        <p class="saxaz-hide-mobile saxaz-footer-tagline">A brighter place for students to learn, practice, and grow every day.</p>
       </div>
       <div class="saxaz-footer-meta">
-        <button type="button" class="saxaz-footer-link" @click="supportOpen = true; supportFaqOpen = false">Support</button>
-        <span>&copy; 2026 Saxaz</span>
+        <button type="button" class="saxaz-footer-link" @click="supportOpen = true; supportFaqOpen = false">Support &amp; FAQ</button>
+        <span>&copy; 2026 SAXAZ</span>
       </div>
     </div>
   </footer>
 
-  <!-- Exact SAXAZ Support Popup Dialog -->
+  <!-- SAXAZ Support & FAQ Dialog -->
   <div x-show="supportOpen"
+       x-cloak
        x-transition.opacity.duration.150ms
        class="saxaz-support-overlay"
        role="presentation"
-       @click="supportOpen = false; supportFaqOpen = false"
-       style="display: none;">
+       @click="supportOpen = false; supportFaqOpen = false">
     <div class="saxaz-support-dialog"
          role="dialog"
          aria-modal="true"
-         :aria-label="supportFaqOpen ? 'Support — FAQ' : 'Support'"
+         :aria-label="supportFaqOpen ? 'Support and FAQ' : 'Support'"
          @click.stop>
-      <div class="saxaz-support-glow" aria-hidden="true"></div>
-      <div class="saxaz-support-sheen" aria-hidden="true"></div>
-
       <div class="saxaz-support-head">
         <div class="saxaz-support-head-top">
           <template x-if="supportFaqOpen">
@@ -398,49 +383,60 @@
       <!-- Contacts View -->
       <div x-show="!supportFaqOpen">
         <div class="saxaz-support-contacts">
-          <div class="saxaz-support-contact-card">
+          <a href="mailto:support@saxaz.com" class="saxaz-support-contact-card">
             <p>
-              <span>Mail:</span>
-              <a href="mailto:support@saxaz.com">support@saxaz.com</a>
+              <span>Email:</span>
+              <strong class="saxaz-support-contact-val">support@saxaz.com</strong>
             </p>
-          </div>
-          <div class="saxaz-support-contact-card">
+          </a>
+          <a href="tel:+918943348988" class="saxaz-support-contact-card">
             <p>
               <span>Phone:</span>
-              <a href="tel:+918943348988">+91 8943348988</a>
+              <strong class="saxaz-support-contact-val">+91 8943348988</strong>
             </p>
-          </div>
+          </a>
         </div>
         <div class="saxaz-support-actions">
-          <button type="button" class="saxaz-support-secondary-action" @click="supportFaqOpen = true">FAQ</button>
+          <button type="button" class="saxaz-support-secondary-action" @click="supportFaqOpen = true">View FAQ</button>
         </div>
       </div>
 
       <!-- FAQ View -->
-      <div x-show="supportFaqOpen" class="saxaz-support-faq-scroll" style="display: none;">
+      <div x-show="supportFaqOpen" x-cloak class="saxaz-support-faq-scroll">
         <article class="saxaz-support-faq-item">
-          <h3 class="saxaz-support-faq-question">What is SAXAZ?</h3>
+          <h3 class="saxaz-support-faq-question">What is on my Dashboard?</h3>
           <div class="saxaz-support-faq-answer">
-            <p>SAXAZ is an online study portal that provides structured lessons, explanations, and practice content based on your class and syllabus.</p>
-            <p>Content is released in parts called issues. This is an extension of the content in Labour India Magazine.</p>
+            <p>Open <strong>Dashboard</strong> from the left navigation menu to see your class curriculum overview, active Labour India study issues, daily progress, and quick resume shortcuts.</p>
           </div>
         </article>
         <article class="saxaz-support-faq-item">
-          <h3 class="saxaz-support-faq-question">Where do I find my study content and exams?</h3>
+          <h3 class="saxaz-support-faq-question">Where do I find Subjects &amp; Exams and Quiz Points?</h3>
           <div class="saxaz-support-faq-answer">
-            <p>Open <strong>Exams</strong> from your Dashboard to browse your subjects, chapters, lessons, and practice exams, or open <strong>Digi Library</strong> for digital books and question banks.</p>
+            <p>Select <strong>Subjects &amp; Exams</strong> to explore subjects, chapter lessons, videos, AI Tutor explanations, Mock Exams, and proctored Real Exams. Check <strong>Quiz Points</strong> to review your completed exam attempts and scores.</p>
           </div>
         </article>
         <article class="saxaz-support-faq-item">
-          <h3 class="saxaz-support-faq-question">How do I update my details?</h3>
+          <h3 class="saxaz-support-faq-question">How does Rewards &amp; Shop work?</h3>
           <div class="saxaz-support-faq-answer">
-            <p>Go to the Profile section in the sidebar to update your information.</p>
+            <p>You earn Coins as you complete lessons, quizzes, and study milestones. Open <strong>Rewards &amp; Shop</strong> (or click the <strong>Coins</strong> badge in the header) to redeem Coins for vouchers and study rewards.</p>
+          </div>
+        </article>
+        <article class="saxaz-support-faq-item">
+          <h3 class="saxaz-support-faq-question">How do I adjust Profile &amp; Voice settings?</h3>
+          <div class="saxaz-support-faq-answer">
+            <p>Open <strong>Profile &amp; Voice</strong> in the sidebar to choose your preferred AI Tutor voice, mute or unmute spoken explanations, adjust reading font size, or update your account details.</p>
+          </div>
+        </article>
+        <article class="saxaz-support-faq-item">
+          <h3 class="saxaz-support-faq-question">How do Parent Portal &amp; PIN work?</h3>
+          <div class="saxaz-support-faq-answer">
+            <p>Parents sign in with the student's Login ID and password using the <strong>Parent Portal</strong> tab on the Login page, or switch directly via <strong>Parent Portal</strong> in the sidebar. Inside <strong>Settings &amp; PIN</strong>, parents can set a 4-digit security PIN to lock Parent Portal and switch back anytime via <strong>Student View</strong>.</p>
           </div>
         </article>
         <article class="saxaz-support-faq-item">
           <h3 class="saxaz-support-faq-question">Where can I buy Labour India magazines?</h3>
           <div class="saxaz-support-faq-answer">
-            <p>You can purchase Labour India magazines online at <a href="https://www.labourindia.com" target="_blank" rel="noreferrer" style="color:#5e4100;text-decoration:underline;font-weight:800;">www.labourindia.com</a>.</p>
+            <p>You can subscribe to or purchase Labour India print issues online at <a href="https://www.labourindia.com" target="_blank" rel="noreferrer">www.labourindia.com</a>.</p>
           </div>
         </article>
       </div>

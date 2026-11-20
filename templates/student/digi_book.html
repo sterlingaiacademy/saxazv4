@@ -1,100 +1,1401 @@
 {% extends "base.html" %}
+{% block title %}{{ book.title }} — Question Bank Book | SAXAZ{% endblock %}
 
 {% block content %}
-<div class="w-full max-w-[1600px] mx-auto pb-16 px-2 lg:px-6 space-y-8">
-  
-  <!-- Back to Digi Library -->
-  <div>
-    <a href="/student/digi-library" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-base-100 border-2 border-base-300 text-xs font-black uppercase tracking-widest text-base-content/70 hover:text-base-content hover:border-primary transition-all shadow-sm">
-      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-      <span>Back to Digi-Library Books</span>
-    </a>
-  </div>
+<style>
+  @keyframes sxBookStageIn {
+    0% { opacity: 0; transform: translateY(12px) scale(0.98); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes sxFrontCoverOpen {
+    0% {
+      opacity: 1;
+      transform: rotateY(0deg) rotateZ(0deg);
+    }
+    55% {
+      opacity: 1;
+      transform: rotateY(-108deg) rotateZ(-1.8deg);
+    }
+    88% {
+      opacity: 0.9;
+      transform: rotateY(-164deg) rotateZ(0deg);
+    }
+    100% {
+      opacity: 0;
+      transform: rotateY(-176deg);
+      pointer-events: none;
+      visibility: hidden;
+    }
+  }
 
-  <!-- Sleek Book Edition Header -->
-  <div class="brilliant-card bg-base-100 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center gap-6">
-    {% if book.thumbnail_url %}
-      <img src="{{ book.thumbnail_url }}" alt="{{ book.title }}" class="w-36 sm:w-44 h-auto object-contain rounded-2xl shadow-md border-2 border-base-300 bg-base-200/40 shrink-0" />
-    {% else %}
-      <div class="w-24 h-32 sm:w-28 sm:h-36 rounded-2xl bg-primary/15 text-amber-700 flex flex-col items-center justify-center shadow-xs border-2 border-primary/30 shrink-0">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-        </svg>
+  /* Lock outer page scroll when in 3D Book Pages mode */
+  html.sx-3d-book-locked,
+  body.sx-3d-book-locked {
+    overflow: hidden !important;
+    height: 100dvh !important;
+    overscroll-behavior: none !important;
+  }
+  body.sx-3d-book-locked .sx-main {
+    overflow: hidden !important;
+    height: 100dvh !important;
+  }
+
+  .sx-openbook-shell {
+    position: relative;
+    perspective: 2000px;
+    perspective-origin: 48% 45%;
+    animation: sxBookStageIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+    margin-bottom: 0;
+    user-select: none;
+  }
+
+  /* Hardcover Book Outer Binding Board */
+  .sx-3d-book-frame {
+    position: relative;
+    background: #f7b317;
+    padding: 6px 13px 10px 5px;
+    border-radius: 14px 30px 30px 14px;
+    box-shadow:
+      0 26px 52px -20px rgba(45, 30, 5, 0.62),
+      0 10px 22px -10px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255, 215, 110, 0.25);
+    transform-style: preserve-3d;
+  }
+
+  /* 3D Stacked Paper Fore-Edge on Right & Bottom of the Book */
+  .sx-3d-book-frame::after {
+    content: "";
+    position: absolute;
+    top: 9px;
+    right: 3px;
+    bottom: 11px;
+    width: 11px;
+    border-radius: 0 22px 22px 0;
+    background:
+      #ffffff;
+    box-shadow: inset -2px 0 5px rgba(80, 55, 15, 0.35);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  /* 3D Viewport that holds the Base Page + 6-Segment Bending Leaf */
+  .sx-book-viewport {
+    position: relative;
+    perspective: 2000px;
+    perspective-origin: 38% 48%;
+    transform-style: preserve-3d;
+    border-radius: 10px 24px 24px 10px;
+    z-index: 5;
+  }
+
+  /* Physical Book Page Sheet (Fixed-Height Real Book Page — Never Scrolls or Clips) */
+  .sx-book-sheet {
+    position: relative;
+    background:
+      #ffffff;
+    color: #1d1a14;
+    border: 1px solid rgba(120, 90, 30, 0.28);
+    border-radius: 8px 24px 24px 8px;
+    padding: 18px 22px 16px 30px;
+    height: clamp(500px, calc(100dvh - 150px), 680px);
+    min-height: 500px;
+    max-height: 680px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow:
+      3px 3px 0 #f4ebd6,
+      5px 5px 0 rgba(120, 90, 30, 0.22),
+      8px 8px 0 #efe5cf,
+      9px 9px 0 rgba(120, 90, 30, 0.18);
+  }
+  [data-theme="dark"] .sx-book-sheet {
+    background:
+      #f7b317;
+    color: #f8f5ec;
+    border-color: rgba(248, 176, 0, 0.24);
+    box-shadow:
+      3px 3px 0 #141821,
+      5px 5px 0 rgba(248, 176, 0, 0.16),
+      8px 8px 0 #10131b;
+  }
+
+  /* Bound Book Spine & Gutter Shadow on Left Edge of Every Sheet */
+  .sx-book-sheet::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 20px;
+    border-radius: 8px 0 0 8px;
+    background:
+      #f7b317;
+    border-right: 1px solid rgba(120, 90, 30, 0.16);
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  /* Stitched Spine Binding Rings on Left Margin */
+  .sx-spine-stitches {
+    position: absolute;
+    left: 6px;
+    top: 38px;
+    bottom: 38px;
+    width: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    pointer-events: none;
+    z-index: 4;
+  }
+  .sx-spine-stitches i {
+    display: block;
+    width: 9px;
+    height: 4px;
+    border-radius: 99px;
+    background: #f7b317;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  }
+
+  /* Gold Silk Ribbon Bookmark at top right */
+  .sx-book-ribbon {
+    position: absolute;
+    top: -2px;
+    right: 24px;
+    width: 22px;
+    height: 36px;
+    background: #f7b317;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
+    box-shadow: 0 6px 12px rgba(180, 110, 0, 0.42);
+    z-index: 6;
+    pointer-events: none;
+  }
+
+  /* Interactive Bottom-Right Page Dog-Ear Curl Hint */
+  .sx-page-corner-curl {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px 0 24px 0;
+    background: #ffffff;
+    box-shadow: -4px -4px 10px -3px rgba(60, 40, 5, 0.25);
+    pointer-events: none;
+    transition: width 0.25s ease, height 0.25s ease;
+    z-index: 5;
+  }
+  [data-theme="dark"] .sx-page-corner-curl {
+    background: #f7b317;
+  }
+  .sx-book-sheet:hover .sx-page-corner-curl {
+    width: 42px;
+    height: 42px;
+  }
+
+  /* ==========================================================================
+     CURVED 6-SEGMENT ARTICULATED 3D PAPER BEND & CURL ENGINE
+     Simulates real flexible paper bending and curling across 6 hinged 3D strips
+     ========================================================================== */
+  .sx-under-shadow {
+    position: absolute;
+    inset: 0;
+    border-radius: 8px 24px 24px 8px;
+    pointer-events: none;
+    z-index: 15;
+    background:
+      #f7b317;
+    will-change: opacity, transform;
+    transform-origin: left center;
+  }
+
+  .sx-turning-leaf {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    pointer-events: none;
+    transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+  }
+
+  /* Each of the 6 articulated strips is 1/6th of the page width and chained at left: 100% */
+  .sx-bend-seg {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    transform-origin: left center;
+    transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+    will-change: transform;
+  }
+  .sx-bend-seg-root {
+    left: 0;
+    width: 16.6667%;
+  }
+  .sx-bend-seg-child {
+    left: calc(100% - 0.6px);
+    width: calc(100% + 0.6px);
+  }
+
+  .sx-seg-face {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: calc(100% + 1.2px);
+    height: 100%;
+    overflow: hidden;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  .sx-seg-front {
+    transform: rotateY(0deg) translateZ(0.4px);
+    z-index: 2;
+  }
+  .sx-seg-back {
+    transform: rotateY(180deg) translateZ(0.4px);
+    background:
+      #f7b317;
+    border-top: 1px solid rgba(120, 90, 30, 0.28);
+    border-bottom: 1px solid rgba(120, 90, 30, 0.28);
+  }
+  [data-theme="dark"] .sx-seg-back {
+    background:
+      #f7b317;
+    border-color: rgba(248, 176, 0, 0.24);
+  }
+  .sx-seg-last .sx-seg-front,
+  .sx-seg-last .sx-seg-back {
+    border-radius: 0 24px 24px 0;
+  }
+
+  /* Full-page inner slice inside each 1/6th strip */
+  .sx-seg-slice {
+    position: absolute;
+    top: 0;
+    width: 600%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  /* Dynamic cylindrical paper shading & specular highlight on each strip */
+  .sx-seg-shade {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 8;
+    will-change: opacity;
+    background: #f7b317;
+    opacity: 0;
+  }
+  .sx-seg-back-lines {
+    position: absolute;
+    inset: 28px 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    opacity: 0.16;
+    pointer-events: none;
+  }
+  .sx-seg-back-lines i {
+    display: block;
+    height: 7px;
+    border-radius: 99px;
+    background: #6b5735;
+  }
+  [data-theme="dark"] .sx-seg-back-lines i {
+    background: #9ca3af;
+  }
+
+  /* 3D Front Cover Overlay that Swings Open on Initial Book Entry */
+  .sx-opening-cover-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 40;
+    border-radius: 10px 24px 24px 10px;
+    background:
+      #f7b317;
+    border: 2px solid rgba(255, 210, 80, 0.45);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 28px;
+    text-align: center;
+    transform-origin: left center;
+    transform-style: preserve-3d;
+    box-shadow: 24px 28px 54px -12px rgba(0, 0, 0, 0.65);
+    animation: sxFrontCoverOpen 0.85s cubic-bezier(0.32, 0.04, 0.24, 1) 0.04s forwards;
+    pointer-events: none;
+  }
+
+  /* Subject Index Thumb Tabs along top of book */
+  .sx-book-tabs {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 2px 4px;
+    scrollbar-width: none;
+  }
+  .sx-book-tabs::-webkit-scrollbar { display: none; }
+  .sx-book-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 12px 12px 6px 6px;
+    border: 1.5px solid var(--sx-line);
+    background: var(--sx-bg-2);
+    color: var(--sx-mute);
+    font-weight: 800;
+    font-size: 0.74rem;
+    white-space: nowrap;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 rgba(120, 90, 30, 0.12);
+    transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+  }
+  .sx-book-tab:hover {
+    transform: translateY(-2px);
+    color: var(--sx-ink);
+  }
+  .sx-book-tab.is-active {
+    background: #f7b317;
+    color: #1d1a14;
+    border-color: #d89b00;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px -6px rgba(227, 154, 0, 0.9);
+  }
+
+  /* Chapter Row inside the Subject Question Bank Page (Hover up ONLY — NO tilt!) */
+  .sx-chapter-page-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 11px 14px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.86);
+    border: 1.5px solid rgba(120, 90, 30, 0.18);
+    border-left: 5px solid #f8b000;
+    box-shadow: 0 5px 14px -8px rgba(90, 60, 10, 0.22);
+    transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+    text-decoration: none;
+    color: inherit;
+    flex-shrink: 0;
+  }
+  [data-theme="dark"] .sx-chapter-page-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    border-left-color: #f8b000;
+  }
+  .sx-chapter-page-card:hover {
+    transform: translateY(-3px);
+    border-color: #f8b000;
+    box-shadow: 0 12px 22px -10px rgba(227, 154, 0, 0.42);
+  }
+
+  .sx-book-hero-card {
+    position: relative;
+    overflow: hidden;
+    padding: 16px 18px;
+    border-radius: 18px;
+    background: #f7b317;
+    border: 1.5px solid rgba(248,176,0,0.42);
+    margin-bottom: 12px;
+    flex-shrink: 0;
+  }
+  [data-theme="dark"] .sx-book-hero-card {
+    background: #f7b317;
+  }
+  .sx-book-hero-row {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .sx-book-hero-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: min(100%, 220px);
+    flex: 1 1 240px;
+  }
+
+  @media (max-width: 639px) {
+    .sx-3d-book-frame {
+      padding: 5px 10px 8px 4px;
+      border-radius: 10px 22px 22px 10px;
+    }
+    .sx-3d-book-frame::after {
+      width: 7px;
+      right: 3px;
+    }
+    /* Longer mobile book page that fills down to just above the mobile dock */
+    .sx-book-sheet {
+      padding: 14px 13px 12px 18px;
+      height: clamp(450px, calc(100dvh - 186px), 630px);
+      min-height: 450px;
+      max-height: 630px;
+      border-radius: 6px 20px 20px 6px;
+    }
+    .sx-book-sheet::before {
+      width: 12px;
+    }
+    .sx-spine-stitches {
+      left: 3px;
+    }
+    .sx-spine-stitches i {
+      width: 6px;
+    }
+    .sx-book-ribbon {
+      right: 14px;
+      width: 18px;
+      height: 30px;
+    }
+    .sx-book-hero-card {
+      padding: 12px 14px;
+      border-radius: 16px;
+      margin-bottom: 10px;
+    }
+    .sx-book-hero-main {
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
+    }
+    .sx-book-hero-cta {
+      width: 100%;
+      justify-content: center;
+      padding: 8px 14px !important;
+      font-size: 0.78rem !important;
+    }
+    .sx-chapter-page-card {
+      padding: 9px 11px;
+    }
+  }
+</style>
+
+<div class="sx-wrap"
+     x-data="saxazBookReader()">
+
+  <!-- Full Book Face & Heading Card (Shown ONLY in All Subjects Mode) -->
+  <div x-show="viewMode === 'grid'" class="sx-tile" style="margin-bottom:14px;padding:14px 18px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;">
+    <div style="display:flex;align-items:center;gap:12px;min-width:min(100%, 220px);flex:1 1 240px;">
+      {% if book.thumbnail_url %}
+        <img src="{{ book.thumbnail_url }}" alt="{{ book.title }}" style="width:42px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--sx-line);box-shadow:3px 3px 0 var(--sx-bg-2);flex:none;" />
+      {% else %}
+        <div style="width:42px;height:56px;border-radius:8px;background:#f7b317;color:#1d1a14;display:grid;place-items:center;flex:none;">
+          <span class="material-symbols-outlined" style="font-size:24px;">auto_stories</span>
+        </div>
+      {% endif %}
+      <div style="min-width:0;flex:1;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px;">
+          <span class="sx-eyebrow" style="font-size:0.68rem;"><i></i>All-in-One Question Bank Book</span>
+          {% if book.class_name %}<span class="sx-chip" style="padding:2px 8px;font-size:0.65rem;">{{ book.class_name }}</span>{% endif %}
+          <span class="sx-chip" style="padding:2px 8px;font-size:0.65rem;background:rgba(248,176,0,0.18);color:#9a6700;">{{ book.subjects|length if book.subjects else 0 }} Subjects in Book</span>
+        </div>
+        <h1 class="sx-display" style="font-size:clamp(1.15rem,2.2vw,1.55rem);font-weight:800;line-height:1.15;margin:0;">{{ book.title }}</h1>
       </div>
-    {% endif %}
-    <div class="space-y-2">
-      <div class="flex items-center gap-2 flex-wrap">
-        <span class="px-3 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider" style="background: #f8b000; color: #151515;">Labour India Book Edition</span>
-        {% if book.class_name %}
-        <span class="px-3 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider border border-base-300 bg-base-200 text-base-content">{{ book.class_name }}</span>
-        {% endif %}
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <div class="sx-seg" style="padding:3px;">
+        <button type="button" :class="viewMode === 'grid' && 'on'" @click="setGridMode()" style="padding:5px 11px;font-size:0.74rem;display:inline-flex;align-items:center;gap:4px;">
+          <span class="material-symbols-outlined" style="font-size:15px;">grid_view</span>All Subjects
+        </button>
+        <button type="button" :class="viewMode === 'pages' && 'on'" @click="openBookPagesMode()" style="padding:5px 11px;font-size:0.74rem;display:inline-flex;align-items:center;gap:4px;">
+          <span class="material-symbols-outlined" style="font-size:15px;">auto_stories</span>3D Book Pages
+        </button>
       </div>
-      <h1 class="text-2xl sm:text-3xl font-black text-base-content tracking-tight">{{ book.title }}</h1>
-      <p class="text-xs sm:text-sm text-base-content/70 font-medium max-w-3xl">
-        {{ book.description or 'Subjects are arranged below in exact book sequence. Select any subject to study its chapters, model answers, explanation videos, and AI Tutor tools.' }}
-      </p>
+      <a href="/student/digi-library" class="sx-btn sx-btn-ghost" style="padding:8px 14px;font-size:0.8rem;">
+        <span class="material-symbols-outlined" style="font-size:16px;">arrow_back</span>Bookshelf
+      </a>
     </div>
   </div>
 
-  <!-- Ordered Subjects Grid -->
-  <div>
-    <div class="flex justify-between items-center mb-6">
-      <div>
-        <h2 class="text-xl sm:text-2xl font-black text-base-content tracking-tight">Subjects in Book Order</h2>
-        <p class="text-xs text-base-content/60 font-medium">Follow the subjects in sequence or jump to any subject in {{ book.title }}.</p>
-      </div>
-      <span class="px-3.5 py-1 rounded-full text-xs font-black" style="background: #f8b000; color: #151515;">{{ book.subjects|length }} Subject{% if book.subjects|length != 1 %}s{% endif %}</span>
-    </div>
+  {% if book.subjects %}
 
-    {% if book.subjects %}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  <!-- =====================================================================
+       MODE 1 (DEFAULT): ALL SUBJECT PAGES STACKED GRID
+       ===================================================================== -->
+  <div x-show="viewMode === 'grid'">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%, 280px),1fr));gap:20px;padding-right:10px;margin-bottom:28px;">
       {% for subject in book.subjects %}
-        <a href="/student/digi-library/subjects/{{ subject.id }}" class="group brilliant-card bg-base-100 rounded-3xl p-6 flex flex-col justify-between">
-          <div>
-            <!-- Top Row: Icon & Order Badge -->
-            <div class="flex justify-between items-start mb-4">
-              <div class="flex items-center gap-3">
-                {% if subject.thumbnail_url %}
-                  <img src="{{ subject.thumbnail_url }}" alt="{{ subject.name }}" class="w-16 h-auto max-h-24 rounded-2xl object-contain bg-base-200/40 shadow-sm border-2 border-base-300" />
-                {% else %}
-                  <div class="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm font-black text-xl border" style="background: #f8b000; color: #151515; border-color: #151515;">
-                    {{ subject.name[:1] }}
-                  </div>
-                {% endif %}
-                <span class="px-2.5 py-1 rounded-lg bg-base-200 border border-base-300 text-[11px] font-black uppercase tracking-wider text-base-content">
-                  Subject #{{ loop.index }}
-                </span>
-              </div>
-              <span class="px-2.5 py-0.5 rounded-full font-black text-xs border" style="background: rgba(248,176,0,0.22); color: #151515; border-color: #f8b000;">
-                {{ subject.bank_count }} Chapter{% if subject.bank_count != 1 %}s{% endif %}
-              </span>
+      {% set first_url = ('/student/digi-library/banks/' ~ subject.first_bank_id) if subject.first_bank_id else ('/student/digi-library/subjects/' ~ subject.id) %}
+      <a href="{{ first_url }}" class="sx-page-stack-card" style="padding:20px 22px;text-decoration:none;color:inherit;display:flex;flex-direction:column;justify-content:space-between;gap:16px;">
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              {% if subject.thumbnail_url %}
+                <img src="{{ subject.thumbnail_url }}" alt="{{ subject.name }}" style="width:44px;height:44px;border-radius:12px;object-fit:cover;border:1px solid var(--sx-line);" />
+              {% else %}
+                <span style="width:44px;height:44px;border-radius:12px;background:#f7b317;color:#1d1a14;display:grid;place-items:center;font-weight:800;font-size:1.1rem;">{{ subject.name[:1] }}</span>
+              {% endif %}
+              <span style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#c47c00;">Subject {{ '%02d' % loop.index }}</span>
             </div>
-
-            <!-- Title & Subtitle -->
-            <h3 class="text-xl font-black text-base-content transition-colors mb-1">{{ subject.name }}</h3>
-            <p class="text-xs sm:text-sm text-base-content/70 font-medium mb-6 line-clamp-2">{{ subject.description or 'Study ordered chapters with model answers, explanation videos, AI Tutor & Scratchpad.' }}</p>
+            <span class="sx-chip" style="padding:3px 10px;font-size:0.68rem;">{{ subject.bank_count }} Chapter{% if subject.bank_count != 1 %}s{% endif %}</span>
           </div>
 
-          <div class="pt-4 border-t-2 border-base-200 flex justify-between items-center">
-            <div class="flex items-center gap-2 text-xs font-black text-base-content/80">
-              <svg class="w-4 h-4 shrink-0" style="color: #d97706;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-              <span>{{ subject.question_count }} Study Q&amp;As</span>
-            </div>
+          <h3 class="sx-display" style="font-size:1.3rem;font-weight:800;margin:0 0 6px;">{{ subject.name }}</h3>
+          <p style="margin:0;font-size:0.85rem;color:var(--sx-mute);font-weight:600;line-height:1.45;">
+            {{ subject.description or 'Study ordered chapters with model answers, explanation videos, AI Tutor & Whiteboard.' }}
+          </p>
+        </div>
 
-            <span class="px-4 py-2 rounded-xl text-xs font-black shadow-xs inline-flex items-center gap-1.5 group-hover:scale-[1.03] transition-transform border" style="background: #f8b000; color: #151515; border-color: #151515;">
-              <span>Open Chapters</span>
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-            </span>
-          </div>
-        </a>
+        <div style="padding-top:12px;border-top:1px dashed var(--sx-line);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:0.78rem;font-weight:800;color:var(--sx-mute);">{{ subject.question_count }} Study Q&amp;As</span>
+          <span class="sx-btn sx-btn-gold" style="padding:8px 14px;font-size:0.78rem;">
+            <span>Open Questions</span>
+            <span class="material-symbols-outlined" style="font-size:16px;">arrow_forward</span>
+          </span>
+        </div>
+      </a>
       {% endfor %}
     </div>
-    {% else %}
-    <div class="brilliant-card bg-base-100 rounded-3xl p-12 text-center">
-      <p class="text-base-content/60 font-bold">No subjects have been added to this book edition yet.</p>
-    </div>
-    {% endif %}
   </div>
 
+  <!-- =====================================================================
+       MODE 2: TRUE 3D PHYSICAL BOOK (Auto Bottom-Edge Paginated + 6-Segment Paper Bend)
+       ===================================================================== -->
+  <div x-show="viewMode === 'pages'" style="display:none;">
+    <!-- Minimal Toggle-Switch + Subject Tabs Bar -->
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
+      <div class="sx-seg" style="padding:3px;flex:none;">
+        <button type="button" :class="viewMode === 'grid' && 'on'" @click="setGridMode()" style="padding:5px 10px;font-size:0.72rem;display:inline-flex;align-items:center;gap:4px;">
+          <span class="material-symbols-outlined" style="font-size:14px;">grid_view</span>All Subjects
+        </button>
+        <button type="button" :class="viewMode === 'pages' && 'on'" @click="openBookPagesMode()" style="padding:5px 10px;font-size:0.72rem;display:inline-flex;align-items:center;gap:4px;">
+          <span class="material-symbols-outlined" style="font-size:14px;">auto_stories</span>3D Book Pages
+        </button>
+      </div>
+
+      <!-- Subject Thumb-Index Tabs along Top of Book -->
+      <div class="sx-book-tabs" role="tablist" aria-label="Book Subject Pages" style="margin-bottom:0;padding:2px 4px;flex:1;">
+        {% for subject in book.subjects %}
+        <button type="button"
+                class="sx-book-tab"
+                :class="activePage && activePage.subjectId === {{ subject.id }} && 'is-active'"
+                @click="flipToSubject({{ subject.id }})"
+                style="padding:6px 11px;font-size:0.74rem;">
+          <span style="opacity:0.7;font-size:0.66rem;">S.{{ '%02d' % loop.index }}</span>
+          <span>{{ subject.name }}</span>
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- 3D Open Book Container -->
+    <div class="sx-openbook-shell"
+         x-ref="bookViewport"
+         @touchstart.passive="onTouchStart($event)"
+         @touchmove.passive="onTouchMove($event)"
+         @touchend.passive="onTouchEnd($event)">
+
+      <div class="sx-3d-book-frame">
+        <div class="sx-book-viewport">
+
+          <!-- 3D Front Cover that swings open when the book loads -->
+          <div x-show="showEntryCover" class="sx-opening-cover-overlay" aria-hidden="true">
+            <span class="material-symbols-outlined" style="font-size:48px;color:#ffd04a;margin-bottom:10px;">menu_book</span>
+            <div class="sx-display" style="font-size:1.5rem;font-weight:800;max-width:360px;line-height:1.15;">{{ book.title }}</div>
+            <div style="margin-top:8px;font-size:0.8rem;font-weight:800;color:#ffd04a;letter-spacing:0.1em;text-transform:uppercase;">Opening Question Bank Pages…</div>
+          </div>
+
+          <!-- ===============================================================
+               BASE UNDERNEATH PAGE SHEET (Auto-Paginated — Never Scrolls or Clips!)
+               =============================================================== -->
+          <div class="sx-book-sheet" x-ref="baseSheet">
+            <div class="sx-spine-stitches" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="sx-book-ribbon" aria-hidden="true"></div>
+            <div class="sx-page-corner-curl" aria-hidden="true"></div>
+
+            <!-- Cast Shadow thrown onto this page by the 3D bending leaf above it -->
+            <div x-show="isFlipping || isDragging"
+                 x-ref="underShadow"
+                 style="display:none;"
+                 class="sx-under-shadow"></div>
+
+            <template x-if="underPage">
+              <div style="display:flex;flex-direction:column;justify-content:space-between;height:100%;overflow:hidden;">
+
+                <!-- Upper Page Content (Guaranteed to fit above the bottom edge without clipping) -->
+                <div style="display:flex;flex-direction:column;overflow:hidden;">
+                  <!-- Top Running Header of the Book Page -->
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding-bottom:10px;margin-bottom:12px;border-bottom:1.5px dashed rgba(120,90,30,0.24);padding-right:26px;flex-shrink:0;">
+                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                      <span style="padding:3px 9px;border-radius:999px;background:rgba(248,176,0,0.22);color:#9a6700;font-size:0.66rem;font-weight:900;letter-spacing:0.08em;text-transform:uppercase;"
+                            x-text="`Page ${String(underPageIdx + 1).padStart(2, '0')} of ${String(totalPages).padStart(2, '0')}`"></span>
+                      <span style="font-size:0.68rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--sx-mute);"
+                            x-text="underPage.isCont ? `${underPage.subjectName} • Continued (${underPage.partNum}/${underPage.totalParts})` : `Question Bank • Subject ${underPage.subjectCode}`"></span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                      <span class="sx-chip" style="padding:2px 8px;font-size:0.65rem;" x-text="`${underPage.bankCount} Chapter${underPage.bankCount === 1 ? '' : 's'}`"></span>
+                      <span class="sx-chip" style="padding:2px 8px;font-size:0.65rem;background:rgba(248,176,0,0.18);color:#9a6700;" x-text="`${underPage.questionCount} Study Q&As`"></span>
+                    </div>
+                  </div>
+
+                  <!-- First Page of Subject: Full Subject Question Bank Hero Card -->
+                  <template x-if="!underPage.isCont">
+                    <div class="sx-book-hero-card">
+                      <div style="position:absolute;right:12px;bottom:-12px;font-family:var(--sx-display);font-size:4.2rem;font-weight:900;line-height:1;color:rgba(248,176,0,0.14);pointer-events:none;"
+                           x-text="underPage.subjectCode"></div>
+
+                      <div class="sx-book-hero-row">
+                        <div class="sx-book-hero-main">
+                          <template x-if="underPage.thumbnailUrl">
+                            <img :src="underPage.thumbnailUrl" :alt="underPage.subjectName" style="width:50px;height:50px;border-radius:14px;object-fit:cover;border:2px solid #f8b000;flex:none;box-shadow:0 8px 18px -8px rgba(180,110,0,0.6);" />
+                          </template>
+                          <template x-if="!underPage.thumbnailUrl">
+                            <span style="width:50px;height:50px;border-radius:14px;background:#f7b317;color:#1d1a14;display:grid;place-items:center;font-family:var(--sx-display);font-weight:900;font-size:1.35rem;flex:none;box-shadow:0 10px 18px -8px rgba(227,154,0,0.9);"
+                                  x-text="underPage.initial"></span>
+                          </template>
+                          <div style="min-width:0;flex:1;">
+                            <div style="font-size:0.66rem;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;color:#b87400;margin-bottom:2px;"
+                                 x-text="`Subject Question Bank • ${underPage.questionCount} Questions`"></div>
+                            <h2 class="sx-display" style="font-size:clamp(1.3rem,2.6vw,1.9rem);font-weight:900;margin:0 0 2px;line-height:1.15;"
+                                x-text="underPage.subjectName"></h2>
+                            <p style="margin:0;font-size:0.78rem;color:var(--sx-mute);font-weight:600;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;"
+                               x-text="underPage.description"></p>
+                          </div>
+                        </div>
+
+                        <a :href="underPage.firstUrl" class="sx-btn sx-btn-gold sx-book-hero-cta" style="padding:9px 16px;font-size:0.8rem;box-shadow:0 10px 20px -10px rgba(227,154,0,0.95);">
+                          <span class="material-symbols-outlined" style="font-size:17px;">menu_book</span>
+                          <span x-text="`Open ${underPage.subjectName} Questions`"></span>
+                          <span class="material-symbols-outlined" style="font-size:17px;">arrow_forward</span>
+                        </a>
+                      </div>
+                    </div>
+                  </template>
+
+                  <!-- Continuation Page of Subject: Compact Continuation Banner -->
+                  <template x-if="underPage.isCont">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-radius:14px;background:rgba(248,176,0,0.14);border:1.5px solid rgba(248,176,0,0.38);margin-bottom:12px;flex-shrink:0;">
+                      <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+                        <span style="width:34px;height:34px;border-radius:10px;background:#f7b317;color:#1d1a14;display:grid;place-items:center;font-weight:900;font-size:0.95rem;flex:none;"
+                              x-text="underPage.initial"></span>
+                        <div style="min-width:0;">
+                          <div class="sx-display" style="font-size:1.05rem;font-weight:900;line-height:1.15;" x-text="`${underPage.subjectName} — Continued`"></div>
+                          <div style="font-size:0.7rem;font-weight:700;color:#b87400;" x-text="`Page ${underPage.partNum} of ${underPage.totalParts} for ${underPage.subjectName}`"></div>
+                        </div>
+                      </div>
+                      <a :href="underPage.firstUrl" class="sx-btn sx-btn-gold" style="padding:6px 12px;font-size:0.74rem;flex:none;">
+                        <span>All Questions</span>
+                        <span class="material-symbols-outlined" style="font-size:14px;">arrow_forward</span>
+                      </a>
+                    </div>
+                  </template>
+
+                  <!-- Chapters Assigned to This Exact Physical Page -->
+                  <div style="margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0;">
+                    <span style="font-size:0.68rem;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;color:var(--sx-mute);"
+                          x-text="underPage.totalParts > 1 ? `Chapters on This Page (${underPage.rangeLabel} of ${underPage.bankCount})` : `Chapters in ${underPage.subjectName} (${underPage.bankCount})`"></span>
+                    <span style="font-size:0.68rem;font-weight:700;color:#b87400;">Tap chapter to open questions</span>
+                  </div>
+
+                  <div style="display:flex;flex-direction:column;gap:8px;overflow:hidden;">
+                    <template x-for="bank in underPage.chapters" :key="bank.id">
+                      <a :href="bank.url" class="sx-chapter-page-card">
+                        <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1;">
+                          <span style="width:32px;height:32px;border-radius:10px;background:#f7b317;color:#1d1a14;display:grid;place-items:center;font-weight:900;font-size:0.76rem;flex:none;"
+                                x-text="bank.num"></span>
+                          <div style="min-width:0;flex:1;">
+                            <div class="sx-display" style="font-size:0.94rem;font-weight:800;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+                                 x-text="bank.title"></div>
+                            <div x-show="bank.description"
+                                 style="font-size:0.74rem;color:var(--sx-mute);font-weight:600;margin-top:1px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+                                 x-text="bank.description"></div>
+                          </div>
+                        </div>
+
+                        <div style="display:flex;align-items:center;gap:6px;flex:none;">
+                          <span class="sx-chip" style="padding:2px 8px;font-size:0.64rem;" x-text="`${bank.questionCount} Q&As`"></span>
+                          <span class="sx-btn sx-btn-gold" style="padding:6px 11px;font-size:0.72rem;">
+                            <span>Open</span>
+                            <span class="material-symbols-outlined" style="font-size:14px;">arrow_forward</span>
+                          </span>
+                        </div>
+                      </a>
+                    </template>
+                  </div>
+                </div>
+
+                <!-- Bottom Book Page Footer: Always Pinned at Bottom Edge of Every Page -->
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:10px;border-top:1.5px solid rgba(120,90,30,0.2);padding-right:16px;flex-shrink:0;">
+                  <button type="button"
+                          @click="prevPage()"
+                          :disabled="pageIdx <= 0 || isFlipping"
+                          class="sx-btn sx-btn-soft disabled:opacity-40 disabled:cursor-default"
+                          style="padding:7px 12px;font-size:0.76rem;">
+                    <span class="material-symbols-outlined" style="font-size:15px;">chevron_left</span>
+                    <span>Prev Page</span>
+                  </button>
+
+                  <div style="text-align:center;">
+                    <span style="font-family:var(--sx-display);font-size:0.78rem;font-weight:800;color:var(--sx-mute);display:block;">
+                      Page <b style="color:var(--sx-ink);" x-text="underPageIdx + 1"></b> of <span x-text="totalPages"></span>
+                    </span>
+                    <small style="font-size:0.62rem;font-weight:700;color:#b87400;opacity:0.9;"
+                           x-text="nextPageHint"></small>
+                  </div>
+
+                  <button type="button"
+                          @click="nextPage()"
+                          :disabled="pageIdx >= totalPages - 1 || isFlipping"
+                          class="sx-btn sx-btn-gold disabled:opacity-40 disabled:cursor-default"
+                          style="padding:7px 14px;font-size:0.76rem;">
+                    <span>Next Page</span>
+                    <span class="material-symbols-outlined" style="font-size:15px;">chevron_right</span>
+                  </button>
+                </div>
+
+              </div>
+            </template>
+          </div>
+
+          <!-- ===============================================================
+               6-SEGMENT ARTICULATED 3D BENDING & CURVING PAPER LEAF
+               =============================================================== -->
+          <div x-show="isFlipping || isDragging"
+               x-ref="turningLeaf"
+               style="display:none;"
+               class="sx-turning-leaf">
+
+            <!-- Segment 0 (0% - 16.67% from spine) -->
+            <div class="sx-bend-seg sx-bend-seg-root" x-ref="seg0">
+              <div class="sx-seg-face sx-seg-front">
+                <div class="sx-seg-slice sx-book-sheet" style="left:0%;box-shadow:none;">
+                  <div class="sx-spine-stitches" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                  <div x-html="leafSliceHtml" style="height:100%;display:flex;flex-direction:column;justify-content:space-between;"></div>
+                </div>
+                <div class="sx-seg-shade" x-ref="shade0"></div>
+              </div>
+              <div class="sx-seg-face sx-seg-back">
+                <div class="sx-seg-back-lines"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                <div class="sx-seg-shade" x-ref="bshade0"></div>
+              </div>
+
+              <!-- Segment 1 (16.67% - 33.33%) -->
+              <div class="sx-bend-seg sx-bend-seg-child" x-ref="seg1">
+                <div class="sx-seg-face sx-seg-front">
+                  <div class="sx-seg-slice sx-book-sheet" style="left:-100%;box-shadow:none;">
+                    <div x-html="leafSliceHtml" style="height:100%;display:flex;flex-direction:column;justify-content:space-between;"></div>
+                  </div>
+                  <div class="sx-seg-shade" x-ref="shade1"></div>
+                </div>
+                <div class="sx-seg-face sx-seg-back">
+                  <div class="sx-seg-back-lines"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                  <div class="sx-seg-shade" x-ref="bshade1"></div>
+                </div>
+
+                <!-- Segment 2 (33.33% - 50%) -->
+                <div class="sx-bend-seg sx-bend-seg-child" x-ref="seg2">
+                  <div class="sx-seg-face sx-seg-front">
+                    <div class="sx-seg-slice sx-book-sheet" style="left:-200%;box-shadow:none;">
+                      <div x-html="leafSliceHtml" style="height:100%;display:flex;flex-direction:column;justify-content:space-between;"></div>
+                    </div>
+                    <div class="sx-seg-shade" x-ref="shade2"></div>
+                  </div>
+                  <div class="sx-seg-face sx-seg-back">
+                    <div class="sx-seg-back-lines"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                    <div class="sx-seg-shade" x-ref="bshade2"></div>
+                  </div>
+
+                  <!-- Segment 3 (50% - 66.67%) -->
+                  <div class="sx-bend-seg sx-bend-seg-child" x-ref="seg3">
+                    <div class="sx-seg-face sx-seg-front">
+                      <div class="sx-seg-slice sx-book-sheet" style="left:-300%;box-shadow:none;">
+                        <div x-html="leafSliceHtml" style="height:100%;display:flex;flex-direction:column;justify-content:space-between;"></div>
+                      </div>
+                      <div class="sx-seg-shade" x-ref="shade3"></div>
+                    </div>
+                    <div class="sx-seg-face sx-seg-back">
+                      <div class="sx-seg-back-lines"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                      <div class="sx-seg-shade" x-ref="bshade3"></div>
+                    </div>
+
+                    <!-- Segment 4 (66.67% - 83.33%) -->
+                    <div class="sx-bend-seg sx-bend-seg-child" x-ref="seg4">
+                      <div class="sx-seg-face sx-seg-front">
+                        <div class="sx-seg-slice sx-book-sheet" style="left:-400%;box-shadow:none;">
+                          <div x-html="leafSliceHtml" style="height:100%;display:flex;flex-direction:column;justify-content:space-between;"></div>
+                        </div>
+                        <div class="sx-seg-shade" x-ref="shade4"></div>
+                      </div>
+                      <div class="sx-seg-face sx-seg-back">
+                        <div class="sx-seg-back-lines"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                        <div class="sx-seg-shade" x-ref="bshade4"></div>
+                      </div>
+
+                      <!-- Segment 5 (83.33% - 100%, Outer Edge of Page) -->
+                      <div class="sx-bend-seg sx-bend-seg-child sx-seg-last" x-ref="seg5">
+                        <div class="sx-seg-face sx-seg-front">
+                          <div class="sx-seg-slice sx-book-sheet" style="left:-500%;box-shadow:none;">
+                            <div class="sx-book-ribbon" aria-hidden="true"></div>
+                            <div x-html="leafSliceHtml" style="height:100%;display:flex;flex-direction:column;justify-content:space-between;"></div>
+                          </div>
+                          <div class="sx-seg-shade" x-ref="shade5"></div>
+                        </div>
+                        <div class="sx-seg-face sx-seg-back">
+                          <div class="sx-seg-back-lines"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                          <div class="sx-seg-shade" x-ref="bshade5"></div>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% else %}
+  <div class="sx-tile" style="padding:36px;text-align:center;">
+    <p style="margin:0;font-weight:700;color:var(--sx-mute);">No subjects have been added to this book edition yet.</p>
+  </div>
+  {% endif %}
+
 </div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+  Alpine.data('saxazBookReader', () => ({
+    rawSubjects: [
+      {% for s in book.subjects %}
+      {
+        id: {{ s.id }},
+        subjectCode: {{ ('%02d' % loop.index)|tojson }},
+        initial: {{ (s.name[:1] if s.name else 'S')|tojson }},
+        name: {{ s.name|tojson }},
+        thumbnailUrl: {{ (s.thumbnail_url or '')|tojson }},
+        description: {{ (s.description or ('Complete ' ~ s.name ~ ' Question Bank in this edition with ordered questions, model answers, videos & AI Tutor.'))|tojson }},
+        firstUrl: {{ (('/student/digi-library/banks/' ~ s.first_bank_id) if s.first_bank_id else ('/student/digi-library/subjects/' ~ s.id))|tojson }},
+        bankCount: {{ s.bank_count or 0 }},
+        questionCount: {{ s.question_count or 0 }},
+        banks: [
+          {% for b in (s.banks or []) %}
+          {
+            id: {{ b.id }},
+            num: {{ ('%02d' % loop.index)|tojson }},
+            title: {{ b.title|tojson }},
+            description: {{ (b.description or '')|tojson }},
+            questionCount: {{ b.question_count or 0 }},
+            url: {{ ('/student/digi-library/banks/' ~ b.id)|tojson }}
+          }{% if not loop.last %},{% endif %}
+          {% endfor %}
+        ]
+      }{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ],
+    bookPages: [],
+    pageIdx: 0,
+    underPageIdx: 0,
+    leafPageIdx: 0,
+    leafSliceHtml: '',
+    // Default to All Subjects mode ('grid')
+    viewMode: 'grid',
+    showEntryCover: false,
+    coverPlayed: false,
+    isFlipping: false,
+    isDragging: false,
+    flipDir: 'next',
+    _flipProgress: 0,
+    touchStartX: 0,
+    touchStartY: 0,
+    dragActive: false,
+    dragTargetIdx: 0,
+    rafId: null,
+
+    get totalPages() {
+      return this.bookPages.length;
+    },
+
+    get activePage() {
+      return this.bookPages[this.pageIdx] || null;
+    },
+
+    get underPage() {
+      return this.bookPages[this.underPageIdx] || null;
+    },
+
+    get nextPageHint() {
+      const next = this.bookPages[this.underPageIdx + 1];
+      if (!next) return 'End of Question Bank Book';
+      if (next.isCont) return `Next: ${next.subjectName} (Cont.)`;
+      return `Next: ${next.subjectName}`;
+    },
+
+    init() {
+      this.rebuildPaginatedPages();
+      let lastWidth = window.innerWidth;
+      let lastHeight = window.innerHeight;
+      window.addEventListener('resize', () => {
+        if (Math.abs(window.innerWidth - lastWidth) > 20 || Math.abs(window.innerHeight - lastHeight) > 30) {
+          lastWidth = window.innerWidth;
+          lastHeight = window.innerHeight;
+          const curSubjId = this.activePage ? this.activePage.subjectId : null;
+          this.rebuildPaginatedPages();
+          if (curSubjId) {
+            const idx = this.bookPages.findIndex(p => p.subjectId === curSubjId);
+            if (idx >= 0) {
+              this.pageIdx = idx;
+              this.underPageIdx = idx;
+            }
+          }
+        }
+      });
+
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const subjParam = params.get('subject');
+        const pageParam = params.get('page');
+        const modeParam = params.get('mode');
+        if (subjParam) {
+          const sid = parseInt(subjParam, 10);
+          const found = this.bookPages.findIndex(p => p.subjectId === sid);
+          if (found >= 0) {
+            this.pageIdx = found;
+            this.underPageIdx = found;
+          }
+        }
+        if (pageParam !== null) {
+          const p = parseInt(pageParam, 10);
+          if (!isNaN(p) && p >= 0 && p < this.totalPages) {
+            this.pageIdx = p;
+            this.underPageIdx = p;
+            this.viewMode = 'pages';
+          }
+        } else if (modeParam === 'pages') {
+          this.viewMode = 'pages';
+        }
+      } catch (e) {}
+
+      this.syncScrollLock();
+      window.addEventListener('pagehide', () => this.unlockScroll());
+      window.addEventListener('beforeunload', () => this.unlockScroll());
+    },
+
+    /* =====================================================================
+       BOTTOM-EDGE AWARE REAL BOOK PAGINATOR
+       Automatically splits chapters onto a second/third page when they reach
+       the bottom edge of the page, so nothing EVER clips or scrolls!
+       ===================================================================== */
+    rebuildPaginatedPages() {
+      const vh = window.innerHeight || 780;
+      const vw = window.innerWidth || 400;
+      const isMobile = vw < 640;
+
+      // Exact fixed sheet height matching CSS clamp()
+      const sheetHeight = isMobile
+        ? Math.min(630, Math.max(450, vh - 186))
+        : Math.min(680, Math.max(500, vh - 150));
+
+      // Subtract vertical padding, top running header, bottom footer, and safety margin
+      const fixedChrome = isMobile ? (26 + 42 + 48 + 18) : (34 + 44 + 50 + 20);
+      const availableBodyHeight = Math.max(220, sheetHeight - fixedChrome);
+
+      // Height of Subject Hero Card vs Compact Continuation Banner
+      const heroBlockHeight = isMobile ? 166 : 138;
+      const contBannerHeight = isMobile ? 62 : 58;
+      const sectionLabelHeight = 26;
+      const chapterRowHeight = isMobile ? 66 : 68;
+
+      const firstPageCap = Math.max(1, Math.floor((availableBodyHeight - heroBlockHeight - sectionLabelHeight) / chapterRowHeight));
+      const contPageCap = Math.max(2, Math.floor((availableBodyHeight - contBannerHeight - sectionLabelHeight) / chapterRowHeight));
+
+      const pages = [];
+      this.rawSubjects.forEach((subj) => {
+        const banks = Array.isArray(subj.banks) ? subj.banks : [];
+        if (banks.length <= firstPageCap) {
+          pages.push({
+            subjectId: subj.id,
+            subjectCode: subj.subjectCode,
+            initial: subj.initial,
+            subjectName: subj.name,
+            thumbnailUrl: subj.thumbnailUrl,
+            description: subj.description,
+            firstUrl: subj.firstUrl,
+            bankCount: subj.bankCount,
+            questionCount: subj.questionCount,
+            isCont: false,
+            partNum: 1,
+            totalParts: 1,
+            rangeLabel: `1–${banks.length}`,
+            chapters: banks
+          });
+        } else {
+          // Split chapters across Page 1 (with Hero) + Continuation Pages (when reaching bottom edge)
+          const chunks = [];
+          chunks.push(banks.slice(0, firstPageCap));
+          let cursor = firstPageCap;
+          while (cursor < banks.length) {
+            chunks.push(banks.slice(cursor, cursor + contPageCap));
+            cursor += contPageCap;
+          }
+          let startNum = 1;
+          chunks.forEach((chunk, cIdx) => {
+            const endNum = startNum + chunk.length - 1;
+            pages.push({
+              subjectId: subj.id,
+              subjectCode: subj.subjectCode,
+              initial: subj.initial,
+              subjectName: subj.name,
+              thumbnailUrl: subj.thumbnailUrl,
+              description: subj.description,
+              firstUrl: subj.firstUrl,
+              bankCount: subj.bankCount,
+              questionCount: subj.questionCount,
+              isCont: cIdx > 0,
+              partNum: cIdx + 1,
+              totalParts: chunks.length,
+              rangeLabel: startNum === endNum ? `${startNum}` : `${startNum}–${endNum}`,
+              chapters: chunk
+            });
+            startNum = endNum + 1;
+          });
+        }
+      });
+
+      this.bookPages = pages;
+      if (this.pageIdx >= pages.length) {
+        this.pageIdx = Math.max(0, pages.length - 1);
+        this.underPageIdx = this.pageIdx;
+      }
+    },
+
+    /* Static lightweight HTML snapshot for the 6 curving strips (no iframes or Alpine directives) */
+    buildStaticLeafHtml(pIdx) {
+      const p = this.bookPages[pIdx];
+      if (!p) return '';
+      const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const headerHtml = `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:10px;margin-bottom:12px;border-bottom:1.5px dashed rgba(120,90,30,0.24);padding-right:26px;">
+          <span style="padding:3px 9px;border-radius:999px;background:rgba(248,176,0,0.22);color:#9a6700;font-size:0.66rem;font-weight:900;text-transform:uppercase;">Page ${String(pIdx + 1).padStart(2, '0')} of ${String(this.totalPages).padStart(2, '0')}</span>
+          <span class="sx-chip" style="padding:2px 8px;font-size:0.65rem;">${p.questionCount} Study Q&amp;As</span>
+        </div>
+      `;
+      const topCardHtml = !p.isCont
+        ? `<div class="sx-book-hero-card">
+             <div class="sx-book-hero-main">
+               <span style="width:46px;height:46px;border-radius:13px;background:#f7b317;color:#1d1a14;display:grid;place-items:center;font-weight:900;font-size:1.25rem;flex:none;">${esc(p.initial)}</span>
+               <div style="min-width:0;flex:1;">
+                 <div style="font-size:0.65rem;font-weight:900;text-transform:uppercase;color:#b87400;">Subject Question Bank</div>
+                 <div class="sx-display" style="font-size:1.35rem;font-weight:900;line-height:1.15;">${esc(p.subjectName)}</div>
+                 <div style="font-size:0.75rem;color:var(--sx-mute);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(p.description)}</div>
+               </div>
+             </div>
+           </div>`
+        : `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;background:rgba(248,176,0,0.14);border:1.5px solid rgba(248,176,0,0.38);margin-bottom:12px;">
+             <span style="width:32px;height:32px;border-radius:9px;background:#f8b000;color:#1d1a14;display:grid;place-items:center;font-weight:900;">${esc(p.initial)}</span>
+             <div class="sx-display" style="font-size:1rem;font-weight:900;">${esc(p.subjectName)} — Continued (${p.partNum}/${p.totalParts})</div>
+           </div>`;
+      const chRows = (p.chapters || []).map(ch => `
+        <div class="sx-chapter-page-card">
+          <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1;">
+            <span style="width:30px;height:30px;border-radius:9px;background:#f8b000;color:#1d1a14;display:grid;place-items:center;font-weight:900;font-size:0.74rem;flex:none;">${esc(ch.num)}</span>
+            <div class="sx-display" style="font-size:0.9rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(ch.title)}</div>
+          </div>
+          <span class="sx-chip" style="padding:2px 8px;font-size:0.64rem;">${ch.questionCount} Q&amp;As</span>
+        </div>
+      `).join('');
+      const footerHtml = `
+        <div style="display:flex;align-items:center;justify-content:center;padding-top:10px;border-top:1.5px solid rgba(120,90,30,0.2);font-size:0.75rem;font-weight:800;color:var(--sx-mute);">
+          Page ${pIdx + 1} of ${this.totalPages}
+        </div>
+      `;
+      return `<div>${headerHtml}${topCardHtml}<div style="display:flex;flex-direction:column;gap:8px;">${chRows}</div></div>${footerHtml}`;
+    },
+
+    syncScrollLock() {
+      if (this.viewMode === 'pages') {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        document.documentElement.classList.add('sx-3d-book-locked');
+        document.body.classList.add('sx-3d-book-locked');
+      } else {
+        this.unlockScroll();
+      }
+    },
+
+    unlockScroll() {
+      document.documentElement.classList.remove('sx-3d-book-locked');
+      document.body.classList.remove('sx-3d-book-locked');
+    },
+
+    setGridMode() {
+      this.viewMode = 'grid';
+      this.unlockScroll();
+    },
+
+    openBookPagesMode() {
+      this.rebuildPaginatedPages();
+      this.viewMode = 'pages';
+      this.syncScrollLock();
+      if (!this.coverPlayed) {
+        this.coverPlayed = true;
+        this.showEntryCover = true;
+        setTimeout(() => { this.showEntryCover = false; }, 920);
+      }
+    },
+
+    flipToSubject(subjectId) {
+      const targetIdx = this.bookPages.findIndex(p => p.subjectId === subjectId);
+      if (targetIdx >= 0) {
+        this.flipTo(targetIdx);
+      }
+    },
+
+    /* =====================================================================
+       6-SEGMENT ARTICULATED 3D PAPER BEND & CURL KINEMATICS (60/120FPS GPU)
+       p in [0, 1]: 0 = page flat on right (0deg), 1 = page flipped left (-180deg)
+       ===================================================================== */
+    applyCurvedPageFrame(p) {
+      const prog = Math.min(1, Math.max(0, p));
+      this._flipProgress = prog;
+      const sinP = Math.sin(prog * Math.PI);
+
+      // Spine angle lags early while outer paper edge peels up first, creating a true 3D paper curve!
+      const peelLag = Math.pow(prog, 1.32);
+      const baseAngle = -180 * peelLag;
+
+      // Bell-curve paper bend distributed across the 5 outer hinges (seg1..seg5)
+      // Positive early curl bends the outer edge of the paper upward & over toward the spine
+      const curlWave = Math.sin(prog * Math.PI) * (1 - 0.35 * prog);
+      const a0 = baseAngle;
+      const a1 = -16 * curlWave;
+      const a2 = -21 * curlWave;
+      const a3 = -25 * curlWave;
+      const a4 = -27 * curlWave;
+      const a5 = -28 * curlWave;
+
+      // Diagonal corner-peel twist (bottom-right lifts slightly ahead of top-right)
+      const rootTwistZ = (this.flipDir === 'next' ? -1 : 1) * sinP * 2.4;
+      const childSkewY = (this.flipDir === 'next' ? -1 : 1) * sinP * 1.1;
+
+      const angles = [a0, a1, a2, a3, a4, a5];
+      const segRefs = [this.$refs.seg0, this.$refs.seg1, this.$refs.seg2, this.$refs.seg3, this.$refs.seg4, this.$refs.seg5];
+      const shadeRefs = [this.$refs.shade0, this.$refs.shade1, this.$refs.shade2, this.$refs.shade3, this.$refs.shade4, this.$refs.shade5];
+      const bshadeRefs = [this.$refs.bshade0, this.$refs.bshade1, this.$refs.bshade2, this.$refs.bshade3, this.$refs.bshade4, this.$refs.bshade5];
+
+      let worldAng = 0;
+      for (let i = 0; i < 6; i++) {
+        worldAng += angles[i];
+        const el = segRefs[i];
+        if (el) {
+          if (i === 0) {
+            el.style.transform = `translate3d(0,0,0) rotateY(${angles[0].toFixed(2)}deg) rotateZ(${rootTwistZ.toFixed(2)}deg)`;
+          } else {
+            el.style.transform = `translate3d(0,0,0) rotateY(${angles[i].toFixed(2)}deg) skewY(${childSkewY.toFixed(2)}deg)`;
+          }
+        }
+        // Cylindrical shading based on each strip's world orientation relative to overhead light
+        const rad = (Math.abs(worldAng) * Math.PI) / 180;
+        const shadeIntensity = Math.sin(rad) * sinP * 0.72;
+        if (shadeRefs[i]) {
+          shadeRefs[i].style.opacity = shadeIntensity.toFixed(3);
+        }
+        if (bshadeRefs[i]) {
+          bshadeRefs[i].style.opacity = (shadeIntensity * 0.85).toFixed(3);
+        }
+      }
+
+      const shadowEl = this.$refs.underShadow;
+      if (shadowEl) {
+        shadowEl.style.opacity = (sinP * 0.9 + (1 - prog) * 0.25).toFixed(3);
+        shadowEl.style.transform = `scaleX(${Math.max(0.08, 1 - prog * 0.72).toFixed(3)})`;
+      }
+    },
+
+    playPageRustle() {
+      if (window.USER_SFX_MODE === 0) return;
+      try {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        const ctx = window._sxBookAudioCtx || (window._sxBookAudioCtx = new Ctx());
+        if (ctx.state === 'suspended') ctx.resume();
+        const dur = 0.15;
+        const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+          const env = Math.sin((i / data.length) * Math.PI);
+          data[i] = (Math.random() * 2 - 1) * env * 0.04;
+        }
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 1100;
+        filter.Q.value = 0.9;
+        src.connect(filter);
+        filter.connect(ctx.destination);
+        src.start();
+      } catch (e) {}
+    },
+
+    animateBendTo(startProg, endProg, durationMs, onDone) {
+      if (this.rafId) cancelAnimationFrame(this.rafId);
+      const t0 = performance.now();
+      const step = (now) => {
+        const elapsed = now - t0;
+        const t = Math.min(1, Math.max(0, elapsed / durationMs));
+        const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        this.applyCurvedPageFrame(startProg + (endProg - startProg) * eased);
+        if (t < 1) {
+          this.rafId = requestAnimationFrame(step);
+        } else {
+          this.applyCurvedPageFrame(endProg);
+          this.rafId = null;
+          if (onDone) onDone();
+        }
+      };
+      this.rafId = requestAnimationFrame(step);
+    },
+
+    flipTo(targetIdx) {
+      if (targetIdx < 0 || targetIdx >= this.totalPages || targetIdx === this.pageIdx || this.isFlipping) return;
+      const dir = targetIdx > this.pageIdx ? 'next' : 'prev';
+      this.flipDir = dir;
+
+      if (dir === 'next') {
+        this.leafPageIdx = this.pageIdx;
+        this.leafSliceHtml = this.buildStaticLeafHtml(this.pageIdx);
+        this.underPageIdx = targetIdx;
+        this.isFlipping = true;
+        this.applyCurvedPageFrame(0);
+        this.playPageRustle();
+        this.$nextTick(() => {
+          this.animateBendTo(0, 1, 520, () => {
+            this.pageIdx = targetIdx;
+            this.underPageIdx = targetIdx;
+            this.isFlipping = false;
+            this.applyCurvedPageFrame(0);
+          });
+        });
+      } else {
+        this.leafPageIdx = targetIdx;
+        this.leafSliceHtml = this.buildStaticLeafHtml(targetIdx);
+        this.underPageIdx = this.pageIdx;
+        this.isFlipping = true;
+        this.applyCurvedPageFrame(1);
+        this.playPageRustle();
+        this.$nextTick(() => {
+          this.animateBendTo(1, 0, 520, () => {
+            this.pageIdx = targetIdx;
+            this.underPageIdx = targetIdx;
+            this.isFlipping = false;
+            this.applyCurvedPageFrame(0);
+          });
+        });
+      }
+    },
+
+    nextPage() {
+      if (this.pageIdx < this.totalPages - 1) this.flipTo(this.pageIdx + 1);
+    },
+
+    prevPage() {
+      if (this.pageIdx > 0) this.flipTo(this.pageIdx - 1);
+    },
+
+    /* Interactive Real-Time 3D Touch-Drag Paper Bending on Mobile */
+    onTouchStart(e) {
+      if (this.isFlipping || !e.touches || e.touches.length !== 1) return;
+      this.touchStartX = e.touches[0].clientX;
+      this.touchStartY = e.touches[0].clientY;
+      this.dragActive = false;
+    },
+
+    onTouchMove(e) {
+      if (this.isFlipping || !this.touchStartX || !e.touches || !e.touches.length) return;
+      const dx = e.touches[0].clientX - this.touchStartX;
+      const dy = e.touches[0].clientY - this.touchStartY;
+
+      if (!this.dragActive) {
+        if (Math.abs(dx) < 10 || Math.abs(dy) > Math.abs(dx) * 0.9) return;
+        if (dx < 0 && this.pageIdx < this.totalPages - 1) {
+          this.dragActive = true;
+          this.isDragging = true;
+          this.flipDir = 'next';
+          this.dragTargetIdx = this.pageIdx + 1;
+          this.leafPageIdx = this.pageIdx;
+          this.leafSliceHtml = this.buildStaticLeafHtml(this.pageIdx);
+          this.underPageIdx = this.dragTargetIdx;
+          this.playPageRustle();
+        } else if (dx > 0 && this.pageIdx > 0) {
+          this.dragActive = true;
+          this.isDragging = true;
+          this.flipDir = 'prev';
+          this.dragTargetIdx = this.pageIdx - 1;
+          this.leafPageIdx = this.dragTargetIdx;
+          this.leafSliceHtml = this.buildStaticLeafHtml(this.dragTargetIdx);
+          this.underPageIdx = this.pageIdx;
+          this.playPageRustle();
+        } else {
+          return;
+        }
+      }
+
+      const vw = (this.$refs.bookViewport && this.$refs.bookViewport.clientWidth) ? this.$refs.bookViewport.clientWidth : Math.min(window.innerWidth, 600);
+      const dragFrac = Math.min(1, Math.max(0, Math.abs(dx) / (vw * 0.72)));
+      if (this.flipDir === 'next') {
+        this.applyCurvedPageFrame(dragFrac);
+      } else {
+        this.applyCurvedPageFrame(1 - dragFrac);
+      }
+    },
+
+    onTouchEnd(e) {
+      if (!this.touchStartX) return;
+      this.touchStartX = 0;
+      this.touchStartY = 0;
+      if (!this.dragActive) return;
+      this.dragActive = false;
+
+      const curP = this._flipProgress;
+      const movedFrac = this.flipDir === 'next' ? curP : (1 - curP);
+      const commit = movedFrac > 0.15;
+      this.isDragging = false;
+      this.isFlipping = true;
+
+      if (this.flipDir === 'next') {
+        const targetP = commit ? 1 : 0;
+        const dur = Math.max(180, Math.round(Math.abs(targetP - curP) * 420));
+        this.animateBendTo(curP, targetP, dur, () => {
+          if (commit) {
+            this.pageIdx = this.dragTargetIdx;
+            this.underPageIdx = this.dragTargetIdx;
+          } else {
+            this.underPageIdx = this.pageIdx;
+          }
+          this.isFlipping = false;
+          this.applyCurvedPageFrame(0);
+        });
+      } else {
+        const targetP = commit ? 0 : 1;
+        const dur = Math.max(180, Math.round(Math.abs(targetP - curP) * 420));
+        this.animateBendTo(curP, targetP, dur, () => {
+          if (commit) {
+            this.pageIdx = this.dragTargetIdx;
+            this.underPageIdx = this.dragTargetIdx;
+          } else {
+            this.underPageIdx = this.pageIdx;
+          }
+          this.isFlipping = false;
+          this.applyCurvedPageFrame(0);
+        });
+      }
+    }
+  }));
+});
+</script>
 {% endblock %}

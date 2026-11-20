@@ -140,21 +140,11 @@ async def lifespan(app: FastAPI):
     import database
     database.auto_migrate()
 
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.join(base_dir, "models", "kokoro-v0_19.onnx")
-    voices_path = os.path.join(base_dir, "models", "voices.bin")
-    if not os.path.exists(voices_path):
-        voices_path = os.path.join(base_dir, "models", "voices.json")
-    
-    if os.path.exists(model_path) and os.path.exists(voices_path):
-        try:
-            print("Loading Kokoro TTS model...")
-            tts.init_kokoro(model_path, voices_path)
-            print("Kokoro TTS model loaded successfully.")
-        except Exception as e:
-            print(f"Failed to load Kokoro: {e}")
-    else:
-        print("Warning: Kokoro model files not found in models/ directory.")
+    # Initialize Google Gemini 3.8 Flash TTS (on-demand only; zero startup pre-warm)
+    try:
+        tts.init_gemini_tts()
+    except Exception as e:
+        print(f"[TTS] Warning initializing Gemini TTS: {e}")
     
     yield
     # SHUTDOWN (Graceful exit) — use safe sequential staged sync
@@ -236,6 +226,19 @@ async def pwa_service_worker():
     )
 
 
+@app.get('/landing')
+async def landing_page(request: Request):
+    from database import get_db_connection
+    from security import get_current_user
+    conn = get_db_connection()
+    user = None
+    try:
+        user = get_current_user(request, conn)
+    finally:
+        conn.close()
+    return templates.TemplateResponse(request=request, name="landing.html", context={"request": request, "user": user})
+
+
 @app.get('/')
 async def root(request: Request):
     from database import get_db_connection
@@ -252,4 +255,4 @@ async def root(request: Request):
                 return RedirectResponse(url="/student/dashboard")
     finally:
         conn.close()
-    return RedirectResponse(url="/login")
+    return RedirectResponse(url="/login", status_code=302)

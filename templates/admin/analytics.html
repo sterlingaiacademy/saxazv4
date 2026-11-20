@@ -4,11 +4,25 @@
 {% block topbar_title %}Student Analytics{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto space-y-8 pb-20" x-data="{ searchQuery: '' }">
+<script id="sx-students-index" type="application/json">[{% for s in students %}{{ ((s.name or '') ~ ' ' ~ (s.email or '') ~ ' ' ~ (s.username or '')) | lower | tojson }}{% if not loop.last %},{% endif %}{% endfor %}]</script>
+<div class="max-w-6xl mx-auto space-y-6 sm:space-y-8 pb-20 overflow-x-hidden"
+     x-data="{
+       searchQuery: '',
+       studentIndex: JSON.parse(document.getElementById('sx-students-index')?.textContent || '[]'),
+       matchesStudent(haystack) {
+         const q = (this.searchQuery || '').trim().toLowerCase();
+         return !q || (haystack || '').includes(q);
+       },
+       get hasMatches() {
+         const q = (this.searchQuery || '').trim().toLowerCase();
+         if (!q) return this.studentIndex.length > 0;
+         return this.studentIndex.some(s => s.includes(q));
+       }
+     }">
   <!-- CLEAN HEADER BAR -->
-  <div class="brilliant-card bg-base-100 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
-    <div class="space-y-2">
-      <a href="/admin/dashboard" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-base-200 hover:bg-base-300 text-base-content text-xs font-black uppercase tracking-wider transition-colors border border-base-300">
+  <div class="brilliant-card bg-base-100 rounded-3xl p-4 sm:p-6 md:p-8 flex flex-col md:flex-row md:items-end justify-between gap-5 sm:gap-6">
+    <div class="space-y-2 min-w-0">
+      <a href="/admin/dashboard" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 min-h-[36px] rounded-full bg-base-200 hover:bg-base-300 text-base-content text-xs font-black uppercase tracking-wider transition-colors border border-base-300">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
         Back to Dashboard
       </a>
@@ -24,8 +38,8 @@
         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-base-content/50">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
         </div>
-        <input type="text" x-model="searchQuery" placeholder="Search students by name or email..." class="w-full pl-11 pr-10 py-3.5 bg-base-200/60 border-2 border-base-300 rounded-2xl focus:outline-none focus:border-primary transition-all font-bold text-base-content placeholder:text-base-content/40 shadow-2xs" />
-        <button x-show="searchQuery.length > 0" @click="searchQuery = ''" class="absolute inset-y-0 right-0 pr-4 flex items-center text-base-content/50 hover:text-base-content transition-colors" style="display: none;">
+        <input type="text" x-model="searchQuery" placeholder="Search students by name or email..." class="w-full pl-11 pr-11 py-3.5 bg-base-200/60 border-2 border-base-300 rounded-2xl focus:outline-none focus:border-primary transition-all font-bold text-base sm:text-sm text-base-content placeholder:text-base-content/40 shadow-2xs" />
+        <button type="button" x-show="searchQuery.length > 0" @click="searchQuery = ''" aria-label="Clear search" class="absolute inset-y-0 right-0 w-11 flex items-center justify-center text-base-content/50 hover:text-base-content transition-colors" style="display: none;">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
       </div>
@@ -36,44 +50,43 @@
   <div class="space-y-5">
     {% for student in students %}
     <div class="brilliant-card bg-base-100 overflow-hidden transition-all duration-300" 
-       data-name="{{ student.name | e }}"
-       data-email="{{ student.email | e }}"
-       x-data="{ expanded: false, name: $el.dataset.name.toLowerCase(), email: $el.dataset.email.toLowerCase() }"
-       x-show="searchQuery === '' || name.includes(searchQuery.toLowerCase()) || email.includes(searchQuery.toLowerCase())"
+       data-search="{{ ((student.name or '') ~ ' ' ~ (student.email or '') ~ ' ' ~ (student.username or '')) | lower | e }}"
+       x-data="{ expanded: false }"
+       x-show="matchesStudent($el.dataset.search)"
        x-transition>
        
       <!-- Card Header (Clickable) -->
-      <div @click="expanded = !expanded" class="p-6 md:p-8 cursor-pointer hover:bg-base-200/40 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-5">
+      <div @click="expanded = !expanded" class="p-4 sm:p-6 md:p-8 cursor-pointer hover:bg-base-200/40 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-5">
         <!-- User Info -->
-        <div class="flex items-center gap-4">
-          <div class="w-14 h-14 rounded-2xl bg-amber-500/15 border-2 border-amber-500/30 flex items-center justify-center text-amber-700 font-black text-xl shadow-xs shrink-0">
+        <div class="flex items-center gap-3.5 sm:gap-4 min-w-0 flex-1">
+          <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-amber-500/15 border-2 border-amber-500/30 flex items-center justify-center text-amber-700 font-black text-lg sm:text-xl shadow-xs shrink-0">
             {{ student.name[:2] | upper }}
           </div>
-          <div>
-            <h3 class="text-xl md:text-2xl font-black text-base-content tracking-tight">{{ student.name }}</h3>
-            <div class="flex items-center gap-2 mt-1">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-base-content/40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-              <span class="text-sm text-base-content/60 font-bold">{{ student.email }}</span>
+          <div class="min-w-0 flex-1">
+            <h3 class="text-lg sm:text-xl md:text-2xl font-black text-base-content tracking-tight break-words">{{ student.name }}</h3>
+            <div class="flex items-center gap-2 mt-1 min-w-0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-base-content/40 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+              <span class="text-xs sm:text-sm text-base-content/60 font-bold break-all sm:truncate">{{ student.email }}</span>
             </div>
           </div>
         </div>
 
         <!-- Progress & Action -->
-        <div class="flex items-center gap-6 justify-between md:justify-end border-t md:border-t-0 border-base-200 pt-4 md:pt-0">
-          <div class="flex items-center gap-3">
-            <div class="px-4 py-2 rounded-2xl bg-base-200/70 border border-base-300 text-right">
+        <div class="flex flex-wrap items-center gap-3 sm:gap-5 justify-between md:justify-end border-t md:border-t-0 border-base-200 pt-3.5 md:pt-0">
+          <div class="flex flex-wrap items-center gap-2.5 sm:gap-3">
+            <div class="px-3 sm:px-4 py-2 rounded-2xl bg-base-200/70 border border-base-300 text-right">
               <div class="text-[10px] font-black text-base-content/50 uppercase tracking-widest">Exams Taken</div>
-              <div class="text-xl font-black text-indigo-600">{{ student.exam_attempts|length }}</div>
+              <div class="text-lg sm:text-xl font-black text-[#231f20]">{{ student.exam_attempts|length }}</div>
             </div>
-            <div class="px-4 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-right">
+            <div class="px-3 sm:px-4 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-right">
               <div class="text-[10px] font-black text-amber-800/70 uppercase tracking-widest">Modules Done</div>
               <div class="flex items-baseline justify-end gap-1">
-                <span class="text-xl font-black text-amber-700">{{ student.content_completed | default(0) }}</span>
+                <span class="text-lg sm:text-xl font-black text-amber-700">{{ student.content_completed | default(0) }}</span>
                 <span class="text-xs text-base-content/50 font-bold">/ {{ student.total_content_available | default(0) }}</span>
               </div>
             </div>
           </div>
-          <div class="w-10 h-10 rounded-xl bg-base-200 flex items-center justify-center text-base-content/60 transition-transform duration-300 border-2 border-base-300" :class="expanded ? 'rotate-180 bg-primary border-amber-600/40 text-slate-900 shadow-sm' : ''">
+          <div class="w-10 h-10 rounded-xl bg-base-200 flex items-center justify-center text-base-content/60 transition-transform duration-300 border-2 border-base-300 shrink-0" :class="expanded ? 'rotate-180 bg-primary border-amber-600/40 text-slate-900 shadow-sm' : ''">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" /></svg>
           </div>
         </div>
@@ -81,9 +94,9 @@
 
       <!-- Card Content (Exam Attempts) -->
       <div x-show="expanded" x-collapse>
-        <div class="p-6 md:p-8 pt-2 bg-base-200/30 border-t border-base-200">
+        <div class="p-4 sm:p-6 md:p-8 pt-2 bg-base-200/30 border-t border-base-200">
           <h4 class="font-black text-base mb-4 flex items-center gap-2 text-base-content uppercase tracking-wider">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[#231f20]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
             Exam Attempts History
           </h4>
           
@@ -104,8 +117,12 @@
                 {% set awarded = attempt.total_marks_awarded or 0 %}
                 {% set maximum = attempt.total_max_marks or 0 %}
                 {% set pct = (awarded / maximum * 100) if maximum > 0 else 0 %}
-                <tr class="hover:bg-base-200/40 transition-colors border-b border-base-200 last:border-0">
-                  <td class="font-black text-base pl-6">{{ attempt.title }}</td>
+                <tr data-card-href="/admin/analytics/attempts/{{ attempt.id }}"
+                    role="link"
+                    tabindex="0"
+                    style="transform: none;"
+                    class="cursor-pointer hover:bg-base-200/60 transition-colors border-b border-base-200 last:border-0 group">
+                  <td class="font-black text-base pl-6 group-hover:text-amber-700 transition-colors">{{ attempt.title }}</td>
                   <td class="text-base-content/65 font-bold text-xs">{{ attempt.completed_at }}</td>
                   <td class="font-black">
                     <span class="text-lg">{{ awarded }}</span> 
@@ -118,8 +135,8 @@
                     </span>
                   </td>
                   <td class="text-right pr-6">
-                    <a href="/admin/analytics/attempts/{{ attempt.id }}" class="btn btn-sm btn-primary text-slate-900 rounded-xl font-black tactile-btn border border-amber-600/30">
-                      Review Attempt →
+                    <a href="/admin/analytics/attempts/{{ attempt.id }}" class="btn btn-sm min-h-[36px] btn-primary text-slate-900 rounded-xl font-black tactile-btn border border-amber-600/30 whitespace-nowrap">
+                      Review Attempt &rarr;
                     </a>
                   </td>
                 </tr>
@@ -128,7 +145,7 @@
             </table>
           </div>
           {% else %}
-          <div class="bg-base-100 rounded-2xl p-8 text-center border-2 border-dashed border-base-300 flex flex-col items-center">
+          <div class="bg-base-100 rounded-2xl p-6 sm:p-8 text-center border-2 border-dashed border-base-300 flex flex-col items-center">
             <div class="w-12 h-12 rounded-2xl bg-base-200 flex items-center justify-center text-base-content/40 mb-3">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             </div>
@@ -142,7 +159,7 @@
     {% endfor %}
     
     <!-- Empty State for Search -->
-    <div x-show="searchQuery !== '' && !Array.from($el.parentElement.children).some(el => el.style.display !== 'none' && el.classList.contains('brilliant-card'))" class="brilliant-card bg-base-100 p-14 text-center" style="display: none;">
+    <div x-show="searchQuery.trim() !== '' && !hasMatches" class="brilliant-card bg-base-100 p-8 sm:p-14 text-center" style="display: none;">
       <div class="w-16 h-16 rounded-2xl bg-base-200 mx-auto flex items-center justify-center text-base-content/40 mb-4">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
       </div>

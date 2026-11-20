@@ -4602,8 +4602,8 @@ def get_curriculum_drawing(prompt: str) -> Optional[Dict[str, Any]]:
     ):
         return BLUEPRINTS['co2_photosynthesis_experiment']
 
-    # C. Open stomatal pore / Guard cells
-    if {'stomata', 'stomatal', 'stoma'}.intersection(words) or ('guard' in words and {'cell', 'cells', 'pore'}.intersection(words)):
+    # C. Open stomatal pore / Guard cells / Xylem & Phloem plant transport
+    if {'stomata', 'stomatal', 'stoma', 'xylem', 'phloem', 'transpiration', 'translocation'}.intersection(words) or ('guard' in words and {'cell', 'cells', 'pore'}.intersection(words)):
         return BLUEPRINTS['open_stomatal_pore']
 
     # D. Double circulation in humans
@@ -4615,12 +4615,12 @@ def get_curriculum_drawing(prompt: str) -> Optional[Dict[str, Any]]:
         return BLUEPRINTS['nephron']
 
     # F. Human excretory system (vs single kidney cross-section)
-    if 'excretory' in words or 'ureter' in words or 'ureters' in words or 'urethra' in words or ('urinary' in words and 'bladder' in words):
+    if {'excretory', 'excretion', 'ureter', 'ureters', 'urethra'}.intersection(words) or ('urinary' in words and 'bladder' in words):
         return BLUEPRINTS['human_excretory_system']
 
     # Specific Organ & Biological Subsystem Matchers (Prioritized before general anatomy)
-    # 1. Heart Anatomy
-    if {'heart', 'cardiac', 'cardio', 'cardiovascular'}.intersection(words):
+    # 1. Heart Anatomy & Transportation
+    if {'heart', 'cardiac', 'cardio', 'cardiovascular', 'haemoglobin', 'hemoglobin', 'circulation', 'blood', 'artery', 'arteries', 'vein', 'veins', 'aorta', 'ventricle', 'atrium', 'transportation'}.intersection(words):
         return BLUEPRINTS['heart_anatomy']
 
     # 2. Brain Anatomy
@@ -4636,16 +4636,20 @@ def get_curriculum_drawing(prompt: str) -> Optional[Dict[str, Any]]:
         return BLUEPRINTS['neuron']
 
     # 5. Respiratory System / Lungs
-    if {'respiratory', 'respiration', 'lungs', 'lung', 'trachea', 'bronchi', 'alveoli', 'breathing'}.intersection(words):
+    if {'respiratory', 'respiration', 'lungs', 'lung', 'trachea', 'bronchi', 'alveoli', 'breathing', 'aerobic', 'anaerobic'}.intersection(words):
         return BLUEPRINTS['respiratory_system']
 
-    # 6. Digestive System / Stomach
-    if {'digestive', 'digestion', 'alimentary', 'stomach', 'intestine', 'intestines', 'colon'}.intersection(words):
+    # 6. Digestive System / Stomach / Nutrition in Human Beings
+    if {'digestive', 'digestion', 'alimentary', 'stomach', 'intestine', 'intestines', 'colon', 'saliva', 'amylase', 'bile', 'fats', 'fat', 'villi', 'peristalsis', 'nutrition', 'oesophagus', 'esophagus', 'pancreas', 'liver'}.intersection(words):
         return BLUEPRINTS['digestive_system']
 
     # 7. Kidney Anatomy (Single Kidney Cross-section)
     if {'kidney', 'kidneys', 'renal'}.intersection(words):
         return BLUEPRINTS['kidney_anatomy']
+
+    # 7b. Chapter 5: Life Processes / Biology Default Diagram (Human Heart & Double Circulation)
+    if {'life', 'processes', 'biology'}.intersection(words) or ('chapter' in words and '5' in words):
+        return BLUEPRINTS['heart_anatomy']
 
     # 8. Human Anatomy / Body Silhouette (General)
     if {'anatomy', 'organs', 'skeleton'}.intersection(words) or ('human' in words and {'body', 'system', 'silhouette'}.intersection(words)):
@@ -4667,12 +4671,12 @@ def get_curriculum_drawing(prompt: str) -> Optional[Dict[str, Any]]:
     if {'flower', 'flowers', 'pistil', 'stamen', 'petal', 'petals', 'angiosperm', 'carpel', 'hibiscus'}.intersection(words):
         return BLUEPRINTS['flower_anatomy']
 
-    # 13. Photosynthesis
-    if {'photosynthesis', 'chlorophyll'}.intersection(words):
+    # 13. Photosynthesis / Autotrophic Nutrition
+    if {'photosynthesis', 'chlorophyll', 'autotrophic', 'autotroph'}.intersection(words):
         return BLUEPRINTS['photosynthesis']
 
-    # 14. Animal Cell
-    if ('animal' in words and 'cell' in words) or 'animal_cell' in clean_slug:
+    # 14. Animal Cell / Mitochondria
+    if ('animal' in words and 'cell' in words) or {'mitochondria', 'mitochondrion', 'pyruvate', 'cytoplasm'}.intersection(words) or 'animal_cell' in clean_slug:
         return BLUEPRINTS['animal_cell']
 
     # 15. Plant Cell

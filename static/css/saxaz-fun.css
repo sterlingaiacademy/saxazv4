@@ -1,0 +1,179 @@
+/* ==========================================================================
+   SAXAZ STRICT PALETTE SKIN (Solid Yellow #f7b317, Black #231f20, White #ffffff)
+   Zero CSS Gradients — Green (#16a34a) & Red (#dc2626) reserved ONLY for Right/Wrong
+   ========================================================================== */
+
+:root {
+  --sx-gold: #f7b317;
+  --sx-gold-deep: #231f20;
+  --sx-ink: #231f20;
+  --sx-muted: #231f20;
+  --sx-cream: #ffffff;
+  --sx-cream-2: #f5f5f5;
+  --sx-soft-shadow: 0 12px 28px -14px rgba(35, 31, 32, 0.12);
+  --sx-pop: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+::selection { background: #f7b317; color: #231f20; }
+
+* { scrollbar-width: thin; scrollbar-color: #231f20 transparent; }
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: #231f20; border-radius: 999px; border: 2px solid transparent; background-clip: content-box; }
+
+:focus-visible { outline: 3px solid #f7b317 !important; outline-offset: 2px; }
+
+[data-theme="light"] body,
+[data-theme="light"] .page-module__oxIOsa__page,
+[data-theme="light"] main {
+  background: #ffffff !important;
+}
+[data-theme="dark"] main {
+  background: #151515 !important;
+}
+
+/* Sidebar */
+[data-theme="light"] .global-sidebar {
+  background-color: #ffffff !important;
+  color: #231f20 !important;
+  border-right: 1px solid rgba(35, 31, 32, 0.1) !important;
+}
+[data-theme="light"] .global-sidebar .menu li > a { color: #231f20 !important; }
+[data-theme="light"] .global-sidebar .menu li > a:hover { background-color: rgba(247, 179, 23, 0.18) !important; color: #231f20 !important; }
+[data-theme="light"] .global-sidebar .menu li > a.bg-primary {
+  background: #f7b317 !important;
+  color: #231f20 !important;
+  box-shadow: none !important;
+}
+[data-theme="light"] .global-sidebar a[href="/logout"] { color: #231f20 !important; border-color: rgba(35, 31, 32, 0.16) !important; }
+[data-theme="light"] .global-sidebar a[href="/logout"]:hover { background-color: #231f20 !important; color: #ffffff !important; border-color: #231f20 !important; }
+
+/* Hero & Quote Panels — Solid Yellow (#f7b317) Only */
+.page-module__oxIOsa__heroSection {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 0 !important;
+  border-radius: 0 0 44px 44px;
+  background: #f7b317 !important;
+}
+.page-module__oxIOsa__heroInner { position: relative; z-index: 2; }
+.page-module__oxIOsa__heroSection::before,
+.page-module__oxIOsa__heroSection::after { display: none !important; }
+
+.sx-wave { display: inline-block; transform-origin: 70% 85%; animation: sxWave 2.6s ease-in-out infinite; }
+.sx-ico { flex: none; display: inline-block; }
+.sx-ico-inline { vertical-align: -0.2em; margin-right: 0.4em; }
+@keyframes sxWave {
+  0%, 60%, 100% { transform: rotate(0); }
+  10%, 30% { transform: rotate(16deg); }
+  20%, 40% { transform: rotate(-10deg); }
+  50% { transform: rotate(10deg); }
+}
+
+.sx-surface-card,
+.brilliant-card {
+  border-radius: 26px !important;
+  background: #ffffff !important;
+  border: 1.5px solid rgba(35, 31, 32, 0.12) !important;
+  box-shadow: var(--sx-soft-shadow) !important;
+  transition: transform 0.25s var(--sx-pop), box-shadow 0.25s ease, border-color 0.2s ease !important;
+}
+a.sx-surface-card:hover,
+button.sx-surface-card:hover,
+.sx-surface-card[data-card-href]:hover,
+a.brilliant-card:hover,
+button.brilliant-card:hover,
+.brilliant-card[data-card-href]:hover {
+  transform: translateY(-4px);
+  border-color: #f7b317 !important;
+}
+
+.page-module__oxIOsa__quotePanelInner {
+  border: 2px solid #231f20 !important;
+  border-radius: 32px !important;
+  background: #f7b317 !important;
+}
+
+/* Subject Accordion Rows — Strict Yellow / Black / White */
+.page-module__oxIOsa__subjectAccordionList { display: grid; gap: 14px; }
+details.page-module__oxIOsa__subjectRow {
+  background: #ffffff !important;
+  border: 1.5px solid #231f20 !important;
+  border-radius: 26px !important;
+  overflow: hidden;
+  transition: transform 0.25s var(--sx-pop);
+}
+details.page-module__oxIOsa__subjectRow:nth-child(even) {
+  background: #f7b317 !important;
+}
+details.page-module__oxIOsa__subjectRow:hover { transform: translateY(-3px); }
+details.page-module__oxIOsa__subjectRow > summary,
+details.page-module__oxIOsa__subjectRow .page-module__oxIOsa__subjectSummary {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+details.page-module__oxIOsa__subjectRow .page-module__oxIOsa__subjectIconBubble {
+  background: #231f20 !important;
+  border: 2px solid #231f20 !important;
+  color: #f7b317 !important;
+}
+details.page-module__oxIOsa__subjectRow .page-module__oxIOsa__subjectIcon { color: #f7b317 !important; }
+details.page-module__oxIOsa__subjectRow .page-module__oxIOsa__subjectTitle { color: #231f20 !important; }
+details.page-module__oxIOsa__subjectRow .page-module__oxIOsa__subjectChevronCircle { background: #ffffff !important; border: 1.5px solid #231f20 !important; }
+details.page-module__oxIOsa__subjectRow .page-module__oxIOsa__subjectChevron { color: #231f20 !important; transition: transform 0.3s var(--sx-pop); }
+details.page-module__oxIOsa__subjectRow[open] .page-module__oxIOsa__subjectChevron { transform: rotate(180deg); }
+details.page-module__oxIOsa__subjectRow .page-module__oxIOsa__subjectBody {
+  background: #ffffff !important;
+  border-top: 1.5px solid rgba(35, 31, 32, 0.12) !important;
+  margin: 0 10px 10px;
+  border-radius: 20px;
+}
+details.page-module__oxIOsa__subjectRow .page-module__oxIOsa__subjectBodyLink { color: #231f20 !important; }
+
+/* Exams Hub Subject Banners — Solid Yellow / Black */
+.sx-subj-head {
+  position: relative;
+  overflow: hidden;
+  background: #f7b317 !important;
+  color: #231f20 !important;
+}
+.sx-subj-pill { background: #231f20 !important; color: #f7b317 !important; }
+.sx-subj:hover { border-color: #f7b317 !important; }
+
+.btn-primary,
+.page-module__oxIOsa__heroQuizButton {
+  border-radius: 999px !important;
+  background: #f7b317 !important;
+  color: #231f20 !important;
+  transition: transform 0.2s var(--sx-pop) !important;
+}
+.btn-primary:hover, .page-module__oxIOsa__heroQuizButton:hover { transform: translateY(-2px) scale(1.03); }
+
+@media (max-width: 900px) {
+  .saxaz-mobile-dock {
+    left: 14px !important; right: 14px !important;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+    border: 1.5px solid #231f20 !important;
+    border-radius: 999px !important;
+    padding: 6px !important;
+    background: #ffffff !important;
+  }
+  .saxaz-mobile-dock a { color: #231f20 !important; border-radius: 999px !important; font-size: 0.6rem !important; padding: 0.4rem 0.1rem !important; }
+  .saxaz-mobile-dock a.is-active { background: #f7b317 !important; color: #231f20 !important; transform: translateY(-3px); }
+}
+
+.sx-marquee { overflow: hidden; padding: 18px 0; }
+.sx-marquee-track { display: flex; gap: 14px; width: max-content; animation: sxMarquee 38s linear infinite; }
+.sx-marquee:hover .sx-marquee-track { animation-play-state: paused; }
+@keyframes sxMarquee { to { transform: translateX(-50%); } }
+.sx-chip-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 18px; border-radius: 999px; font-weight: 800; font-size: 0.95rem; white-space: nowrap;
+  background: #ffffff; color: #231f20; border: 1.5px solid #231f20;
+}
+.sx-chip-pill i { width: 10px; height: 10px; border-radius: 50%; background: #f7b317; display: inline-block; }
+.sx-confetti-bit { position: fixed; z-index: 99999; pointer-events: none; border-radius: 3px; will-change: transform, opacity; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}

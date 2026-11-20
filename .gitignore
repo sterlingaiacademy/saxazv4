@@ -56,3 +56,4 @@ publish.py
 map_images.py
 build_chemistry.py
 static/img/test_*
+.vercel

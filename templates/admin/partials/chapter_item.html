@@ -1,9 +1,15 @@
-<div class="flex flex-wrap items-center justify-between gap-3 bg-base-100 p-3.5 rounded-xl border-2 border-base-200 text-sm group/chap hover:border-primary/40 shadow-2xs transition-all" id="chapter-{{ ch.id }}" x-data="{ editingName: false, editingDesc: false }">
+<div data-card-href="/admin/curriculum/chapters/{{ ch.id }}"
+     role="link"
+     tabindex="0"
+     :style="(editingName || editingDesc) ? 'transform:none' : ''"
+     class="flex flex-wrap items-center justify-between gap-3 bg-base-100 p-3.5 rounded-xl border-2 border-base-200 text-sm group/chap hover:border-primary/40 shadow-2xs transition-all cursor-pointer"
+     id="chapter-{{ ch.id }}"
+     x-data="{ editingName: false, editingDesc: false }">
   <div class="flex items-center gap-3 min-w-0 flex-1">
     <div class="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-600 border border-emerald-500/25 flex items-center justify-center shrink-0">
       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
     </div>
-    <form enctype="multipart/form-data" class="relative group/thumb shrink-0" @click.stop>
+    <form enctype="multipart/form-data" data-no-card-nav class="relative group/thumb shrink-0" @click.stop>
       <input type="file" name="thumbnail" accept="image/*" class="hidden" x-ref="thumbInput"
              hx-post="/admin/curriculum/chapters/{{ ch.id }}/thumbnail" 
              hx-target="#chapter-{{ ch.id }}" 
@@ -25,27 +31,27 @@
       {% endif %}
     </form>
     <div class="flex flex-col min-w-0 flex-1">
-      <div class="flex items-center gap-2 flex-wrap">
-        <span x-show="!editingName" class="text-base-content font-black">{{ ch.name }}</span>
-        <button type="button" x-show="!editingName" @click.stop="editingName = true" class="btn btn-xs btn-ghost btn-circle text-base-content/55 hover:text-emerald-600" title="Rename Chapter">
+      <div class="flex items-center gap-2 flex-wrap min-w-0">
+        <span x-show="!editingName" class="text-base-content font-black group-hover/chap:text-emerald-700 transition-colors break-words">{{ ch.name }}</span>
+        <button type="button" x-show="!editingName" @click.stop="editingName = true" class="btn btn-xs btn-ghost btn-circle h-7 w-7 min-h-0 text-base-content/55 hover:text-emerald-600" title="Rename Chapter">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
         </button>
-        <form x-show="editingName" @click.stop hx-post="/admin/curriculum/chapters/{{ ch.id }}/rename" hx-target="#chapter-{{ ch.id }}" hx-swap="outerHTML" class="flex flex-wrap gap-2 items-center">
-          <input type="text" name="name" value="{{ ch.name }}" class="input input-sm input-bordered bg-base-100 text-base-content font-bold" required>
+        <form x-show="editingName" data-no-card-nav @click.stop hx-post="/admin/curriculum/chapters/{{ ch.id }}/rename" hx-target="#chapter-{{ ch.id }}" hx-swap="outerHTML" class="flex flex-wrap gap-2 items-center w-full min-w-0">
+          <input type="text" name="name" value="{{ ch.name }}" class="input input-sm input-bordered bg-base-100 text-base-content font-bold min-w-0 flex-1 max-w-full" required>
           <button type="submit" class="btn btn-sm btn-primary text-slate-900 font-black">Save</button>
           <button type="button" @click="editingName = false" class="btn btn-sm btn-ghost">Cancel</button>
         </form>
       </div>
       <!-- Chapter Description row -->
-      <div class="flex items-center gap-1.5 mt-0.5">
-        <span x-show="!editingDesc" class="text-[11px] font-medium text-base-content/55">
+      <div class="flex items-center gap-1.5 mt-0.5 min-w-0">
+        <span x-show="!editingDesc" class="text-[11px] font-medium text-base-content/55 break-words min-w-0">
           {% if ch.description %}{{ ch.description[:60] }}{% if ch.description|length > 60 %}...{% endif %}{% else %}<em class="text-base-content/35">No description</em>{% endif %}
         </span>
-        <button type="button" x-show="!editingDesc" @click.stop="editingDesc = true" class="btn btn-xs btn-ghost btn-circle h-5 w-5 min-h-0 text-base-content/40 hover:text-emerald-600" title="Edit Chapter Description">
+        <button type="button" x-show="!editingDesc" @click.stop="editingDesc = true" class="btn btn-xs btn-ghost btn-circle h-7 w-7 min-h-0 text-base-content/40 hover:text-emerald-600 shrink-0" title="Edit Chapter Description">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
         </button>
-        <form x-show="editingDesc" @click.stop hx-post="/admin/curriculum/chapters/{{ ch.id }}/description" hx-target="#chapter-{{ ch.id }}" hx-swap="outerHTML" class="flex gap-2 items-start w-full max-w-xs mt-1">
-          <textarea name="description" class="textarea textarea-xs textarea-bordered bg-base-100 text-base-content resize-none h-12 flex-1" placeholder="Chapter description (optional)">{{ ch.description or '' }}</textarea>
+        <form x-show="editingDesc" data-no-card-nav @click.stop hx-post="/admin/curriculum/chapters/{{ ch.id }}/description" hx-target="#chapter-{{ ch.id }}" hx-swap="outerHTML" class="flex gap-2 items-start w-full max-w-xs min-w-0 mt-1">
+          <textarea name="description" class="textarea textarea-xs textarea-bordered bg-base-100 text-base-content resize-none h-12 flex-1 min-w-0" placeholder="Chapter description (optional)">{{ ch.description or '' }}</textarea>
           <div class="flex flex-col gap-1">
             <button type="submit" class="btn btn-xs btn-primary text-slate-900 font-black">Save</button>
             <button type="button" @click="editingDesc = false" class="btn btn-xs btn-ghost btn-circle" title="Cancel">
@@ -57,9 +63,9 @@
     </div>
   </div>
 
-  <div class="flex items-center gap-2.5">
+  <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
     <!-- Draft / Published Toggle -->
-    <label class="cursor-pointer flex items-center gap-2 bg-base-200 px-2.5 py-1 rounded-lg border border-base-300">
+    <label class="cursor-pointer flex items-center gap-2 bg-base-200 px-2.5 py-1.5 min-h-[36px] rounded-lg border border-base-300">
       <span class="text-[10px] uppercase tracking-wider font-black {{ 'text-emerald-600' if ch.status == 'published' else 'text-base-content/40' }}">
         {{ ch.status }}
       </span> 
@@ -71,14 +77,14 @@
           hx-swap="outerHTML" />
     </label>
     
-    <a href="/admin/curriculum/chapters/{{ ch.id }}" class="btn btn-xs btn-primary text-slate-900 font-black rounded-lg h-8 min-h-0 px-3 tactile-btn border border-amber-600/30">
+    <a href="/admin/curriculum/chapters/{{ ch.id }}" class="btn btn-xs btn-primary text-slate-900 font-black rounded-lg h-9 min-h-0 px-3 tactile-btn border border-amber-600/30">
       Edit Studio →
     </a>
     <button type="button"
         hx-delete="/admin/curriculum/chapters/{{ ch.id }}" 
         hx-target="#chapter-{{ ch.id }}" 
         hx-swap="outerHTML" 
-        class="btn btn-xs bg-error/10 text-error hover:bg-error hover:text-white border-none h-8 min-h-0 rounded-lg font-bold px-2.5"
+        class="btn btn-xs bg-error/10 text-error hover:bg-error hover:text-white border-none h-9 min-h-0 rounded-lg font-bold px-2.5"
         hx-confirm="Delete this chapter and all its contents?">
       Delete
     </button>

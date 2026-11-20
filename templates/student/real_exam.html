@@ -1,200 +1,837 @@
 {% extends "base.html" %}
 
-{% block title %}Real Exam - {{ paper.title }}{% endblock %}
+{% block title %}Real Exam - {{ paper.title }} | SAXAZ{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto space-y-8 pb-32 pt-8 relative" x-data="realExamApp()">
-  
-  <!-- Top Bar: Timer, XP, Store -->
-  <div class="sticky top-2 sm:top-4 z-50 bg-base-100/95 backdrop-blur-xl border border-error/20 rounded-2xl p-2.5 sm:p-4 shadow-[0_4px_30px_rgba(248,113,113,0.15)] flex justify-between items-center gap-2 sm:gap-4">
-    <!-- Timer -->
-    <div class="flex items-center gap-2.5 sm:gap-4 shrink-0">
-      <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-error/20 flex items-center justify-center text-error shadow-[0_0_15px_rgba(248,113,113,0.3)]">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+<style>
+  #scratchpad-dock-wrap,
+  #math-tools-dock-wrap {
+    display: none !important;
+  }
+  .sx-real-hub .sx-exam-qnum {
+    background: #ffffff;
+    color: #231f20;
+    border: 1.5px solid rgba(35, 31, 32, 0.22);
+  }
+  .sx-real-hub .sx-exam-qnum:hover {
+    border-color: #231f20;
+  }
+  .sx-real-hub .sx-exam-qnum.is-answered {
+    background: #231f20 !important;
+    color: #ffffff !important;
+    border-color: #231f20 !important;
+  }
+  .sx-real-hub .sx-exam-qnum.is-current {
+    background: #f7b317 !important;
+    color: #231f20 !important;
+    border: 2px solid #231f20 !important;
+    font-weight: 900;
+  }
+  @media (max-width: 767px) {
+    .real-exam-footer-nav {
+      display: grid !important;
+      grid-template-columns: 1fr 1.45fr;
+      gap: 0.6rem !important;
+      width: 100%;
+    }
+    .real-exam-footer-nav > button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
+
+<div class="w-full max-w-4xl mx-auto px-3 sm:px-6 pb-24 pt-2 sm:pt-3 space-y-3.5 relative" x-data="realExamApp()" x-cloak>
+
+  <!-- 1. Dark Back & Proctoring Bar -->
+  <div class="sx-ext-back-bar">
+    <a href="/student/chapters/{{ paper.chapter_id }}"
+       data-confirm="Leave this proctored Real Exam? Your countdown timer continues running, though your answers are saved on this device."
+       data-confirm-title="Leave Real Exam?"
+       data-confirm-btn="Leave Exam"
+       class="sx-ext-back-link">
+      <span class="material-symbols-outlined" style="font-size:19px;">arrow_back</span>
+      <span>Back to Chapter</span>
+    </a>
+
+    <div class="flex flex-wrap items-center gap-2">
+      <!-- Proctoring Status Pill -->
+      <div class="px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider flex items-center gap-1.5"
+           :class="warnings === 0 ? 'bg-[#f7b317] text-[#231f20]' : 'bg-[#ffffff] text-[#231f20] animate-pulse'">
+        <span class="material-symbols-outlined" style="font-size:15px;" x-text="warnings === 0 ? 'verified_user' : 'gpp_maybe'"></span>
+        <span x-text="warnings === 0 ? 'Proctored' : ('Warnings: ' + warnings + '/3')"></span>
       </div>
-      <div>
-        <div class="text-[9px] sm:text-[10px] font-bold text-error uppercase tracking-widest leading-none mb-0.5">Time Left</div>
-        <div class="text-xl sm:text-3xl font-bold text-base-content font-mono leading-tight" :class="{'text-error animate-pulse': timeLeft <= 60}" x-text="formatTime(timeLeft)"></div>
+
+      <!-- Countdown Timer Pill -->
+      <div class="px-3.5 py-1 rounded-full flex items-center gap-1.5"
+           :class="timeLeft <= 120 ? 'bg-[#f7b317] text-[#231f20] animate-pulse' : 'bg-[#ffffff] text-[#231f20]'">
+        <span class="material-symbols-outlined" style="font-size:16px;">timer</span>
+        <span class="font-mono font-black text-sm" x-text="formatTime(timeLeft)"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Unified Top Exam Hub Card (Matching exam_take.html) -->
+  <div class="sx-exam-hub sx-real-hub">
+    <div class="sx-exam-hub-top">
+      <div class="sx-exam-hub-title-group">
+        <h1 class="sx-exam-hub-title">{{ paper.title }}</h1>
+        <span class="sx-exam-hub-count" x-text="answeredCount + '/' + flatQuestions.length + ' Saved'"></span>
+        <span style="font-size:0.76rem;font-weight:800;color:#231f20;padding:2px 9px;border-radius:999px;background:#ffffff;border:1px solid rgba(35,31,32,0.2);"
+              x-text="totalMaxMarks + ' Marks'"></span>
+      </div>
+
+      <div class="sx-exam-hub-actions">
+        <button type="button"
+                @click="goToFinalPage()"
+                class="sx-exam-finish-btn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4.5 4.5L19 7"/></svg>
+          <span>Review &amp; Submit</span>
+        </button>
       </div>
     </div>
 
-    <!-- Zero Tolerance Warning -->
-    <div class="hidden md:flex items-center gap-2 bg-error/15 text-error px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-error/30 font-bold text-xs sm:text-sm shadow-sm">
-      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-error shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <span>Anti-Cheat: Zero Tolerance</span>
+    <!-- Thin Yellow Progress Line -->
+    <div class="sx-exam-hub-progress">
+      <div class="sx-exam-hub-progress-bar" :style="'width: ' + Math.round((answeredCount / Math.max(1, flatQuestions.length)) * 100) + '%;'"></div>
     </div>
 
-    <!-- XP & Store -->
-    <div class="flex items-center gap-2 sm:gap-4 shrink-0">
-      <div class="flex flex-col items-end">
-        <div class="text-[9px] sm:text-[10px] font-bold text-warning uppercase tracking-widest leading-none mb-0.5">XP</div>
-        <div class="text-sm sm:text-xl font-bold text-warning leading-tight">{{ current_xp }}</div>
-      </div>
-      <button @click="buyTime()" 
-          class="btn btn-warning btn-xs sm:btn-sm rounded-xl font-bold shadow-[0_0_15px_rgba(251,191,36,0.3)] hover:shadow-[0_0_25px_rgba(251,191,36,0.5)]"
-          :disabled="hasPurchased || currentXp < 10 || isPurchasing"
-          :class="{'opacity-50 cursor-not-allowed': hasPurchased || currentXp < 10}">
-        <span x-show="!isPurchasing">
-          <span x-show="!hasPurchased"><span class="sm:hidden">+5m</span><span class="hidden sm:inline">Buy +5 Mins (10 XP)</span></span>
-          <span x-show="hasPurchased"><span class="sm:hidden">Bought</span><span class="hidden sm:inline">Time Purchased</span></span>
-        </span>
-        <span x-show="isPurchasing" class="loading loading-spinner loading-xs"></span>
+    <!-- Single Clean Question Numbers Strip (1..12 + Finish) -->
+    <div class="sx-exam-hub-qrow no-scrollbar" x-ref="realQstrip">
+      <template x-for="(item, idx) in flatQuestions" :key="item.q.id">
+        <button type="button"
+                :id="'real-q-ball-' + idx"
+                @click="goToQuestion(idx)"
+                :title="'Question ' + (idx + 1) + ' (' + item.maxMarks + (item.maxMarks === 1 ? ' Mark)' : ' Marks)')"
+                class="sx-exam-qnum"
+                :class="{
+                  'is-current': !isFinalPage && currentIdx === idx,
+                  'is-answered': (isFinalPage || currentIdx !== idx) && isQuestionAnswered(item.q.id)
+                }"
+                x-text="idx + 1">
+        </button>
+      </template>
+
+      <button type="button"
+              id="real-q-ball-final"
+              @click="goToFinalPage()"
+              class="px-3 h-8 rounded-full flex items-center justify-center gap-1 font-extrabold text-xs transition-all cursor-pointer shrink-0"
+              :class="isFinalPage ? 'bg-[#f7b317] text-[#231f20] border-2 border-[#231f20]' : 'bg-[#231f20] text-[#f7b317] border border-[#231f20]'">
+        <span>Finish</span>
       </button>
     </div>
   </div>
 
-  <!-- Main Form -->
-  <form id="examForm" method="POST" action="/student/real-exams/attempts/{{ attempt.id }}/submit" @submit.prevent="submitExam()" class="space-y-12">
+  <!-- Tab Warning Banner (if student switched tabs 1..3 times) -->
+  <div x-show="warnings > 0" x-cloak
+       class="p-3.5 rounded-2xl bg-[#231f20] border-2 border-[#f7b317] text-[#ffffff] flex items-center justify-between gap-3">
+    <div class="flex items-center gap-2.5">
+      <span class="material-symbols-outlined text-[#f7b317]">warning</span>
+      <div class="text-xs sm:text-sm font-extrabold">
+        Proctoring Warning (<span class="text-[#f7b317]" x-text="warnings"></span>/3): Stay on this exam tab. Exceeding 3 tab switches will close and void your exam attempt!
+      </div>
+    </div>
+  </div>
+
+  <!-- Official Submission Form (Holds all question & drawing inputs) -->
+  <form id="examForm" method="POST" action="/student/real-exams/attempts/{{ attempt.id }}/submit" @submit.prevent="submitExam()">
     <input type="hidden" name="tab_switch_count" :value="warnings">
     <input type="hidden" name="cheated_questions" :value="JSON.stringify(cheatedQuestions)">
-    
-    <div class="text-center space-y-2 py-4">
-      <h1 class="text-3xl font-bold text-base-content">{{ paper.title }}</h1>
-      <p class="text-base-content/50">Total Questions: {{ total_questions }} | Anti-Cheat is Active.</p>
-    </div>
+    <input type="hidden" name="time_taken_seconds" :value="Math.max(1, initialTotalSeconds - timeLeft)">
+    <template x-for="item in flatQuestions" :key="'hidden_' + item.q.id">
+      <div>
+        <input type="hidden" :name="'q_' + item.q.id" :value="answers[item.q.id] || ''">
+        <input type="hidden" :name="'drawing_' + item.q.id" :value="attachedDrawings[item.q.id] || ''">
+      </div>
+    </template>
 
-    <!-- Modules and Questions -->
-    {% for module in paper.modules %}
-      <div class="bg-base-100 rounded-3xl border border-base-300 shadow-sm p-6 md:p-8 space-y-8">
-        <div class="border-b border-base-200 pb-4">
-          <h2 class="text-2xl font-bold text-base-content">{{ module.name }}</h2>
-          <p class="text-primary text-sm font-bold uppercase tracking-wider mt-1">{{ module.mark_value }} Marks per Question</p>
-        </div>
-        
-        {% for q in module.questions %}
-          <div class="space-y-4 question-container transition-all duration-500 rounded-2xl p-4 border border-transparent" 
-             :class="{'opacity-60 scale-[0.98]': activeQuestion && activeQuestion !== {{ q.id }}, 'bg-base-200 shadow-[0_0_40px_rgba(var(--fallback-p, 87, 13, 248), 0.15)] border-primary/20 scale-100 z-10 relative': activeQuestion === {{ q.id }}}"
-             data-id="{{ q.id }}" @click="activeQuestion = {{ q.id }}">
-            <div class="flex gap-4 items-start">
-              <div class="w-8 h-8 rounded-full bg-base-content/10 flex items-center justify-center font-bold text-base-content/50 shrink-0 mt-1">
-                {{ loop.index }}
-              </div>
-              <div class="flex-1">
-                <h3 class="text-lg text-base-content font-medium whitespace-pre-wrap">{{ q.question_text }}</h3>
-                {% if q.media_url %}
-                <div class="mt-4 rounded-2xl overflow-hidden border border-base-content/10 bg-base-100 p-2 text-center">
-                  <img src="{{ q.media_url }}" class="max-h-64 mx-auto object-contain rounded-xl" alt="Question Image">
-                </div>
-                {% endif %}
-                {% set q_type = q.question_type or module.question_type or 'LONG_ANSWER' %}
-                <div class="mt-4">
-                  {% if q_type in ['MCQ', 'ASSERTION_REASON'] and q.options %}
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10 p-2">
-                      {% set parsed_opts = q.options | parse_json %}
-                      {% set letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] %}
-                      {% for opt in parsed_opts %}
-                      <label class="flex items-center gap-4 p-4 rounded-xl border border-base-content/10 bg-base-200 cursor-pointer hover:bg-base-300 hover:border-primary/50 transition-all group/opt">
-                        <input type="radio" name="q_{{ q.id }}" value="{{ letters[loop.index0] }}. {{ opt }}" @focus="activeQuestion = {{ q.id }}" class="radio radio-primary radio-sm shadow-inner">
-                        <span class="text-lg font-medium text-base-content leading-relaxed">{{ letters[loop.index0] }}. {{ opt }}</span>
-                      </label>
-                      {% endfor %}
-                    </div>
-                  {% else %}
-                    <textarea name="q_{{ q.id }}" 
-                         @focus="activeQuestion = {{ q.id }}"
-                         class="textarea w-full bg-base-100/50 border-base-300 focus:border-primary text-base-content resize-y min-h-[120px] rounded-xl text-lg transition-colors focus:ring-2 focus:ring-primary/20" 
-                         placeholder="Type your answer here..."></textarea>
-                    
-                    <!-- Hidden Drawing Input -->
-                    <input type="hidden" :name="'drawing_' + {{ q.id }}" :value="attachedDrawings[{{ q.id }}] || ''">
+    <!-- Hidden File Input for Upload Notebook Photo -->
+    <input type="file" accept="image/*" capture="environment" class="hidden" x-ref="realPhotoInput" @change="handlePhotoUpload($event)">
 
-                    <!-- Answer Attachment Helper: Open Scratchpad -->
-                    <div class="flex items-center justify-between gap-3 flex-wrap relative z-10 px-1 pt-1.5">
-                      <button type="button" 
-                              @click="activeQuestion = {{ q.id }}; document.getElementById('scratchpad-dock-btn')?.click()"
-                              class="btn btn-xs rounded-xl font-bold bg-base-200 hover:bg-base-300 text-base-content border border-base-content/15 flex items-center gap-1.5 shadow-2xs cursor-pointer">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                        <span>Open Scratchpad for Q{{ loop.index }}</span>
-                      </button>
-                      <span class="text-[11px] text-base-content/50 font-medium hidden sm:inline">Use scratchpad to sketch diagrams, formulas, or calculations</span>
-                    </div>
+    <!-- SINGLE QUESTION FOCUS CARD -->
+    <div x-show="!isFinalPage" class="relative">
+      <template x-if="currentItem">
+        <div class="bg-[#ffffff] rounded-[22px] border border-[#231f20]/20 p-4 sm:p-7 relative">
 
-                    <!-- Attached Scratchpad Drawing Preview -->
-                    <template x-if="attachedDrawings[{{ q.id }}]">
-                      <div class="mt-3 p-3.5 bg-base-200/90 rounded-2xl border border-primary/30 flex items-center justify-between gap-4 shadow-sm relative z-10 transition-all">
-                        <div class="flex items-center gap-3.5">
-                          <div class="w-16 h-14 rounded-xl overflow-hidden border border-base-content/15 bg-white shadow-xs shrink-0 flex items-center justify-center p-1">
-                            <img :src="attachedDrawings[{{ q.id }}]" alt="Attached Drawing" class="max-h-full max-w-full object-contain">
-                          </div>
-                          <div>
-                            <div class="flex items-center gap-2">
-                              <span class="badge badge-sm badge-primary font-bold">Attached Drawing</span>
-                              <span class="text-[11px] text-base-content/60 font-mono">Scratchpad Sketch</span>
-                            </div>
-                            <p class="text-xs text-base-content/75 font-medium mt-1 leading-snug">Your handwritten work/diagram will be evaluated by the AI along with your text.</p>
-                          </div>
-                        </div>
-                        <button type="button" 
-                                @click="delete attachedDrawings[{{ q.id }}]; attachedDrawings = Object.assign({}, attachedDrawings)" 
-                                class="btn btn-sm btn-ghost btn-circle text-error/70 hover:text-error hover:bg-error/10 shrink-0" 
-                                title="Remove attached drawing">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                        </button>
-                      </div>
-                    </template>
-                  {% endif %}
-                </div>
-                <div x-show="cheatedQuestions.includes({{ q.id }})" style="display: none;" class="mt-2 text-error text-sm font-bold flex items-center gap-1.5">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-error shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                  Violation recorded for this question. Zero marks will be awarded.
-                </div>
-              </div>
+          <!-- Question Meta Row -->
+          <div class="flex flex-wrap items-center justify-between gap-2.5 mb-4">
+            <div class="flex items-center gap-2.5 flex-wrap">
+              <div class="min-w-9 h-9 sm:min-w-10 sm:h-10 px-2 rounded-xl bg-[#231f20] text-[#f7b317] font-black text-sm flex items-center justify-center" x-text="currentIdx + 1"></div>
+              <span class="text-xs font-extrabold uppercase tracking-wider text-[#231f20]/65" x-text="'Question ' + (currentIdx + 1) + ' of ' + flatQuestions.length"></span>
+              <span class="px-3 py-1 rounded-xl bg-[#ffffff] border border-[#231f20]/25 text-xs font-extrabold text-[#231f20]" x-text="currentItem.maxMarks + (currentItem.maxMarks === 1 ? ' Mark' : ' Marks')"></span>
+              <span x-show="isQuestionAnswered(currentItem.q.id)" class="px-2.5 py-0.5 rounded-full bg-[#f7b317] text-[#231f20] border border-[#231f20] text-[11px] font-black">
+                Saved
+              </span>
+            </div>
+
+            <!-- Listen / Stop Toggle -->
+            <div class="flex items-center gap-2">
+              <button x-show="!isSpeaking"
+                      type="button"
+                      @click="speakQuestion(currentItem.q.question_text)"
+                      class="px-3 py-1.5 min-h-[34px] rounded-xl bg-[#ffffff] hover:bg-[#f7b317] text-[#231f20] border border-[#231f20]/25 hover:border-[#231f20] text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer"
+                      title="Read question aloud">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clip-rule="evenodd" /></svg>
+                <span>Listen</span>
+              </button>
+              <button x-show="isSpeaking" x-cloak
+                      type="button"
+                      @click="stopQuestionSpeech()"
+                      class="px-3 py-1.5 min-h-[34px] rounded-xl bg-[#231f20] text-[#f7b317] border border-[#231f20] text-xs font-extrabold flex items-center gap-1.5 cursor-pointer"
+                      title="Stop reading aloud">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+                <span>Stop</span>
+              </button>
             </div>
           </div>
-          {% if not loop.last %}<hr class="border-base-content/5">{% endif %}
-        {% endfor %}
-      </div>
-    {% endfor %}
 
-    <!-- Submit Section -->
-    <div class="flex justify-center pt-8 px-4">
-      <button type="submit" class="btn btn-error btn-md sm:btn-lg rounded-full w-full sm:w-auto px-8 sm:px-16 font-extrabold text-white shadow-[0_0_30px_rgba(248,113,113,0.4)] hover:shadow-[0_0_50px_rgba(248,113,113,0.7)] transition-all">
-        Submit Exam for Grading
-      </button>
+          <!-- Question Text (Clean Assertion / Reason Blocks when applicable) -->
+          <template x-if="currentQuestionParts.isAR">
+            <div class="space-y-2.5 mb-5">
+              <p x-show="currentQuestionParts.intro"
+                 class="text-xs sm:text-sm font-semibold text-[#231f20]/70 leading-relaxed"
+                 x-text="currentQuestionParts.intro"></p>
+              <div class="p-3.5 rounded-2xl bg-[#ffffff] border-2 border-[#231f20]/20 text-sm sm:text-base leading-relaxed text-[#231f20]">
+                <span class="inline-block px-2 py-0.5 rounded-md bg-[#f7b317] text-[#231f20] text-xs font-black uppercase tracking-wider mr-2">Assertion (A)</span>
+                <span class="font-bold" x-text="currentQuestionParts.assertion"></span>
+              </div>
+              <div class="p-3.5 rounded-2xl bg-[#ffffff] border-2 border-[#231f20]/20 text-sm sm:text-base leading-relaxed text-[#231f20]">
+                <span class="inline-block px-2 py-0.5 rounded-md bg-[#231f20] text-[#f7b317] text-xs font-black uppercase tracking-wider mr-2">Reason (R)</span>
+                <span class="font-bold" x-text="currentQuestionParts.reason"></span>
+              </div>
+            </div>
+          </template>
+          <template x-if="!currentQuestionParts.isAR">
+            <h2 class="text-base sm:text-xl font-bold text-[#231f20] leading-relaxed whitespace-pre-line mb-5" x-text="currentItem.q.question_text"></h2>
+          </template>
+
+          <template x-if="currentItem.q.media_url">
+            <div class="mb-4 rounded-2xl overflow-hidden border border-[#231f20]/20 bg-[#ffffff] p-3 text-center">
+              <img :src="currentItem.q.media_url" class="max-h-64 mx-auto object-contain rounded-xl" alt="Question Diagram">
+            </div>
+          </template>
+
+          <!-- MCQ / Assertion-Reason Options (Zero Draw/Symbols Distractions) -->
+          <template x-if="currentItem.isMcq">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 my-4">
+              <template x-for="(optLabel, oIdx) in currentItem.formattedOptions" :key="oIdx">
+                <button type="button"
+                        @click="selectMcqOption(currentItem.q.id, optLabel)"
+                        class="flex items-center gap-3 p-3.5 sm:p-4 rounded-2xl border-2 text-left cursor-pointer transition-all"
+                        :class="answers[currentItem.q.id] === optLabel ? 'border-[#231f20] bg-[#f7b317]/25 text-[#231f20]' : 'border-[#231f20]/20 bg-[#ffffff] hover:border-[#231f20] text-[#231f20]'">
+                  <span class="w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 text-xs font-black"
+                        :class="answers[currentItem.q.id] === optLabel ? 'border-[#231f20] bg-[#231f20] text-[#f7b317]' : 'border-[#231f20]/35 bg-[#ffffff] text-[#231f20]'">
+                    <span x-text="String.fromCharCode(65 + oIdx)"></span>
+                  </span>
+                  <span class="text-sm sm:text-base font-bold text-[#231f20] leading-snug" x-text="optLabel"></span>
+                </button>
+              </template>
+            </div>
+          </template>
+
+          <!-- Written / Diagram Answer Area -->
+          <template x-if="!currentItem.isMcq">
+            <div class="space-y-3 my-3">
+              <!-- Prominent Diagram Action Bar on Diagram Questions (e.g. Q10) -->
+              <template x-if="currentItem.isDiagram">
+                <div class="p-3.5 rounded-2xl bg-[#f7b317]/18 border-2 border-[#231f20] flex flex-wrap items-center justify-between gap-2.5">
+                  <div class="text-xs sm:text-sm font-extrabold text-[#231f20]">
+                    Diagram Question: Draw neatly on the Scratchpad or upload a clear photo of your notebook diagram.
+                  </div>
+                  <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                    <button type="button"
+                            @click="activeQuestion = currentItem.q.id; document.getElementById('scratchpad-dock-btn')?.click()"
+                            class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl text-xs sm:text-sm font-black bg-[#f7b317] text-[#231f20] border-2 border-[#231f20] flex items-center justify-center gap-1.5 cursor-pointer">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                      <span>Draw Labelled Diagram</span>
+                    </button>
+                    <button type="button"
+                            @click="triggerPhotoPicker(currentItem.q.id)"
+                            class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold bg-[#ffffff] hover:bg-[#f7b317] text-[#231f20] border-2 border-[#231f20] flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                      <span>Upload Notebook Photo</span>
+                    </button>
+                  </div>
+                </div>
+              </template>
+
+              <textarea :value="answers[currentItem.q.id] || ''"
+                        @input="setWrittenAnswer(currentItem.q.id, $event.target.value)"
+                        @focus="activeQuestion = currentItem.q.id"
+                        data-no-copypaste="true"
+                        @paste.prevent="window.saxazBlockCopyPaste($event, 'paste')"
+                        @copy.prevent="window.saxazBlockCopyPaste($event, 'copy')"
+                        @cut.prevent="window.saxazBlockCopyPaste($event, 'cut')"
+                        @drop.prevent="window.saxazBlockCopyPaste($event, 'paste')"
+                        rows="5"
+                        class="w-full bg-[#ffffff] border-2 border-[#231f20]/25 focus:border-[#231f20] focus:outline-none text-[#231f20] placeholder-[#231f20]/45 rounded-2xl text-sm sm:text-base font-medium p-4 transition-all"
+                        :placeholder="currentItem.isDiagram ? 'Optional: Add your diagram labels or short notes here...' : 'Type your answer in your own words here...'"></textarea>
+
+              <!-- Subtle Contextual Tools for Non-Diagram Written Questions -->
+              <template x-if="!currentItem.isDiagram">
+                <div class="flex items-center justify-between gap-2 flex-wrap">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <button type="button"
+                            @click="activeQuestion = currentItem.q.id; document.getElementById('scratchpad-dock-btn')?.click()"
+                            class="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#ffffff] hover:bg-[#f7b317] text-[#231f20] border border-[#231f20]/25 hover:border-[#231f20] flex items-center gap-1.5 transition-colors cursor-pointer">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                      <span>Attach Sketch</span>
+                    </button>
+                    <button type="button"
+                            @click="triggerPhotoPicker(currentItem.q.id)"
+                            class="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#ffffff] hover:bg-[#f7b317] text-[#231f20] border border-[#231f20]/25 hover:border-[#231f20] flex items-center gap-1.5 transition-colors cursor-pointer">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                      <span>Upload Notebook Photo</span>
+                    </button>
+                    <button x-show="showMathSymbolsTool"
+                            type="button"
+                            @click="activeQuestion = currentItem.q.id; document.getElementById('math-tools-dock-btn')?.click()"
+                            class="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#ffffff] hover:bg-[#f7b317] text-[#231f20] border border-[#231f20]/25 hover:border-[#231f20] flex items-center gap-1.5 transition-colors cursor-pointer">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                      <span>Math &amp; Symbols</span>
+                    </button>
+                  </div>
+                  <span class="text-[11px] font-semibold text-[#231f20]/55">Auto-saved on this device</span>
+                </div>
+              </template>
+
+              <!-- Attached Drawing / Photo Preview -->
+              <template x-if="attachedDrawings[currentItem.q.id]">
+                <div class="p-3 bg-[#ffffff] rounded-2xl border-2 border-[#231f20] flex items-center justify-between gap-3">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <img :src="attachedDrawings[currentItem.q.id]" class="w-16 h-14 object-contain bg-[#ffffff] rounded-xl border border-[#231f20]/25 p-1 shrink-0" alt="Attached Diagram">
+                    <div class="min-w-0">
+                      <div class="text-xs font-black text-[#231f20]">Diagram / Notebook Photo Attached</div>
+                      <div class="text-[11px] text-[#231f20]/70 font-semibold">Saved automatically and submitted with your answer</div>
+                    </div>
+                  </div>
+                  <button type="button"
+                          @click="removeAttachedDrawing(currentItem.q.id)"
+                          class="px-3 py-1.5 rounded-xl text-xs font-extrabold bg-[#231f20] text-[#ffffff] hover:text-[#f7b317] cursor-pointer shrink-0">
+                    Remove
+                  </button>
+                </div>
+              </template>
+            </div>
+          </template>
+
+          <!-- Navigation Footer inside Question Card -->
+          <div class="real-exam-footer-nav flex flex-wrap items-center justify-between gap-3 pt-4 mt-4 border-t border-[#231f20]/15">
+            <button type="button"
+                    @click="prevQuestion()"
+                    :disabled="currentIdx === 0"
+                    class="sx-ext-cta-soft px-5 min-h-[44px] disabled:opacity-40 disabled:cursor-not-allowed">
+              <span>&larr; Previous</span>
+            </button>
+
+            <button type="button"
+                    x-show="currentIdx < flatQuestions.length - 1"
+                    @click="nextQuestion()"
+                    class="sx-ext-cta-yellow px-6 min-h-[46px]">
+              <span>Save &amp; Next Question &rarr;</span>
+            </button>
+
+            <button type="button"
+                    x-show="currentIdx === flatQuestions.length - 1"
+                    @click="goToFinalPage()"
+                    class="sx-ext-cta-yellow px-6 min-h-[46px]">
+              <span>Review &amp; Submit Page &rarr;</span>
+            </button>
+          </div>
+
+        </div>
+      </template>
+    </div>
+
+    <!-- FINAL REVIEW & SUBMIT PAGE -->
+    <div x-show="isFinalPage" x-cloak class="relative">
+      <div class="bg-[#ffffff] rounded-[22px] border-2 border-[#231f20] p-4 sm:p-7 relative">
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-[#231f20]/15">
+          <div>
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f7b317] text-[#231f20] border border-[#231f20] text-[11px] font-black uppercase tracking-wider mb-2">
+              <span>Final Step &middot; Official Real Exam Submission</span>
+            </div>
+            <h2 class="text-lg sm:text-2xl font-black text-[#231f20] leading-tight">Review &amp; Submit Your Real Exam</h2>
+            <p class="text-xs sm:text-sm text-[#231f20]/70 font-semibold mt-1">
+              Check your saved and unanswered questions below. Tap any question card to inspect or edit before submitting.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0">
+            <div class="px-3.5 py-2 rounded-2xl bg-[#f7b317] border-2 border-[#231f20] text-center min-w-[80px]">
+              <div class="text-base sm:text-lg font-black text-[#231f20] leading-none" x-text="answeredCount + '/' + flatQuestions.length"></div>
+              <div class="text-[10px] font-extrabold uppercase tracking-wider text-[#231f20] mt-0.5">Saved</div>
+            </div>
+            <div class="px-3.5 py-2 rounded-2xl bg-[#ffffff] border-2 border-[#231f20] text-center min-w-[80px]">
+              <div class="text-base sm:text-lg font-black text-[#231f20] leading-none" x-text="flatQuestions.length - answeredCount"></div>
+              <div class="text-[10px] font-extrabold uppercase tracking-wider text-[#231f20]/70 mt-0.5">Unanswered</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Unanswered Notice -->
+        <div x-show="(flatQuestions.length - answeredCount) > 0"
+             class="mb-4 p-3.5 rounded-2xl bg-[#ffffff] border-2 border-[#231f20] text-[#231f20] flex items-center gap-2.5 text-xs sm:text-sm font-bold">
+          <span class="material-symbols-outlined shrink-0" style="font-size:20px;">info</span>
+          <span>
+            You still have <strong x-text="flatQuestions.length - answeredCount"></strong> unanswered question<span x-show="(flatQuestions.length - answeredCount) !== 1">s</span>. Tap any white card below to answer it now, or click <strong>Submit Real Exam</strong> when ready.
+          </span>
+        </div>
+
+        <!-- All Answered Notice -->
+        <div x-show="(flatQuestions.length - answeredCount) === 0"
+             class="mb-4 p-3.5 rounded-2xl bg-[#f7b317]/25 border-2 border-[#231f20] text-[#231f20] flex items-center gap-2.5 text-xs sm:text-sm font-bold">
+          <span class="material-symbols-outlined shrink-0" style="font-size:20px;">check_circle</span>
+          <span>All <strong x-text="flatQuestions.length"></strong> questions are answered and saved! You are ready to submit your Real Exam.</span>
+        </div>
+
+        <!-- Interactive 12-Question Review Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 mb-5">
+          <template x-for="(item, idx) in flatQuestions" :key="'final_rev_' + item.q.id">
+            <button type="button"
+                    @click="goToQuestion(idx)"
+                    class="p-3 rounded-2xl border-2 text-left transition-all flex items-center justify-between gap-2 cursor-pointer"
+                    :class="isQuestionAnswered(item.q.id) ? 'bg-[#231f20] border-[#231f20] text-[#ffffff]' : 'bg-[#ffffff] border-[#231f20]/35 hover:border-[#231f20] text-[#231f20]'">
+              <div class="min-w-0">
+                <div class="text-xs font-black flex items-center gap-1">
+                  <span x-text="'Q' + (idx + 1)"></span>
+                  <span class="text-[10px] opacity-75" x-text="'(' + item.maxMarks + 'M)'"></span>
+                </div>
+                <div class="text-[10px] font-extrabold truncate mt-0.5"
+                     :class="isQuestionAnswered(item.q.id) ? 'text-[#f7b317]' : 'text-[#231f20]/70'"
+                     x-text="isQuestionAnswered(item.q.id) ? 'Saved' : 'Tap to Answer'"></div>
+              </div>
+              <span class="material-symbols-outlined shrink-0"
+                    style="font-size:17px;"
+                    :class="isQuestionAnswered(item.q.id) ? 'text-[#f7b317]' : 'text-[#231f20]'"
+                    x-text="isQuestionAnswered(item.q.id) ? 'check_circle' : 'edit_note'"></span>
+            </button>
+          </template>
+        </div>
+
+        <!-- Final Page Footer -->
+        <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t border-[#231f20]/15">
+          <button type="button"
+                  @click="goToQuestion(flatQuestions.length - 1)"
+                  class="sx-ext-cta-soft px-5 min-h-[46px]">
+            <span>&larr; Back to Question <span x-text="flatQuestions.length"></span></span>
+          </button>
+
+          <button type="submit"
+                  class="sx-ext-cta-yellow px-7 min-h-[50px] text-sm sm:text-base">
+            <span class="material-symbols-outlined" style="font-size:20px;">assignment_turned_in</span>
+            <span x-text="'Submit Real Exam (' + answeredCount + '/' + flatQuestions.length + ' Saved)'"></span>
+          </button>
+        </div>
+
+      </div>
     </div>
   </form>
-  
+
   <!-- Grading Overlay -->
-  <div x-show="isSubmitting" style="display: none;" class="fixed inset-0 z-[100] bg-base-100/95 backdrop-blur-md flex flex-col items-center justify-center p-4">
-    <div class="w-32 h-32 relative flex items-center justify-center">
-      <div class="absolute inset-0 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-      <span class="text-4xl text-primary"><svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg></span>
+  <div x-show="isSubmitting" x-cloak class="fixed inset-0 z-[100] bg-[#ffffff]/95 flex flex-col items-center justify-center p-4">
+    <div class="w-24 h-24 relative flex items-center justify-center">
+      <div class="absolute inset-0 border-4 border-[#231f20]/20 border-t-[#f7b317] rounded-full animate-spin"></div>
+      <span class="material-symbols-outlined text-[#231f20]" style="font-size:40px;">workspace_premium</span>
     </div>
-    <h2 class="text-2xl font-bold text-base-content mt-8 mb-2">The System is Grading Your Exam</h2>
-    <p class="text-base-content/50 text-center max-w-md">The system is currently analyzing all your answers. This usually takes 5-15 seconds. Please wait...</p>
+    <h2 class="text-2xl font-black text-[#231f20] mt-6 mb-2">Grading Your Real Exam...</h2>
+    <p class="text-[#231f20]/70 font-semibold text-center max-w-md text-sm">
+      Evaluating all <span x-text="flatQuestions.length"></span> answers and preparing your Official Real Exam Score Report...
+    </p>
   </div>
-
-
 
 </div>
 
 <script>
 function realExamApp() {
+  const rawPaper = {{ paper_json | safe }};
+  const storageKey = 'saxaz_real_att_{{ attempt.id }}';
   return {
+    paper: rawPaper,
+    isFinalPage: false,
+    currentIdx: 0,
+    answers: {},
+    attachedDrawings: {},
+    initialTotalSeconds: {{ total_seconds }},
     timeLeft: {{ total_seconds }},
     warnings: 0,
     cheatedQuestions: [],
     activeQuestion: null,
-    attachedDrawings: {},
-    currentXp: {{ current_xp }},
-    hasPurchased: {{ 'true' if has_purchased else 'false' }},
-    isPurchasing: false,
+    photoTargetQId: null,
     isSubmitting: false,
+    isSpeaking: false,
+    currentStreamHandle: null,
+    currentAudio: null,
     timerInterval: null,
-    
+
+    get activeModules() {
+      if (this.paper.textbook_modules && this.paper.textbook_modules.length > 0) {
+        return this.paper.textbook_modules;
+      }
+      if (this.paper.mark_modules && this.paper.mark_modules.length > 0) {
+        return this.paper.mark_modules;
+      }
+      return this.paper.modules || [];
+    },
+
+    get showMathSymbolsTool() {
+      const sub = String(this.paper?.subject_name || '').toLowerCase();
+      if (sub.includes('bio')) return false;
+      return /\b(math|physics|chem)/i.test(sub);
+    },
+
+    get flatQuestions() {
+      const list = [];
+      const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+      for (const mod of this.activeModules) {
+        for (const q of (mod.questions || [])) {
+          const qType = String(q.question_type || mod.question_type || 'LONG_ANSWER').toUpperCase();
+          let opts = [];
+          if (q.options) {
+            try {
+              opts = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
+            } catch (e) {
+              opts = [];
+            }
+          }
+          const formattedOptions = (opts || []).map((opt, idx) => {
+            const raw = String(opt || '').trim();
+            const prefix = letters[idx] || String(idx + 1);
+            const stripped = raw.replace(/^(?:\([A-Ea-e]\)|[A-Ea-e][\.\)\:])\s*/, '');
+            return `${prefix}. ${stripped}`;
+          });
+          const maxM = Number(q.max_marks || mod.mark_value || 1);
+          const isMcq = (qType === 'MCQ' || qType === 'ASSERTION_REASON') && formattedOptions.length > 0;
+          const isDiagram = !isMcq && /\b(draw|sketch|diagram)\b/i.test(String(q.question_text || ''));
+          list.push({
+            q,
+            modId: q.original_module_id || mod.id,
+            modName: q.original_module_name || mod.name,
+            maxMarks: maxM,
+            isMcq,
+            isDiagram,
+            formattedOptions
+          });
+        }
+      }
+      return list;
+    },
+
+    get totalMaxMarks() {
+      return this.flatQuestions.reduce((acc, item) => acc + (Number(item.maxMarks) || 0), 0);
+    },
+
+    get currentItem() {
+      return this.flatQuestions[this.currentIdx] || this.flatQuestions[0] || null;
+    },
+
+    get currentQuestionParts() {
+      const txt = String(this.currentItem?.q?.question_text || '');
+      const m = txt.match(/^(.*?)Assertion\s*\(A\)\s*:\s*([\s\S]*?)\s*Reason\s*\(R\)\s*:\s*([\s\S]*)$/i);
+      if (!m) return { isAR: false, intro: '', assertion: '', reason: '', raw: txt };
+      return {
+        isAR: true,
+        intro: (m[1] || '').trim(),
+        assertion: (m[2] || '').trim(),
+        reason: (m[3] || '').trim(),
+        raw: txt
+      };
+    },
+
+    get answeredCount() {
+      return this.flatQuestions.filter(item => this.isQuestionAnswered(item.q.id)).length;
+    },
+
+    isQuestionAnswered(qId) {
+      const item = this.flatQuestions.find(it => it.q.id === qId);
+      const val = (this.answers[qId] || '').trim();
+      if (item && item.isMcq) {
+        return val.length > 0;
+      }
+      return val.length > 0 || Boolean(this.attachedDrawings[qId]);
+    },
+
+    persistAutoSave() {
+      try {
+        const payload = JSON.stringify({
+          answers: this.answers || {},
+          attachedDrawings: this.attachedDrawings || {},
+          currentIdx: this.currentIdx || 0
+        });
+        localStorage.setItem(storageKey, payload);
+      } catch (e) {
+        try {
+          localStorage.setItem(storageKey, JSON.stringify({
+            answers: this.answers || {},
+            attachedDrawings: {},
+            currentIdx: this.currentIdx || 0
+          }));
+        } catch (err) {}
+      }
+    },
+
+    restoreAutoSave() {
+      try {
+        const raw = localStorage.getItem(storageKey);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          if (parsed.answers && typeof parsed.answers === 'object') {
+            this.answers = Object.assign({}, parsed.answers);
+          }
+          if (parsed.attachedDrawings && typeof parsed.attachedDrawings === 'object') {
+            this.attachedDrawings = Object.assign({}, parsed.attachedDrawings);
+          }
+          if (typeof parsed.currentIdx === 'number' && parsed.currentIdx >= 0 && parsed.currentIdx < this.flatQuestions.length) {
+            this.currentIdx = parsed.currentIdx;
+          }
+        }
+      } catch (e) {}
+    },
+
+    clearAutoSave() {
+      try {
+        localStorage.removeItem(storageKey);
+      } catch (e) {}
+    },
+
+    scrollBallIntoView(elId) {
+      this.$nextTick(() => {
+        try {
+          const bar = this.$refs.realQstrip;
+          const el = document.getElementById(elId);
+          if (bar && el) {
+            const barRect = bar.getBoundingClientRect();
+            const elRect = el.getBoundingClientRect();
+            const targetLeft = bar.scrollLeft + (elRect.left - barRect.left) - (barRect.width / 2) + (elRect.width / 2);
+            bar.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
+          }
+        } catch (e) {}
+      });
+    },
+
+    goToQuestion(idx) {
+      this.stopQuestionSpeech();
+      this.isFinalPage = false;
+      if (idx >= 0 && idx < this.flatQuestions.length) {
+        this.currentIdx = idx;
+        if (this.currentItem) {
+          this.activeQuestion = this.currentItem.q.id;
+        }
+        this.persistAutoSave();
+        this.scrollBallIntoView('real-q-ball-' + idx);
+      }
+    },
+
+    goToFinalPage() {
+      this.stopQuestionSpeech();
+      this.isFinalPage = true;
+      this.persistAutoSave();
+      this.scrollBallIntoView('real-q-ball-final');
+      try {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (e) {}
+    },
+
+    nextQuestion() {
+      this.stopQuestionSpeech();
+      if (this.currentIdx < this.flatQuestions.length - 1) {
+        this.isFinalPage = false;
+        this.currentIdx++;
+        if (this.currentItem) this.activeQuestion = this.currentItem.q.id;
+        this.persistAutoSave();
+        this.scrollBallIntoView('real-q-ball-' + this.currentIdx);
+      } else {
+        this.goToFinalPage();
+      }
+    },
+
+    prevQuestion() {
+      this.stopQuestionSpeech();
+      if (this.isFinalPage) {
+        this.goToQuestion(this.flatQuestions.length - 1);
+        return;
+      }
+      if (this.currentIdx > 0) {
+        this.currentIdx--;
+        if (this.currentItem) this.activeQuestion = this.currentItem.q.id;
+        this.persistAutoSave();
+        this.scrollBallIntoView('real-q-ball-' + this.currentIdx);
+      }
+    },
+
+    selectMcqOption(qId, optLabel) {
+      this.answers[qId] = optLabel;
+      this.answers = Object.assign({}, this.answers);
+      this.activeQuestion = qId;
+      this.persistAutoSave();
+    },
+
+    setWrittenAnswer(qId, val) {
+      this.answers[qId] = val;
+      this.activeQuestion = qId;
+      this.persistAutoSave();
+    },
+
+    triggerPhotoPicker(qId) {
+      this.photoTargetQId = qId;
+      this.activeQuestion = qId;
+      if (this.$refs.realPhotoInput) {
+        this.$refs.realPhotoInput.value = '';
+        this.$refs.realPhotoInput.click();
+      }
+    },
+
+    handlePhotoUpload(e) {
+      const file = e.target.files?.[0];
+      const qId = this.photoTargetQId || this.activeQuestion || (this.currentItem ? this.currentItem.q.id : null);
+      if (!file || !qId) return;
+      if (!file.type.startsWith('image/')) {
+        alert('Please choose an image file.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (loadEvt) => {
+        const rawDataUrl = loadEvt.target.result;
+        const img = new Image();
+        img.onload = () => {
+          let finalDataUrl = rawDataUrl;
+          try {
+            const maxDim = 1024;
+            let w = img.width || 800;
+            let h = img.height || 600;
+            if (w > maxDim || h > maxDim) {
+              if (w >= h) {
+                h = Math.round((h * maxDim) / w);
+                w = maxDim;
+              } else {
+                w = Math.round((w * maxDim) / h);
+                h = maxDim;
+              }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(img, 0, 0, w, h);
+            finalDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          } catch (err) {
+            finalDataUrl = rawDataUrl;
+          }
+          this.attachedDrawings[qId] = finalDataUrl;
+          this.attachedDrawings = Object.assign({}, this.attachedDrawings);
+          this.persistAutoSave();
+        };
+        img.onerror = () => {
+          this.attachedDrawings[qId] = rawDataUrl;
+          this.attachedDrawings = Object.assign({}, this.attachedDrawings);
+          this.persistAutoSave();
+        };
+        img.src = rawDataUrl;
+      };
+      reader.readAsDataURL(file);
+    },
+
+    stopQuestionSpeech() {
+      if (this.currentStreamHandle) {
+        try { this.currentStreamHandle.cancel(); } catch (e) {}
+        this.currentStreamHandle = null;
+      }
+      if (this.currentAudio) {
+        try {
+          this.currentAudio.onended = null;
+          this.currentAudio.pause();
+        } catch (e) {}
+        this.currentAudio = null;
+      }
+      try {
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+      } catch (e) {}
+      this.isSpeaking = false;
+    },
+
+    async speakQuestion(text) {
+      const cleanText = String(text || '').replace(/\s+/g, ' ').trim();
+      if (!cleanText) return;
+      this.stopQuestionSpeech();
+      this.isSpeaking = true;
+
+      if (window.saxazStreamPcm) {
+        const handle = window.saxazStreamPcm(cleanText, {
+          voice: '{{ user.tts_voice or "af_bella" }}',
+          engine: 'gemini',
+          emotion: 'teaching'
+        });
+        if (handle) {
+          this.currentStreamHandle = handle;
+          const res = await handle.donePromise;
+          if (this.currentStreamHandle === handle) {
+            this.currentStreamHandle = null;
+          }
+          if (res !== null) {
+            this.isSpeaking = false;
+            return;
+          }
+        }
+      }
+
+      try {
+        const r = await fetch('/api/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: cleanText,
+            voice: '{{ user.tts_voice or "af_bella" }}',
+            engine: 'gemini',
+            emotion: 'teaching'
+          })
+        });
+        if (!r.ok || !this.isSpeaking) {
+          this.isSpeaking = false;
+          return;
+        }
+        const blob = await r.blob();
+        if (!this.isSpeaking) return;
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        this.currentAudio = audio;
+        const finishAudio = () => {
+          try { URL.revokeObjectURL(url); } catch (e) {}
+          if (this.currentAudio === audio) this.currentAudio = null;
+          this.isSpeaking = false;
+        };
+        audio.onended = finishAudio;
+        audio.onerror = finishAudio;
+        await audio.play();
+      } catch (e) {
+        this.isSpeaking = false;
+      }
+    },
+
     init() {
-      // Listen for attached drawings from scratchpad
+      this.restoreAutoSave();
+      if (this.currentItem) {
+        this.activeQuestion = this.currentItem.q.id;
+      } else if (this.flatQuestions.length > 0) {
+        this.activeQuestion = this.flatQuestions[0].q.id;
+      }
+
       window.addEventListener('scratchpad-attach-drawing', (e) => {
         if (e.detail && e.detail.dataUrl) {
-          const qId = this.activeQuestion || {{ paper.modules[0].questions[0].id if paper.modules and paper.modules[0].questions else 'null' }};
+          const item = this.currentItem;
+          if (item && item.isMcq) return;
+          const qId = this.activeQuestion || (item ? item.q.id : null);
           if (qId) {
             this.attachedDrawings[qId] = e.detail.dataUrl;
             this.attachedDrawings = Object.assign({}, this.attachedDrawings);
+            this.persistAutoSave();
           }
         }
       });
 
-      // Start Timer
       this.timerInterval = setInterval(() => {
         if (this.timeLeft > 0) {
           this.timeLeft--;
@@ -204,31 +841,28 @@ function realExamApp() {
         }
       }, 1000);
 
-      // Anti-cheat visibility tracking with debounced focus check
       document.addEventListener("visibilitychange", () => {
         if (document.hidden && !this.isSubmitting) {
-          this.handleCheating();
-        }
-      });
-      window.addEventListener("blur", () => {
-        setTimeout(() => {
-          if (!this.isSubmitting && (document.hidden || !document.hasFocus())) {
+          this.warnings++;
+          if (this.warnings > 3) {
             this.handleCheating();
           }
-        }, 200);
+        }
       });
     },
-    
+
     formatTime(seconds) {
       const m = Math.floor(seconds / 60);
       const s = seconds % 60;
       return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     },
-    
+
     async handleCheating() {
       if (this.isSubmitting) return;
-      this.isSubmitting = true; // Prevent further triggers
+      this.isSubmitting = true;
+      this.stopQuestionSpeech();
       clearInterval(this.timerInterval);
+      this.clearAutoSave();
       try {
         await fetch(`/student/real-exams/attempts/{{ attempt.id }}/cheat_fail`, {
           method: 'POST'
@@ -236,53 +870,51 @@ function realExamApp() {
       } catch (e) {
         console.error(e);
       }
-      window.location.href = "/student/real-exams/caught";
+      window.location.href = "/student/real-exams/caught?chapter_id={{ paper.chapter_id }}&exam_id={{ paper.id }}";
     },
-    
-    async buyTime() {
-      if (this.hasPurchased || this.currentXp < 10 || this.isPurchasing) return;
-      
-      this.isPurchasing = true;
-      try {
-        const response = await fetch(`/student/real-exams/attempts/{{ attempt.id }}/buy-time`, {
-          method: 'POST'
+
+    removeAttachedDrawing(qId) {
+      if (!this.attachedDrawings[qId]) return;
+      delete this.attachedDrawings[qId];
+      this.attachedDrawings = Object.assign({}, this.attachedDrawings);
+      this.persistAutoSave();
+    },
+
+    async submitExam(skipConfirm = false) {
+      if (this.isSubmitting && !skipConfirm) return;
+      this.stopQuestionSpeech();
+      if (!skipConfirm) {
+        const unanswered = this.flatQuestions.length - this.answeredCount;
+        const msg = unanswered > 0
+          ? `You have answered ${this.answeredCount} of ${this.flatQuestions.length} questions (${unanswered} unanswered). Submit your Real Exam for final grading now?`
+          : `You have answered all ${this.flatQuestions.length} questions! Submit your Real Exam for final grading now?`;
+        const confirmRes = await window.saxazConfirm({
+          title: 'Submit Real Exam?',
+          text: msg,
+          tone: 'warning',
+          icon: 'assignment_turned_in',
+          confirmButtonText: 'Yes, Submit Real Exam',
+          cancelButtonText: 'Keep Reviewing'
         });
-        const data = await response.json();
-        if (data.success) {
-          this.timeLeft += data.added_seconds;
-          this.currentXp = data.new_xp;
-          this.hasPurchased = true;
-        } else {
-          console.warn("Time purchase failed:", data.error);
-        }
-      } catch (e) {
-        console.error(e);
-      } finally {
-        this.isPurchasing = false;
+        if (!confirmRes.isConfirmed) return;
       }
-    },
-    
-    submitExam() {
       this.isSubmitting = true;
       clearInterval(this.timerInterval);
-      
-      // Allow Alpine to render the loading screen, then submit form
+      this.clearAutoSave();
+
       setTimeout(() => {
         document.getElementById('examForm').submit();
-      }, 100);
+      }, 120);
     },
-    
+
     autoSubmit() {
       this.isSubmitting = true;
-      this.submitExam();
+      this.submitExam(true);
     }
-  }
+  };
 }
 </script>
-<!-- Include Math Tools Partial (Calculator and Symbol Picker) -->
+
 {% include 'student/partials/math_tools.html' %}
-<!-- Include Digital Scratchpad Partial (Touch & Mouse Drawing Canvas) -->
 {% include 'student/partials/scratchpad.html' %}
 {% endblock %}
-
-

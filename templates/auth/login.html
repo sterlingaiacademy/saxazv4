@@ -1,159 +1,255 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="light">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
-  <title>Sign In — SAXAZ Kinetic Studio</title>
-  <link rel="stylesheet" href="/static/css/app.css">
-  <link rel="stylesheet" href="/static/css/v2-studio.css?v=1">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-</head>
-<body class="min-h-screen w-full bg-[#fbf8f1] text-[#111111] flex flex-col lg:flex-row overflow-x-hidden select-none">
+{% extends "auth_base.html" %}
+{% block title %}Login - SAXAZ{% endblock %}
 
-  <!-- LEFT SHOWCASE PANEL: KINETIC YELLOW & PITCH-BLACK STUDIO STAGE (Desktop) -->
-  <div class="hidden lg:flex lg:w-[56%] relative bg-[#f8b000] border-r-4 border-[#111111] flex-col justify-between p-12 xl:p-16 overflow-hidden">
-    <!-- Animated Floating Geometric Rings -->
-    <div class="absolute -right-24 -top-24 w-96 h-96 rounded-full border-[22px] border-[#111111]/10 v2-anim-spin-slow pointer-events-none"></div>
-    <div class="absolute left-1/2 top-1/3 w-72 h-72 rounded-3xl rotate-12 border-4 border-white/40 v2-anim-float pointer-events-none"></div>
+{% block content %}
+<style>
+  .sx-role-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding: 5px;
+    border-radius: 999px;
+    background: #ffffff;
+    border: 2px solid #231f20;
+    margin-bottom: 1.5rem;
+  }
+  .sx-role-tab {
+    appearance: none;
+    border: 0;
+    border-radius: 999px;
+    padding: 0.72rem 1rem;
+    font-size: 0.88rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    color: #231f20;
+    background: #ffffff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    transition: background-color 0.15s ease;
+  }
+  .sx-role-tab.is-active {
+    background: #f7b317;
+    color: #231f20;
+  }
+  .sx-forgot-box {
+    margin-top: 0.65rem;
+    padding: 0.95rem 2.4rem 0.95rem 1rem;
+    background: #ffffff;
+    color: #231f20;
+    border: 2px solid #231f20;
+    border-radius: 1rem;
+    position: relative;
+    font-size: 0.88rem;
+    font-weight: 700;
+    line-height: 1.5;
+  }
+  .sx-forgot-box a {
+    color: #231f20;
+    font-weight: 800;
+    text-decoration: underline;
+    text-decoration-color: #f7b317;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+  .sx-forgot-close {
+    position: absolute;
+    top: 0.55rem;
+    right: 0.55rem;
+    width: 1.85rem;
+    height: 1.85rem;
+    border-radius: 999px;
+    border: 1.5px solid #231f20;
+    background: #f7b317;
+    color: #231f20;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+  }
+</style>
 
-    <!-- Top Brand Header -->
-    <div class="relative z-20 flex items-center justify-between">
-      <div class="flex items-center gap-4">
-        <div class="w-28">
-          {% include "logo.html" %}
-        </div>
-        <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-[#111111] text-[#f8b000] shadow-md">
-          ⚡ KINETIC STUDIO V2
-        </span>
-      </div>
-    </div>
-
-    <!-- Rotating Quote & Scientist Stage -->
-    <div class="relative z-20 max-w-xl my-auto space-y-6">
-      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border-2 border-[#111111] shadow-[0_3px_0_#111111] text-xs font-black uppercase tracking-wider">
-        <span class="w-2 h-2 rounded-full bg-[#f8b000] animate-ping"></span>
-        <span>AI-Powered Learning OS</span>
-      </div>
-
-      <h1 id="carousel-quote" class="text-5xl xl:text-6xl leading-[1.03] font-black tracking-tight text-[#111111] uppercase">
-        Education is <br>
-        what remains <br>
-        after one has <br>
-        forgotten <br>
-        <span class="text-white drop-shadow-[0_3px_0_#111111]">what one has <br> learned in <br> school.</span>
-      </h1>
-
-      <div class="flex items-center gap-3 pt-2">
-        <div class="w-10 h-1.5 bg-[#111111] rounded-full"></div>
-        <p id="carousel-author" class="text-xl font-black text-[#111111] uppercase tracking-wider">Albert Einstein</p>
-      </div>
-    </div>
-
-    <!-- Bottom Feature Pills -->
-    <div class="relative z-20 flex flex-wrap items-center gap-2.5">
-      <span class="px-3.5 py-1.5 rounded-full bg-[#111111] text-[#f8b000] text-xs font-black">⌘K AI Command Spotlight</span>
-      <span class="px-3.5 py-1.5 rounded-full bg-white text-[#111111] border-2 border-[#111111] text-xs font-black">4-Stage Chapter Studio</span>
-      <span class="px-3.5 py-1.5 rounded-full bg-white text-[#111111] border-2 border-[#111111] text-xs font-black">Split-Screen AI Co-Pilot</span>
-    </div>
-
-    <!-- Scientist Artwork -->
-    <div class="absolute bottom-0 right-[-8%] w-[78%] max-h-[82vh] pointer-events-none z-10">
-      <img id="carousel-image" src="/static/images/einstein.jpg" alt="Albert Einstein" class="w-full h-full object-contain object-bottom mix-blend-multiply opacity-95 filter contrast-125 saturate-110">
-    </div>
-  </div>
-
-  <!-- RIGHT PANEL: KINETIC STUDIO SIGN-IN CARD -->
-  <div class="flex-1 flex flex-col justify-center items-center p-5 sm:p-10 lg:p-16 relative space-bg">
-    <div class="w-full max-w-md v2-bento-card p-6 sm:p-9 bg-white space-y-6 v2-enter">
-      
-      <div class="space-y-2">
-        <div class="flex items-center justify-between">
-          <div class="w-24 sm:w-28">
-            {% include "logo.html" %}
+<div id="stitch-tailwind-root"
+     x-data="{
+       portalRole: {{ (portal_role or 'student') | tojson | forceescape }},
+       rawIdentifier: {{ (email or '') | tojson | forceescape }},
+       showPassword: false,
+       forgotNotice: false,
+       init() {
+         if (this.rawIdentifier && this.rawIdentifier.toLowerCase().startsWith('p-')) {
+           this.portalRole = 'parent';
+           this.rawIdentifier = this.rawIdentifier.slice(2);
+         }
+       },
+       computedEmail() {
+         const clean = (this.rawIdentifier || '').trim();
+         if (!clean) return '';
+         if (this.portalRole === 'parent' && !clean.toLowerCase().startsWith('p-')) {
+           return 'p-' + clean;
+         }
+         return clean;
+       }
+     }">
+  <div class="saxaz-login-shell">
+    <!-- Desktop Left Story Panel (Compact banner on mobile <=980px) -->
+    <aside class="saxaz-login-story">
+      <div class="saxaz-login-story__content">
+        <div class="saxaz-login-story__quote-wrap">
+          <h1 class="saxaz-login-story__quote">
+            <span>EDUCATION IS</span>
+            <span>WHAT REMAINS</span>
+            <span>AFTER ONE HAS</span>
+            <span>FORGOTTEN</span>
+            <span class="is-light">WHAT ONE HAS</span>
+            <span class="is-light">LEARNED IN</span>
+            <span class="is-light">SCHOOL.</span>
+          </h1>
+          <div class="saxaz-login-story__author">
+            <span class="saxaz-login-story__author-line"></span>
+            <p>Einstein</p>
           </div>
-          <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-[#111111] text-[#f8b000]">
-            STUDIO EDITION
-          </span>
         </div>
-        <h2 class="text-2xl sm:text-3xl font-black text-[#111111] tracking-tight pt-2">
-          Enter Your Study Desk
-        </h2>
-        <p class="text-xs sm:text-sm font-bold text-gray-500">
-          Sign in to launch your courses, digital library, and AI Co-Pilot.
-        </p>
       </div>
 
-      {% if error %}
-      <div class="p-3.5 rounded-2xl bg-red-50 border-2 border-red-600 text-red-700 text-xs sm:text-sm font-black">
-        {{ error }}
+      <div class="saxaz-login-story__figure">
+        <img src="/static/images/saxaz_web/albert_einstein.png"
+             alt="Albert Einstein"
+             class="saxaz-login-story__figure-image" />
       </div>
-      {% endif %}
+    </aside>
 
-      <form action="/login" method="POST" class="space-y-5">
-        <div class="space-y-1.5">
-          <label class="block text-[11px] font-black text-[#111111] uppercase tracking-widest">
-            Email or Phone Number
-          </label>
-          <input type="text"
-                 name="email"
-                 placeholder="Enter your email or phone number"
-                 class="w-full px-4 py-3.5 rounded-2xl bg-[#faf7f0] border-2 border-[#111111] text-[#111111] font-bold placeholder-gray-400 focus:bg-white focus:outline-none focus:shadow-[0_4px_0_#f8b000] transition-all text-sm"
-                 required>
+    <!-- Right White Form Panel -->
+    <main class="saxaz-login-panel">
+      <div class="saxaz-login-panel__inner" style="max-width: 29rem;">
+        <div class="saxaz-login-brand" style="margin-bottom: 1.5rem;">
+          <h1 style="font-weight: 800; font-size: clamp(1.9rem, 2.6vw, 2.75rem); gap: 0.8rem; flex-wrap: wrap; color: #231f20;">
+            <span>Welcome to</span>
+            <img src="/static/images/saxaz_web/logo.png" alt="SAXAZ" class="saxaz-login-brand__logo" style="width: clamp(9rem, 13vw, 12rem);" />
+          </h1>
+          <p style="margin-top: 0.55rem; color: #231f20; font-size: 0.96rem; font-weight: 600;"
+             x-text="portalRole === 'parent' ? 'Enter your child\'s Login ID and password to open Parent Portal' : 'Enter your Login ID and password to access your dashboard'">
+            Enter your Login ID and password to access your dashboard
+          </p>
         </div>
 
-        <div class="space-y-1.5">
-          <div class="flex items-center justify-between">
-            <label class="block text-[11px] font-black text-[#111111] uppercase tracking-widest">
-              Password
-            </label>
-          </div>
-          <div class="relative flex items-center">
-            <input type="password"
-                   id="login-password-input"
-                   name="password"
-                   placeholder="•••••••••"
-                   class="w-full px-4 pr-12 py-3.5 rounded-2xl bg-[#faf7f0] border-2 border-[#111111] text-[#111111] font-bold placeholder-gray-400 focus:bg-white focus:outline-none focus:shadow-[0_4px_0_#f8b000] transition-all text-sm"
-                   required
-                   autocomplete="current-password">
-            <button type="button"
-                    id="toggle-password-btn"
-                    class="absolute right-3.5 text-gray-500 hover:text-[#111111] p-1"
-                    aria-label="Toggle password visibility">
-              <svg id="eye-open-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-              <svg id="eye-closed-icon" class="h-5 w-5 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+        {% if error %}
+        <div class="saxaz-login-message-stack">
+          <p class="saxaz-login-message" style="background: #231f20; color: #ffffff; border: 2px solid #f7b317;">
+            {{ error }}
+          </p>
+        </div>
+        {% endif %}
+
+        <!-- Prominent 2-Tab Pill Switcher: Student Login | Parent Portal -->
+        <div class="sx-role-tabs" role="tablist" aria-label="Choose portal">
+          <button type="button"
+                  role="tab"
+                  class="sx-role-tab"
+                  :class="{ 'is-active': portalRole === 'student' }"
+                  :aria-selected="portalRole === 'student'"
+                  @click="portalRole = 'student'">
+            <span class="material-symbols-outlined" style="font-size: 1.15rem;">school</span>
+            <span>Student Login</span>
+          </button>
+          <button type="button"
+                  role="tab"
+                  class="sx-role-tab"
+                  :class="{ 'is-active': portalRole === 'parent' }"
+                  :aria-selected="portalRole === 'parent'"
+                  @click="portalRole = 'parent'">
+            <span class="material-symbols-outlined" style="font-size: 1.15rem;">family_restroom</span>
+            <span>Parent Portal</span>
+          </button>
+        </div>
+
+        <form method="POST"
+              action="/login"
+              class="saxaz-login-form"
+              @submit="
+                $refs.finalEmail.value = computedEmail();
+                if (window.getSaxazVaultToken) {
+                  $refs.vaultInput.value = window.getSaxazVaultToken();
+                }
+              ">
+          <input type="hidden" name="email" x-ref="finalEmail" :value="computedEmail()">
+          <input type="hidden" name="portal_role" :value="portalRole">
+          <input type="hidden" name="client_vault" x-ref="vaultInput" value="">
+
+          <div class="saxaz-login-form__pane">
+            <!-- LOGIN ID (EMAIL OR PHONE) -->
+            <div class="saxaz-login-field">
+              <div class="saxaz-login-field__head">
+                <label for="sx-login-id" x-text="portalRole === 'parent' ? 'CHILD\'S LOGIN ID (EMAIL OR PHONE)' : 'LOGIN ID (EMAIL OR PHONE)'">LOGIN ID (EMAIL OR PHONE)</label>
+              </div>
+              <div class="saxaz-login-input">
+                <span class="material-symbols-outlined">person</span>
+                <input id="sx-login-id"
+                       type="text"
+                       x-model="rawIdentifier"
+                       required
+                       autocomplete="username"
+                       :placeholder="portalRole === 'parent' ? 'Enter child\'s email or phone number' : 'Enter your email or phone number'" />
+              </div>
+            </div>
+
+            <!-- PASSWORD -->
+            <div class="saxaz-login-field">
+              <div class="saxaz-login-field__head">
+                <label for="sx-login-pw">PASSWORD</label>
+                <a href="#forgot" @click.prevent="forgotNotice = !forgotNotice">Forgot?</a>
+              </div>
+              <div class="saxaz-login-input">
+                <span class="material-symbols-outlined">lock</span>
+                <input id="sx-login-pw"
+                       name="password"
+                       :type="showPassword ? 'text' : 'password'"
+                       required
+                       autocomplete="current-password"
+                       placeholder="Enter password" />
+                <button type="button"
+                        class="saxaz-login-input__toggle"
+                        @click="showPassword = !showPassword"
+                        :aria-label="showPassword ? 'Hide password' : 'Show password'">
+                  <span class="material-symbols-outlined" x-text="showPassword ? 'visibility_off' : 'visibility'">visibility</span>
+                </button>
+              </div>
+              <div x-show="forgotNotice" x-cloak class="sx-forgot-box">
+                <p style="margin: 0;">
+                  Need help resetting your password? Contact SAXAZ Support at
+                  <a href="mailto:support@saxaz.com">support@saxaz.com</a>
+                  or call <a href="tel:+918943348988">+91 8943348988</a>.
+                </p>
+                <button type="button" class="sx-forgot-close" @click="forgotNotice = false" aria-label="Close">
+                  <span class="material-symbols-outlined" style="font-size: 1rem;">close</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- SUBMIT -->
+            <button type="submit" class="saxaz-login-submit">
+              <span x-text="portalRole === 'parent' ? 'Continue to Parent Portal' : 'Login'">Login</span>
+              <span class="material-symbols-outlined">arrow_forward</span>
             </button>
           </div>
-        </div>
+        </form>
 
-        <button type="submit" class="v2-btn-gold w-full py-3.5 text-sm sm:text-base mt-2">
-          <span>Launch SAXAZ Studio</span>
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-        </button>
-      </form>
-
-      <div class="pt-4 border-t-2 border-gray-100 text-center text-xs sm:text-sm font-bold text-gray-500">
-        New to SAXAZ?
-        <a href="/register" class="font-black text-[#111111] underline decoration-[#f8b000] decoration-2 underline-offset-4 hover:text-amber-600 ml-1">
-          Create Student Account &rarr;
-        </a>
+        <p class="saxaz-login-panel__signup" style="margin-top: 1.85rem;">
+          Don't have an account? <a href="/signup">Create Account</a>
+        </p>
       </div>
-    </div>
+    </main>
   </div>
+</div>
 
-  <script>
-    const pwdInput = document.getElementById('login-password-input');
-    const toggleBtn = document.getElementById('toggle-password-btn');
-    const eyeOpen = document.getElementById('eye-open-icon');
-    const eyeClosed = document.getElementById('eye-closed-icon');
-    if (pwdInput && toggleBtn) {
-      toggleBtn.addEventListener('click', () => {
-        const isPwd = pwdInput.type === 'password';
-        pwdInput.type = isPwd ? 'text' : 'password';
-        eyeOpen.classList.toggle('hidden', isPwd);
-        eyeClosed.classList.toggle('hidden', !isPwd);
-      });
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const vaultInput = document.querySelector('input[name="client_vault"]');
+    if (vaultInput && window.getSaxazVaultToken) {
+      vaultInput.value = window.getSaxazVaultToken();
     }
-  </script>
-</body>
-</html>
+  });
+</script>
+{% endblock %}

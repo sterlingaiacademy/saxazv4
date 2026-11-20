@@ -1,158 +1,250 @@
 {% extends "base.html" %}
 
-{% block title %}{{ item.title }} - SAXAZ{% endblock %}
+{% block title %}{{ item.title }} — Lesson Viewer | SAXAZ{% endblock %}
 
 {% block head %}
 {{ super() }}
-<!-- Plyr CSS -->
 <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
-<!-- Plyr JS -->
 <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
-<script src="https://unpkg.com/htmx.org@1.9.10"></script>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto py-4 sm:py-8 px-1 sm:px-4">
-  
-  <!-- Top Controls: Back Button & Progress (Aligned horizontally) -->
-  <div class="flex flex-wrap justify-between items-center gap-3 mb-6 sm:mb-8">
-    <a href="/student/chapters/{{ item.chapter_id }}" class="inline-flex items-center text-sm sm:text-base text-base-content/60 hover:text-primary transition-colors font-semibold bg-base-200 px-4 sm:px-5 py-2 rounded-full border border-base-300">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-      Back to Chapter
-    </a>
-    
-    <!-- Progress Container (HTMX) -->
-    <div id="progress-container-{{ item.id }}" class="flex items-center justify-center shrink-0">
-      {% if is_completed %}
-        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-success bg-success text-white shadow-[0_0_15px_rgba(54,211,153,0.4)] flex items-center justify-center transition-all duration-500" title="Completed">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 sm:h-7 sm:w-7" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-          </svg>
-        </div>
-      {% else %}
-        <button class="btn btn-outline border-base-300 text-base-content/50 hover:border-success hover:text-success hover:bg-success/5 rounded-full px-4 sm:px-6 h-10 sm:h-12 text-xs sm:text-sm transition-all duration-300 font-bold" 
-            hx-post="/student/content/{{ item.id }}/complete" 
-            hx-target="#progress-container-{{ item.id }}"
-            hx-swap="innerHTML">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-          Mark Complete
+<div class="sx-wrap">
+
+  <!-- Top Bar: Breadcrumb + Title + Completion Button -->
+  <div class="sx-tile" style="margin-bottom:18px;padding:20px 24px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;">
+    <div style="min-width:min(100%, 250px);flex:1 1 260px;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+        <a href="/student/chapters/{{ item.chapter_id }}" class="sx-btn sx-btn-ghost" style="padding:5px 12px;font-size:0.76rem;">
+          <span class="material-symbols-outlined" style="font-size:16px;">arrow_back</span>Back to {{ chapter.name if chapter and chapter.name else 'Chapter Studio' }}
+        </a>
+        <span class="sx-eyebrow"><i></i>PART {{ current_part_idx or 1 }} OF {{ total_parts or 4 }} &bull; CHAPTER SUMMARY VIDEO</span>
+      </div>
+      <h1 class="sx-display" style="font-size:clamp(1.5rem,2.6vw,2.15rem);font-weight:800;line-height:1.15;margin:0;">
+        {{ item.title }}
+      </h1>
+    </div>
+
+    <!-- HTMX Progress Container + Proceed to Next Summary -->
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <div id="progress-container-{{ item.id }}" style="display:flex;align-items:center;">
+        {% if is_completed %}
+          <span class="sx-btn" style="background:rgba(25,135,84,0.15);color:#198754;border-color:rgba(25,135,84,0.35);cursor:default;">
+            <span class="material-symbols-outlined">check_circle</span>Completed
+          </span>
+        {% else %}
+          <button type="button"
+                  class="sx-btn sx-btn-ghost"
+                  hx-post="/student/content/{{ item.id }}/complete"
+                  hx-target="#progress-container-{{ item.id }}"
+                  hx-swap="innerHTML">
+            <span class="material-symbols-outlined">task_alt</span>Mark Complete
+          </button>
+        {% endif %}
+      </div>
+      {% if next_item %}
+        <button type="button"
+                onclick="fetch('/student/content/{{ item.id }}/complete', {method:'POST'}).finally(() => { window.location.href='/student/content/{{ next_item.id }}'; });"
+                class="sx-btn sx-btn-gold">
+          <span>Proceed to Next Summary (Part {{ (current_part_idx or 1) + 1 }})</span>
+          <span class="material-symbols-outlined">arrow_forward</span>
+        </button>
+      {% elif mock_exam %}
+        <button type="button"
+                onclick="fetch('/student/content/{{ item.id }}/complete', {method:'POST'}).finally(() => { window.location.href='/student/exams/{{ mock_exam.id }}'; });"
+                class="sx-btn sx-btn-gold">
+          <span>Proceed to Practice Mock Exam</span>
+          <span class="material-symbols-outlined">arrow_forward</span>
         </button>
       {% endif %}
     </div>
   </div>
 
-  <!-- Viewer Header -->
-  <div class="border-b border-base-200 pb-4 sm:pb-6 mb-6 sm:mb-8">
-    <div class="text-xs font-black text-base-content/40 uppercase tracking-widest mb-2 flex items-center gap-2">
-      <span class="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(244,170,0,0.6)] animate-pulse"></span>
-      {{ item.type }} Material
+  <!-- Connected 4-Part Summary Continuation Stepper -->
+  {% if chapter_videos and chapter_videos|length > 1 %}
+  <div class="sx-tile" style="margin-bottom:18px;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <span style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--sx-mute);margin-right:4px;">Continuation Flow:</span>
+      {% for cv in chapter_videos %}
+        <a href="/student/content/{{ cv.id }}"
+           style="display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:999px;font-family:var(--sx-display);font-size:0.78rem;font-weight:800;text-decoration:none;
+                  {% if cv.id == item.id %}background:#f7b317;color:#111318;border:2px solid #111318;box-shadow:0 2px 0 #111318;
+                  {% elif cv.is_completed %}background:rgba(25,135,84,0.14);color:#198754;border:1.5px solid rgba(25,135,84,0.35);
+                  {% else %}background:var(--sx-bg-2);color:var(--sx-ink);border:1.5px solid var(--sx-line);{% endif %}">
+          <span class="material-symbols-outlined" style="font-size:15px;">{{ 'check_circle' if cv.is_completed else ('play_circle' if cv.id == item.id else 'smart_display') }}</span>
+          <span>Part {{ cv.part_number }}</span>
+          <small style="opacity:0.75;font-weight:700;">({{ cv.duration_str }})</small>
+        </a>
+        <span class="material-symbols-outlined" style="font-size:16px;color:var(--sx-mute);">arrow_forward</span>
+      {% endfor %}
+      {% if mock_exam %}
+        <a href="/student/exams/{{ mock_exam.id }}"
+           style="display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:999px;font-family:var(--sx-display);font-size:0.78rem;font-weight:800;text-decoration:none;background:rgba(2,132,199,0.12);color:#0284c7;border:1.5px solid rgba(2,132,199,0.35);">
+          <span class="material-symbols-outlined" style="font-size:15px;">quiz</span>
+          <span>Practice Mock Exam</span>
+        </a>
+      {% endif %}
     </div>
-    <h1 class="text-2xl sm:text-4xl md:text-5xl font-black text-base-content tracking-tight break-words">{{ item.title }}</h1>
   </div>
+  {% endif %}
 
-  <!-- Viewer Body -->
-  <div class="bg-base-100 rounded-[1.5rem] sm:rounded-[2rem] p-2.5 sm:p-4 md:p-8 border border-base-200 shadow-sm flex items-center justify-center min-h-[260px] sm:min-h-[400px] relative overflow-hidden">
-    
-    <div class="relative z-10 w-full flex justify-center">
-      {% if item.type == 'video' or item.type == 'youtube' %}
-        {% set alts_json = (item.additional_videos or '[]') | safe %}
-        <div class="w-full flex flex-col gap-3 sm:gap-4" x-data="videoSwitcher('{{ item.media_url }}', '{{ item.type }}', {{ alts_json }})">
-          
-          <!-- Video Switcher Controls -->
-          <div class="flex flex-wrap items-center justify-end gap-2" x-show="videos.length > 1" style="display: none;">
-            <span class="text-xs font-bold uppercase text-base-content/50 mr-1 sm:mr-2">Select Version:</span>
-            <template x-for="v in videos" :key="v.id">
-              <button @click="selectVideo(v)" 
-                  class="btn btn-xs sm:btn-sm rounded-full transition-all"
-                  :class="currentVideo.id === v.id ? 'btn-primary text-white' : 'btn-outline border-base-300 text-base-content/70'">
-                <span x-text="v.label"></span>
-                <span class="text-[9px] uppercase opacity-70 ml-1" x-text="v.category" x-show="v.category !== 'Primary'"></span>
+  <!-- Viewer Body Card -->
+  <div class="sx-tile" style="padding:20px;margin-bottom:18px;">
+    {% if item.type == 'video' or item.type == 'youtube' %}
+      {% set alts_json = (item.additional_videos or '[]') | safe %}
+      {% set next_target_url = ('/student/content/' ~ next_item.id) if next_item else (('/student/exams/' ~ mock_exam.id) if mock_exam else '') %}
+      {% set next_target_label = ('Proceed to Next Summary (Part ' ~ ((current_part_idx or 1) + 1) ~ ') →') if next_item else ('Proceed to Practice Mock Exam →' if mock_exam else '') %}
+      {% set next_target_short = ('Next: Part ' ~ ((current_part_idx or 1) + 1) ~ ' →') if next_item else ('Start Exam →' if mock_exam else '') %}
+      <div style="display:flex;flex-direction:column;gap:14px;" x-data="videoSwitcher('{{ item.media_url }}', '{{ item.type }}', {{ alts_json }})">
+        <!-- Video Switcher Controls -->
+        <div x-show="videos.length > 1" x-cloak style="display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:0.74rem;font-weight:800;text-transform:uppercase;color:var(--sx-mute);">Select Version:</span>
+          <template x-for="v in videos" :key="v.id">
+            <button type="button" @click="selectVideo(v)"
+                    class="sx-btn"
+                    :class="currentVideo.id === v.id ? 'sx-btn-gold' : 'sx-btn-ghost'"
+                    style="padding:6px 12px;font-size:0.76rem;">
+              <span x-text="v.label"></span>
+            </button>
+          </template>
+        </div>
+
+        <!-- Video Player Frame -->
+        <div style="width:100%;border-radius:20px;overflow:hidden;background:#0f1014;aspect-ratio:16/9;position:relative;border:1px solid var(--sx-line);">
+          <template x-if="(currentVideo.type === 'video' || currentVideo.type === 'upload') && !(currentVideo.url || '').startsWith('vtok_')">
+            <video style="width:100%;height:100%;object-fit:cover;" data-content-id="{{ item.id }}" playsinline controls controlsList="nodownload" oncontextmenu="return false;" x-ref="videoPlayer">
+              <source :src="currentVideo.url" type="video/mp4">
+            </video>
+          </template>
+
+          <template x-if="currentVideo.type === 'youtube' || (currentVideo.url || '').startsWith('vtok_')">
+            <div style="width:100%;height:100%;"
+                 :data-saxaz-video="currentVideo.url"
+                 data-content-id="{{ item.id }}"
+                 {% if next_target_url %}
+                 data-next-url="{{ next_target_url }}"
+                 data-next-label="{{ next_target_label }}"
+                 data-next-short="{{ next_target_short }}"
+                 {% endif %}></div>
+          </template>
+        </div>
+
+        <!-- Prominent Continuation Banner Directly Below Video Player -->
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:14px 18px;border-radius:18px;background:var(--sx-bg-2);border:1.5px solid var(--sx-line);">
+          <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+            <span class="material-symbols-outlined" style="font-size:24px;color:#d97706;">link</span>
+            <div>
+              {% if next_item %}
+                <div style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--sx-mute);">Up Next in Summary Series (Part {{ (current_part_idx or 1) + 1 }} of {{ total_parts or 4 }})</div>
+                <div style="font-family:var(--sx-display);font-size:0.98rem;font-weight:800;color:var(--sx-ink);">{{ next_item.title }}</div>
+              {% elif mock_exam %}
+                <div style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#16a34a;">All {{ total_parts or 4 }} Chapter Summaries Completed!</div>
+                <div style="font-family:var(--sx-display);font-size:0.98rem;font-weight:800;color:var(--sx-ink);">Ready for Step 1: {{ mock_exam.title }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            {% if prev_item %}
+              <a href="/student/content/{{ prev_item.id }}" class="sx-btn sx-btn-ghost" style="padding:8px 14px;font-size:0.8rem;">
+                <span class="material-symbols-outlined" style="font-size:16px;">arrow_back</span>
+                <span>Previous Part</span>
+              </a>
+            {% endif %}
+            {% if next_item %}
+              <button type="button"
+                      onclick="fetch('/student/content/{{ item.id }}/complete', {method:'POST'}).finally(() => { window.location.href='/student/content/{{ next_item.id }}'; });"
+                      class="sx-btn sx-btn-gold"
+                      style="padding:9px 18px;font-size:0.86rem;">
+                <span>Proceed to Next Summary (Part {{ (current_part_idx or 1) + 1 }})</span>
+                <span class="material-symbols-outlined">arrow_forward</span>
               </button>
-            </template>
+            {% elif mock_exam %}
+              <button type="button"
+                      onclick="fetch('/student/content/{{ item.id }}/complete', {method:'POST'}).finally(() => { window.location.href='/student/exams/{{ mock_exam.id }}'; });"
+                      class="sx-btn sx-btn-gold"
+                      style="padding:9px 18px;font-size:0.86rem;">
+                <span>Proceed to Practice Mock Exam</span>
+                <span class="material-symbols-outlined">arrow_forward</span>
+              </button>
+            {% endif %}
           </div>
+        </div>
+      </div>
 
-          <!-- Video Container -->
-          <div class="w-full rounded-2xl sm:rounded-[2rem] shadow-xl border border-base-300 overflow-hidden bg-black aspect-video relative" style="--plyr-color-main: hsl(var(--p));">
-            
-            <!-- We re-render the video element when source changes to easily re-initialize Plyr -->
-            <template x-if="(currentVideo.type === 'video' || currentVideo.type === 'upload') && !(currentVideo.url || '').startsWith('vtok_')">
-              <video class="w-full h-full object-cover" data-content-id="{{ item.id }}" playsinline controls controlsList="nodownload" oncontextmenu="return false;" x-ref="videoPlayer">
-                <source :src="currentVideo.url" type="video/mp4">
-              </video>
-            </template>
-            
-            <template x-if="currentVideo.type === 'youtube' || (currentVideo.url || '').startsWith('vtok_')">
-              <div class="w-full h-full" :data-saxaz-video="currentVideo.url" data-content-id="{{ item.id }}"></div>
-            </template>
-            
-          </div>
-        </div>
+    {% elif item.type == 'audio' %}
+      <div style="max-width:640px;margin:20px auto;padding:28px;border-radius:22px;background:var(--sx-bg-2);border:1px solid var(--sx-line);text-align:center;">
+        <span class="material-symbols-outlined" style="font-size:48px;color:#c47c00;margin-bottom:12px;">graphic_eq</span>
+        <audio class="plyr-player" data-content-id="{{ item.id }}" controls style="width:100%;">
+          <source src="{{ item.media_url }}" type="audio/mpeg">
+        </audio>
+      </div>
 
-      {% elif item.type == 'audio' %}
-        <!-- Using Plyr for audio -->
-        <div class="w-full max-w-2xl bg-base-100 rounded-[1.5rem] sm:rounded-[2rem] p-5 sm:p-12 flex flex-col items-center gap-6 sm:gap-10 border border-base-300 shadow-sm">
-          <div class="w-24 h-24 sm:w-32 sm:h-32 bg-primary/10 rounded-full flex items-center justify-center text-5xl sm:text-6xl border border-primary/20 shadow-inner">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-[1em] h-[1em] inline-block text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-          </div>
-          <div class="w-full" style="--plyr-color-main: hsl(var(--p)); --plyr-audio-control-background-hover: hsl(var(--p));">
-            <audio class="plyr-player" data-content-id="{{ item.id }}" controls>
-              <source src="{{ item.media_url }}" type="audio/mpeg">
-              Your browser does not support the audio element.
-            </audio>
-          </div>
+    {% elif item.type == 'pdf' %}
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:8px 12px;border-radius:14px;background:var(--sx-bg-2);">
+          <span style="font-size:0.8rem;font-weight:800;color:var(--sx-mute);">Interactive PDF Study Notes</span>
+          <a href="{{ item.media_url }}" target="_blank" rel="noopener" class="sx-btn sx-btn-ghost" style="padding:6px 12px;font-size:0.76rem;">
+            <span class="material-symbols-outlined" style="font-size:16px;">open_in_new</span>Open Fullscreen PDF
+          </a>
         </div>
-      {% elif item.type == 'pdf' %}
-        <div class="w-full flex flex-col items-center">
-          <iframe src="{{ item.media_url }}" class="w-full h-[65dvh] sm:h-[800px] rounded-2xl border border-base-200 shadow-sm bg-white"></iframe>
-          <!-- Auto-complete when scrolled to bottom -->
-          <div hx-post="/student/content/{{ item.id }}/complete" hx-trigger="revealed" hx-target="#progress-container-{{ item.id }}" hx-swap="innerHTML" class="h-1 w-full mt-4"></div>
-        </div>
-      {% elif item.type == 'text' %}
-        <div class="prose max-w-4xl w-full p-4 sm:p-8 md:p-12 text-left text-base-content bg-white rounded-[1.5rem] sm:rounded-[2rem] shadow-sm border border-base-200">
-          {{ item.content | safe }}
-          
-          {% if item.media_url %}
-          <div class="mt-6 sm:mt-8 text-center bg-base-100 p-5 sm:p-8 rounded-2xl border border-base-200">
-            <div class="text-5xl mb-4"><svg xmlns="http://www.w3.org/2000/svg" class="w-[1em] h-[1em] inline-block text-primary/50 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-            <h3 class="text-base-content font-bold mb-4 text-xl">Attached Document</h3>
-            <a href="{{ item.media_url }}" target="_blank" class="btn btn-primary rounded-full px-8 sm:px-10 h-12 shadow-sm text-white font-bold tracking-wide">
-              Open in New Tab <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-            </a>
+        <iframe src="{{ item.media_url }}" style="width:100%;height:78dvh;min-height:420px;border-radius:16px;border:1px solid var(--sx-line);background:#fff;"></iframe>
+        <div hx-post="/student/content/{{ item.id }}/complete" hx-trigger="revealed" hx-target="#progress-container-{{ item.id }}" hx-swap="innerHTML" style="height:1px;width:100%;"></div>
+      </div>
+
+    {% elif item.type == 'text' %}
+      <div class="prose max-w-none" style="padding:16px 20px;line-height:1.7;color:var(--sx-ink);">
+        {{ item.content | safe }}
+        {% set ref_url = item.attachment_url if item.attachment_url is defined and item.attachment_url else item.media_url %}
+        {% if ref_url %}
+        <a href="{{ ref_url }}" target="_blank" rel="noopener" class="sx-card-clickable"
+           style="margin-top:24px;padding:20px;border-radius:18px;background:var(--sx-bg-2);border:1px solid var(--sx-line);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;text-decoration:none;color:var(--sx-ink);">
+          <div>
+            <div style="font-weight:800;">Attached Study Reference</div>
+            <div style="font-size:0.82rem;color:var(--sx-mute);">Open the companion document in a new tab</div>
           </div>
-          {% endif %}
-          
-          <!-- Auto-complete when scrolled to bottom -->
-          <div hx-post="/student/content/{{ item.id }}/complete" hx-trigger="revealed" hx-target="#progress-container-{{ item.id }}" hx-swap="innerHTML" class="h-1 w-full mt-12"></div>
-        </div>
-      {% endif %}
-    </div>
+          <span class="sx-btn sx-btn-gold">
+            <span>Open Document</span>
+            <span class="material-symbols-outlined sx-card-arrow">open_in_new</span>
+          </span>
+        </a>
+        {% endif %}
+        <div hx-post="/student/content/{{ item.id }}/complete" hx-trigger="revealed" hx-target="#progress-container-{{ item.id }}" hx-swap="innerHTML" style="height:1px;width:100%;margin-top:16px;"></div>
+      </div>
+    {% endif %}
   </div>
 
-  <!-- Bottom Navigation -->
-  <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mt-6 sm:mt-8 px-1 sm:px-4">
-    <div class="w-full sm:w-auto">
+  <!-- Bottom Prev / Next / Practice Navigation -->
+  <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;">
+    <div style="max-width:100%;">
       {% if prev_item %}
-      <a href="/student/content/{{ prev_item.id }}" class="btn btn-outline border-base-300 hover:border-primary hover:bg-primary hover:text-white rounded-full px-5 sm:px-6 h-12 w-full sm:w-auto justify-start transition-all duration-300 font-bold group">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 shrink-0 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-        <div class="flex flex-col items-start text-left ml-1 min-w-0">
-          <span class="text-[10px] uppercase opacity-70 leading-tight">Previous</span>
-          <span class="leading-tight truncate max-w-[230px] sm:max-w-[260px]">{{ prev_item.title }}</span>
-        </div>
+      <a href="/student/content/{{ prev_item.id }}" class="sx-btn sx-btn-ghost" style="max-width:100%;">
+        <span class="material-symbols-outlined">arrow_back</span>
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Previous: {{ prev_item.title | truncate(30) }}</span>
+      </a>
+      {% else %}
+      <a href="/student/chapters/{{ item.chapter_id }}" class="sx-btn sx-btn-ghost">
+        <span class="material-symbols-outlined">arrow_back</span>
+        <span>Back to Chapter Studio</span>
       </a>
       {% endif %}
     </div>
-    <div class="w-full sm:w-auto">
+
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;max-width:100%;">
+      <a href="/student/chapters/{{ item.chapter_id }}#chapter-exams" class="sx-btn sx-btn-ghost">
+        <span class="material-symbols-outlined" style="color:#198754;">quiz</span>Go to Chapter Quizzes
+      </a>
       {% if next_item %}
-      <a href="/student/content/{{ next_item.id }}" class="btn btn-outline border-base-300 hover:border-primary hover:bg-primary hover:text-white rounded-full px-5 sm:px-6 h-12 w-full sm:w-auto justify-between sm:justify-end transition-all duration-300 font-bold group flex-row-reverse">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2 shrink-0 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-        <div class="flex flex-col items-start sm:items-end text-left sm:text-right mr-1 min-w-0">
-          <span class="text-[10px] uppercase opacity-70 leading-tight">Next</span>
-          <span class="leading-tight truncate max-w-[230px] sm:max-w-[260px]">{{ next_item.title }}</span>
-        </div>
+      <a href="/student/content/{{ next_item.id }}"
+         onclick="if(!event.metaKey && !event.ctrlKey){ event.preventDefault(); fetch('/student/content/{{ item.id }}/complete', {method:'POST'}).finally(() => { window.location.href='/student/content/{{ next_item.id }}'; }); }"
+         class="sx-btn sx-btn-gold" style="max-width:100%;">
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Next: {{ next_item.title | truncate(30) }}</span>
+        <span class="material-symbols-outlined">arrow_forward</span>
       </a>
       {% endif %}
     </div>
   </div>
+
 </div>
 
 <script>
@@ -161,36 +253,28 @@
       currentVideo: null,
       videos: [],
       player: null,
-      
+
       init() {
         this.videos = [{
-          id: 'default', 
-          label: 'Default', 
-          url: defaultUrl, 
-          type: defaultType, 
+          id: 'default',
+          label: 'Primary Lesson',
+          url: defaultUrl,
+          type: defaultType,
           category: 'Primary'
         }];
         if (additionalVideos && additionalVideos.length > 0) {
           this.videos = this.videos.concat(additionalVideos);
         }
-        
         this.currentVideo = this.videos[0];
-        try { localStorage.removeItem('preferred_video_lang'); } catch (e) {}
-        
-        this.$watch('currentVideo', () => {
-          this.initPlayer();
-        });
-        
-        this.$nextTick(() => {
-          this.initPlayer();
-        });
+        this.$watch('currentVideo', () => { this.initPlayer(); });
+        this.$nextTick(() => { this.initPlayer(); });
       },
-      
+
       selectVideo(v) {
         if (this.currentVideo.id === v.id) return;
         this.currentVideo = v;
       },
-      
+
       initPlayer() {
         if (this.player) {
           this.player.destroy();
@@ -202,7 +286,7 @@
             this.player = new Plyr(el, {
               controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen']
             });
-            this.player.on('ended', event => {
+            this.player.on('ended', () => {
               const contentId = el.dataset.contentId;
               if (contentId) {
                 const container = document.getElementById(`progress-container-${contentId}`);
@@ -218,35 +302,27 @@
   });
 
   document.addEventListener('DOMContentLoaded', () => {
-    const players = Array.from(document.querySelectorAll('.plyr-player')).map(p => {
+    Array.from(document.querySelectorAll('.plyr-player')).forEach(p => {
       const player = new Plyr(p, {
         controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'fullscreen']
       });
-      
-      // Auto-complete content when media finishes
-      player.on('ended', event => {
+      player.on('ended', () => {
         const contentId = p.dataset.contentId;
         if (contentId) {
           const container = document.getElementById(`progress-container-${contentId}`);
-          // Only trigger if it hasn't been completed yet (the button exists)
           if (container && container.querySelector('button')) {
             htmx.ajax('POST', `/student/content/${contentId}/complete`, {target: `#progress-container-${contentId}`, swap: 'innerHTML'});
           }
         }
       });
-      
-      return player;
     });
 
-    // Time Tracking Ping
     setInterval(() => {
       fetch(`/student/content/{{ item.id }}/ping`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }).catch(console.error);
-    }, 10000); // every 10 seconds
+        headers: { 'Content-Type': 'application/json' }
+      }).catch(() => {});
+    }, 10000);
   });
 </script>
 {% endblock %}

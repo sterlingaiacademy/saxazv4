@@ -1,424 +1,159 @@
 {% extends "base.html" %}
+{% block title %}Student Dashboard | SAXAZ{% endblock %}
+{% block topbar_title %}Dashboard{% endblock %}
 
-{% block title %}Command Deck • SAXAZ Kinetic OS{% endblock %}
-{% block topbar_title %}Command Deck{% endblock %}
+{% block hero_banner %}
+<section class="sx-ext-hero">
+  <div class="sx-ext-hero-inner">
+    <h1 class="sx-ext-hero-title">
+      <span class="is-dark">Welcome back,</span>
+      <span class="is-white">{{ (user.name or 'Student').split(' ')[0] | capitalize }}</span>
+    </h1>
+    <p class="sx-ext-hero-copy">
+      Pick up right where you left off, or tap any 3D subject below.<br>
+      Class 10 interactive lessons, mock tests, and AI coaching ready to go.
+    </p>
+  </div>
+</section>
+{% endblock %}
 
 {% block content %}
-<div class="w-full max-w-[1680px] mx-auto space-y-6 pb-16"
+{% set pct_all = overall_progress_pct or 0 %}
+{% set pct_clamped = 100 if pct_all > 100 else (0 if pct_all < 0 else pct_all) %}
+{% set ns = namespace(ch=none, sub=none, bio_href='/student/exams') %}
+{% for s in subjects %}
+  {% set ch_list = s.chapters or [] %}
+  {% if 'bio' in (s.name or '')|lower %}
+    {% set ns.bio_href = ('/student/chapters/' ~ ch_list[0].id) if ch_list|length == 1 else ('/student/exams?subject=' ~ s.id) %}
+  {% endif %}
+  {% for ch in ch_list %}
+    {% if ns.ch is none and not (ch.state == 'completed' or ch.is_completed) %}
+      {% set ns.ch = ch %}
+      {% set ns.sub = s %}
+    {% endif %}
+  {% endfor %}
+{% endfor %}
+{% if ns.ch is none and subjects and subjects[0].chapters %}
+  {% set ns.sub = subjects[0] %}
+  {% set ns.ch = subjects[0].chapters[0] %}
+{% endif %}
+
+{% set active_exam = (continue_state.exam if (continue_state and continue_state.exam) else none) %}
+{% set resume_label = 'Resume Lesson' if pct_all > 0 else 'Start Lesson' %}
+{% set resume_url = (active_exam.resume_url if (active_exam and active_exam.resume_url) else ('/student/chapters/' ~ ns.ch.id if ns.ch else '/student/exams')) %}
+{% set resume_heading = ((active_exam.title if (active_exam and active_exam.title) else none) or (ns.ch.name if ns.ch else 'Your next lesson awaits')) %}
+{% set resume_subtext = ((user.name or 'Student').split(' ')[0] | capitalize) ~ ' - tap ' ~ resume_label ~ ' to ' ~ ('continue ' if pct_all > 0 else 'begin ') ~ (ns.sub.name if ns.sub else 'your lessons') ~ '.' %}
+
+<div style="max-width: 1080px;"
      x-data="{
-       activeSubjectIdx: 0,
-       deckView: 'all',
-       liveTime: '',
-       quickAiPrompt: '',
-       subjectsData: {{ subjects | tojson | forceescape }},
-       get selectedSubject() {
-         return (this.subjectsData && this.subjectsData.length > 0)
-           ? (this.subjectsData[this.activeSubjectIdx] || this.subjectsData[0])
-           : null;
-       },
-       updateClock() {
-         const now = new Date();
-         this.liveTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+       soonSubject: '',
+       soonTimer: null,
+       notifySubjectSoon(name) {
+         this.soonSubject = name;
+         if (this.soonTimer) clearTimeout(this.soonTimer);
+         this.soonTimer = setTimeout(() => { this.soonSubject = ''; }, 3600);
        }
-     }"
-     x-init="updateClock(); setInterval(() => updateClock(), 1000)">
+     }">
 
-  <!-- 1. KINETIC GOLD-ON-BLACK TELEMETRY TICKER -->
-  <div class="rounded-2xl bg-[#111111] text-white border-2 border-[#f8b000] px-4 py-2.5 shadow-lg flex items-center gap-4 overflow-hidden">
-    <div class="flex items-center gap-2 shrink-0 bg-[#f8b000] text-[#111111] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-      <span class="w-2 h-2 rounded-full bg-[#111111] animate-ping"></span>
-      <span>LIVE OS TELEMETRY</span>
-    </div>
-    <div class="v2-marquee-wrap flex-1 text-xs font-bold text-white/85">
-      <div class="v2-marquee-track">
-        <span>⚡ OPERATOR: <strong class="text-[#f8b000]">{{ user.name | upper }}</strong></span>
-        <span>•</span>
-        <span>🔥 ACTIVE STREAK: <strong class="text-[#f8b000]" id="gamification-streak">{{ stats.streak_days if stats else 0 }}</strong> DAYS</span>
-        <span>•</span>
-        <span>🏆 {{ stats.league if stats else 'Bronze' }} LEAGUE: <strong class="text-[#f8b000]" id="gamification-xp">{{ stats.xp_earned if stats else 0 }} XP</strong></span>
-        <span>•</span>
-        <span>🎯 OVERALL MASTERY: <strong class="text-[#f8b000]" id="overall-progress-text">{{ overall_progress_pct }}%</strong></span>
-        <span>•</span>
-        <span>⌨️ PRESS <strong class="text-[#f8b000]">CTRL+K / ⌘K</strong> TO TELEPORT ANYWHERE</span>
-        <span>•</span>
-        <span>📚 {{ digi_books|length }} INTERACTIVE DIGITAL BOOKS LOADED</span>
-        <span>•</span>
-        <span>⚡ OPERATOR: <strong class="text-[#f8b000]">{{ user.name | upper }}</strong></span>
-        <span>•</span>
-        <span>🔥 ACTIVE STREAK: <strong class="text-[#f8b000]">{{ stats.streak_days if stats else 0 }}</strong> DAYS</span>
-      </div>
-    </div>
-    <div class="hidden md:flex items-center gap-2 shrink-0 font-mono text-xs font-black text-[#f8b000] bg-white/10 px-3 py-1 rounded-lg border border-white/15" x-text="liveTime"></div>
-  </div>
-
-  <!-- 2. ORBITAL MASTERY REACTOR HERO + 3D WIREFRAME CUBE + GAMIFICATION CORES -->
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-
-    <!-- Left 8 Cols: Pitch-Black & Electric-Gold Orbital Reactor Hero -->
-    <div class="lg:col-span-8 v2-reactor-hero p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6" data-v2-tilt>
-      <div class="v2-kinetic-ring w-72 h-72 -right-16 -bottom-20"></div>
-
-      <!-- True 3D Multi-Ring Spinning Orbital Mastery Core -->
-      <div class="v2-orbital-core">
-        <div class="v2-orbit-ring ring-1"></div>
-        <div class="v2-orbit-ring ring-2"></div>
-        <div class="v2-orbit-ring ring-3"></div>
-        <div class="relative z-10 w-28 h-28 rounded-full bg-[#111111] border-2 border-[#f8b000] shadow-[0_0_30px_rgba(248,176,0,0.45)] flex flex-col items-center justify-center text-center">
-          <span class="text-3xl font-black text-[#f8b000] leading-none" style="font-family:'Space Grotesk',sans-serif;">{{ overall_progress_pct }}%</span>
-          <span class="text-[9px] font-black uppercase tracking-widest text-white/70 mt-1">Mastery Core</span>
-        </div>
-      </div>
-
-      <!-- Center Text & Instant Teleport Command Bar -->
-      <div class="flex-1 space-y-4 text-center md:text-left relative z-10 w-full">
-        <div class="flex flex-wrap items-center justify-center md:justify-start gap-2">
-          <span class="px-3 py-1 rounded-full bg-[#f8b000] text-[#111111] text-[10px] font-black uppercase tracking-widest">
-            ⚡ SPATIAL COMMAND DECK v2.0
-          </span>
-          <span class="px-3 py-1 rounded-full bg-white/10 text-white/85 text-[10px] font-black uppercase tracking-widest border border-white/15">
-            {{ subjects|length }} Active Courses • {{ total_digi_banks }} Digi-Modules
-          </span>
-        </div>
-
-        <h1 class="text-3xl sm:text-4xl xl:text-5xl font-black tracking-tight text-white leading-[1.05]" style="font-family:'Space Grotesk',sans-serif;">
-          Ready for launch, <span class="text-[#f8b000] underline decoration-[#f8b000]/40 decoration-wavy underline-offset-8">{{ user.name }}</span>.
-        </h1>
-
-        <p class="text-xs sm:text-sm text-white/75 font-medium max-w-xl">
-          Click any subject below to morph its live chapter syllabus directly on this deck—or fire up your AI Co-Pilot in one click.
-        </p>
-
-        <!-- Embedded Instant Teleport Trigger + Quick Mode Pills -->
-        <div class="flex flex-wrap items-center justify-center md:justify-start gap-2.5 pt-1">
-          <button type="button"
-                  @click="$dispatch('open-saxaz-spotlight')"
-                  class="v2-btn-gold text-xs sm:text-sm">
-            <span>⚡ AI Teleport &amp; Smart Search</span>
-            <kbd class="px-1.5 py-0.5 rounded bg-[#111111] text-[#f8b000] text-[10px]">⌘K</kbd>
-          </button>
-          <a href="/student/tutor" class="v2-btn-black text-xs sm:text-sm">
-            <span>🤖 Launch AI Co-Pilot</span>
-          </a>
-        </div>
-      </div>
-    </div>
-
-    <!-- Right 4 Cols: Electric Gold Reactor Card with 3D Cube, Streak & League XP -->
-    <div class="lg:col-span-4 v2-gold-reactor-card p-6 sm:p-7 flex flex-col justify-between gap-5" data-v2-tilt>
-      <div class="flex items-start justify-between gap-4">
+  <!-- 1. RESUME / START LESSON YELLOW BLOCK + ACCURATE SVG PROGRESS RING -->
+  <section class="sx-ext-dash-section">
+    <div class="sx-ext-resume-row">
+      <div class="sx-ext-resume-card">
         <div>
-          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#111111] text-[#f8b000] text-[10px] font-black uppercase tracking-widest">
-            <span class="w-1.5 h-1.5 rounded-full bg-[#f8b000] animate-ping"></span>
-            {{ stats.league if stats else 'Bronze' }} League Reactor
-          </span>
-          <div class="mt-3 flex items-baseline gap-2">
-            <span class="text-4xl sm:text-5xl font-black text-[#111111] leading-none" style="font-family:'Space Grotesk',sans-serif;">{{ stats.xp_earned if stats else 0 }}</span>
-            <span class="text-xs font-black uppercase tracking-widest text-[#111111]/75">Total XP</span>
-          </div>
+          <a href="{{ resume_url }}" class="sx-ext-resume-pill">
+            <span>{{ resume_label }}</span>
+            <span class="sx-ext-resume-arrow">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </span>
+          </a>
         </div>
 
-        <!-- Large 3D Rotating Wireframe Cube -->
-        <div class="v2-cube-scene v2-cube-lg bg-[#111111] rounded-2xl p-2 border-2 border-[#111111] shadow-lg">
-          <div class="v2-cube">
-            <div class="v2-cube-face front">XP</div>
-            <div class="v2-cube-face back">{{ stats.streak_days if stats else 0 }}🔥</div>
-            <div class="v2-cube-face right">AI</div>
-            <div class="v2-cube-face left">V2</div>
-            <div class="v2-cube-face top">★</div>
-            <div class="v2-cube-face bottom">⚡</div>
-          </div>
+        <div>
+          <h2 class="sx-ext-resume-title">
+            <span class="is-dark">{{ 'Continue from' if pct_all > 0 else 'Start with' }}</span>
+            <span class="is-white">{{ resume_heading }}</span>
+          </h2>
+          <p class="sx-ext-resume-sub">{{ resume_subtext }}</p>
         </div>
       </div>
 
-      <!-- Streak & League Progress Bar -->
-      <div class="grid grid-cols-2 gap-3">
-        <div class="bg-[#111111] text-white rounded-2xl p-3.5 border-2 border-[#111111]">
-          <div class="flex items-center justify-between">
-            <span class="text-[10px] font-black uppercase tracking-wider text-white/60">Fire Streak</span>
-            <span class="text-base">🔥</span>
-          </div>
-          <div class="text-2xl font-black text-[#f8b000] mt-1" style="font-family:'Space Grotesk',sans-serif;">
-            {{ stats.streak_days if stats else 0 }} <span class="text-xs font-bold text-white/70">Days</span>
-          </div>
-        </div>
-
-        <div class="bg-white text-[#111111] rounded-2xl p-3.5 border-2 border-[#111111]">
-          <div class="flex items-center justify-between">
-            <span class="text-[10px] font-black uppercase tracking-wider text-[#111111]/60">Next Rank</span>
-            <span class="text-xs font-black text-[#111111]">{{ stats.league_progress if stats else 0 }}%</span>
-          </div>
-          <div class="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden mt-2.5 border border-[#111111]/20">
-            <div class="bg-[#111111] h-full rounded-full transition-all duration-700" style="width: {{ stats.league_progress if stats else 0 }}%"></div>
-          </div>
-          <div class="text-[10px] font-extrabold text-[#111111]/70 mt-1" id="gamification-next-xp">
-            {% if stats and stats.next_tier_xp %}{{ stats.next_tier_xp - stats.current_xp }} XP to rank up{% else %}Max Tier{% endif %}
-          </div>
+      <div class="sx-ext-conic-ring" style="border:0;box-shadow:none;position:relative;background:#ffffff;" aria-label="{{ pct_all }}% Complete">
+        <svg width="224" height="224" viewBox="0 0 224 224" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;">
+          <circle cx="112" cy="112" r="92" fill="none" stroke="rgba(35,31,32,0.12)" stroke-width="18"/>
+          <circle cx="112" cy="112" r="92" fill="none" stroke="#f7b317" stroke-width="18" stroke-linecap="round" transform="rotate(-90 112 112)" stroke-dasharray="578" stroke-dashoffset="{{ (578 * (1 - (pct_clamped / 100.0)))|round(1) }}" opacity="{{ 0 if pct_clamped <= 0 else 1 }}"/>
+        </svg>
+        <div class="sx-ext-conic-inner" style="position:relative;z-index:1;">
+          <b>{{ pct_all }}%</b>
+          <span>Complete</span>
         </div>
       </div>
     </div>
+  </section>
 
-  </div>
-
-  <!-- 3. INTERACTIVE LIVE COURSE & CHAPTER TELEPORT MATRIX (ZERO PAGE RELOAD!) -->
-  <div class="v2-spotlight-card p-5 sm:p-7">
-    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b-2 border-dashed border-[#111111]/15">
-      <div>
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#111111] text-[#f8b000] text-[10px] font-black uppercase tracking-widest mb-1.5">
-          <span class="w-1.5 h-1.5 rounded-full bg-[#f8b000] animate-ping"></span>
-          Interactive Syllabus Matrix • Zero-Reload Chapter Explorer
-        </div>
-        <h2 class="text-2xl sm:text-3xl font-black tracking-tight" style="font-family:'Space Grotesk',sans-serif;">
-          Select a Subject Pod to Morph Its Chapters Live
-        </h2>
+  <!-- 2. MY SUBJECTS — STANDALONE BORDERLESS 3D ANIMATED SUBJECT EMBLEMS -->
+  <section class="sx-ext-dash-section" style="margin-bottom: 18px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <h2 class="sx-ext-section-h2" style="margin-bottom: 6px;">My Subjects</h2>
+      <div x-show="soonSubject"
+           x-cloak
+           class="sx-subject-soon-pill"
+           role="status"
+           aria-live="polite">
+        <span class="material-symbols-outlined" style="font-size:18px;color:#f7b317;" aria-hidden="true">auto_awesome</span>
+        <span x-text="soonSubject + ' chapters unlocking soon!'"></span>
+        <a href="{{ ns.bio_href }}" class="sx-subject-soon-cta">Open Biology &rarr;</a>
       </div>
+    </div>
 
-      <!-- Subject Selector Pills -->
-      <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-        {% for subject in subjects %}
-        <button type="button"
-                @click="activeSubjectIdx = {{ loop.index0 }}"
-                class="px-4 py-2.5 rounded-2xl font-black text-xs sm:text-sm transition-all cursor-pointer shrink-0 flex items-center gap-2 border-2 border-[#111111]"
-                :class="activeSubjectIdx === {{ loop.index0 }}
-                  ? 'bg-[#f8b000] text-[#111111] shadow-[0_4px_0_0_#111111] -translate-y-0.5'
-                  : 'bg-base-200/70 text-base-content hover:bg-base-300'">
-          <span>{{ subject.name }}</span>
-          <span class="px-2 py-0.5 rounded-full text-[10px] font-black"
-                :class="activeSubjectIdx === {{ loop.index0 }} ? 'bg-[#111111] text-[#f8b000]' : 'bg-base-300 text-base-content'">
-            {{ subject.progress_pct }}%
-          </span>
-        </button>
+    {% set showcase_subjects = [
+      {'key': 'biology',   'label': 'Biology',        'match': 'bio'},
+      {'key': 'physics',   'label': 'Physics',        'match': 'phys'},
+      {'key': 'chemistry', 'label': 'Chemistry',      'match': 'chem'},
+      {'key': 'maths',     'label': 'Maths',          'match': 'math'},
+      {'key': 'social',    'label': 'Social Science', 'match': 'social'},
+      {'key': 'english',   'label': 'English',        'match': 'eng'}
+    ] %}
+
+    <div class="sx-subject-badges-grid">
+      {% for item in showcase_subjects %}
+        {% set m = namespace(live=false, href='#my-subjects', pct=0) %}
+        {% for s in subjects %}
+          {% if item.match in (s.name or '')|lower %}
+            {% set m.pct = (s.progress_pct or 0)|round|int %}
+            {% if (s.chapters or [])|length > 0 %}
+              {% set m.live = true %}
+              {% set ch_list = s.chapters or [] %}
+              {% set m.href = ('/student/chapters/' ~ ch_list[0].id) if ch_list|length == 1 else ('/student/exams?subject=' ~ s.id) %}
+            {% endif %}
+          {% endif %}
         {% endfor %}
-        <a href="/student/attempts" class="px-3.5 py-2.5 rounded-2xl bg-[#111111] text-[#f8b000] font-black text-xs uppercase tracking-wider shrink-0 hover:bg-[#f8b000] hover:text-[#111111] border-2 border-[#111111] transition-all">
-          Exam History &rarr;
+
+        {% if m.live %}
+        <a href="{{ m.href }}"
+           aria-label="{{ item.label }} ({{ m.pct }}% complete)"
+           data-sx-surf-badge
+           class="sx-issue-badge-card is-subject-badge">
+          <span class="sx-badge-stage is-subject-stage">
+            <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_sub_{{ item.key }}_idle.webp?v=540" alt="{{ item.label }}">
+            <canvas class="sx-badge-canvas" width="380" height="380" data-sx-cols="8" data-sx-frames="48" data-sx-sheet="/static/images/saxaz_web/badge_sub_{{ item.key }}_sheet.webp?v=540"></canvas>
+          </span>
+          <span class="sx-subject-pct-pill">{{ m.pct }}% complete</span>
         </a>
-      </div>
-    </div>
-
-    <!-- Active Subject Live Chapter Grid -->
-    <template x-if="selectedSubject">
-      <div class="pt-6 space-y-5">
-        <!-- Selected Subject Banner Strip -->
-        <div class="rounded-2xl bg-[#111111] text-white p-4 sm:p-5 border-2 border-[#f8b000] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl bg-[#f8b000] text-[#111111] flex items-center justify-center font-black text-2xl shrink-0 border-2 border-white">
-              <span x-text="selectedSubject.name ? selectedSubject.name.charAt(0) : 'S'"></span>
-            </div>
-            <div>
-              <div class="flex items-center gap-2 flex-wrap">
-                <h3 class="text-xl sm:text-2xl font-black text-white" style="font-family:'Space Grotesk',sans-serif;" x-text="selectedSubject.name"></h3>
-                <span class="px-2.5 py-0.5 rounded-full bg-[#f8b000] text-[#111111] text-[10px] font-black uppercase" x-text="(selectedSubject.chapters ? selectedSubject.chapters.length : 0) + ' Chapters'"></span>
-              </div>
-              <p class="text-xs text-white/70 font-medium mt-0.5" x-text="selectedSubject.description || 'Click any chapter card below to teleport directly into its 4-Stage Studio.'"></p>
-            </div>
-          </div>
-          <a :href="'/student/subjects/' + selectedSubject.id" class="v2-btn-gold text-xs shrink-0">
-            <span x-text="'Open Full ' + selectedSubject.name + ' Hub'"></span>
-            <span>&rarr;</span>
-          </a>
-        </div>
-
-        <!-- Chapters Grid for the Selected Subject -->
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          <template x-for="(ch, cIdx) in (selectedSubject.chapters || [])" :key="ch.id">
-            <div class="rounded-2xl border-2 border-[#111111] bg-base-100 p-4 sm:p-5 shadow-[0_5px_0_0_#111111] hover:shadow-[0_8px_0_0_#f8b000] hover:-translate-y-1 transition-all flex flex-col justify-between gap-4">
-              <div>
-                <div class="flex items-center justify-between gap-2 mb-3">
-                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#111111] text-[#f8b000] text-xs font-black" style="font-family:'Space Grotesk',sans-serif;" x-text="'CH ' + String(cIdx + 1).padStart(2, '0')"></span>
-                  <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black border border-[#111111]/20"
-                        :class="ch.progress_pct >= 100 ? 'bg-emerald-400 text-[#111111]' : 'bg-[#f8b000]/25 text-base-content'"
-                        x-text="(ch.progress_pct || 0) + '% Mastery'"></span>
-                </div>
-                <a :href="'/student/chapters/' + ch.id" class="block group">
-                  <h4 class="text-base sm:text-lg font-black text-base-content group-hover:text-[#d49600] transition-colors line-clamp-1" style="font-family:'Space Grotesk',sans-serif;" x-text="ch.name"></h4>
-                  <p class="text-xs text-base-content/60 font-medium line-clamp-2 mt-1" x-text="ch.description || 'Interactive video explanations, revision notes, and practice tests.'"></p>
-                </a>
-              </div>
-
-              <div class="space-y-2.5 pt-3 border-t border-dashed border-base-300">
-                <!-- Progress Bar -->
-                <div class="w-full h-2 rounded-full bg-base-200 overflow-hidden">
-                  <div class="h-full bg-[#f8b000] rounded-full transition-all duration-500" :style="'width:' + (ch.progress_pct || 0) + '%'"></div>
-                </div>
-                <!-- 1-Click Stage Teleporters -->
-                <div class="flex items-center justify-between gap-2">
-                  <div class="flex items-center gap-1">
-                    <a :href="'/student/chapters/' + ch.id" class="px-2 py-1 rounded-lg bg-base-200 hover:bg-[#f8b000] hover:text-[#111111] text-[10px] font-black uppercase transition-colors">🎬 Video</a>
-                    <a :href="'/student/chapters/' + ch.id" class="px-2 py-1 rounded-lg bg-base-200 hover:bg-[#f8b000] hover:text-[#111111] text-[10px] font-black uppercase transition-colors">📄 Notes</a>
-                    <a :href="'/student/chapters/' + ch.id" class="px-2 py-1 rounded-lg bg-base-200 hover:bg-[#f8b000] hover:text-[#111111] text-[10px] font-black uppercase transition-colors">🎯 Exam</a>
-                  </div>
-                  <a :href="'/student/chapters/' + ch.id" class="px-3 py-1.5 rounded-xl bg-[#111111] text-[#f8b000] hover:bg-[#f8b000] hover:text-[#111111] text-[11px] font-black uppercase tracking-wider transition-colors">
-                    Launch &rarr;
-                  </a>
-                </div>
-              </div>
-            </div>
-          </template>
-        </div>
-      </div>
-    </template>
-  </div>
-
-  <!-- 4. BENTO LOWER DECK: LIVE AI CO-PILOT TERMINAL + 3D DIGI-LIBRARY VAULT + TELEMETRY RADAR -->
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-
-    <!-- Left 5 Cols: Embedded Live AI Co-Pilot Terminal -->
-    <div class="lg:col-span-5 v2-reactor-hero p-6 flex flex-col justify-between gap-5" data-v2-tilt>
-      <div class="space-y-3">
-        <div class="flex items-center justify-between gap-2">
-          <span class="px-3 py-1 rounded-full bg-[#f8b000] text-[#111111] text-[10px] font-black uppercase tracking-widest">
-            🤖 NEURAL AI CO-PILOT TERMINAL
+        {% else %}
+        <a href="/student/exams?subject={{ item.key }}"
+           aria-label="{{ item.label }} ({{ m.pct }}% complete)"
+           data-sx-surf-badge
+           class="sx-issue-badge-card is-subject-badge">
+          <span class="sx-badge-stage is-subject-stage">
+            <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_sub_{{ item.key }}_idle.webp?v=540" alt="{{ item.label }}">
+            <canvas class="sx-badge-canvas" width="380" height="380" data-sx-cols="8" data-sx-frames="48" data-sx-sheet="/static/images/saxaz_web/badge_sub_{{ item.key }}_sheet.webp?v=540"></canvas>
           </span>
-          <span class="v2-soundwave text-[#f8b000]">
-            <span></span><span></span><span></span><span></span>
-          </span>
-        </div>
-        <h3 class="text-2xl font-black text-white" style="font-family:'Space Grotesk',sans-serif;">
-          Instant 1-on-1 AI Mentor &amp; Live Scratchpad
-        </h3>
-        <p class="text-xs text-white/75 font-medium">
-          Type any question or click a neural prompt below to launch your AI Co-Pilot with live voice &amp; interactive Scratchpad drawing.
-        </p>
-
-        <!-- Quick Prompt Launch Chips -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
-          <a href="/student/tutor?ask=Explain+my+current+science+chapter+with+a+real-world+analogy&autosend=1"
-             class="p-3 rounded-2xl bg-white/10 hover:bg-[#f8b000] text-white hover:text-[#111111] border border-white/15 transition-all text-xs font-black">
-            ⚡ Explain with a real-life analogy &rarr;
-          </a>
-          <a href="/student/tutor?ask=Draw+and+label+a+key+diagram+on+the+Scratchpad+for+me&autosend=1"
-             class="p-3 rounded-2xl bg-white/10 hover:bg-[#f8b000] text-white hover:text-[#111111] border border-white/15 transition-all text-xs font-black">
-            🎨 Sketch a diagram on Scratchpad &rarr;
-          </a>
-          <a href="/student/tutor?ask=Quiz+me+with+3+rapid-fire+exam+questions&autosend=1"
-             class="p-3 rounded-2xl bg-white/10 hover:bg-[#f8b000] text-white hover:text-[#111111] border border-white/15 transition-all text-xs font-black">
-            🎯 3-Question Rapid-Fire Drill &rarr;
-          </a>
-          <a href="/student/tutor"
-             class="p-3 rounded-2xl bg-[#f8b000]/20 hover:bg-[#f8b000] text-[#f8b000] hover:text-[#111111] border border-[#f8b000]/40 transition-all text-xs font-black">
-            ✏️ Open Visual Scratchpad Studio &rarr;
-          </a>
-        </div>
-      </div>
-
-      <!-- Direct AI Terminal Input -->
-      <form action="/student/tutor" method="GET" class="flex items-center gap-2 pt-2">
-        <input type="hidden" name="autosend" value="1" />
-        <input type="text"
-               name="ask"
-               x-model="quickAiPrompt"
-               placeholder="Ask your AI Co-Pilot anything right from the deck..."
-               class="flex-1 px-4 py-3 rounded-2xl bg-white/10 border-2 border-white/20 focus:border-[#f8b000] text-white placeholder-white/45 text-xs sm:text-sm font-bold outline-none"
-               required />
-        <button type="submit" class="v2-btn-gold text-xs py-3 px-4 shrink-0">
-          Send &rarr;
-        </button>
-      </form>
+          <span class="sx-subject-pct-pill">{{ m.pct }}% complete</span>
+        </a>
+        {% endif %}
+      {% endfor %}
     </div>
-
-    <!-- Center 4 Cols: 3D Digi-Library Hologram Vault -->
-    <div class="lg:col-span-4 v2-spotlight-card p-6 flex flex-col justify-between gap-4" data-v2-tilt>
-      <div>
-        <div class="flex items-center justify-between gap-2 mb-3">
-          <span class="px-3 py-1 rounded-full bg-[#111111] text-[#f8b000] text-[10px] font-black uppercase tracking-widest">
-            📚 DIGI-VAULT EDITIONS
-          </span>
-          <a href="/student/digi-library" class="text-xs font-black text-[#d49600] hover:underline">Open Shelf &rarr;</a>
-        </div>
-        <h3 class="text-xl sm:text-2xl font-black text-base-content mb-3" style="font-family:'Space Grotesk',sans-serif;">
-          Labour India Digital Books
-        </h3>
-
-        <div class="space-y-2.5">
-          {% for book in digi_books[:3] %}
-          <a href="/student/digi-library/books/{{ book.id }}"
-             class="flex items-center justify-between gap-3 p-3 rounded-2xl border-2 border-[#111111] bg-base-200/50 hover:bg-[#f8b000] text-base-content hover:text-[#111111] transition-all group">
-            <div class="flex items-center gap-3 min-w-0">
-              <div class="w-10 h-12 rounded-xl bg-[#111111] text-[#f8b000] flex items-center justify-center font-black text-xs shrink-0 border border-[#f8b000]">
-                📖
-              </div>
-              <div class="min-w-0">
-                <div class="text-xs sm:text-sm font-black truncate" x-text="{{ book.title | tojson | forceescape }}"></div>
-                <div class="text-[10px] font-bold opacity-70">{{ book.subject_count }} Subjects • {{ book.bank_count }} Chapters</div>
-              </div>
-            </div>
-            <span class="px-2.5 py-1 rounded-lg bg-[#111111] text-[#f8b000] text-[10px] font-black uppercase shrink-0">Read &rarr;</span>
-          </a>
-          {% else %}
-          <p class="text-xs text-base-content/60 font-medium">No digital books published yet.</p>
-          {% endfor %}
-        </div>
-      </div>
-
-      <a href="/student/digi-library" class="v2-btn-black w-full text-xs">
-        <span>Explore All {{ digi_books|length }} Digital Editions</span>
-        <span>&rarr;</span>
-      </a>
-    </div>
-
-    <!-- Right 3 Cols: Live Biometric & Study Telemetry Chart -->
-    <div class="lg:col-span-3 v2-spotlight-card p-6 flex flex-col justify-between gap-4" data-v2-tilt>
-      <div>
-        <div class="flex items-center justify-between gap-2 mb-2">
-          <span class="px-3 py-1 rounded-full bg-[#f8b000] text-[#111111] text-[10px] font-black uppercase tracking-widest">
-            📊 LIVE TELEMETRY
-          </span>
-          <span class="text-xs font-black text-base-content/60">{{ analytics.total_study_hours if analytics else 0 }}h Total</span>
-        </div>
-        <h3 class="text-lg font-black text-base-content mb-2" style="font-family:'Space Grotesk',sans-serif;">
-          Subject Mastery Radar
-        </h3>
-        <div class="h-44 w-full relative">
-          <canvas id="v2MasteryChart"></canvas>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-2 gap-2 pt-2 border-t border-dashed border-base-300 text-center">
-        <div class="p-2 rounded-xl bg-base-200/70">
-          <div class="text-lg font-black text-base-content" id="stat-total-hours">{{ analytics.total_study_hours if analytics else 0 }}h</div>
-          <div class="text-[9px] font-black uppercase tracking-wider text-base-content/50">Study Time</div>
-        </div>
-        <div class="p-2 rounded-xl bg-[#f8b000]/25">
-          <div class="text-lg font-black text-base-content">{{ analytics.total_Practice_taken if analytics else 0 }}</div>
-          <div class="text-[9px] font-black uppercase tracking-wider text-base-content/60">Exams Taken</div>
-        </div>
-      </div>
-    </div>
-
-  </div>
+  </section>
 
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const ctx = document.getElementById('v2MasteryChart');
-  if (!ctx || typeof Chart === 'undefined') return;
-  const subjects = {{ subjects | tojson }};
-  const labels = subjects.map(s => (s.name || '').slice(0, 10));
-  const dataVals = subjects.map(s => s.progress_pct || 0);
-
-  new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Mastery %',
-        data: dataVals,
-        backgroundColor: '#f8b000',
-        borderColor: '#111111',
-        borderWidth: 2,
-        borderRadius: 8
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { beginAtZero: true, max: 100, grid: { color: 'rgba(0,0,0,0.06)' }, ticks: { font: { size: 10, weight: 'bold' } } },
-        x: { grid: { display: false }, ticks: { font: { size: 10, weight: 'bold' } } }
-      }
-    }
-  });
-});
-</script>
 {% endblock %}

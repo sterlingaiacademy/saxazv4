@@ -1,150 +1,171 @@
 {% extends "base.html" %}
-
-{% block title %}Digi-Library Studio - SAXAZ{% endblock %}
-{% block topbar_title %}Digi-Library{% endblock %}
+{% block title %}Library | SAXAZ{% endblock %}
+{% block topbar_title %}Library{% endblock %}
 
 {% block content %}
-<div class="w-full max-w-[1600px] mx-auto pb-24 space-y-6"
-     x-data="{ bookQuery: '' }">
+<div class="sx-wrap" x-data="{
+       q: '',
+       unlockOpen: false,
+       issueCode: '',
+       unlockedIssues: JSON.parse(localStorage.getItem('saxaz_unlocked_issues') || '[]'),
+       unlockError: '',
+       openingBookId: null,
+       openBook(bookId, url) {
+         if (this.openingBookId) return;
+         this.openingBookId = bookId;
+         setTimeout(() => { window.location.href = url; }, 440);
+       },
+       redeemCode(e) {
+         const code = (this.issueCode || '').trim().toUpperCase();
+         if (code.length < 4) {
+           this.unlockError = 'Please enter a valid 4+ character Labour India issue code.';
+           return;
+         }
+         this.unlockError = '';
+         if (!this.unlockedIssues.some(i => i.code === code)) {
+           this.unlockedIssues.unshift({
+             code: code,
+             title: 'Labour India Issue · ' + code,
+             sub: '{{ user.class_name or "Class 10" }} Special Edition · Question Banks & Notes'
+           });
+           localStorage.setItem('saxaz_unlocked_issues', JSON.stringify(this.unlockedIssues));
+         }
+         this.issueCode = '';
+         this.unlockOpen = false;
+         if (window.saxazConfetti) window.saxazConfetti(window.innerWidth / 2, window.innerHeight / 3, 36);
+       }
+     }">
 
-  <!-- Breadcrumb + Quick Actions -->
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <div class="flex items-center gap-2">
-      <a href="/student/dashboard" class="v2-pill bg-base-100 border border-base-300 text-base-content/70 hover:text-base-content hover:border-[#111111] transition-all">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-        Study Desk
-      </a>
-      <span class="text-base-content/30 font-black">/</span>
-      <span class="v2-pill bg-[#f8b000] text-[#111111] border border-[#111111]">
-        Digi-Library Studio
-      </span>
+  <div style="display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:16px;margin:10px 4px 6px;">
+    <div>
+      <span class="sx-eyebrow"><i></i>Labour India digital editions &middot; {{ books|length if books else 0 }} on your shelf</span>
+      <h1 class="sx-display" style="font-size:clamp(2rem,1.3rem + 3vw,3.4rem);font-weight:800;line-height:1.04;letter-spacing:-.035em;margin:8px 0 0;">
+        Your <span style="background:#f7b317;padding:0 6px;border-radius:6px;">bookshelf.</span>
+      </h1>
     </div>
-
-    <button type="button"
-            @click="$dispatch('open-v2-spotlight')"
-            class="v2-pill bg-[#111111] text-[#f8b000] border border-[#111111] hover:bg-[#f8b000] hover:text-[#111111] transition-all cursor-pointer">
-      <span>⚡ AI Book &amp; Topic Search</span>
-      <kbd class="px-1.5 py-0.5 rounded bg-white/15 text-[10px]">⌘K</kbd>
-    </button>
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;width:100%;max-width:520px;justify-content:flex-end;">
+      <label class="sx-search" style="flex:1;min-width:min(100%, 200px);">
+        <span class="material-symbols-outlined" style="color:#c47c00;">search</span>
+        <input type="text" x-model="q" placeholder="Search editions or books...">
+      </label>
+      <button type="button" @click="unlockOpen = true; unlockError = ''" class="sx-btn sx-btn-gold" style="height:44px;padding:0 18px;">
+        <span class="material-symbols-outlined">qr_code_scanner</span>
+        <span>Unlock Issue</span>
+      </button>
+    </div>
   </div>
 
-  <!-- KINETIC PITCH-BLACK & GOLD DIGI-LIBRARY HERO -->
-  <div class="relative rounded-[2rem] bg-[#111111] text-white border-2 border-[#111111] shadow-[0_10px_0_0_#f8b000] p-6 sm:p-8 lg:p-10 overflow-hidden">
-    <div class="absolute -right-12 -top-12 w-64 h-64 rounded-full bg-[#f8b000]/15 blur-3xl pointer-events-none"></div>
-    <div class="v2-kinetic-ring w-56 h-56 -right-8 -bottom-16 border-[#f8b000]/20 pointer-events-none"></div>
-
-    <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-      <div class="flex items-start sm:items-center gap-5 max-w-3xl">
-        <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-[#f8b000] text-[#111111] flex items-center justify-center shadow-[0_5px_0_0_#c28800] shrink-0 border-2 border-white/20">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-9 h-9" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-          </svg>
-        </div>
-        <div class="space-y-2">
-          <div class="flex items-center gap-2 flex-wrap">
-            <span class="bg-[#f8b000] text-[#111111] px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest">
-              Labour India Digital Bookshelf
-            </span>
-            <span class="px-3 py-0.5 rounded-full bg-white/10 text-white/80 text-xs font-extrabold border border-white/10">
-              {{ books|length }} Interactive Edition{% if books|length != 1 %}s{% endif %}
-            </span>
+  <!-- Unlocked Print Magazine Issues Banner/Shelf -->
+  <template x-if="unlockedIssues.length > 0">
+    <div style="margin-top:20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%, 260px),1fr));gap:14px;">
+      <template x-for="(iss, idx) in unlockedIssues" :key="iss.code">
+        <div class="sx-tile sx-tinted"
+             data-card-href="/student/exams"
+             role="link"
+             tabindex="0"
+             style="--a:var(--c1);--t:var(--c1t);padding:18px 20px;display:flex;flex-direction:column;justify-content:space-between;gap:12px;">
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
+              <span class="sx-eyebrow"><i></i>Unlocked Print Edition</span>
+              <span class="sx-chip" style="padding:2px 8px;font-size:0.68rem;" x-text="iss.code"></span>
+            </div>
+            <h3 class="sx-display" style="font-size:1.15rem;font-weight:800;margin:0 0 4px;" x-text="iss.title"></h3>
+            <p style="margin:0;font-size:0.78rem;color:var(--sx-mute);font-weight:600;" x-text="iss.sub"></p>
           </div>
-          <h1 class="text-2xl sm:text-4xl font-black text-white tracking-tight" style="font-family:'Space Grotesk',sans-serif;">
-            Digi-Library Interactive Shelf
-          </h1>
-          <p class="text-xs sm:text-sm text-white/75 font-medium max-w-2xl">
-            Open any Labour India Digital Edition for ordered subjects, chapter-wise Q&amp;A banks, model solutions, video walkthroughs, and instant AI explanations.
-          </p>
+          <div class="sx-actions">
+            <a href="/student/exams" class="sx-btn sx-btn-a" style="padding:8px 14px;font-size:0.78rem;">
+              <span class="material-symbols-outlined">quiz</span>
+              <span>Open Chapter Exams</span>
+            </a>
+          </div>
         </div>
-      </div>
+      </template>
+    </div>
+  </template>
 
-      <!-- Live Filter Input -->
-      <div class="w-full lg:w-80 shrink-0">
-        <div class="relative">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-[#f8b000] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input type="text"
-                 x-model="bookQuery"
-                 placeholder="Filter digital books..."
-                 class="w-full pl-11 pr-9 py-3 rounded-2xl bg-white/10 border-2 border-white/15 focus:border-[#f8b000] text-white placeholder-white/45 text-xs sm:text-sm font-bold outline-none transition-all" />
-          <button type="button"
-                  x-show="bookQuery"
-                  @click="bookQuery = ''"
-                  style="display: none;"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white text-xs font-black">✕</button>
-        </div>
+  <!-- Unlock Magazine Issue Modal -->
+  <div x-show="unlockOpen" x-cloak
+       x-transition.opacity
+       style="display:grid;position:fixed;inset:0;z-index:120;background:rgba(15,23,42,0.45);backdrop-filter:blur(4px);place-items:center;padding:16px;"
+       @keydown.escape.window="unlockOpen = false">
+    <div class="sx-tile" style="width:100%;max-width:440px;padding:24px;" @click.outside="unlockOpen = false">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;">
+        <span class="sx-eyebrow"><i></i>Labour India Print-to-Digital</span>
+        <button type="button" @click="unlockOpen = false" class="sx-icon-btn" style="width:32px;height:32px;">
+          <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+        </button>
       </div>
+      <h2 class="sx-display" style="font-size:1.45rem;font-weight:800;margin:0 0 6px;">Unlock Magazine Issue</h2>
+      <p style="margin:0 0 16px;font-size:0.84rem;color:var(--sx-mute);font-weight:600;line-height:1.5;">
+        Enter the issue code printed on your physical Labour India magazine to add its digital companion and AI Whiteboard drills to your shelf.
+      </p>
+      <form @submit.prevent="redeemCode($event)">
+        <input type="text"
+               x-model="issueCode"
+               placeholder="e.g. LI-2026-10"
+               style="width:100%;padding:12px 16px;border-radius:16px;border:1.5px solid var(--sx-line);background:var(--sx-bg-2);color:var(--sx-ink);font-weight:800;font-size:0.95rem;text-transform:uppercase;outline:none;margin-bottom:10px;" />
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px;font-size:0.75rem;color:var(--sx-mute);font-weight:700;">
+          <span>Demo sample code:</span>
+          <button type="button" @click="issueCode = 'LI-2026-10'" style="background:rgba(248,176,0,0.2);border:0;border-radius:999px;padding:3px 10px;color:#b87400;font-weight:800;cursor:pointer;">Use LI-2026-10</button>
+        </div>
+        <template x-if="unlockError">
+          <div style="margin-bottom:12px;font-size:0.78rem;font-weight:700;color:#dc3545;" x-text="unlockError"></div>
+        </template>
+        <div style="display:flex;justify-content:flex-end;gap:8px;">
+          <button type="button" @click="unlockOpen = false" class="sx-btn sx-btn-soft">Cancel</button>
+          <button type="submit" class="sx-btn sx-btn-gold">
+            <span class="material-symbols-outlined">lock_open</span>
+            <span>Unlock Edition</span>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
-  <!-- Books Grid -->
-  {% if books %}
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 v2-stagger">
+  {% if books and books|length > 0 %}
+  <div class="sx-shelf">
     {% for book in books %}
-    <a href="/student/digi-library/books/{{ book.id }}"
-       x-show="!bookQuery.trim() || {{ book.title | tojson | forceescape }}.toLowerCase().includes(bookQuery.toLowerCase()) || {{ (book.description or '') | tojson | forceescape }}.toLowerCase().includes(bookQuery.toLowerCase())"
-       class="group v2-spotlight-card rounded-3xl overflow-hidden flex flex-col">
-      <!-- Book Cover Photo with 3D Spine Accent -->
-      <div class="relative w-full bg-base-200/50 p-4 flex items-center justify-center border-b-2 border-[#111111]/10 overflow-hidden">
-        {% if book.thumbnail_url %}
-          <img src="{{ book.thumbnail_url }}" alt="{{ book.title }}" class="w-full h-auto object-contain rounded-2xl shadow-md group-hover:scale-[1.03] group-hover:-rotate-1 transition-transform duration-300" />
-        {% else %}
-          <div class="w-full py-12 rounded-2xl flex flex-col items-center justify-center bg-[#f8b000] text-[#111111] p-6 text-center border-2 border-[#111111] shadow-[0_6px_0_0_#111111]">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 mb-2 group-hover:scale-110 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-            </svg>
-            <span class="text-xs font-black uppercase tracking-widest text-[#111111]">Labour India Edition</span>
+    {% set ci = (loop.index0 % 4) + 1 %}
+    <a class="sx-book"
+       href="/student/digi-library/books/{{ book.id }}"
+       @click.prevent="openBook({{ book.id }}, '/student/digi-library/books/{{ book.id }}')"
+       :class="openingBookId === {{ book.id }} && 'is-opening'"
+       style="--a:var(--c{{ ci }});"
+       x-show="!q.trim() || {{ book.title | tojson | forceescape }}.toLowerCase().includes(q.toLowerCase())">
+      <div class="sx-book-stage">
+        <div class="sx-book-pages">
+          <div class="sx-book-pages-inner">
+            <span class="material-symbols-outlined">menu_book</span>
+            <div>Opening Book…</div>
+            <small style="display:block;font-size:0.65rem;color:#857b62;margin-top:2px;">{{ book.subject_count or 4 }} Subject Pages</small>
           </div>
-        {% endif %}
-        {% if book.class_name %}
-        <div class="absolute top-6 left-6 bg-[#111111] text-[#f8b000] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md border border-[#f8b000]/40">
-          {{ book.class_name }}
         </div>
-        {% endif %}
+        <div class="sx-book-cover">
+          {% if book.thumbnail_url %}
+          <img src="{{ book.thumbnail_url }}" alt="{{ book.title }}">
+          {% else %}
+          <div class="sx-book-art">
+            <div><span class="material-symbols-outlined">auto_stories</span><b>{{ book.title }}</b></div>
+          </div>
+          {% endif %}
+          <span class="sx-book-tag">#{{ '%02d' % loop.index }}</span>
+        </div>
       </div>
-
-      <!-- Book Details -->
-      <div class="p-6 flex-1 flex flex-col justify-between space-y-4">
-        <div>
-          <h3 class="text-xl font-black text-base-content group-hover:text-[#d49600] transition-colors line-clamp-2" style="font-family:'Space Grotesk',sans-serif;">
-            {{ book.title }}
-          </h3>
-          <p class="text-xs sm:text-sm text-base-content/65 font-medium mt-1.5 line-clamp-2">
-            {{ book.description or 'Ordered subjects, chapters, study Q&As, explanation videos, and AI Tutor inside.' }}
-          </p>
-        </div>
-
-        <div class="pt-4 border-t-2 border-dashed border-base-300 flex items-center justify-between gap-2">
-          <div class="flex items-center gap-2.5 text-xs font-black text-base-content/75">
-            <span class="px-2.5 py-1 rounded-lg bg-base-200 text-base-content">
-              {{ book.subject_count }} Subject{% if book.subject_count != 1 %}s{% endif %}
-            </span>
-            <span class="px-2.5 py-1 rounded-lg bg-[#f8b000]/20 text-base-content">
-              {{ book.bank_count }} Chapter{% if book.bank_count != 1 %}s{% endif %}
-            </span>
-          </div>
-
-          <span class="px-3.5 py-2 rounded-xl bg-[#111111] text-[#f8b000] group-hover:bg-[#f8b000] group-hover:text-[#111111] border-2 border-[#111111] text-xs font-black uppercase tracking-wider flex items-center gap-1 transition-all">
-            <span>Open</span>
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
-          </span>
-        </div>
+      <div class="sx-book-plank"></div>
+      <div class="sx-book-meta">
+        <b>{{ book.title }}</b>
+        <small>{{ book.subject_count or 4 }} subjects &middot; {{ book.bank_count or 8 }} question banks</small>
       </div>
     </a>
     {% endfor %}
   </div>
   {% else %}
-  <div class="v2-spotlight-card rounded-3xl p-12 text-center max-w-xl mx-auto my-8">
-    <div class="w-20 h-20 rounded-2xl bg-[#f8b000] flex items-center justify-center mx-auto mb-4 text-[#111111] border-2 border-[#111111] shadow-[0_4px_0_0_#111111]">
-      <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-      </svg>
-    </div>
-    <h3 class="text-xl font-black text-base-content mb-2">No Books in Digi-Library Yet</h3>
-    <p class="text-sm text-base-content/60 font-medium">Your instructor hasn't published any book editions yet. Check back soon!</p>
+  <div class="sx-tile" style="max-width:560px;margin:34px auto;text-align:center;padding:36px;">
+    <img src="/static/images/saxaz_web/landing_learning-adventure-1.png" alt="Library" style="height:150px;width:auto;margin:0 auto 14px;object-fit:contain;mix-blend-mode:multiply;">
+    <h2 class="sx-display" style="font-size:1.6rem;font-weight:800;letter-spacing:-.03em;">Your shelf is empty, for now</h2>
+    <p style="color:var(--sx-mute);font-weight:600;margin:8px 0 20px;">When your class digital editions are published, they will stand right here.</p>
+    <a href="/student/exams" class="sx-btn sx-btn-gold">Explore the learning path <span class="material-symbols-outlined">arrow_forward</span></a>
   </div>
   {% endif %}
-
 </div>
 {% endblock %}

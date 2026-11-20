@@ -1,0 +1,600 @@
+{% extends "base.html" %}
+{% block title %}Rewards &amp; Shop | SAXAZ{% endblock %}
+
+{% block content %}
+{% set bal = wallet.coin_balance if wallet and wallet.coin_balance is defined else (user.coin_balance or 0) %}
+{% set lifetime_bal = wallet.lifetime_earned if (wallet and wallet.lifetime_earned is defined and wallet.lifetime_earned) else bal %}
+{% set inr_val = wallet.inr_value if wallet and wallet.inr_value is defined else 0 %}
+{% set pct_to_5k = ((bal / 5000.0) * 100)|round(1) %}
+{% if pct_to_5k > 100 %}{% set pct_to_5k = 100 %}{% endif %}
+{% set claimed = wallet.claimed_keys if wallet and wallet.claimed_keys is defined else [] %}
+{% set redeemed_code = request.query_params.get('redeemed') %}
+{% set err_msg = request.query_params.get('error') %}
+
+{% set all_items = wallet.shop_items if (wallet and wallet.shop_items is defined) else [] %}
+{% set ebook_items = all_items | selectattr('kind', 'equalto', 'ebook') | list %}
+{% set store_items = all_items | rejectattr('kind', 'equalto', 'ebook') | list %}
+
+{% set mns = namespace(video_done=0, mock_done=0) %}
+{% for ck in claimed %}
+  {% if ck.startswith('video:') or ck.startswith('content:') or ck.startswith('brief:') %}
+    {% set mns.video_done = mns.video_done + 1 %}
+  {% endif %}
+  {% if ck.startswith('mock_pass:') or ck.startswith('mock_ace:') %}
+    {% set mns.mock_done = mns.mock_done + 1 %}
+  {% endif %}
+{% endfor %}
+
+<script>
+  window.saxazPlayStore = function() {
+    const catalog = {{ all_items | tojson | safe }};
+    return {
+      activeTab: 'all',
+      searchQuery: '',
+      selectedItem: null,
+      catalog: catalog,
+      matchesSearch(code, title, subtitle, author, category) {
+        const q = (this.searchQuery || '').trim().toLowerCase();
+        if (!q) return true;
+        const hay = [code, title, subtitle, author, category].join(' ').toLowerCase();
+        return hay.indexOf(q) !== -1;
+      },
+      openItemByCode(code) {
+        const found = this.catalog.find(function(it) { return it.code === code; });
+        if (found) this.selectedItem = found;
+      },
+      closeModal() {
+        this.selectedItem = null;
+      }
+    };
+  };
+</script>
+
+<div class="sx-ext-inner-wrap sx-play-shell"
+     x-data="saxazPlayStore()"
+     @keydown.escape.window="closeModal()">
+
+  {% if redeemed_code %}
+  <div class="sx-ext-surface"
+       x-data="{ copied: false }"
+       style="border:2.5px solid #231f20;background:#f7b317;color:#231f20;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;box-shadow:0 5px 0 #231f20;">
+    <div style="min-width:0;flex:1 1 280px;">
+      <div style="font-size:0.74rem;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;display:flex;align-items:center;gap:6px;">
+        <span class="material-symbols-outlined" style="font-size:18px;">verified</span>
+        <span>REWARD UNLOCKED IN YOUR LIBRARY</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px;">
+        <span style="font-size:1.08rem;font-weight:800;">Your voucher code is ready:</span>
+        <code style="background:#231f20;color:#f7b317;padding:5px 12px;border-radius:8px;font-weight:900;font-size:0.95rem;user-select:text;-webkit-user-select:text;">{{ redeemed_code }}</code>
+        <button type="button"
+                @click="navigator.clipboard.writeText({{ redeemed_code | tojson | forceescape }}); copied = true; setTimeout(() => { copied = false; }, 2000)"
+                style="padding:6px 14px;border-radius:999px;border:1.5px solid #231f20;background:#ffffff;color:#231f20;font-family:inherit;font-size:0.8rem;font-weight:800;cursor:pointer;">
+          <span x-text="copied ? 'Copied!' : 'Copy Code'">Copy Code</span>
+        </button>
+      </div>
+      <p style="margin:6px 0 0;font-size:0.82rem;font-weight:700;color:#231f20;">
+        Share this voucher code with your parent to apply at checkout on saxaz.com or via SAXAZ Support.
+      </p>
+    </div>
+    <a href="/student/shop" class="sx-qp-btn-dark" style="min-height:40px;padding:8px 18px;font-size:0.84rem;">Done</a>
+  </div>
+  {% endif %}
+
+  {% if err_msg %}
+  <div class="sx-ext-surface" style="border:2px solid #231f20;background:#ffffff;color:#231f20;padding:16px 22px;font-weight:800;font-size:0.9rem;">
+    {{ err_msg }}
+  </div>
+  {% endif %}
+
+  <!-- 1. GOOGLE PLAY STORE / PLAY BOOKS TOP APP BAR & NAVIGATION -->
+  <header class="sx-play-topbar">
+    <div class="sx-play-brand-row">
+      <div class="sx-play-brand">
+        <span class="sx-play-brand-icon">
+          <span class="material-symbols-outlined" style="font-size:25px;">local_mall</span>
+        </span>
+        <div>
+          <span class="sx-ext-eyebrow" style="color:#231f20;margin-bottom:1px;">PLAY BOOKS &middot; STUDY GEAR &middot; PASSES</span>
+          <h1 style="font-family:var(--font-heading);font-size:clamp(1.45rem,2.2vw,1.9rem);font-weight:900;margin:0;color:#231f20;line-height:1.1;">
+            SAXAZ Student Shop
+          </h1>
+        </div>
+      </div>
+
+      <div class="sx-play-search-wrap">
+        <span class="material-symbols-outlined sx-play-search-icon">search</span>
+        <input type="search"
+               x-model="searchQuery"
+               @input="if (searchQuery.trim() !== '' && (activeTab === 'earn' || activeTab === 'library')) { activeTab = 'all'; }"
+               placeholder="Search Play Books, science kits, passes..."
+               aria-label="Search store items"
+               class="sx-play-search-input">
+      </div>
+
+      <a href="/student/chapters/3" class="sx-qp-btn-yellow" style="min-height:42px;padding:8px 18px;font-size:0.84rem;">
+        <span class="material-symbols-outlined" style="font-size:18px;">bolt</span>
+        <span>Earn More Coins &rarr;</span>
+      </a>
+    </div>
+
+    <!-- Play Store Horizontal Category Tabs -->
+    <nav class="sx-play-tabs" aria-label="Store categories">
+      <button type="button" class="sx-play-tab" :class="activeTab === 'all' && 'is-active'" @click="activeTab = 'all'">
+        <span class="material-symbols-outlined" style="font-size:18px;">explore</span>
+        <span>For You</span>
+      </button>
+      <button type="button" class="sx-play-tab" :class="activeTab === 'books' && 'is-active'" @click="activeTab = 'books'">
+        <span class="material-symbols-outlined" style="font-size:18px;">menu_book</span>
+        <span>Play Books ({{ ebook_items|length }})</span>
+      </button>
+      <button type="button" class="sx-play-tab" :class="activeTab === 'gear' && 'is-active'" @click="activeTab = 'gear'">
+        <span class="material-symbols-outlined" style="font-size:18px;">science</span>
+        <span>Study Gear &amp; Kits</span>
+      </button>
+      <button type="button" class="sx-play-tab" :class="activeTab === 'passes' && 'is-active'" @click="activeTab = 'passes'">
+        <span class="material-symbols-outlined" style="font-size:18px;">confirmation_number</span>
+        <span>Passes &amp; Vouchers</span>
+      </button>
+      <button type="button" class="sx-play-tab" :class="activeTab === 'earn' && 'is-active'" @click="activeTab = 'earn'">
+        <span class="material-symbols-outlined" style="font-size:18px;">military_tech</span>
+        <span>Earn Coins</span>
+      </button>
+      <button type="button" class="sx-play-tab" :class="activeTab === 'library' && 'is-active'" @click="activeTab = 'library'">
+        <span class="material-symbols-outlined" style="font-size:18px;">redeem</span>
+        <span>My Vouchers &amp; Activity</span>
+      </button>
+    </nav>
+  </header>
+
+  <!-- 2. SLEEK PLAY POINTS & COIN WALLET STRIP -->
+  <section class="sx-play-wallet-card" aria-label="Reward coin wallet">
+    <div class="sx-play-wallet-grid">
+      <div class="sx-play-wallet-stat">
+        <div class="sx-play-wallet-eyebrow" style="color:#f7b317;">AVAILABLE COINS</div>
+        <div class="sx-play-wallet-val">{{ bal }} Coins</div>
+        <div class="sx-play-wallet-sub">Worth Rs {{ '%.2f'|format(inr_val) }} INR</div>
+      </div>
+
+      <div class="sx-play-wallet-stat is-yellow">
+        <div class="sx-play-wallet-eyebrow">EXCHANGE RATE</div>
+        <div class="sx-play-wallet-val">5,000 = Rs 50</div>
+        <div class="sx-play-wallet-sub">100 Coins = Rs 1.00 Store Credit</div>
+      </div>
+
+      <div class="sx-play-wallet-stat">
+        <div class="sx-play-wallet-eyebrow">LIFETIME EARNED</div>
+        <div class="sx-play-wallet-val">{{ lifetime_bal }} Coins</div>
+        <div class="sx-play-wallet-sub">Saved across all subjects &amp; issues</div>
+      </div>
+
+      <div class="sx-play-wallet-meter">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:0.8rem;font-weight:800;">
+          <span style="color:#f7b317;">Next Rs 50 Reward Unlock</span>
+          <span>{% if bal >= 5000 %}Ready to Redeem!{% else %}{{ bal }} / 5,000 Coins{% endif %}</span>
+        </div>
+        <div style="height:10px;border-radius:999px;background:rgba(255,255,255,0.16);overflow:hidden;border:1px solid rgba(255,255,255,0.2);">
+          <div style="height:100%;width:{{ pct_to_5k }}%;background:#f7b317;border-radius:999px;"></div>
+        </div>
+        <div style="font-size:0.74rem;font-weight:700;color:rgba(255,255,255,0.78);">
+          {% if bal >= 5000 %}
+            Pick any Play Book or Rs 50 Store Voucher below to claim now!
+          {% else %}
+            {{ 5000 - bal }} more coins unlocks any Play Book or Rs 50 Store Voucher
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. FEATURED GOOGLE PLAY BOOKS & STORE SPOTLIGHT HERO -->
+  <section class="sx-play-spotlight"
+           x-show="(activeTab === 'all' || activeTab === 'books') && searchQuery.trim() === ''">
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+        <span class="sx-qp-pill-dark">
+          <span class="material-symbols-outlined" style="font-size:15px;">auto_stories</span>
+          <span>PLAY BOOKS SPOTLIGHT</span>
+        </span>
+        <span class="sx-qp-pill-light">
+          <span class="material-symbols-outlined" style="font-size:15px;color:#f7b317;">workspace_premium</span>
+          <span>#1 IN CLASS 10 SCIENCE</span>
+        </span>
+      </div>
+
+      <h2 style="font-family:var(--font-heading);font-size:clamp(1.65rem,2.6vw,2.3rem);font-weight:900;line-height:1.06;margin:0 0 8px;color:#231f20;">
+        Life Processes Comic Guide &amp; 3D Science Atlas
+      </h2>
+      <p style="font-size:0.94rem;font-weight:700;line-height:1.45;color:rgba(35,31,32,0.86);margin:0 0 16px;max-width:540px;">
+        Master diagrams, formulas, and board-exam checkpoints with full-color 3D cutaway visual books crafted by SAXAZ Science Press. Redeemable 100% free with your Score Coins!
+      </p>
+
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <button type="button"
+                @click="openItemByCode('book_biology_comic')"
+                class="sx-qp-btn-dark">
+          <span class="material-symbols-outlined" style="font-size:19px;">menu_book</span>
+          <span>Preview Comic Guide &middot; 5,000 Coins</span>
+        </button>
+        <button type="button"
+                @click="openItemByCode('book_science_atlas')"
+                class="sx-qp-btn-white">
+          <span>Explore 3D Atlas &rarr;</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="sx-play-spotlight-covers">
+      <div class="sx-play-spot-book" @click="openItemByCode('book_biology_comic')" title="Preview Life Processes Visual Comic Guide">
+        <img src="/static/images/saxaz_web/store/book_biology_comic.webp?v=540" alt="Life Processes Visual Comic Guide">
+      </div>
+      <div class="sx-play-spot-book" @click="openItemByCode('book_science_atlas')" title="Preview 3D Illustrated Science Atlas">
+        <img src="/static/images/saxaz_web/store/book_science_atlas.webp?v=540" alt="3D Illustrated Science Atlas">
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. GOOGLE PLAY BOOKS SHELF (3:4 ILLUSTRATED E-BOOK COVERS) -->
+  <section class="sx-play-section"
+           x-show="activeTab === 'all' || activeTab === 'books' || searchQuery.trim() !== ''">
+    <div class="sx-play-sec-head">
+      <div>
+        <span class="sx-ext-eyebrow" style="color:#231f20;">SAXAZ PLAY BOOKS</span>
+        <h2 class="sx-play-sec-title">
+          <span class="material-symbols-outlined" style="font-size:24px;color:#f7b317;">menu_book</span>
+          <span>Digital Books, Visual Comics &amp; Board Guides</span>
+        </h2>
+        <p class="sx-play-sec-sub">Tap any book cover to inspect chapters, ratings, and redeem with your Score Coins.</p>
+      </div>
+
+      <button type="button"
+              x-show="activeTab === 'all'"
+              @click="activeTab = 'books'"
+              class="sx-qp-btn-white"
+              style="min-height:38px;padding:6px 16px;font-size:0.8rem;">
+        <span>View All Books &rarr;</span>
+      </button>
+    </div>
+
+    <div class="sx-playbooks-shelf">
+      {% for book in ebook_items %}
+      <article class="sx-playbook-card"
+               x-show="matchesSearch({{ book.code | tojson | forceescape }}, {{ book.title | tojson | forceescape }}, {{ book.subtitle | tojson | forceescape }}, {{ (book.author or '') | tojson | forceescape }}, {{ book.category | tojson | forceescape }})"
+               @click="openItemByCode({{ book.code | tojson | forceescape }})"
+               role="button"
+               tabindex="0"
+               @keydown.enter="openItemByCode({{ book.code | tojson | forceescape }})">
+        <div class="sx-playbook-cover">
+          <img src="{{ book.image }}?v=540" alt="{{ book.title }}" loading="lazy">
+          <span class="sx-playbook-spine" aria-hidden="true"></span>
+          {% if book.badge %}
+          <span class="sx-playbook-badge">{{ book.badge }}</span>
+          {% endif %}
+        </div>
+
+        <div class="sx-playbook-info">
+          <h3 class="sx-playbook-title">{{ book.title }}</h3>
+          <div class="sx-playbook-author">{{ book.author or 'SAXAZ Press' }} &middot; {{ book.pages_or_tag or 'E-Book' }}</div>
+
+          <div class="sx-playbook-meta">
+            <span class="sx-play-rating">
+              <span>{{ book.rating or '4.9' }}</span>
+              <span class="material-symbols-outlined" aria-hidden="true">star</span>
+              <span style="font-size:0.72rem;color:rgba(35,31,32,0.58);font-weight:700;">({{ book.reviews or '1k' }})</span>
+            </span>
+
+            <span class="sx-play-price-pill">
+              {{ book.cost_coins }} Coins
+            </span>
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- 5. GOOGLE PLAY STORE SHELF (STUDY GEAR, STEM KITS & SUBSCRIPTION PASSES) -->
+  <section class="sx-play-section"
+           x-show="activeTab === 'all' || activeTab === 'gear' || activeTab === 'passes' || searchQuery.trim() !== ''">
+    <div class="sx-play-sec-head">
+      <div>
+        <span class="sx-ext-eyebrow" style="color:#231f20;">PLAY STORE REWARDS</span>
+        <h2 class="sx-play-sec-title">
+          <span class="material-symbols-outlined" style="font-size:24px;color:#f7b317;">shopping_bag</span>
+          <span>Study Gear, Science Lab Kits &amp; Store Passes</span>
+        </h2>
+        <p class="sx-play-sec-sub">Redeem Score Coins for physical stationery sets, hands-on STEM kits, and subscription vouchers.</p>
+      </div>
+    </div>
+
+    <div class="sx-shop-grid sx-playstore-grid">
+      {% for item in store_items %}
+      {% set can_buy = (bal >= item.cost_coins) %}
+      {% set item_tab = item.tab if item.tab is defined else 'passes' %}
+      <article class="sx-playstore-card"
+               x-show="(activeTab === 'all' || activeTab === {{ item_tab | tojson | forceescape }} || searchQuery.trim() !== '') && matchesSearch({{ item.code | tojson | forceescape }}, {{ item.title | tojson | forceescape }}, {{ item.subtitle | tojson | forceescape }}, {{ (item.author or '') | tojson | forceescape }}, {{ item.category | tojson | forceescape }})">
+        <div class="sx-playstore-art" @click="openItemByCode({{ item.code | tojson | forceescape }})">
+          <img src="{{ item.image }}?v=540" alt="{{ item.title }}" loading="lazy">
+          <span class="sx-playstore-cat-chip">{{ item.category }}</span>
+          <span class="sx-playstore-inr-chip">Rs {{ item.inr_value }}</span>
+        </div>
+
+        <div class="sx-playstore-body">
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px;">
+              <span style="font-size:0.73rem;font-weight:800;color:rgba(35,31,32,0.65);">{{ item.author or 'SAXAZ Store' }}</span>
+              <span class="sx-play-rating">
+                <span>{{ item.rating or '4.9' }}</span>
+                <span class="material-symbols-outlined" aria-hidden="true">star</span>
+              </span>
+            </div>
+
+            <h3 class="sx-playstore-title" @click="openItemByCode({{ item.code | tojson | forceescape }})">
+              {{ item.title }}
+            </h3>
+            <p class="sx-playstore-sub">{{ item.subtitle }}</p>
+          </div>
+
+          <div class="sx-playstore-actions">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <span style="font-size:0.74rem;font-weight:800;color:rgba(35,31,32,0.68);text-transform:uppercase;">Price</span>
+              <strong style="font-size:0.98rem;font-weight:900;color:#231f20;">{{ item.cost_coins }} Coins</strong>
+            </div>
+
+            <div style="display:flex;gap:8px;">
+              <button type="button"
+                      @click="openItemByCode({{ item.code | tojson | forceescape }})"
+                      style="flex:0 0 auto;min-height:40px;padding:0 13px;border-radius:999px;border:1.5px solid #231f20;background:#ffffff;color:#231f20;font-family:var(--font-body);font-size:0.78rem;font-weight:800;cursor:pointer;">
+                Details
+              </button>
+
+              {% if can_buy %}
+              <form method="POST"
+                    action="/student/shop/redeem"
+                    style="flex:1;"
+                    data-confirm="Spend {{ item.cost_coins }} Coins to redeem {{ item.title }} (worth Rs {{ item.inr_value }})?"
+                    data-confirm-title="Redeem {{ item.cost_coins }} Coins?"
+                    data-confirm-btn="Redeem Now">
+                <input type="hidden" name="item_code" value="{{ item.code }}">
+                <button type="submit" class="sx-ext-cta-yellow" style="width:100%;min-height:40px;padding:6px 12px;font-size:0.8rem;">
+                  Redeem
+                </button>
+              </form>
+              {% else %}
+              <button type="button"
+                      @click="openItemByCode({{ item.code | tojson | forceescape }})"
+                      style="flex:1;min-height:40px;padding:6px 10px;border-radius:999px;border:1.5px solid rgba(35,31,32,0.22);background:#f8f9fa;color:rgba(35,31,32,0.78);font-family:var(--font-body);font-size:0.75rem;font-weight:800;cursor:pointer;">
+                Need {{ item.cost_coins - bal }} more
+              </button>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- 6. PLAY POINTS QUESTS — WAYS TO EARN COINS -->
+  <section class="sx-play-section"
+           x-show="activeTab === 'all' || activeTab === 'earn'">
+    <div class="sx-play-sec-head">
+      <div>
+        <span class="sx-ext-eyebrow" style="color:#231f20;">COIN QUEST MISSIONS</span>
+        <h2 class="sx-play-sec-title">
+          <span class="material-symbols-outlined" style="font-size:24px;color:#f7b317;">bolt</span>
+          <span>Ways to Earn Coins</span>
+        </h2>
+        <p class="sx-play-sec-sub">Complete chapter summaries, interactive games, and board exams to stack Score Coins.</p>
+      </div>
+    </div>
+
+    <div class="sx-play-quests-grid">
+      {% for m_key, m_title, m_pts, m_href, m_icon, custom_done in [
+        ('nutshell:ch:3', 'Chapter in a Nutshell: Listen to Summary', '+10 Coins', '/student/chapters/3#chapter-nutshell', 'headphones', ('nutshell:ch:3' in claimed)),
+        ('videos:ch:3', '4 Video Lessons: Watch Parts 1 to 4 (+5 each)', '+20 Coins', '/student/chapters/3#chapter-videos', 'smart_display', (mns.video_done >= 4)),
+        ('heart_s1:ch:3', 'Heart Lab Stage 1: Assemble the Human Heart', '+15 Coins', '/student/chapters/3#heart-activity', 'favorite', ('heart_s1:ch:3' in claimed)),
+        ('heart_s2:ch:3', 'Heart Lab Stage 2: Trace Double Circulation', '+25 Coins', '/student/chapters/3#heart-activity', 'cardiology', ('heart_s2:ch:3' in claimed)),
+        ('game:ch:3', 'Summary Mini-Games: Win all 7 Life-Process Games', '+35 Coins', '/student/chapters/3#chapter-nutshell', 'sports_esports', ('game:ch:3:leaf' in claimed and 'game:ch:3:food' in claimed and 'game:ch:3:breathe' in claimed and 'game:ch:3:blood' in claimed and 'game:ch:3:pump' in claimed and 'game:ch:3:kidney' in claimed and 'game:ch:3:team' in claimed)),
+        ('mocks:ch:3', 'Mock Tests 1, 2 & 3: Score 50%+ or 85%+ Mastery', '+40 Coins', '/student/chapters/3#chapter-exams', 'quiz', (mns.mock_done >= 6)),
+        ('real_tier1:paper:14', 'Official Proctored Real Exam Tiers (50% / 75% / 90%)', 'Up to +70 Coins', '/student/chapters/3#chapter-exams', 'workspace_premium', ('real_tier3:paper:14' in claimed))
+      ] %}
+      <div class="sx-play-quest-card {{ 'is-done' if custom_done else '' }}">
+        <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+          <span class="sx-play-quest-icon">
+            <span class="material-symbols-outlined" style="font-size:22px;">{{ m_icon }}</span>
+          </span>
+          <div style="min-width:0;">
+            <div style="font-weight:800;font-size:0.9rem;color:#231f20;line-height:1.3;">{{ m_title }}</div>
+            <div style="font-size:0.76rem;font-weight:800;color:rgba(35,31,32,0.68);margin-top:2px;">Reward Milestone &middot; {{ m_pts }}</div>
+          </div>
+        </div>
+
+        {% if custom_done %}
+        <span style="background:#231f20;color:#f7b317;padding:5px 13px;border-radius:999px;font-size:0.72rem;font-weight:900;flex-shrink:0;">
+          CLAIMED
+        </span>
+        {% else %}
+        <a href="{{ m_href }}" class="sx-ext-cta-yellow" style="min-height:36px;padding:6px 14px;font-size:0.78rem;flex-shrink:0;">
+          {{ m_pts }} &rarr;
+        </a>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- 7. MY REDEEMED VOUCHERS & VERIFIED COIN ACTIVITY -->
+  {% if wallet.redemptions %}
+  <section class="sx-play-section" x-show="activeTab === 'all' || activeTab === 'library'">
+    <div class="sx-play-sec-head" style="margin-bottom:14px;">
+      <div>
+        <span class="sx-ext-eyebrow" style="color:#231f20;">MY PLAY LIBRARY</span>
+        <h2 class="sx-play-sec-title">
+          <span class="material-symbols-outlined" style="font-size:24px;color:#f7b317;">redeem</span>
+          <span>My Redeemed Vouchers</span>
+        </h2>
+        <p class="sx-play-sec-sub">Share any voucher code below with your parent to apply at saxaz.com checkout or SAXAZ Support.</p>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      {% for r in wallet.redemptions %}
+      <div x-data="{ copied: false }"
+           style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px 18px;border-radius:16px;background:#231f20;color:#ffffff;">
+        <div>
+          <div style="font-weight:800;font-size:0.95rem;">{{ r.item_title }} (Rs {{ r.inr_value }})</div>
+          <div style="font-size:0.76rem;color:rgba(255,255,255,0.72);">{{ r.coins_spent }} Coins &middot; {{ r.created_at }}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <code style="background:#f7b317;color:#231f20;padding:6px 14px;border-radius:10px;font-weight:900;font-size:0.9rem;user-select:text;-webkit-user-select:text;">{{ r.coupon_code }}</code>
+          <button type="button"
+                  @click="navigator.clipboard.writeText({{ r.coupon_code | tojson | forceescape }}); copied = true; setTimeout(() => { copied = false; }, 2000)"
+                  style="padding:6px 14px;border-radius:999px;border:1.5px solid #f7b317;background:#ffffff;color:#231f20;font-family:inherit;font-size:0.78rem;font-weight:800;cursor:pointer;">
+            <span x-text="copied ? 'Copied!' : 'Copy Code'">Copy Code</span>
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="sx-play-section" x-show="activeTab === 'all' || activeTab === 'library'">
+    <div class="sx-play-sec-head" style="margin-bottom:14px;">
+      <div>
+        <span class="sx-ext-eyebrow" style="color:#231f20;">WALLET HISTORY</span>
+        <h2 class="sx-play-sec-title">
+          <span class="material-symbols-outlined" style="font-size:24px;color:#f7b317;">receipt_long</span>
+          <span>Recent Coin Activity</span>
+        </h2>
+      </div>
+    </div>
+
+    {% if wallet.ledger %}
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      {% for entry in wallet.ledger %}
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 15px;border-radius:14px;border:1px solid rgba(35,31,32,0.12);background:#f8f9fa;">
+        <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+          <span class="material-symbols-outlined" style="font-size:19px;color:#f7b317;">stars</span>
+          <span style="font-size:0.88rem;font-weight:700;color:#231f20;">{{ entry.label }}</span>
+        </div>
+        <span style="background:#231f20;color:#f7b317;padding:4px 12px;border-radius:999px;font-size:0.78rem;font-weight:900;flex-shrink:0;">
+          {{ ('+' ~ entry.coins) if entry.coins >= 0 else entry.coins }} Coins
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p style="margin:0;font-size:0.9rem;font-weight:600;color:rgba(35,31,32,0.7);">
+      Complete lessons, mini-games, and practice exams to earn your first SAXAZ Score Coins.
+    </p>
+    {% endif %}
+  </section>
+
+  <!-- 8. INTERACTIVE PLAY BOOKS / PLAY STORE ITEM PREVIEW & REDEEM MODAL -->
+  <div x-show="selectedItem !== null"
+       x-cloak
+       @click.self="closeModal()"
+       class="sx-play-modal-backdrop"
+       role="dialog"
+       aria-modal="true"
+       aria-label="Store item preview">
+    <template x-if="selectedItem">
+      <div class="sx-play-modal-dialog">
+        <div class="sx-play-modal-top">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="material-symbols-outlined" style="font-size:20px;" x-text="selectedItem.kind === 'ebook' ? 'menu_book' : 'shopping_bag'"></span>
+            <span style="font-size:0.78rem;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;" x-text="selectedItem.category"></span>
+          </div>
+          <button type="button"
+                  @click="closeModal()"
+                  aria-label="Close preview"
+                  style="width:36px;height:36px;border-radius:50%;border:2px solid #231f20;background:#ffffff;color:#231f20;display:inline-grid;place-items:center;cursor:pointer;">
+            <span class="material-symbols-outlined" style="font-size:20px;">close</span>
+          </button>
+        </div>
+
+        <div class="sx-play-modal-body">
+          <!-- Left Cover / Product Artwork & Quick Play Store Stats -->
+          <div>
+            <div class="sx-play-modal-art">
+              <img :src="selectedItem.image + '?v=540'" :alt="selectedItem.title">
+            </div>
+
+            <div class="sx-play-modal-stats">
+              <div class="sx-play-modal-stat-box">
+                <div style="font-size:0.92rem;font-weight:900;display:inline-flex;align-items:center;gap:2px;">
+                  <span x-text="selectedItem.rating || '4.9'"></span>
+                  <span class="material-symbols-outlined" style="font-size:15px;color:#f7b317;font-variation-settings:'FILL' 1;">star</span>
+                </div>
+                <div style="font-size:0.66rem;font-weight:800;color:rgba(35,31,32,0.65);" x-text="(selectedItem.reviews || '1.5k') + ' reviews'"></div>
+              </div>
+
+              <div class="sx-play-modal-stat-box">
+                <div style="font-size:0.92rem;font-weight:900;" x-text="'Rs ' + selectedItem.inr_value"></div>
+                <div style="font-size:0.66rem;font-weight:800;color:rgba(35,31,32,0.65);">Value</div>
+              </div>
+
+              <div class="sx-play-modal-stat-box">
+                <div style="font-size:0.92rem;font-weight:900;" x-text="selectedItem.kind === 'ebook' ? 'E-Book' : 'Voucher'"></div>
+                <div style="font-size:0.66rem;font-weight:800;color:rgba(35,31,32,0.65);">Format</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Details, Highlights & Redeem Form -->
+          <div>
+            <div style="font-size:0.8rem;font-weight:800;color:rgba(35,31,32,0.68);margin-bottom:4px;" x-text="(selectedItem.author || 'SAXAZ Press') + ' · ' + (selectedItem.pages_or_tag || '')"></div>
+            <h3 style="font-family:var(--font-heading);font-size:1.55rem;font-weight:900;line-height:1.15;margin:0 0 10px;color:#231f20;" x-text="selectedItem.title"></h3>
+            <p style="font-size:0.92rem;font-weight:600;line-height:1.5;color:rgba(35,31,32,0.82);margin:0 0 16px;" x-text="selectedItem.subtitle"></p>
+
+            <div style="padding:14px 16px;border-radius:16px;background:#fffbeb;border:1.5px solid #231f20;margin-bottom:18px;">
+              <div style="font-size:0.74rem;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;color:#231f20;">
+                What's Included
+              </div>
+              <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px;">
+                <template x-for="(hl, idx) in (selectedItem.highlights || [])" :key="idx">
+                  <li style="display:flex;align-items:flex-start;gap:8px;font-size:0.84rem;font-weight:700;color:#231f20;line-height:1.35;">
+                    <span class="material-symbols-outlined" style="font-size:17px;color:#16a34a;flex-shrink:0;margin-top:1px;">check_circle</span>
+                    <span x-text="hl"></span>
+                  </li>
+                </template>
+              </ul>
+            </div>
+
+            <!-- Wallet Progress & Atomic Redemption Action -->
+            <div style="padding:14px 16px;border-radius:16px;background:#231f20;color:#ffffff;">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
+                <span style="font-size:0.8rem;font-weight:800;color:rgba(255,255,255,0.82);">
+                  Your Wallet: <strong style="color:#f7b317;">{{ bal }} Coins</strong>
+                </span>
+                <span style="font-size:0.92rem;font-weight:900;color:#f7b317;" x-text="'Cost: ' + selectedItem.cost_coins + ' Coins'"></span>
+              </div>
+
+              <template x-if="{{ bal }} >= selectedItem.cost_coins">
+                <form method="POST" action="/student/shop/redeem">
+                  <input type="hidden" name="item_code" :value="selectedItem.code">
+                  <button type="submit" class="sx-ext-cta-yellow" style="width:100%;min-height:46px;font-size:0.92rem;">
+                    <span x-text="'Redeem Now for ' + selectedItem.cost_coins + ' Coins'"></span>
+                  </button>
+                </form>
+              </template>
+
+              <template x-if="{{ bal }} < selectedItem.cost_coins">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                  <span style="font-size:0.82rem;font-weight:700;color:rgba(255,255,255,0.84);"
+                        x-text="'Need ' + (selectedItem.cost_coins - {{ bal }}) + ' more coins to unlock'"></span>
+                  <a href="/student/chapters/3" class="sx-ext-cta-yellow" style="min-height:40px;padding:8px 18px;font-size:0.82rem;">
+                    Earn Coins Now &rarr;
+                  </a>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+
+</div>
+{% endblock %}

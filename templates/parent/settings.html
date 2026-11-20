@@ -1,594 +1,214 @@
 {% extends "base.html" %}
 
 {% block title %}Parent Settings - SAXAZ{% endblock %}
+{% block topbar_title %}Parent Settings{% endblock %}
+
+{% block hero_banner %}
+<section class="sx-ext-hero">
+  <div class="sx-ps-hero">
+    <div>
+      <div class="sx-ps-kicker">{{ user.class_name or 'Class 10' }} &middot; Parent Portal</div>
+      <h1 class="sx-ps-h1">Parent Portal Settings</h1>
+    </div>
+    <div class="sx-ps-pills">
+      <a href="/parent/dashboard" class="sx-ps-pill sx-ps-pill-white">&larr; Back to Overview</a>
+      <a href="/auth/switch-to-student" class="sx-ps-pill sx-ps-pill-black">Switch to Student View &rarr;</a>
+    </div>
+  </div>
+</section>
+{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-8 pb-20">
-  
-  <!-- CLEAN HEADER BAR -->
-  <div class="brilliant-card bg-base-100 rounded-3xl p-6 sm:p-8 flex items-center justify-between gap-4">
-    <div class="space-y-2">
-      <a href="/parent/dashboard" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-base-200 hover:bg-base-300 text-base-content text-xs font-black uppercase tracking-wider transition-colors border border-base-300">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" /></svg>
-        Back to Parent Portal
-      </a>
-      <h1 class="text-2xl sm:text-4xl font-black text-base-content tracking-tight">Parent Portal Settings</h1>
-      <p class="text-base-content/65 text-sm sm:text-base font-bold">Configure PIN security, AI voice advisor preferences, and analysis strictness.</p>
-    </div>
-  </div>
+<style>
+  [x-cloak] { display: none !important; }
+  .sx-ps-hero { max-width: 1180px; margin: 0 auto; width: 100%; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; }
+  .sx-ps-kicker { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(35,31,32,0.72); margin-bottom: 4px; }
+  .sx-ps-h1 { margin: 0; font-size: clamp(1.45rem, 2.6vw, 2rem); font-weight: 900; color: #231f20; }
+  .sx-ps-pills { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .sx-ps-pill { display: inline-flex; align-items: center; min-height: 38px; padding: 7px 15px; border-radius: 999px; font-size: 0.84rem; font-weight: 800; text-decoration: none; border: 1.5px solid #231f20; }
+  .sx-ps-pill-black { background: #231f20; color: #ffffff; }
+  .sx-ps-pill-white { background: #ffffff; color: #231f20; }
+  .sx-ps-wrap { max-width: 780px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; padding-bottom: 48px; }
+  .sx-ps-banner { padding: 13px 18px; border-radius: 12px; background: #f7b317; color: #231f20; border: 1.5px solid #231f20; font-size: 0.92rem; font-weight: 900; }
+  .sx-ps-card { background: #ffffff; border: 1.5px solid rgba(35,31,32,0.14); border-radius: 16px; padding: 22px 24px; color: #231f20; }
+  .sx-ps-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+  .sx-ps-title { margin: 0; font-size: 1.12rem; font-weight: 900; color: #231f20; }
+  .sx-ps-badge { padding: 4px 11px; border-radius: 999px; font-size: 0.75rem; font-weight: 900; border: 1.5px solid #231f20; background: #ffffff; color: #231f20; }
+  .sx-ps-badge.is-active { background: #f7b317; }
+  .sx-ps-check-row { display: flex; align-items: center; gap: 10px; font-size: 0.94rem; font-weight: 800; cursor: pointer; }
+  .sx-ps-check-row input { width: 18px; height: 18px; accent-color: #231f20; cursor: pointer; }
+  .sx-ps-pin-box { margin-top: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .sx-ps-pin-input { width: 132px; height: 42px; border-radius: 10px; border: 1.5px solid #231f20; background: #ffffff; color: #231f20; font-size: 1.1rem; font-weight: 900; letter-spacing: 0.25em; text-align: center; padding: 0 10px; }
+  .sx-ps-btn-sm { height: 42px; padding: 0 14px; border-radius: 10px; border: 1.5px solid rgba(35,31,32,0.25); background: #ffffff; color: #231f20; font-size: 0.82rem; font-weight: 800; cursor: pointer; }
+  .sx-ps-field { margin-top: 16px; }
+  .sx-ps-lbl { display: block; font-size: 0.75rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.07em; color: rgba(35,31,32,0.65); margin-bottom: 7px; }
+  .sx-ps-select { width: 100%; max-width: 320px; height: 42px; border-radius: 10px; border: 1.5px solid rgba(35,31,32,0.25); background: #ffffff; color: #231f20; font-size: 0.92rem; font-weight: 800; padding: 0 12px; }
+  .sx-ps-voices { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 600px) { .sx-ps-voices { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .sx-ps-vcard { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1.5px solid rgba(35,31,32,0.16); background: #ffffff; cursor: pointer; }
+  .sx-ps-vcard.is-selected { border-color: #231f20; background: #f7b317; }
+  .sx-ps-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(35,31,32,0.2); flex-shrink: 0; }
+  .sx-ps-vname { font-size: 0.9rem; font-weight: 900; color: #231f20; line-height: 1.1; }
+  .sx-ps-vsub { font-size: 0.72rem; font-weight: 700; color: rgba(35,31,32,0.68); }
+  .sx-ps-seg { display: inline-flex; border: 1.5px solid #231f20; border-radius: 999px; padding: 3px; background: #ffffff; gap: 4px; }
+  .sx-ps-seg label { padding: 6px 16px; border-radius: 999px; font-size: 0.84rem; font-weight: 800; color: #231f20; cursor: pointer; }
+  .sx-ps-seg label.is-on { background: #231f20; color: #ffffff; }
+  .sx-ps-save { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 10px 28px; border-radius: 999px; background: #f7b317; color: #231f20; border: 1.5px solid #231f20; font-size: 0.95rem; font-weight: 900; cursor: pointer; }
+</style>
 
-  {% if request.query_params.get('success') %}
-  <div class="bg-success/10 border-2 border-success/30 px-6 py-4 rounded-[2rem] flex items-center gap-4 shadow-sm mb-8" x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)" x-transition.opacity.duration.500ms>
-    <div class="w-12 h-12 rounded-full bg-success/20 flex items-center justify-center shrink-0">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
-    </div>
-    <div>
-      <h3 class="font-bold text-success text-lg tracking-tight">Settings Saved!</h3>
-      <p class="text-success/80 text-sm font-medium">Your preferences have been updated successfully.</p>
-    </div>
-  </div>
+<div class="sx-ext-inner-wrap sx-ps-wrap">
+  {% if request.query_params.get('saved') or request.query_params.get('success') %}
+  <div class="sx-ps-banner">Settings saved.</div>
   {% endif %}
 
-  <div class="brilliant-card bg-base-100">
-    <div class="card-body p-6 md:p-10">
-      
-      {% if error %}
-      <div class="alert alert-error mb-4">
-        <span>{{ error }}</span>
+  {% if error %}
+  <div class="sx-ps-banner">{{ error }}</div>
+  {% endif %}
+
+  <form action="/parent/settings" method="POST" style="display:flex;flex-direction:column;gap:18px;" x-data="parentSettingsForm()">
+    <!-- Card 1: Parent Portal PIN Lock -->
+    <section class="sx-ext-surface sx-ps-card">
+      <div class="sx-ps-head">
+        <h2 class="sx-ps-title">Parent Portal PIN Lock</h2>
+        <span class="sx-ps-badge" :class="locked && 'is-active'" x-text="locked ? 'PIN Active' : 'PIN Off'">
+          {{ 'PIN Active' if user.parent_locked else 'PIN Off' }}
+        </span>
       </div>
-      {% endif %}
 
-      <form action="/parent/settings" method="POST" class="space-y-12" x-data="parentSettings()" x-effect="document.body.classList.toggle('custom-cursor-active', cursorMode === '1')">
-        
-        <!-- Install Mobile / Desktop Web App (PWA) -->
-        <div class="flex flex-row items-center justify-between p-5 rounded-3xl gap-4 bg-primary/5 border border-primary/20"
-             x-data="{ installed: window.isSaxazStandalone && window.isSaxazStandalone() }"
-             @saxaz-pwa-status.window="installed = window.isSaxazStandalone && window.isSaxazStandalone()">
-          <div class="flex items-center gap-3.5 text-left min-w-0">
-            <img src="/static/images/pwa-icon-192.png?v=2" alt="SAXAZ App" class="w-12 h-12 rounded-2xl shadow-md shrink-0 bg-white border border-base-300" />
-            <div class="min-w-0">
-              <div class="flex items-center gap-2 flex-wrap">
-                <h2 class="text-lg sm:text-xl font-black">Install Mobile App</h2>
-                <span class="badge badge-xs sm:badge-sm bg-primary text-[#151515] border-none font-black uppercase tracking-wider">Web App</span>
+      <label class="sx-ps-check-row">
+        <input type="checkbox" name="parent_locked" value="1" x-model="locked">
+        <span>Require 4-digit PIN to open Parent Portal</span>
+      </label>
+
+      <div class="sx-ps-pin-box" x-show="locked" x-cloak>
+        <input :type="showPin ? 'text' : 'password'"
+               name="parent_pin"
+               value="{{ user.parent_pin or '' }}"
+               inputmode="numeric"
+               maxlength="4"
+               pattern="[0-9]{4}"
+               placeholder="1234"
+               :required="locked"
+               class="sx-ps-pin-input">
+        <button type="button" class="sx-ps-btn-sm" @click="showPin = !showPin" x-text="showPin ? 'Hide' : 'Show'">Show</button>
+      </div>
+    </section>
+
+    <!-- Card 2: Summary Voice & Language -->
+    <section class="sx-ext-surface sx-ps-card">
+      <div class="sx-ps-head">
+        <h2 class="sx-ps-title">Summary Voice &amp; Language</h2>
+      </div>
+
+      <input type="hidden" name="parent_tts_engine" :value="lang">
+
+      <div class="sx-ps-field" style="margin-top:0;">
+        <label class="sx-ps-lbl" for="parentLangSelect">Primary Language</label>
+        <select id="parentLangSelect" name="tutor_lang" x-model="lang" class="sx-ps-select">
+          <option value="en">English</option>
+          <option value="ml">Malayalam &middot; മലയാളം</option>
+          <option value="hi">Hindi &middot; हिन्दी</option>
+          <option value="ta">Tamil &middot; தமிழ்</option>
+          <option value="ar">Arabic &middot; العربية</option>
+        </select>
+      </div>
+
+      <div class="sx-ps-field">
+        <span class="sx-ps-lbl">Teacher Voice (Click to Preview)</span>
+        <div class="sx-ps-voices">
+          <template x-for="v in voices" :key="v.id">
+            <label class="sx-ps-vcard" :class="voice === v.id && 'is-selected'">
+              <input type="radio" name="parent_tts_voice" :value="v.id" x-model="voice" @change="previewVoice(v.id)" style="display:none;">
+              <img :src="v.img" :alt="v.name" class="sx-ps-avatar">
+              <div>
+                <div class="sx-ps-vname" x-text="v.name"></div>
+                <div class="sx-ps-vsub" x-text="loadingVoice === v.id ? 'Playing...' : 'Preview'"></div>
               </div>
-              <p class="text-base-content/65 font-medium text-xs sm:text-sm mt-0.5">Install SAXAZ on your phone or computer for instant, full-screen access.</p>
-            </div>
-          </div>
-          <button type="button"
-                  @click="window.triggerSaxazAppInstall && window.triggerSaxazAppInstall()"
-                  class="btn btn-primary btn-circle w-12 h-12 min-h-0 text-[#151515] shadow-md hover:scale-105 transition-transform flex items-center justify-center shrink-0"
-                  :title="installed ? 'App Installed' : 'Install SAXAZ Web App'">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-          </button>
+            </label>
+          </template>
         </div>
+      </div>
 
-        <!-- Security Settings -->
-        <div>
-          <h2 class="text-2xl font-black mb-6">Security Settings</h2>
-          <div class="space-y-6 max-w-xl">
-            <div class="form-control">
-              <label class="cursor-pointer label">
-                <span class="label-text text-lg font-bold text-base-content">Lock Parent Portal</span> 
-                <input type="checkbox" name="parent_locked" value="1" class="toggle toggle-primary" {% if user.parent_locked %}checked{% endif %} id="lockToggle" />
-              </label>
-              <p class="text-sm text-base-content/50 mt-1">Require a PIN to access the Parent Portal.</p>
-            </div>
-            
-            <div class="form-control" id="pinSection" style="{% if not user.parent_locked %}display: none;{% endif %}">
-              <label class="label">
-                <span class="label-text text-base-content font-bold">Set 4-Digit PIN</span>
-              </label>
-              <input type="password" name="parent_pin" value="{{ user.parent_pin or '' }}" placeholder="1234" class="input input-bordered bg-base-100 tracking-widest text-xl text-center w-32 shadow-inner" maxlength="4" pattern="[0-9]{4}">
-            </div>
-          </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <!-- Global Preferences -->
-        <div>
-          <h2 class="text-2xl font-black mb-6">My UI Preferences</h2>
-          <div class="flex flex-col md:flex-row gap-12">
-            <!-- Left Column: UI Settings -->
-            <div class="flex-1 flex flex-col gap-6">
-              <div class="flex flex-col items-start">
-                <h3 class="text-lg font-bold mb-2">UI Sound Effects</h3>
-                <p class="text-base-content/60 mb-4 font-medium">Toggle all platform interactive sounds.</p>
-              
-                <div class="bg-base-200 p-2 rounded-full inline-flex shadow-inner border border-base-300 gap-1">
-                  <label class="cursor-pointer w-20 py-2 rounded-full text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2"
-                      :class="sfxMode === '1' ? 'bg-base-100 text-primary shadow-sm ring-1 ring-base-300 scale-105' : 'text-base-content/60 hover:text-base-content hover:bg-base-300/50'">
-                    <input type="radio" name="sfx_mode" value="1" class="sr-only" x-model="sfxMode" />
-                    On
-                  </label>
-                  
-                  <label class="cursor-pointer w-24 py-2 rounded-full text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2"
-                      :class="sfxMode === '2' ? 'bg-base-100 text-secondary shadow-sm ring-1 ring-base-300 scale-105' : 'text-base-content/60 hover:text-base-content hover:bg-base-300/50'">
-                    <input type="radio" name="sfx_mode" value="2" class="sr-only" x-model="sfxMode" />
-                    Custom
-                  </label>
-                  
-                  <label class="cursor-pointer w-20 py-2 rounded-full text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2"
-                      :class="sfxMode === '0' ? 'bg-base-100 text-error shadow-sm ring-1 ring-base-300 scale-105' : 'text-base-content/60 hover:text-base-content hover:bg-base-300/50'">
-                    <input type="radio" name="sfx_mode" value="0" class="sr-only" x-model="sfxMode" />
-                    Off
-                  </label>
-                </div>
-                
-                <input type="hidden" name="sfx_custom" :value="JSON.stringify(sfxCustom)">
-
-                <!-- Custom Settings Grid -->
-                <div x-show="sfxMode === '2'" x-collapse class="w-full max-w-xs mt-4">
-                  <div class="bg-base-200/50 rounded-2xl p-4 border border-base-300 grid grid-cols-1 gap-3 shadow-inner">
-                    <template x-for="(item, key) in sfxOptions" :key="key">
-                      <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2 text-base-content/60">
-                          <div class="w-4 h-4 flex items-center justify-center text-current" x-html="item.icon"></div>
-                          <span class="font-medium text-base-content/80 text-sm" x-text="item.label"></span>
-                        </div>
-                        <input type="checkbox" class="toggle toggle-xs toggle-secondary" 
-                            x-model="sfxCustom[key]" 
-                            @change="if(sfxCustom[key]) { window.SFX?.play(key) }"
-                            x-init="if(sfxCustom[key] === undefined) sfxCustom[key] = true" />
-                      </div>
-                    </template>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Right Column: Custom Cursor -->
-            <div class="flex-1 flex flex-col gap-6">
-              <div class="flex flex-col items-start">
-                <h3 class="text-lg font-bold mb-2">Custom Cursor</h3>
-                <p class="text-base-content/60 mb-4 font-medium">Magical, animated glowing cursors.</p>
-                
-                <div class="bg-base-200 p-2 rounded-full inline-flex shadow-inner border border-base-300 gap-1">
-                  <label class="cursor-pointer w-24 py-2 rounded-full text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2"
-                      :class="cursorMode === '1' ? 'bg-base-100 text-primary shadow-sm ring-1 ring-base-300 scale-105' : 'text-base-content/60 hover:text-base-content hover:bg-base-300/50'">
-                    <input type="radio" name="cursor_mode" value="1" class="sr-only" x-model="cursorMode" />
-                    On
-                  </label>
-                  
-                  <label class="cursor-pointer w-24 py-2 rounded-full text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2"
-                      :class="cursorMode === '0' ? 'bg-base-100 text-error shadow-sm ring-1 ring-base-300 scale-105' : 'text-base-content/60 hover:text-base-content hover:bg-base-300/50'">
-                    <input type="radio" name="cursor_mode" value="0" class="sr-only" x-model="cursorMode" />
-                    Off
-                  </label>
-                </div>
-
-                <!-- Custom Cursor Effects Dropdown -->
-                <div x-show="cursorMode === '1'" x-collapse class="w-full max-w-[12rem] mt-4">
-                  <div class="form-control w-full">
-                    <select name="cursor_effect" x-model="cursorEffect" class="select select-bordered select-secondary select-sm w-full bg-base-200/50 text-sm font-medium rounded-xl shadow-inner focus:outline-none">
-                      <option value="none">None</option>
-                      <option value="magic">Magic</option>
-                      <option value="bubbles">Bubbles</option>
-                      <option value="sparks">Sparks</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <!-- Audio Settings -->
-        <div>
-          <h2 class="text-2xl font-black mb-6">Audio Settings</h2>
-          <div class="flex flex-col md:flex-row gap-12">
-            <!-- Left Column: Voice Quality -->
-            <div class="flex-1 flex flex-col gap-6">
-              <div class="flex flex-col items-start">
-                <h3 class="text-lg font-bold mb-2">Voice Quality</h3>
-                <p class="text-base-content/60 mb-4 font-medium">Choose between lightning fast or ultra-realistic voices.</p>
-                <div class="bg-base-200 p-2 rounded-full inline-flex shadow-inner border border-base-300 gap-1">
-                  <label class="cursor-pointer w-24 py-2 rounded-full text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2"
-                      :class="engineMode === 'edge-tts' ? 'bg-base-100 text-primary shadow-sm ring-1 ring-base-300 scale-105' : 'text-base-content/60 hover:text-base-content hover:bg-base-300/50'">
-                    <input type="radio" name="parent_tts_engine" value="edge-tts" class="sr-only" x-model="engineMode" @change="playCurrentVoicePreview()" />
-                    Fast
-                  </label>
-                  <label class="cursor-pointer w-24 py-2 rounded-full text-sm font-bold transition-all duration-300 flex items-center justify-center gap-2"
-                      :class="engineMode === 'kokoro' ? 'bg-base-100 text-primary shadow-sm ring-1 ring-base-300 scale-105' : 'text-base-content/60 hover:text-base-content hover:bg-base-300/50'">
-                    <input type="radio" name="parent_tts_engine" value="kokoro" class="sr-only" x-model="engineMode" @change="playCurrentVoicePreview()" />
-                    Realistic
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <!-- Right Column: Auto-Play Audio -->
-            <div class="flex-1 flex flex-col gap-6">
-              <div class="flex flex-col items-start">
-                <h3 class="text-lg font-bold mb-2">Auto-Play Audio</h3>
-                <p class="text-base-content/60 mb-4 font-medium">Choose when voices should play automatically.</p>
-                <div class="bg-base-200 p-2 rounded-full inline-flex shadow-inner border border-base-300 gap-1">
-                  <label class="cursor-pointer w-20 py-2 rounded-full text-sm font-bold transition-all duration-300 flex items-center justify-center"
-                      :class="ttsMode === 'auto' ? 'bg-base-100 text-primary shadow-sm ring-1 ring-base-300 scale-105' : 'text-base-content/60 hover:text-base-content hover:bg-base-300/50'">
-                    <input type="radio" name="parent_tts_mode" value="auto" class="sr-only" x-model="ttsMode" />
-                    Auto
-                  </label>
-                  <label class="cursor-pointer w-20 py-2 rounded-full text-sm font-bold transition-all duration-300 flex items-center justify-center"
-                      :class="ttsMode === 'manual' ? 'bg-base-100 text-primary shadow-sm ring-1 ring-base-300 scale-105' : 'text-base-content/60 hover:text-base-content hover:bg-base-300/50'">
-                    <input type="radio" name="parent_tts_mode" value="manual" class="sr-only" x-model="ttsMode" />
-                    Manual
-                  </label>
-                  <label class="cursor-pointer w-20 py-2 rounded-full text-sm font-bold transition-all duration-300 flex items-center justify-center"
-                      :class="ttsMode === 'off' ? 'bg-base-100 text-error shadow-sm ring-1 ring-base-300 scale-105' : 'text-base-content/60 hover:text-base-content hover:bg-base-300/50'">
-                    <input type="radio" name="parent_tts_mode" value="off" class="sr-only" x-model="ttsMode" />
-                    Off
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="divider text-base-content/40 font-bold mb-10">Choose Your Voice</div>
-        <p class="text-base-content/70 mb-6">Choose the voice that will read out the AI summary.</p>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <!-- Bella -->
-          <label class="cursor-pointer relative">
-            <input type="radio" name="parent_tts_voice" value="af_bella" class="peer sr-only" x-model="voiceMode" @change="playPreview('af_bella', 'Hello, I am Bella.')">
-            <div class="card bg-base-200 border-2 border-transparent peer-checked:border-primary peer-checked:bg-primary/5 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:bg-base-100">
-              <figure class="px-4 pt-4">
-                <div class="relative w-full aspect-square rounded-xl overflow-hidden shadow-inner">
-                  <img src="/static/images/tts_af_bella.jpg" alt="Bella" class="w-full h-full object-cover" />
-                  <div x-show="loadingVoice === 'af_bella'" style="display: none;" x-transition class="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center bg-white/80 z-10 rounded-xl">
-                    <span class="loading loading-bars text-primary w-10"></span>
-                  </div>
-                </div>
-              </figure>
-              <div class="card-body items-center text-center p-4">
-                <h3 class="font-bold text-lg">Bella</h3>
-              </div>
-            </div>
+      <div class="sx-ps-field">
+        <span class="sx-ps-lbl">Summary Voice Playback</span>
+        <div class="sx-ps-seg">
+          <label :class="ttsMode === 'auto' && 'is-on'">
+            <input type="radio" name="parent_tts_mode" value="auto" x-model="ttsMode" style="display:none;">Auto
           </label>
-
-          <!-- Sarah -->
-          <label class="cursor-pointer relative">
-            <input type="radio" name="parent_tts_voice" value="af_sarah" class="peer sr-only" x-model="voiceMode" @change="playPreview('af_sarah', 'Hi there! I am Sarah.')">
-            <div class="card bg-base-200 border-2 border-transparent peer-checked:border-primary peer-checked:bg-primary/5 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:bg-base-100">
-              <figure class="px-4 pt-4">
-                <div class="relative w-full aspect-square rounded-xl overflow-hidden shadow-inner">
-                  <img src="/static/images/tts_af_sarah.jpg" alt="Sarah" class="w-full h-full object-cover" />
-                  <div x-show="loadingVoice === 'af_sarah'" style="display: none;" x-transition class="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center bg-white/80 z-10 rounded-xl">
-                    <span class="loading loading-bars text-primary w-10"></span>
-                  </div>
-                </div>
-              </figure>
-              <div class="card-body items-center text-center p-4">
-                <h3 class="font-bold text-lg">Sarah</h3>
-              </div>
-            </div>
+          <label :class="ttsMode === 'manual' && 'is-on'">
+            <input type="radio" name="parent_tts_mode" value="manual" x-model="ttsMode" style="display:none;">Manual
           </label>
-
-          <!-- Adam -->
-          <label class="cursor-pointer relative">
-            <input type="radio" name="parent_tts_voice" value="am_adam" class="peer sr-only" x-model="voiceMode" @change="playPreview('am_adam', 'Greetings! I am Adam.')">
-            <div class="card bg-base-200 border-2 border-transparent peer-checked:border-primary peer-checked:bg-primary/5 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:bg-base-100">
-              <figure class="px-4 pt-4">
-                <div class="relative w-full aspect-square rounded-xl overflow-hidden shadow-inner">
-                  <img src="/static/images/tts_am_adam.jpg" alt="Adam" class="w-full h-full object-cover" />
-                  <div x-show="loadingVoice === 'am_adam'" style="display: none;" x-transition class="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center bg-white/80 z-10 rounded-xl">
-                    <span class="loading loading-bars text-primary w-10"></span>
-                  </div>
-                </div>
-              </figure>
-              <div class="card-body items-center text-center p-4">
-                <h3 class="font-bold text-lg">Adam</h3>
-              </div>
-            </div>
-          </label>
-
-          <!-- Michael -->
-          <label class="cursor-pointer relative">
-            <input type="radio" name="parent_tts_voice" value="am_michael" class="peer sr-only" x-model="voiceMode" @change="playPreview('am_michael', 'Hello. I am Michael.')">
-            <div class="card bg-base-200 border-2 border-transparent peer-checked:border-primary peer-checked:bg-primary/5 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:bg-base-100">
-              <figure class="px-4 pt-4">
-                <div class="relative w-full aspect-square rounded-xl overflow-hidden shadow-inner">
-                  <img src="/static/images/tts_am_michael.jpg" alt="Michael" class="w-full h-full object-cover" />
-                  <div x-show="loadingVoice === 'am_michael'" style="display: none;" x-transition class="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center bg-white/80 z-10 rounded-xl">
-                    <span class="loading loading-bars text-primary w-10"></span>
-                  </div>
-                </div>
-              </figure>
-              <div class="card-body items-center text-center p-4">
-                <h3 class="font-bold text-lg">Michael</h3>
-              </div>
-            </div>
+          <label :class="ttsMode === 'off' && 'is-on'">
+            <input type="radio" name="parent_tts_mode" value="off" x-model="ttsMode" style="display:none;">Off
           </label>
         </div>
-        
-        <div class="divider"></div>
+      </div>
+    </section>
 
-        <!-- Feedback Preferences -->
-<div>
-          <h2 class="text-2xl font-black mb-6">Summary Settings</h2>
-          <div class="flex flex-col gap-6">
-            <div class="flex flex-col items-start w-full">
-              <h3 class="text-lg font-bold mb-2">Analysis Brutality Level</h3>
-              <p class="text-base-content/60 mb-6 font-medium">How strict and harsh should the AI be when analyzing your child's progress?</p>
-              
-              <input type="hidden" name="brutality_level" x-model="brutalityLevel">
-              
-              <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 w-full">
-                <!-- Level 1 -->
-                <div @click="brutalityLevel = '1'" 
-                   class="relative p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 hover:shadow-md"
-                   :class="brutalityLevel === '1' ? 'border-success bg-success/5 shadow-sm' : 'border-base-200 bg-base-100/50 hover:border-success/30'">
-                  <div class="flex items-center gap-3 mb-2">
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center" :class="brutalityLevel === '1' ? 'bg-success text-white shadow-[0_0_15px_rgba(var(--su),0.5)]' : 'bg-success/10 text-success'">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.9 11a3 3 0 0 1-5.8 0"/><circle cx="12" cy="12" r="10"/><path d="M9 9h.01"/><path d="M15 9h.01"/></svg>
-                    </div>
-                    <span class="font-bold" :class="brutalityLevel === '1' ? 'text-success' : 'text-base-content'">Warm / Normal</span>
-                  </div>
-                  <p class="text-xs font-medium mt-3" :class="brutalityLevel === '1' ? 'text-success/80' : 'text-base-content/50'">Encouraging, supportive, and highlights achievements.</p>
-                </div>
-                
-                <!-- Level 2 -->
-                <div @click="brutalityLevel = '2'" 
-                   class="relative p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 hover:shadow-md"
-                   :class="brutalityLevel === '2' ? 'border-info bg-info/5 shadow-sm' : 'border-base-200 bg-base-100/50 hover:border-info/30'">
-                  <div class="flex items-center gap-3 mb-2">
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center" :class="brutalityLevel === '2' ? 'bg-info text-white shadow-[0_0_15px_rgba(var(--in),0.5)]' : 'bg-info/10 text-info'">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-                    </div>
-                    <span class="font-bold" :class="brutalityLevel === '2' ? 'text-info' : 'text-base-content'">Data-Driven</span>
-                  </div>
-                  <p class="text-xs font-medium mt-3" :class="brutalityLevel === '2' ? 'text-info/80' : 'text-base-content/50'">Objective and strict. Bluntly points out failures.</p>
-                </div>
-                
-                <!-- Level 3 -->
-                <div @click="brutalityLevel = '3'" 
-                   class="relative p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 hover:shadow-md"
-                   :class="brutalityLevel === '3' ? 'border-warning bg-warning/5 shadow-sm' : 'border-base-200 bg-base-100/50 hover:border-warning/30'">
-                  <div class="flex items-center gap-3 mb-2">
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center" :class="brutalityLevel === '3' ? 'bg-warning text-white shadow-[0_0_15px_rgba(var(--wa),0.5)]' : 'bg-warning/10 text-warning'">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                    </div>
-                    <span class="font-bold" :class="brutalityLevel === '3' ? 'text-warning' : 'text-base-content'">Tough Love</span>
-                  </div>
-                  <p class="text-xs font-medium mt-3" :class="brutalityLevel === '3' ? 'text-warning/80' : 'text-base-content/50'">Uncompromising disciplinarian. Shames laziness.</p>
-                </div>
-                
-                <!-- Level 4 -->
-                <div @click="brutalityLevel = '4'" 
-                   class="relative p-5 rounded-2xl border-2 cursor-pointer transition-all duration-300 hover:shadow-md"
-                   :class="brutalityLevel === '4' ? 'border-error bg-error/5 shadow-sm scale-[1.02]' : 'border-base-200 bg-base-100/50 hover:border-error/30'">
-                  
-                  <div class="absolute -top-3 -right-3 bg-error text-white text-[10px] uppercase font-black tracking-widest px-2 py-1 rounded-full shadow-md animate-pulse" x-show="brutalityLevel === '4'">Extreme</div>
-                  
-                  <div class="flex items-center gap-3 mb-2">
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center transition-colors" :class="brutalityLevel === '4' ? 'bg-error text-white shadow-[0_0_15px_rgba(var(--er),0.6)]' : 'bg-error/10 text-error'">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 16a8 8 0 0 1 12-4M13.4 9.4L18 4l2 2-4.6 4.6M4 2v4h4M4.2 11.2l-.7-.7M21.2 16l-.7-.7M22 10v4h-4M16 2l4 4"/></svg>
-                    </div>
-                    <span class="font-black" :class="brutalityLevel === '4' ? 'text-error' : 'text-base-content'">Drill Sergeant</span>
-                  </div>
-                  <p class="text-xs font-medium mt-3" :class="brutalityLevel === '4' ? 'text-error/80' : 'text-base-content/50'">Hyper-critical and ruthlessly honest. Tears them apart.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="pt-6 border-t border-base-300 flex justify-center">
-          <button type="submit" class="btn btn-primary rounded-2xl px-10 text-slate-900 font-black h-12 tactile-btn border-2 border-amber-600/30">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" /></svg>
-            Save Settings
-          </button>
-        </div>
-      </form>
-
+    <div>
+      <button type="submit" class="sx-ext-cta-yellow sx-ps-save">Save Settings</button>
     </div>
-  </div>
+  </form>
 </div>
 
 <script>
-  document.getElementById('lockToggle').addEventListener('change', function() {
-    document.getElementById('pinSection').style.display = this.checked ? 'block' : 'none';
-    if(this.checked) {
-      document.querySelector('input[name="parent_pin"]').required = true;
-    } else {
-      document.querySelector('input[name="parent_pin"]').required = false;
-    }
-  });
-
   document.addEventListener('alpine:init', () => {
-    Alpine.data('parentSettings', () => ({
-      
-      engineMode: '{{ user.parent_tts_engine or "kokoro" }}',
+    Alpine.data('parentSettingsForm', () => ({
+      locked: {{ 'true' if user.parent_locked else 'false' }},
+      showPin: false,
+      lang: '{{ parent_lang or "en" }}',
+      voice: '{{ user.parent_tts_voice or "af_bella" }}',
       ttsMode: '{{ user.parent_tts_mode or "manual" }}',
-      voiceMode: '{{ user.parent_tts_voice or "af_bella" }}',
-      
-      currentAudio: null,
       loadingVoice: null,
-      
-      sfxMode: '{{ user.parent_sfx_mode | default("0") }}',
-      cursorMode: '{{ user.parent_cursor_mode | default("1") }}',
-      sfxCustom: {{ (user.parent_sfx_custom if user.parent_sfx_custom and user.parent_sfx_custom != '' else '{}') | safe }},
-      cursorEffect: '{{ user.parent_cursor_effect | default("none") }}',
-      brutalityLevel: '{{ user.brutality_level or 1 }}',
-      
-      initialState: '',
-      
-      sfxOptions: {
-        'click': { label: 'Click', icon: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" /></svg>' },
-        'hover': { label: 'Hover', icon: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>' },
-        'pop': { label: 'Pop', icon: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>' },
-        'success': { label: 'Success', icon: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>' },
-        'whoosh': { label: 'Whoosh', icon: '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>' }
+      audio: null,
+      objectUrl: null,
+      voices: [
+        { id: 'af_bella', name: 'Bella', img: '/static/images/tts_af_bella.jpg' },
+        { id: 'af_sarah', name: 'Sarah', img: '/static/images/tts_af_sarah.jpg' },
+        { id: 'am_adam', name: 'Adam', img: '/static/images/tts_am_adam.jpg' },
+        { id: 'am_michael', name: 'Michael', img: '/static/images/tts_am_michael.jpg' }
+      ],
+      samples: {
+        en: { af_bella: 'Hello, I am Bella, your parent summary advisor.', af_sarah: 'Hello, I am Sarah, your parent summary advisor.', am_adam: 'Hello, I am Adam, your parent summary advisor.', am_michael: 'Hello, I am Michael, your parent summary advisor.' },
+        ml: { af_bella: 'നമസ്കാരം, ഞാൻ ബെല്ലയാണ്. നിങ്ങളുടെ കുട്ടിയുടെ പഠന പുരോഗതി ഇതാ.', af_sarah: 'നമസ്കാരം, ഞാൻ സാറയാണ്. നിങ്ങളുടെ കുട്ടിയുടെ പഠന പുരോഗതി ഇതാ.', am_adam: 'നമസ്കാരം, ഞാൻ ആദമാണ്. നിങ്ങളുടെ കുട്ടിയുടെ പഠന പുരോഗതി ഇതാ.', am_michael: 'നമസ്കാരം, ഞാൻ മൈക്കിളാണ്. നിങ്ങളുടെ കുട്ടിയുടെ പഠന പുരോഗതി ഇതാ.' },
+        hi: { af_bella: 'नमस्ते, मैं बेला हूँ। आपके बच्चे की पढ़ाई का सारांश यहाँ है।', af_sarah: 'नमस्ते, मैं सारा हूँ। आपके बच्चे की पढ़ाई का सारांश यहाँ है।', am_adam: 'नमस्ते, मैं एडम हूँ। आपके बच्चे की पढ़ाई का सारांश यहाँ है।', am_michael: 'नमस्ते, मैं माइकल हूँ। आपके बच्चे की पढ़ाई का सारांश यहाँ है।' },
+        ta: { af_bella: 'வணக்கம், நான் பெல்லா. உங்கள் குழந்தையின் கற்றல் சுருக்கம் இதோ.', af_sarah: 'வணக்கம், நான் சாரா. உங்கள் குழந்தையின் கற்றல் சுருக்கம் இதோ.', am_adam: 'வணக்கம், நான் ஆடம். உங்கள் குழந்தையின் கற்றல் சுருக்கம் இதோ.', am_michael: 'வணக்கம், நான் மைக்கேல். உங்கள் குழந்தையின் கற்றல் சுருக்கம் இதோ.' },
+        ar: { af_bella: 'مرحباً، أنا بيلا. إليك ملخص تقدم طفلك الدراسي.', af_sarah: 'مرحباً، أنا سارة. إليك ملخص تقدم طفلك الدراسي.', am_adam: 'مرحباً، أنا آدم. إليك ملخص تقدم طفلك الدراسي.', am_michael: 'مرحباً، أنا مايكل. إليك ملخص تقدم طفلك الدراسي.' }
       },
-      
-      
-      get currentState() {
-        // Ignore pin section for dirty check as it doesn't use alpine
-        return JSON.stringify({
-          engineMode: String(this.engineMode),
-          ttsMode: String(this.ttsMode),
-          voiceMode: String(this.voiceMode),
-          sfxMode: String(this.sfxMode),
-          cursorMode: String(this.cursorMode),
-          sfxCustom: JSON.stringify(this.sfxCustom),
-          cursorEffect: String(this.cursorEffect),
-          brutalityLevel: String(this.brutalityLevel)
-        });
+      stopPreview() {
+        if (this.audio) { this.audio.pause(); this.audio = null; }
+        if (this.objectUrl) { URL.revokeObjectURL(this.objectUrl); this.objectUrl = null; }
+        this.loadingVoice = null;
       },
-      
-      playCurrentVoicePreview() {
-        const voiceTexts = {
-          'af_bella': 'Hello, I am Bella.',
-          'af_sarah': 'Hi there! I am Sarah.',
-          'am_adam': 'Greetings! I am Adam.',
-          'am_michael': 'Hello. I am Michael.'
-        };
-        const text = voiceTexts[this.voiceMode] || 'Hello! I am your guide.';
-        this.playPreview(this.voiceMode, text);
-      },
-      
-      async playPreview(voiceId, text) {
-        if (this.currentAudio) {
-          this.currentAudio.pause();
-          this.currentAudio = null;
-        }
-        
+      async previewVoice(voiceId) {
+        this.stopPreview();
         this.loadingVoice = voiceId;
+        const langSet = this.samples[this.lang] || this.samples.en;
+        const text = langSet[voiceId] || this.samples.en.af_bella;
         try {
-          const response = await fetch('/api/tts/prepare', {
+          const res = await fetch('/api/tts', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ text: text, voice: voiceId, engine: this.engineMode })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text, voice: voiceId })
           });
-          
-          if (response.ok) {
-            const data = await response.json();
-            const url = '/api/tts/stream/' + data.audio_id;
-            this.currentAudio = new Audio(url);
-            
-            this.currentAudio.addEventListener('playing', () => {
-              this.loadingVoice = null;
-            });
-            
-            this.currentAudio.onended = () => { this.loadingVoice = null; };
-            this.currentAudio.onerror = () => { this.loadingVoice = null; };
-            
-            this.currentAudio.play().catch(e => {
-              console.error('Play error:', e);
-              this.loadingVoice = null;
-            });
+          if (!res.ok) { this.stopPreview(); return; }
+          const ct = (res.headers.get('content-type') || '').toLowerCase();
+          let src = '';
+          if (ct.includes('application/json')) {
+            const d = await res.json();
+            src = d.audio_url || d.url || (d.audio_base64 ? ('data:audio/mp3;base64,' + d.audio_base64) : '');
           } else {
-            this.loadingVoice = null;
+            this.objectUrl = URL.createObjectURL(await res.blob());
+            src = this.objectUrl;
           }
+          if (!src) { this.stopPreview(); return; }
+          this.audio = new Audio(src);
+          this.audio.onended = () => this.stopPreview();
+          this.audio.onerror = () => this.stopPreview();
+          await this.audio.play();
         } catch (e) {
-          console.error('Preview error:', e);
-          this.loadingVoice = null;
+          this.stopPreview();
         }
-      },
-
-      
-      get isDirty() {
-        return this.currentState !== this.initialState;
-      },
-
-      init() {
-        if (typeof this.sfxCustom === 'string') {
-          try {
-            this.sfxCustom = JSON.parse(this.sfxCustom);
-          } catch (e) {
-            this.sfxCustom = {};
-          }
-        }
-        
-        this.$nextTick(() => {
-          this.initialState = this.currentState;
-        });
-
-        const form = document.querySelector('form');
-        
-        // Track standard form inputs too
-        const originalPin = form.parent_pin.value;
-        const originalLock = form.parent_locked.checked;
-
-        const isAnyDirty = () => {
-          return this.isDirty || (form.parent_pin.value !== originalPin) || (form.parent_locked.checked !== originalLock);
-        };
-
-        const handleBeforeUnload = (e) => {
-          if (isAnyDirty()) {
-            e.preventDefault();
-            e.returnValue = ''; 
-          }
-        };
-        window.addEventListener('beforeunload', handleBeforeUnload);
-
-        document.querySelectorAll('a').forEach(a => {
-          a.addEventListener('click', (e) => {
-            const isSubmitBtn = a.closest('button[type="submit"]');
-            if (isAnyDirty() && !isSubmitBtn && !a.hasAttribute('download') && a.href && !a.href.startsWith('javascript:')) {
-              e.preventDefault();
-              Swal.fire({
-                title: 'Save Changes?',
-                text: "You have unsaved settings.",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, Save',
-                cancelButtonText: 'No, Discard',
-                buttonsStyling: false,
-                customClass: {
-                  popup: 'rounded-[2rem] shadow-2xl border border-base-content/10 bg-base-100 p-6',
-                  title: 'text-2xl font-black text-base-content mt-4',
-                  htmlContainer: 'text-base-content/70 font-medium mt-2',
-                  actions: 'mt-6 gap-4',
-                  confirmButton: 'btn btn-primary rounded-full px-8 shadow-[0_0_15px_rgba(var(--p),0.4)] text-[#1a1a1a] font-bold hover:scale-105 transition-transform',
-                  cancelButton: 'btn btn-outline border-base-content/20 rounded-full px-8 font-bold hover:bg-base-300 hover:scale-105 transition-transform'
-                }
-              }).then((result) => {
-                if (result.isConfirmed) {
-                  const formData = new FormData(form);
-                  fetch('/parent/settings', {
-                    method: 'POST',
-                    body: formData
-                  }).then((response) => {
-                    if (response.ok && response.url.includes('success=1')) {
-                      window.removeEventListener('beforeunload', handleBeforeUnload);
-                      window.location.href = a.href;
-                    } else {
-                      Swal.fire({
-                        title: 'Save Failed',
-                        text: 'Please check your PIN and try saving again.',
-                        icon: 'error',
-                        confirmButtonText: 'OK',
-                        customClass: {
-                          popup: 'rounded-[2rem] shadow-2xl border border-base-content/10 bg-base-100 p-6',
-                          title: 'text-2xl font-black text-base-content mt-4',
-                          confirmButton: 'btn btn-primary rounded-full px-8 font-bold'
-                        }
-                      });
-                    }
-                  }).catch(() => {
-                    Swal.fire('Error', 'Network error. Please try again.', 'error');
-                  });
-                } else if (result.dismiss === Swal.DismissReason.cancel) {
-                  window.removeEventListener('beforeunload', handleBeforeUnload);
-                  window.location.href = a.href;
-                }
-              });
-            }
-          });
-        });
-        
-        form.addEventListener('submit', () => {
-          window.removeEventListener('beforeunload', handleBeforeUnload);
-        });
       }
     }));
   });

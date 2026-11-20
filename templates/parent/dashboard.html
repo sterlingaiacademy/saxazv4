@@ -1,406 +1,611 @@
 {% extends "base.html" %}
 
-{% block title %}Parent Portal - SAXAZ{% endblock %}
-{% block topbar_title %}Parent Analytics Portal{% endblock %}
+{% block title %}{{ user.name }}'s Learning Overview - Parent Portal{% endblock %}
+{% block topbar_title %}Parent Portal{% endblock %}
+
+{% block hero_banner %}
+<section class="sx-ext-hero">
+  <div class="sx-p-hero-inner">
+    <div class="sx-p-hero-copy">
+      <div class="sx-p-kicker">{{ user.class_name or 'Class 10' }} &middot; Parent Portal</div>
+      <h1 class="sx-p-hero-h1">{{ user.name }}'s Learning Overview</h1>
+    </div>
+    <div class="sx-p-hero-pills">
+      <a href="/auth/switch-to-student" class="sx-p-pill sx-p-pill-black">Switch to Student View &rarr;</a>
+      <a href="/parent/settings" class="sx-p-pill sx-p-pill-white">PIN: {{ 'Active' if user.parent_locked else 'Off — Set PIN' }}</a>
+    </div>
+  </div>
+</section>
+{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto space-y-8 pb-20">
-  
-  <!-- CLEAN HEADER BAR -->
-  <div class="brilliant-card bg-base-100 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-    <div class="space-y-2">
-      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 text-amber-700 border border-amber-500/30 text-xs font-black uppercase tracking-widest">
-        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-        Parent Insights Hub
-      </div>
-      <h1 class="text-2xl sm:text-4xl font-black text-base-content tracking-tight">Parent Portal</h1>
-      <p class="text-base-content/65 font-bold text-sm sm:text-base">
-        Real-time learning trajectory &amp; exam analytics for <span class="underline decoration-2 underline-offset-4 font-black text-base-content">{{ user.name }}</span>
-      </p>
+<style>
+  [x-cloak] { display: none !important; }
+  .sx-p-hero-inner {
+    max-width: 1180px;
+    margin: 0 auto;
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .sx-p-hero-copy { min-width: 0; }
+  .sx-p-kicker {
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(35, 31, 32, 0.72);
+    margin-bottom: 4px;
+  }
+  .sx-p-hero-h1 {
+    margin: 0;
+    font-size: clamp(1.5rem, 2.8vw, 2.15rem);
+    font-weight: 900;
+    line-height: 1.15;
+    color: #231f20;
+  }
+  .sx-p-hero-pills {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+  .sx-p-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    text-decoration: none;
+    border: 1.5px solid #231f20;
+    transition: transform 0.12s ease;
+  }
+  .sx-p-pill:hover { transform: translateY(-1px); }
+  .sx-p-pill-black {
+    background: #231f20;
+    color: #ffffff;
+  }
+  .sx-p-pill-white {
+    background: #ffffff;
+    color: #231f20;
+  }
+  .sx-p-pill-yellow {
+    background: #f7b317;
+    color: #231f20;
+  }
+  .sx-p-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding-bottom: 48px;
+  }
+  .sx-p-card {
+    background: #ffffff;
+    border: 1.5px solid rgba(35, 31, 32, 0.12);
+    border-radius: 16px;
+    padding: 20px 22px;
+    color: #231f20;
+  }
+  .sx-p-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+  @media (max-width: 960px) {
+    .sx-p-stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 520px) {
+    .sx-p-stats-grid { grid-template-columns: 1fr; }
+  }
+  .sx-p-stat-label {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(35, 31, 32, 0.58);
+    margin-bottom: 6px;
+  }
+  .sx-p-stat-value {
+    font-size: 1.75rem;
+    font-weight: 900;
+    line-height: 1.1;
+    color: #231f20;
+  }
+  .sx-p-stat-sub {
+    margin-top: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: rgba(35, 31, 32, 0.65);
+  }
+  .sx-p-section-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .sx-p-section-title {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: #231f20;
+  }
+  .sx-p-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    background: #f7b317;
+    color: #231f20;
+    border: 1px solid rgba(35, 31, 32, 0.2);
+  }
+  .sx-p-badge-outline {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 800;
+    background: #ffffff;
+    color: #231f20;
+    border: 1.5px solid rgba(35, 31, 32, 0.18);
+  }
+  .sx-p-milestone-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+  @media (max-width: 960px) {
+    .sx-p-milestone-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 540px) {
+    .sx-p-milestone-grid { grid-template-columns: 1fr; }
+  }
+  .sx-p-mcard {
+    background: #ffffff;
+    border: 1.5px solid rgba(35, 31, 32, 0.15);
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .sx-p-mcard-real {
+    border-color: #231f20;
+    border-width: 2px;
+  }
+  .sx-p-mcard-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .sx-p-mcard-title {
+    margin: 0;
+    font-size: 0.98rem;
+    font-weight: 900;
+    color: #231f20;
+  }
+  .sx-p-mcard-marks {
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: rgba(35, 31, 32, 0.06);
+    color: #231f20;
+    white-space: nowrap;
+  }
+  .sx-p-mcard-best {
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: #231f20;
+  }
+  .sx-p-mcard-locked {
+    font-size: 0.84rem;
+    font-weight: 800;
+    color: rgba(35, 31, 32, 0.62);
+  }
+  .sx-p-mcard-meta {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: rgba(35, 31, 32, 0.62);
+  }
+  .sx-p-mcard-foot {
+    padding-top: 10px;
+    border-top: 1px solid rgba(35, 31, 32, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .sx-p-link-strong {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #231f20;
+    background: #f7b317;
+    padding: 6px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    border: 1px solid #231f20;
+  }
+  .sx-p-link-subtle {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: rgba(35, 31, 32, 0.68);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .sx-p-summary-text {
+    margin: 0;
+    font-size: 1.02rem;
+    line-height: 1.65;
+    font-weight: 600;
+    color: #231f20;
+  }
+  .sx-p-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 38px;
+    padding: 7px 14px;
+    border-radius: 10px;
+    font-size: 0.83rem;
+    font-weight: 800;
+    cursor: pointer;
+    border: 1.5px solid #231f20;
+    background: #ffffff;
+    color: #231f20;
+    text-decoration: none;
+  }
+  .sx-p-btn-yellow {
+    background: #f7b317;
+    color: #231f20;
+  }
+  .sx-p-btn:disabled {
+    opacity: 0.55;
+    cursor: wait;
+  }
+  .sx-p-two-col {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+  @media (max-width: 900px) {
+    .sx-p-two-col { grid-template-columns: 1fr; }
+  }
+  .sx-p-row-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .sx-p-row-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 13px 15px;
+    border-radius: 12px;
+    border: 1px solid rgba(35, 31, 32, 0.14);
+    background: #ffffff;
+  }
+  .sx-p-row-main {
+    min-width: 0;
+    flex: 1 1 220px;
+  }
+  .sx-p-row-title {
+    margin: 0 0 4px;
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: #231f20;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+  .sx-p-row-sub {
+    font-size: 0.77rem;
+    font-weight: 700;
+    color: rgba(35, 31, 32, 0.62);
+  }
+  .sx-p-empty {
+    padding: 24px 16px;
+    text-align: center;
+    border-radius: 12px;
+    border: 1.5px dashed rgba(35, 31, 32, 0.18);
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: rgba(35, 31, 32, 0.6);
+  }
+</style>
+
+<div class="sx-ext-inner-wrap sx-p-stack">
+
+  <!-- Row 1: 4 Crisp Stat Tiles -->
+  <div class="sx-p-stats-grid">
+    <div class="sx-ext-surface sx-p-card">
+      <div class="sx-p-stat-label">SYLLABUS PROGRESS</div>
+      <div class="sx-p-stat-value">{{ analytics.completion_percent }}%</div>
+      <div class="sx-p-stat-sub">{{ analytics.completed_chapters }} / {{ analytics.total_chapters }} lessons watched</div>
     </div>
-    <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto sm:justify-end">
-      <a href="/student/dashboard" class="btn bg-base-200 hover:bg-base-300 text-base-content border-2 border-base-300 rounded-2xl px-4 font-black shadow-2xs tactile-btn btn-sm sm:btn-md">
-        Student View
-      </a>
-      <a href="/parent/settings" class="btn btn-primary text-primary-content rounded-2xl px-5 font-black shadow-md tactile-btn btn-sm sm:btn-md">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-        Settings
-      </a>
-      <a href="/logout" class="btn btn-error text-white border-none rounded-2xl px-4 font-black shadow-2xs tactile-btn btn-sm sm:btn-md">Logout</a>
+
+    <div class="sx-ext-surface sx-p-card">
+      <div class="sx-p-stat-label">STUDY TIME &amp; STREAK</div>
+      <div class="sx-p-stat-value">{{ analytics.time_spent }}</div>
+      <div class="sx-p-stat-sub">{{ analytics.streak_days }} day streak</div>
     </div>
-  </div>
-  
-  <!-- AI Weekly Progress Summary (Tactile Card) -->
-  <div class="brilliant-card bg-gradient-to-br from-amber-500/10 via-base-100 to-indigo-500/5 p-6 sm:p-8 relative overflow-hidden" 
-       x-data="{ 
-         loading: false,
-         playing: false,
-         audio: null,
-         ttsMode: '{{ user.parent_tts_mode or 'manual' }}',
-         ttsVoice: '{{ user.parent_tts_voice or 'af_bella' }}',
-         ttsEngine: '{{ user.parent_tts_engine or 'kokoro' }}',
-         
-         init() {
-           if (this.ttsMode === 'auto') {
-             setTimeout(() => { this.playTTS(); }, 1000);
-           }
-         },
-         
-         async playTTS(textOverride = null) {
-           if (this.playing && this.audio) {
-             this.audio.pause();
-             this.playing = false;
-             return;
-           }
-           
-           const text = textOverride || this.$refs.summaryText.innerText;
-           if (!text || text.trim() === '') return;
-           
-           this.playing = true;
-           try {
-             const response = await fetch('/api/tts/prepare', {
-               method: 'POST',
-               headers: {'Content-Type': 'application/json'},
-               body: JSON.stringify({ text: text.trim(), voice: this.ttsVoice, engine: this.ttsEngine })
-             });
-             
-             if (response.ok) {
-               const data = await response.json();
-               const url = '/api/tts/stream/' + data.audio_id;
-               this.audio = new Audio(url);
-               this.audio.onended = () => { this.playing = false; };
-               this.audio.onerror = () => { this.playing = false; };
-               this.audio.play();
-             } else {
-               this.playing = false;
-             }
-           } catch (e) {
-             console.error('TTS error:', e);
-             this.playing = false;
-           }
-         }
-       }">
-    <div class="relative z-10 flex flex-col sm:flex-row items-start gap-5">
-      <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-primary text-slate-900 flex items-center justify-center shrink-0 border-2 border-amber-600/30 shadow-md">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+
+    <div class="sx-ext-surface sx-p-card">
+      <div class="sx-p-stat-label">REAL EXAM BEST</div>
+      <div class="sx-p-stat-value">{{ best_real_pct ~ '%' if best_real_pct is not none else 'Not taken' }}</div>
+      <div class="sx-p-stat-sub">
+        <a href="/parent/real-exams" class="sx-p-link-subtle">Official Real Exams &rarr;</a>
       </div>
-      <div class="w-full">
-        <div class="flex flex-wrap items-center justify-between gap-2 w-full mb-3">
-          <span class="px-3 py-1 rounded-full bg-amber-500/15 text-amber-800 border border-amber-500/30 text-xs font-black tracking-widest uppercase">
-            AI Advisor Progress Summary
-          </span>
-          <div class="flex items-center gap-2">
-            <button x-show="ttsMode !== 'off'" class="btn btn-xs sm:btn-sm btn-primary text-slate-900 border border-amber-600/30 rounded-xl px-4 font-black tactile-btn" title="Read Aloud" @click="playTTS()">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" x-show="!playing"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" x-show="playing" style="display:none;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" /></svg>
-              <span x-text="playing ? 'Stop Audio' : 'Listen'"></span>
-            </button>
-            <button class="btn btn-xs sm:btn-sm bg-base-100 hover:bg-base-200 text-base-content border-2 border-base-300 rounded-xl px-4 font-black tactile-btn" title="Refresh Summary" @click="loading = true; fetch('/parent/api/refresh-summary', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({type: 'main'})}).then(r => r.json()).then(d => { if(d.summary) { $refs.summaryText.innerHTML = d.summary; if(ttsMode === 'auto') { setTimeout(() => playTTS(), 500); } } loading = false; })" :class="{ 'opacity-50 pointer-events-none': loading }">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" :class="{ 'animate-spin': loading }" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-              Refresh
-            </button>
-          </div>
-        </div>
-        <p class="text-base sm:text-xl text-base-content leading-relaxed font-bold ai-summary-text" x-ref="summaryText">{{ summary|safe }}</p>
-      </div>
+    </div>
+
+    <div class="sx-ext-surface sx-p-card">
+      <div class="sx-p-stat-label">REWARD WALLET</div>
+      <div class="sx-p-stat-value">{{ user.coin_balance or 0 }} Coins</div>
+      <div class="sx-p-stat-sub">Worth Rs {{ '%.2f'|format((user.coin_balance or 0) / 100.0) }} toward Rs 50 voucher</div>
     </div>
   </div>
 
-  <!-- Quick Stats (3D Tactile Cards) -->
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div class="brilliant-card bg-base-100 p-6 flex items-center gap-4">
-      <div class="w-14 h-14 rounded-2xl bg-amber-500/15 text-amber-600 flex items-center justify-center text-2xl border-2 border-amber-500/25 shrink-0">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>
-      </div>
+  <!-- Row 2: Chapter Exam Milestones -->
+  {% for ch in chapter_milestones %}
+  <section class="sx-ext-surface sx-p-card">
+    <div class="sx-p-section-head">
       <div>
-        <div class="text-xs text-base-content/50 uppercase tracking-widest font-black">Study Time</div>
-        <div class="text-3xl font-black text-base-content">{{ analytics.time_spent }}</div>
+        <div class="sx-p-stat-label">CHAPTER EXAM MILESTONES</div>
+        <h2 class="sx-p-section-title">{{ ch.title }}</h2>
+      </div>
+      <div class="sx-p-hero-pills">
+        <span class="sx-p-badge">{{ ch.videos_done }} / {{ ch.videos_total }} Video Lessons Watched</span>
+        <a href="/parent/mock-exams" class="sx-p-link-subtle">Mock Log</a>
+        <a href="/parent/real-exams" class="sx-p-link-subtle">Real Log</a>
       </div>
     </div>
-    
-    <div class="brilliant-card bg-base-100 p-6 flex items-center gap-4">
-      <div class="w-14 h-14 rounded-2xl bg-indigo-500/15 text-indigo-600 flex items-center justify-center text-2xl border-2 border-indigo-500/25 shrink-0">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-      </div>
-      <div>
-        <div class="text-xs text-base-content/50 uppercase tracking-widest font-black">Syllabus Mastery</div>
-        <div class="text-3xl font-black text-base-content">{{ analytics.completion_percent }}%</div>
-      </div>
-    </div>
-    
-    <div class="brilliant-card bg-base-100 p-6 flex items-center gap-4">
-      <div class="w-14 h-14 rounded-2xl bg-emerald-500/15 text-emerald-600 flex items-center justify-center text-2xl border-2 border-emerald-500/25 shrink-0">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
-      </div>
-      <div>
-        <div class="text-xs text-base-content/50 uppercase tracking-widest font-black">Active Streak</div>
-        <div class="text-3xl font-black text-base-content">{{ analytics.streak_days }} Days</div>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Visual Analytics Charts -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <div class="brilliant-card bg-base-100 p-6 sm:p-8 flex flex-col justify-between">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-black text-base-content flex items-center gap-2">
-          <span class="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-700 flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg>
-          </span>
-          Subject Study Breakdown
-        </h3>
-        <span class="flex items-center gap-1.5 text-[11px] font-black text-emerald-700 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/25">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          Live Tracked
-        </span>
-      </div>
 
-      <!-- Pie Chart Display -->
-      <div class="relative h-64 w-full flex items-center justify-center py-2">
-        <canvas id="progressChart"></canvas>
-      </div>
-
-      <!-- Subject Time & Progress Breakdown Badges -->
-      <div id="subjectTimeLegend" class="mt-4 pt-3 border-t-2 border-base-200 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-        {% for sub in subjects %}
-        <div class="flex items-center justify-between p-2.5 rounded-xl bg-base-200/60 border border-base-300">
-          <div class="flex items-center gap-2 truncate max-w-[150px]">
-            <span class="w-3 h-3 rounded-full shrink-0" style="background-color: {% if loop.index0 == 0 %}#F4AA00{% elif loop.index0 == 1 %}#3B82F6{% elif loop.index0 == 2 %}#10B981{% elif loop.index0 == 3 %}#8B5CF6{% elif loop.index0 == 4 %}#F97316{% elif loop.index0 == 5 %}#EC4899{% else %}#14B8A6{% endif %};"></span>
-            <span class="font-black text-base-content truncate">{{ sub.name }}</span>
+    <div class="sx-p-milestone-grid">
+      {% for m in ch.milestones %}
+      <div class="sx-p-mcard {% if m.type == 'real' %}sx-p-mcard-real{% endif %}">
+        <div>
+          <div class="sx-p-mcard-top">
+            <h3 class="sx-p-mcard-title">{{ m.title }}</h3>
+            <span class="sx-p-mcard-marks">{{ m.target_marks }} Marks</span>
           </div>
-          <span class="font-black text-base-content bg-base-100 px-2.5 py-0.5 rounded-lg border border-base-300 text-[11px] shrink-0">
-            {{ sub.time_studied_str if sub.seconds_studied else (sub.progress_pct ~ '%') }}
-          </span>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
 
-    <div class="brilliant-card bg-base-100 p-6 sm:p-8">
-      <h3 class="text-lg font-black text-base-content mb-4 flex items-center gap-2">
-        <span class="w-8 h-8 rounded-xl bg-indigo-500/15 text-indigo-600 flex items-center justify-center">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" /></svg>
-        </span>
-        Recent Exam Score Trajectory
-      </h3>
-      <div class="relative h-72 w-full">
-        <canvas id="examTrendChart"></canvas>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Mock vs Real Exams Deep-Dive Cards -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <!-- Mock Exams Card -->
-    <a href="/parent/mock-exams" class="group relative brilliant-card bg-gradient-to-br from-amber-500/10 via-base-100 to-base-100 p-6 sm:p-8 overflow-hidden flex flex-col justify-between min-h-[210px]">
-      <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-28 h-28 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-      </div>
-      <div class="relative z-10">
-        <div class="flex items-start justify-between gap-3 mb-5">
-          <div class="w-14 h-14 bg-amber-500 text-slate-900 rounded-2xl flex items-center justify-center shadow-md border-2 border-amber-600/30 group-hover:scale-105 transition-transform">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-          </div>
-          {% if analytics.mock_tutor_total_uses and analytics.mock_tutor_total_uses > 0 %}
-            <span class="px-3 py-1 rounded-full bg-rose-500/15 text-rose-600 border border-rose-500/30 text-xs font-black">
-              ⚠️ AI Tutor Used {{ analytics.mock_tutor_total_uses }}x ({{ analytics.mock_tutor_questions_count }} Qs)
-            </span>
-          {% else %}
-            <span class="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-600 border border-emerald-500/30 text-xs font-black">
-              ✓ 0 AI Tutor Uses
-            </span>
-          {% endif %}
-        </div>
-        <h2 class="text-2xl font-black text-base-content mb-2 group-hover:text-amber-700 transition-colors">Mock Exams Analytics</h2>
-        <p class="text-sm font-medium text-base-content/65 max-w-[90%]">Track practice habits, question retries, AI Tutor assistance / cheating log, and persistence over time.</p>
-      </div>
-      <div class="relative z-10 mt-6 pt-4 border-t border-base-200 flex items-center text-amber-700 font-black text-sm">
-        Explore Mock Exam &amp; Tutor Log <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 ml-2 group-hover:translate-x-1.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-      </div>
-    </a>
-    
-    <!-- Real Exams Card -->
-    <a href="/parent/real-exams" class="group relative brilliant-card bg-gradient-to-br from-emerald-500/10 via-base-100 to-base-100 p-6 sm:p-8 overflow-hidden flex flex-col justify-between min-h-[210px]">
-      <div class="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-28 h-28 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
-      </div>
-      <div class="relative z-10">
-        <div class="w-14 h-14 bg-emerald-500/20 text-emerald-600 rounded-2xl flex items-center justify-center mb-5 shadow-2xs border-2 border-emerald-500/30 group-hover:scale-105 transition-transform">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
-        </div>
-        <h2 class="text-2xl font-black text-base-content mb-2 group-hover:text-emerald-700 transition-colors">Real Exams Analytics</h2>
-        <p class="text-sm font-medium text-base-content/65 max-w-[85%]">Deep dive into timed test scores, accuracy reports, time management, and XP usage strategy.</p>
-      </div>
-      <div class="relative z-10 mt-6 pt-4 border-t border-base-200 flex items-center text-emerald-700 font-black text-sm">
-        Explore Real Exam Reports <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 ml-2 group-hover:translate-x-1.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-      </div>
-    </a>
-  </div>
-  
-  <!-- Recent Activity -->
-  <div class="brilliant-card bg-base-100 p-6 sm:p-8">
-    <h2 class="text-2xl font-black text-base-content mb-6 flex items-center gap-2.5">
-      <span class="w-10 h-10 rounded-xl bg-primary/20 text-amber-700 flex items-center justify-center">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-      </span>
-      Recent Learning Activity
-    </h2>
-    
-    {% if analytics.recent_activity %}
-      <div class="space-y-4">
-        {% for item in analytics.recent_activity %}
-        <div class="flex gap-4 items-start p-4 rounded-2xl bg-base-200/50 border-2 border-base-200 hover:border-primary/40 transition-colors">
-          <div class="mt-0.5 shrink-0">
-            {% if item.type == 'exam' %}
-              <div class="w-12 h-12 rounded-2xl {% if item.exam_type == 'mock' %}bg-amber-500/15 text-amber-700 border-amber-500/30{% else %}bg-emerald-500/15 text-emerald-700 border-emerald-500/30{% endif %} border-2 flex items-center justify-center shadow-xs">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
-              </div>
+          <div style="margin-top: 10px;">
+            {% if m.type == 'real' and not m.is_unlocked and m.attempts_count == 0 %}
+              <div class="sx-p-mcard-locked">Locked &middot; Need 80% in Mock</div>
+            {% elif m.best_pct is not none %}
+              <div class="sx-p-mcard-best">Best: {{ m.best_pct }}%</div>
             {% else %}
-              <div class="w-12 h-12 rounded-2xl bg-indigo-500/15 text-indigo-600 border-2 border-indigo-500/30 flex items-center justify-center shadow-xs">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              </div>
+              <div class="sx-p-mcard-locked">Not started</div>
             {% endif %}
-          </div>
-          <div class="flex-1 min-w-0">
-            <h4 class="font-black text-base-content text-base sm:text-lg leading-snug">
-              {% if item.type == 'exam' %}
-                Completed {% if item.exam_type == 'mock' %}Mock{% else %}Real{% endif %} Exam: {{ item.name }}
-              {% else %}
-                Studied Chapter Lesson: {{ item.name }}
-              {% endif %}
-            </h4>
-            <div class="text-xs sm:text-sm text-base-content/60 font-bold mt-1">
-              {{ item.details }} &bull; <span class="uppercase tracking-wider text-primary font-black">{{ item.timestamp[:10] }}</span>
+            <div class="sx-p-mcard-meta" style="margin-top: 4px;">
+              Attempts: {{ m.attempts_count }}{% if m.best_marks is not none %} &middot; {{ m.best_marks }}/{{ m.target_marks }} Marks{% endif %}
             </div>
           </div>
         </div>
+
+        <div class="sx-p-mcard-foot">
+          {% if m.latest_attempt_id %}
+            <a href="/parent/exams/{{ m.latest_attempt_id }}/report" class="sx-p-link-strong">View Paper &rarr;</a>
+          {% elif m.type == 'real' %}
+            <span class="sx-p-mcard-meta">{{ 'Ready for Attempt' if m.is_unlocked else '80% Mock Required' }}</span>
+          {% else %}
+            <span class="sx-p-mcard-meta">Practice Open</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% else %}
+  <section class="sx-ext-surface sx-p-card">
+    <div class="sx-p-empty">No published chapters found for this class yet.</div>
+  </section>
+  {% endfor %}
+
+  <!-- Row 3: AI Parent Summary -->
+  <section class="sx-ext-surface sx-p-card"
+           x-data="{
+             refreshing: false,
+             playing: false,
+             audio: null,
+             objectUrl: null,
+             ttsMode: '{{ user.parent_tts_mode or 'manual' }}',
+             ttsVoice: '{{ user.parent_tts_voice or 'af_bella' }}',
+             init() {
+               if (this.ttsMode === 'auto') {
+                 setTimeout(() => { this.toggleListen(); }, 800);
+               }
+             },
+             stopAudio() {
+               if (this.audio) {
+                 this.audio.pause();
+                 this.audio = null;
+               }
+               if (this.objectUrl) {
+                 URL.revokeObjectURL(this.objectUrl);
+                 this.objectUrl = null;
+               }
+               this.playing = false;
+             },
+             async toggleListen() {
+               if (this.playing) {
+                 this.stopAudio();
+                 return;
+               }
+               const text = (this.$refs.summaryText?.innerText || '').trim();
+               if (!text) return;
+               this.playing = true;
+               try {
+                 const res = await fetch('/api/tts', {
+                   method: 'POST',
+                   headers: { 'Content-Type': 'application/json' },
+                   body: JSON.stringify({ text: text, voice: this.ttsVoice })
+                 });
+                 if (!res.ok) {
+                   this.stopAudio();
+                   return;
+                 }
+                 const ct = (res.headers.get('content-type') || '').toLowerCase();
+                 let src = '';
+                 if (ct.includes('application/json')) {
+                   const data = await res.json();
+                   src = data.audio_url || data.url || (data.audio_base64 ? ('data:audio/mp3;base64,' + data.audio_base64) : '');
+                 } else {
+                   const blob = await res.blob();
+                   this.objectUrl = URL.createObjectURL(blob);
+                   src = this.objectUrl;
+                 }
+                 if (!src) {
+                   this.stopAudio();
+                   return;
+                 }
+                 this.audio = new Audio(src);
+                 this.audio.onended = () => this.stopAudio();
+                 this.audio.onerror = () => this.stopAudio();
+                 await this.audio.play();
+               } catch (err) {
+                 console.error('TTS playback error:', err);
+                 this.stopAudio();
+               }
+             },
+             async refreshSummary() {
+               if (this.refreshing) return;
+               this.stopAudio();
+               this.refreshing = true;
+               try {
+                 const res = await fetch('/parent/api/refresh-summary', {
+                   method: 'POST',
+                   headers: { 'Content-Type': 'application/json' },
+                   body: JSON.stringify({ type: 'main' })
+                 });
+                 if (res.ok) {
+                   const data = await res.json();
+                   if (data.summary && this.$refs.summaryText) {
+                     this.$refs.summaryText.textContent = data.summary;
+                     if (this.ttsMode === 'auto') {
+                       setTimeout(() => this.toggleListen(), 300);
+                     }
+                   }
+                 }
+               } catch (err) {
+                 console.error('Summary refresh error:', err);
+               } finally {
+                 this.refreshing = false;
+               }
+             }
+           }">
+    <div class="sx-p-section-head">
+      <div>
+        <div class="sx-p-stat-label">PARENT ADVISOR NOTE</div>
+        <h2 class="sx-p-section-title">AI Parent Summary</h2>
+      </div>
+      <div class="sx-p-hero-pills">
+        <button type="button"
+                x-show="ttsMode !== 'off'"
+                x-cloak
+                @click="toggleListen()"
+                class="sx-p-btn sx-p-btn-yellow">
+          <span x-text="playing ? 'Stop' : 'Listen'">Listen</span>
+        </button>
+        <form method="POST" action="/parent/api/refresh-summary" @submit.prevent="refreshSummary()" style="margin: 0;">
+          <input type="hidden" name="type" value="main">
+          <button type="submit" class="sx-p-btn" :disabled="refreshing">
+            <span x-text="refreshing ? 'Refreshing...' : 'Refresh Summary'">Refresh Summary</span>
+          </button>
+        </form>
+      </div>
+    </div>
+    <p class="sx-p-summary-text" x-ref="summaryText">{{ summary }}</p>
+  </section>
+
+  <!-- Row 4: Questions to Revise Next + Recent Exam Attempts -->
+  <div class="sx-p-two-col">
+    <!-- Questions to Revise Next -->
+    <section class="sx-ext-surface sx-p-card">
+      <div class="sx-p-section-head">
+        <div>
+          <div class="sx-p-stat-label">TARGETED REVISION</div>
+          <h2 class="sx-p-section-title">Questions to Revise Next</h2>
+        </div>
+        <span class="sx-p-badge-outline">{{ weak_questions | length }} Flagged</span>
+      </div>
+
+      {% if weak_questions %}
+      <div class="sx-p-row-list">
+        {% for wq in weak_questions %}
+        <div class="sx-p-row-item">
+          <div class="sx-p-row-main">
+            <p class="sx-p-row-title">{{ wq.question_text }}</p>
+            <div class="sx-p-row-sub">
+              {{ wq.exam_title }} &middot; Scored {{ wq.marks_awarded }} / {{ wq.max_marks }} Marks
+            </div>
+          </div>
+          <a href="/parent/exams/{{ wq.attempt_id }}/report" class="sx-p-btn">Inspect Paper &rarr;</a>
+        </div>
         {% endfor %}
       </div>
-    {% else %}
-      <div class="text-center py-10 text-base-content/50 font-bold bg-base-200/50 rounded-2xl border-2 border-dashed border-base-300">
-        No recent activity recorded yet.
+      {% else %}
+      <div class="sx-p-empty">
+        No lost-mark questions recorded across completed exams yet.
       </div>
-    {% endif %}
+      {% endif %}
+    </section>
+
+    <!-- Recent Exam Attempts -->
+    <section class="sx-ext-surface sx-p-card">
+      <div class="sx-p-section-head">
+        <div>
+          <div class="sx-p-stat-label">SUBMISSION LOG</div>
+          <h2 class="sx-p-section-title">Recent Exam Attempts</h2>
+        </div>
+        <div class="sx-p-hero-pills">
+          <a href="/parent/mock-exams" class="sx-p-link-subtle">All Mocks</a>
+          <a href="/parent/real-exams" class="sx-p-link-subtle">All Real</a>
+        </div>
+      </div>
+
+      {% if analytics.all_exams %}
+      <div class="sx-p-row-list">
+        {% for ex in analytics.all_exams[:6] %}
+        <div class="sx-p-row-item">
+          <div class="sx-p-row-main">
+            <p class="sx-p-row-title">{{ ex.title }}{% if ex.chapter_name %} &mdash; {{ ex.chapter_name }}{% endif %}</p>
+            <div class="sx-p-row-sub">
+              {{ 'Official Real Exam' if ex.type == 'real' else 'Practice Mock' }}
+              &middot; {{ ex.completed_at[:10] if ex.completed_at else 'In progress' }}
+              &middot; {{ ex.time_taken_str }}
+              &middot; {{ ex.total_marks_awarded }}/{{ ex.total_max_marks }} ({{ ex.score_pct }}%)
+            </div>
+          </div>
+          <a href="/parent/exams/{{ ex.id }}/report" class="sx-p-link-strong">View Paper &rarr;</a>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="sx-p-empty">
+        No exam papers submitted yet.
+      </div>
+      {% endif %}
+    </section>
   </div>
 
 </div>
-
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // 1. Subject Progress & Study Time (Pie Chart)
-    const rawSubjects = {{ subjects | tojson | safe }} || [];
-    const colorPalette = ['#F4AA00', '#3B82F6', '#10B981', '#8B5CF6', '#F97316', '#EC4899', '#14B8A6', '#64748B'];
-    
-    let subjectLabels = [];
-    let subjectData = [];
-    let subjectColors = [];
-    let subjectStudyMins = [];
-    let subjectProgressPcts = [];
-    
-    let totalStudiedSeconds = 0;
-    rawSubjects.forEach((sub, idx) => {
-      subjectLabels.push(sub.name);
-      const secs = sub.seconds_studied || 0;
-      totalStudiedSeconds += secs;
-      const mins = Math.max(sub.minutes_studied || (secs / 60), 0);
-      subjectStudyMins.push(mins);
-      subjectProgressPcts.push(sub.progress_pct || 0);
-      subjectColors.push(colorPalette[idx % colorPalette.length]);
-    });
-
-    if (totalStudiedSeconds === 0) {
-      subjectData = rawSubjects.map(s => Math.max(s.progress_pct || 1, 1));
-    } else {
-      subjectData = subjectStudyMins.map(m => Math.max(m, 0.1));
-    }
-
-    let progressPieChart = null;
-
-    if (document.getElementById('progressChart')) {
-      const ctxProgress = document.getElementById('progressChart').getContext('2d');
-      progressPieChart = new Chart(ctxProgress, {
-        type: 'pie',
-        data: {
-          labels: subjectLabels.length ? subjectLabels : ['No Subjects'],
-          datasets: [{
-            data: subjectData.length ? subjectData : [1],
-            backgroundColor: subjectColors.length ? subjectColors : ['#F4AA00'],
-            borderWidth: 2,
-            borderColor: '#ffffff',
-            hoverOffset: 8
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'bottom',
-              labels: {
-                boxWidth: 12,
-                font: { family: 'Outfit', weight: 'bold', size: 11 },
-                padding: 12
-              }
-            },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  const idx = context.dataIndex;
-                  const sub = rawSubjects[idx];
-                  if (!sub) return context.label;
-                  const timeStr = sub.time_studied_str || '0 mins';
-                  const pct = sub.progress_pct || 0;
-                  return ` ${sub.name}: ${timeStr} studied (${pct}% syllabus done)`;
-                }
-              }
-            }
-          }
-        }
-      });
-    }
-
-    // 2. Exam Trend Line Chart
-    if (document.getElementById('examTrendChart')) {
-      const rawAllExams = {{ analytics.all_exams | tojson | safe }};
-      
-      let examLabels = [];
-      let examScores = [];
-      
-      if (rawAllExams && rawAllExams.length > 0) {
-        const slicedExams = rawAllExams.slice(0, 10).reverse();
-        examLabels = slicedExams.map(e => e.title);
-        examScores = slicedExams.map(e => (e.total_marks_awarded / Math.max(e.total_max_marks, 1) * 100).toFixed(1));
-      }
-
-      const ctxTrend = document.getElementById('examTrendChart').getContext('2d');
-      new Chart(ctxTrend, {
-        type: 'line',
-        data: {
-          labels: examLabels.length ? examLabels : ['No Data'],
-          datasets: [{
-            label: 'Score (%)',
-            data: examScores.length ? examScores : [0],
-            borderColor: '#6366f1',
-            backgroundColor: 'rgba(99, 102, 241, 0.1)',
-            borderWidth: 3,
-            tension: 0.4,
-            fill: true,
-            pointBackgroundColor: '#6366f1',
-            pointRadius: 4
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            y: { beginAtZero: true, max: 100 }
-          },
-          plugins: {
-            legend: { display: false }
-          }
-        }
-      });
-    }
-  });
-</script>
 {% endblock %}

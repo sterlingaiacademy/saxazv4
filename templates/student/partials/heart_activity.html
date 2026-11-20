@@ -1,0 +1,430 @@
+<!-- Realistic Animated Heart Diagram Assembly & Blood-Flow Order Puzzle -->
+<section id="heart-activity" class="sx-heart-game" data-sx-game="heart" x-data="saxazHeartGame()"
+         :class="typeof gameCall !== 'undefined' && gameCall === 'heart' && 'is-called'"
+         @pointerdown.capture="if (typeof callGame === 'function' && nutshellLit && !nutshellPaused && !gameCall && !s2Claimed) callGame('heart', 'resume')">
+  <!-- Clean Spacious Header -->
+  <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <h2 style="font-family:var(--font-display);font-size:clamp(1.3rem,2vw,1.6rem);font-weight:800;margin:0;color:#231f20;">
+        Build &amp; Pump the Human Heart
+      </h2>
+      <!-- Live Animated ECG Heartbeat Wave (Strict Solid Black + Yellow + White) -->
+      <div style="display:inline-flex;align-items:center;gap:8px;padding:4px 12px;border-radius:999px;background:#231f20;border:1.5px solid #231f20;">
+        <svg width="68" height="22" viewBox="0 0 120 36" aria-hidden="true">
+          <path class="sx-ecg-line" d="M2 18 H28 L35 12 L42 24 L50 4 L58 32 L65 15 L72 18 H118"/>
+        </svg>
+        <span style="font-size:0.75rem;font-weight:800;color:#ffffff;" x-text="((stage === 1 && placedCount === 6) || (stage === 2 && flowDone.length === 6)) ? '96 BPM' : '72 BPM'"></span>
+      </div>
+    </div>
+
+    <!-- Clean 2-Step Mode Toggle + Instant Replay Button -->
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <div style="display:inline-flex;align-items:center;gap:4px;padding:4px;border-radius:999px;background:#ffffff;border:1.5px solid rgba(35,31,32,0.16);">
+        <button type="button"
+                @click="switchStage(1)"
+                :style="stage === 1
+                  ? 'padding:7px 16px;border-radius:999px;border:0;font-weight:800;font-size:0.82rem;cursor:pointer;background:#f7b317;color:#231f20;'
+                  : 'padding:7px 16px;border-radius:999px;border:0;font-weight:700;font-size:0.82rem;cursor:pointer;background:transparent;color:#231f20;'">
+          1. Assemble Heart <span x-show="s1Claimed">(Done)</span>
+        </button>
+        <button type="button"
+                @click="switchStage(2)"
+                :style="stage === 2
+                  ? 'padding:7px 16px;border-radius:999px;border:0;font-weight:800;font-size:0.82rem;cursor:pointer;background:#f7b317;color:#231f20;'
+                  : 'padding:7px 16px;border-radius:999px;border:0;font-weight:700;font-size:0.82rem;cursor:pointer;background:transparent;color:#231f20;'">
+          2. Blood Flow <span x-show="s2Claimed">(Done)</span>
+        </button>
+      </div>
+      <button type="button"
+              x-show="placedCount === 6 || flowDone.length > 0"
+              x-cloak
+              @click="replayHeartLab()"
+              class="sx-ext-cta-soft"
+              style="display:inline-flex;align-items:center;gap:5px;min-height:38px;padding:6px 15px;border-radius:999px;font-size:0.82rem;font-weight:800;cursor:pointer;">
+        <span class="material-symbols-outlined" style="font-size:17px;" aria-hidden="true">replay</span>
+        <span>Replay</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Calm 1-Line Guidance -->
+  <p style="margin:10px 0 0;font-size:0.95rem;font-weight:600;color:rgba(35,31,32,0.74);" x-text="statusMessage"></p>
+
+  <!-- Tutor hand-off (when the summary narration pauses here) -->
+  <div class="sx-heart-turn" x-show="typeof gameCall !== 'undefined' && gameCall === 'heart'" x-cloak>
+    <span class="sx-game-turn">Your turn!</span>
+    <span>Build the heart, then trace the blood flow.</span>
+    <button type="button" class="sx-game-link" @click="skipGame('heart')">Skip for now</button>
+  </div>
+
+  <!-- Spacious 2-Column Visual Heart Diagram + Puzzle / Flow Controls -->
+  <div class="sx-heart-board-grid">
+    <!-- LEFT: REALISTIC BEATING HEART DIAGRAM WITH SVG CLIP SLICES & FLOWING BLOOD CELLS -->
+    <div class="sx-heart-stage-wrap">
+      <div class="sx-heart-pulse-halo"></div>
+
+      <div class="sx-heart-organ" :class="(heartExcited || (stage === 1 && placedCount === 6) || (stage === 2 && flowDone.length === 6)) && 'is-fast'">
+        <!-- Base Blueprint Image (Soft Blueprint until assembled, Full Vivid Color in Stage 2 or when 6/6 assembled) -->
+        <img src="/static/images/saxaz_web/human_heart_anatomy.jpg"
+             alt="Human Heart Cross Section"
+             :style="(stage === 2 || placedCount === 6)
+               ? 'width:100%;height:100%;object-fit:contain;display:block;transition:filter 0.45s ease, opacity 0.45s ease;opacity:1;filter:none;'
+               : 'width:100%;height:100%;object-fit:contain;display:block;transition:filter 0.45s ease, opacity 0.45s ease;opacity:0.22;filter:grayscale(100%) contrast(1.08);'">
+
+        <!-- SVG Layer: Piece-by-Piece Color Reveal + Animated Blood Flow Streams & Moving Blood Cells -->
+        <svg viewBox="0 0 100 100" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3;">
+          <defs>
+            <clipPath id="hx-clip-vc"><polygon points="0,0 44,0 42,38 0,38"/></clipPath>
+            <clipPath id="hx-clip-ra"><polygon points="0,38 42,38 40,64 0,64"/></clipPath>
+            <clipPath id="hx-clip-rv"><polygon points="0,64 52,58 62,100 0,100"/></clipPath>
+            <clipPath id="hx-clip-pa"><polygon points="44,0 100,0 100,36 53,58 40,58 42,38"/></clipPath>
+            <clipPath id="hx-clip-la"><polygon points="53,36 100,36 100,56 53,56"/></clipPath>
+            <clipPath id="hx-clip-lv"><polygon points="52,56 100,56 100,100 62,100"/></clipPath>
+
+            <!-- Physiological Blood-Flow Motion Paths -->
+            <path id="hx-flow-1" d="M 31 15 C 31 28, 32 38, 31 50"/>
+            <path id="hx-flow-2" d="M 31 50 C 33 61, 36 68, 41 76"/>
+            <path id="hx-flow-3" d="M 41 76 C 45 60, 49 38, 69 26"/>
+            <path id="hx-flow-4" d="M 77 41 C 72 43, 69 45, 66 47"/>
+            <path id="hx-flow-5" d="M 66 47 C 66 57, 67 65, 67 73"/>
+            <path id="hx-flow-6" d="M 67 73 C 56 56, 46 34, 52 17"/>
+          </defs>
+
+          <!-- Stage 1 Piece-by-Piece Color Slices -->
+          <g x-show="stage === 1 && placedCount < 6">
+            <image x-show="placed.vc" href="/static/images/saxaz_web/human_heart_anatomy.jpg" x="0" y="0" width="100" height="100" clip-path="url(#hx-clip-vc)"/>
+            <image x-show="placed.ra" href="/static/images/saxaz_web/human_heart_anatomy.jpg" x="0" y="0" width="100" height="100" clip-path="url(#hx-clip-ra)"/>
+            <image x-show="placed.rv" href="/static/images/saxaz_web/human_heart_anatomy.jpg" x="0" y="0" width="100" height="100" clip-path="url(#hx-clip-rv)"/>
+            <image x-show="placed.pa" href="/static/images/saxaz_web/human_heart_anatomy.jpg" x="0" y="0" width="100" height="100" clip-path="url(#hx-clip-pa)"/>
+            <image x-show="placed.la" href="/static/images/saxaz_web/human_heart_anatomy.jpg" x="0" y="0" width="100" height="100" clip-path="url(#hx-clip-la)"/>
+            <image x-show="placed.lv" href="/static/images/saxaz_web/human_heart_anatomy.jpg" x="0" y="0" width="100" height="100" clip-path="url(#hx-clip-lv)"/>
+          </g>
+
+          <!-- Animated Blood Streams & Moving Corpuscles (Stage 1 complete OR Stage 2 step-by-step unlock) -->
+          <g x-show="(stage === 1 && placedCount === 6) || (stage === 2 && flowDone.length >= 1)">
+            <use href="#hx-flow-1" class="sx-heart-flow-path" stroke="#ffffff" opacity="0.85"/>
+            <circle r="1.8" fill="#f7b317"><animateMotion dur="1.4s" repeatCount="indefinite"><mpath href="#hx-flow-1"/></animateMotion></circle>
+          </g>
+          <g x-show="(stage === 1 && placedCount === 6) || (stage === 2 && flowDone.length >= 2)">
+            <use href="#hx-flow-2" class="sx-heart-flow-path" stroke="#ffffff" opacity="0.85"/>
+            <circle r="1.8" fill="#f7b317"><animateMotion dur="1.3s" begin="0.3s" repeatCount="indefinite"><mpath href="#hx-flow-2"/></animateMotion></circle>
+          </g>
+          <g x-show="(stage === 1 && placedCount === 6) || (stage === 2 && flowDone.length >= 3)">
+            <use href="#hx-flow-3" class="sx-heart-flow-path" stroke="#ffffff" opacity="0.9"/>
+            <circle r="1.9" fill="#f7b317"><animateMotion dur="1.6s" begin="0.2s" repeatCount="indefinite"><mpath href="#hx-flow-3"/></animateMotion></circle>
+          </g>
+          <g x-show="(stage === 1 && placedCount === 6) || (stage === 2 && flowDone.length >= 4)">
+            <use href="#hx-flow-4" class="sx-heart-flow-path" stroke="#ffffff" opacity="0.9"/>
+            <circle r="1.8" fill="#f7b317"><animateMotion dur="1.1s" repeatCount="indefinite"><mpath href="#hx-flow-4"/></animateMotion></circle>
+          </g>
+          <g x-show="(stage === 1 && placedCount === 6) || (stage === 2 && flowDone.length >= 5)">
+            <use href="#hx-flow-5" class="sx-heart-flow-path" stroke="#ffffff" opacity="0.9"/>
+            <circle r="1.9" fill="#f7b317"><animateMotion dur="1.3s" begin="0.25s" repeatCount="indefinite"><mpath href="#hx-flow-5"/></animateMotion></circle>
+          </g>
+          <g x-show="(stage === 1 && placedCount === 6) || (stage === 2 && flowDone.length >= 6)">
+            <use href="#hx-flow-6" class="sx-heart-flow-path" stroke="#f7b317" opacity="0.95"/>
+            <circle r="2.1" fill="#ffffff"><animateMotion dur="1.5s" repeatCount="indefinite"><mpath href="#hx-flow-6"/></animateMotion></circle>
+          </g>
+        </svg>
+
+        <!-- Interactive Anatomical Pins on the Real Heart -->
+        <template x-for="pt in parts" :key="pt.id">
+          <button type="button"
+                  class="sx-heart-pin"
+                  :style="'left:' + pt.x + '%;top:' + pt.y + '%;' + (stage === 1 && selectedSlot === pt.id ? 'outline:4px solid #f7b317;outline-offset:2px;background:#f7b317;color:#231f20;border-color:#231f20;' : '')"
+                  :class="stage === 1
+                    ? (placed[pt.id] ? 'is-done' : (wrongSlot === pt.id ? 'is-wrong' : ((selectedPiece || selectedSlot === pt.id) ? 'is-ready' : '')))
+                    : (flowStepIndex(pt.id) >= 0 ? 'is-done' : (wrongFlow === pt.id ? 'is-wrong' : 'is-ready'))"
+                  @dragover.prevent
+                  @drop.prevent="stage === 1 && placeIntoSlot(pt.id)"
+                  @click="stage === 1 ? placeIntoSlot(pt.id) : tapFlowStation(pt)"
+                  :title="pt.label">
+            <span x-text="stage === 1 ? (placed[pt.id] ? pt.short : '?') : (flowStepIndex(pt.id) >= 0 ? (flowStepIndex(pt.id) + 1) : '?')"></span>
+          </button>
+        </template>
+      </div>
+    </div>
+
+    <!-- RIGHT: VISUAL PUZZLE TILES (STAGE 1) OR 1-TO-6 FLOW PATH (STAGE 2) -->
+    <div>
+      <!-- STAGE 1: VISUAL ANATOMICAL PUZZLE PIECES (Two-Way Tap Matching: Card->Pin OR Pin->Card) -->
+      <div x-show="stage === 1">
+        <div class="sx-heart-pieces-grid">
+          <template x-for="pt in parts" :key="'card-' + pt.id">
+            <button type="button"
+                    class="sx-heart-piece-card"
+                    :class="placed[pt.id] ? 'is-placed' : (selectedPiece === pt.id ? 'is-selected' : '')"
+                    :style="wrongPiece === pt.id ? 'border-color:#dc2626;' : ''"
+                    draggable="true"
+                    @dragstart="selectedSlot = null; selectedPiece = pt.id"
+                    @click="tapPieceCard(pt)">
+              <div class="sx-heart-piece-crop"
+                   :style="'background-size: 320% 320%; background-position: ' + pt.bgPos + ';'"></div>
+              <div style="min-width:0;">
+                <div style="font-size:0.9rem;font-weight:800;color:#231f20;line-height:1.2;" x-text="pt.label"></div>
+                <div style="font-size:0.76rem;font-weight:600;color:rgba(35,31,32,0.72);margin-top:2px;" x-text="placed[pt.id] ? 'Snapped in place' : pt.cue"></div>
+              </div>
+            </button>
+          </template>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:18px;">
+          <span style="font-size:0.86rem;font-weight:700;color:#231f20;" x-text="placedCount + ' / 6 parts assembled'"></span>
+          <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;">
+            <button type="button"
+                    x-show="placedCount > 0"
+                    @click="resetStage1()"
+                    class="sx-ext-cta-soft"
+                    style="display:inline-flex;align-items:center;gap:5px;min-height:38px;padding:6px 16px;font-size:0.82rem;">
+              <span class="material-symbols-outlined" style="font-size:16px;" aria-hidden="true">replay</span>
+              <span x-text="placedCount === 6 ? 'Replay Stage 1' : 'Reset'"></span>
+            </button>
+            <button type="button"
+                    x-show="placedCount === 6"
+                    @click="switchStage(2)"
+                    class="sx-ext-cta-yellow"
+                    style="min-height:42px;padding:8px 22px;font-size:0.88rem;">
+              Trace Blood Flow &rarr;
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAGE 2: 1-TO-6 VISUAL BLOOD-FLOW ORDER LADDER -->
+      <div x-show="stage === 2" x-cloak style="display:none;">
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <template x-for="(pt, idx) in orderedFlowParts" :key="'flow-' + pt.id">
+            <div :style="flowStepIndex(pt.id) >= 0
+                   ? 'display:flex;align-items:center;gap:12px;padding:11px 16px;border-radius:16px;background:#ffffff;border:2px solid #231f20;transition:all 0.2s ease;'
+                   : (flowDone.length === idx
+                       ? 'display:flex;align-items:center;gap:12px;padding:11px 16px;border-radius:16px;background:#f7b317;border:2px solid #231f20;transition:all 0.2s ease;'
+                       : 'display:flex;align-items:center;gap:12px;padding:11px 16px;border-radius:16px;background:#ffffff;border:1.5px solid rgba(35,31,32,0.14);opacity:0.65;transition:all 0.2s ease;')">
+              <span :style="flowStepIndex(pt.id) >= 0
+                      ? 'width:26px;height:26px;border-radius:50%;background:#f7b317;color:#231f20;border:1.5px solid #231f20;display:inline-grid;place-items:center;font-size:0.78rem;font-weight:900;flex-shrink:0;'
+                      : 'width:26px;height:26px;border-radius:50%;background:#231f20;color:#f7b317;display:inline-grid;place-items:center;font-size:0.78rem;font-weight:900;flex-shrink:0;'"
+                    x-text="idx + 1"></span>
+              <div style="min-width:0;flex:1;">
+                <div style="font-size:0.9rem;font-weight:800;color:#231f20;"
+                     x-text="flowStepIndex(pt.id) >= 0 ? pt.label : (flowDone.length === idx ? ('Tap Step ' + (idx + 1) + ' on the Heart: ' + pt.flowHint) : 'Locked step')"></div>
+              </div>
+              <span x-show="flowStepIndex(pt.id) >= 0"
+                    style="padding:3px 10px;border-radius:999px;background:#231f20;color:#f7b317;font-size:0.72rem;font-weight:800;flex-shrink:0;">
+                Done
+              </span>
+            </div>
+          </template>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:16px;">
+          <span style="font-size:0.86rem;font-weight:700;color:#231f20;" x-text="flowDone.length + ' / 6 steps traced'"></span>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <button type="button"
+                    x-show="flowDone.length > 0"
+                    @click="resetStage2()"
+                    class="sx-ext-cta-soft"
+                    style="display:inline-flex;align-items:center;gap:5px;min-height:38px;padding:6px 16px;font-size:0.82rem;">
+              <span class="material-symbols-outlined" style="font-size:16px;" aria-hidden="true">replay</span>
+              <span>Replay Flow</span>
+            </button>
+            <button type="button"
+                    x-show="flowDone.length === 6"
+                    @click="replayHeartLab()"
+                    class="sx-ext-cta-soft"
+                    style="display:inline-flex;align-items:center;gap:5px;min-height:38px;padding:6px 16px;font-size:0.82rem;">
+              <span class="material-symbols-outlined" style="font-size:16px;" aria-hidden="true">restart_alt</span>
+              <span>Replay Full Lab</span>
+            </button>
+            <button type="button"
+                    x-show="flowDone.length === 6"
+                    @click="$dispatch('sx-game-next')"
+                    class="sx-ext-cta-yellow"
+                    style="min-height:40px;padding:8px 20px;font-size:0.86rem;">
+              Proceed to Next Summary &rarr;
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+window.saxazHeartGame = function() {
+  const claimedInit = {{ (claimed_keys if claimed_keys is defined else []) | tojson | safe }};
+  const chId = {{ chapter.id }};
+  const startStage = (claimedInit.includes('heart_s1:ch:' + chId) && !claimedInit.includes('heart_s2:ch:' + chId)) ? 2 : 1;
+  return {
+    tutorName: '{{ tutor_name if tutor_name is defined else "bella" }}',
+    stage: startStage,
+    s1Claimed: claimedInit.includes('heart_s1:ch:' + chId),
+    s2Claimed: claimedInit.includes('heart_s2:ch:' + chId),
+    heartExcited: false,
+    selectedPiece: null,
+    selectedSlot: null,
+    wrongSlot: null,
+    wrongPiece: null,
+    placed: claimedInit.includes('heart_s1:ch:' + chId) ? { vc: 'vc', ra: 'ra', rv: 'rv', pa: 'pa', la: 'la', lv: 'lv' } : {},
+    statusMessage: startStage === 2
+      ? 'Tap the 6 pins on the beating heart in exact blood-flow order (1 to 6)!'
+      : (claimedInit.includes('heart_s1:ch:' + chId)
+          ? 'All 6 parts assembled! Tap Replay above anytime to play again, or switch to 2. Blood Flow.'
+          : 'Tap any heart piece on the right or any ? pin on the heart diagram to match them!'),
+    parts: [
+      { id: 'vc', order: 0, x: 31, y: 19, bgPos: '26% 14%', short: 'Vena Cava', label: 'Vena Cava', cue: 'Top blue vein (diagram left)', flowHint: 'Top-left blue vein from body' },
+      { id: 'ra', order: 1, x: 31, y: 50, bgPos: '25% 50%', short: 'R. Atrium', label: 'Right Atrium', cue: 'Upper blue chamber (diagram left)', flowHint: 'Upper-left blue chamber' },
+      { id: 'rv', order: 2, x: 41, y: 76, bgPos: '38% 82%', short: 'R. Ventricle', label: 'Right Ventricle', cue: 'Lower blue pump (diagram left)', flowHint: 'Lower-left blue chamber' },
+      { id: 'pa', order: 3, x: 69, y: 26, bgPos: '72% 22%', short: 'To Lungs', label: 'Pulmonary Artery', cue: 'Upper blue vessel to lungs', flowHint: 'Upper branching blue vessel to lungs' },
+      { id: 'la', order: 4, x: 66, y: 47, bgPos: '72% 46%', short: 'L. Atrium', label: 'Left Atrium', cue: 'Upper red chamber (diagram right)', flowHint: 'Upper-right red chamber' },
+      { id: 'lv', order: 5, x: 67, y: 73, bgPos: '72% 76%', short: 'L. Ventricle', label: 'Left Ventricle & Aorta', cue: 'Thick lower red pump (diagram right)', flowHint: 'Thick lower-right red pump' }
+    ],
+    flowDone: claimedInit.includes('heart_s2:ch:' + chId) ? ['vc', 'ra', 'rv', 'pa', 'la', 'lv'] : [],
+    wrongFlow: null,
+    get orderedFlowParts() {
+      return [...this.parts].sort((a, b) => a.order - b.order);
+    },
+    get placedCount() {
+      return Object.keys(this.placed).length;
+    },
+    switchStage(target) {
+      this.stage = target;
+      this.selectedPiece = null;
+      this.selectedSlot = null;
+      if (target === 1) {
+        this.statusMessage = this.placedCount === 6
+          ? 'All 6 parts assembled! Watch the blood cells flow or switch to 2. Blood Flow.'
+          : 'Tap any heart piece on the right or any ? pin on the heart diagram to match them!';
+      } else {
+        this.statusMessage = this.flowDone.length === 6
+          ? 'Double circulation complete! Watch oxygen-poor and oxygen-rich blood pump in sync.'
+          : 'Tap the 6 pins on the beating heart in exact blood-flow order (1 to 6)!';
+      }
+    },
+    speakShort(line, emo = 'celebrating') {
+      if (['0', 'off'].includes(String(window.__saxazUserTtsMode || '').toLowerCase())) return;
+      if (window.__heartPcm && window.__heartPcm.cancel) window.__heartPcm.cancel();
+      const s = window.saxazStreamPcm ? window.saxazStreamPcm(line, { emotion: emo }) : null;
+      if (s) {
+        window.__heartPcm = s;
+        s.donePromise.then(ok => { if (ok === null && window.saxazSpeak) window.saxazSpeak(line, { emotion: emo, interrupt: true }); });
+      } else if (window.saxazSpeak) {
+        window.saxazSpeak(line, { emotion: emo, interrupt: true });
+      }
+    },
+    async completePlacement(slotId) {
+      this.placed = { ...this.placed, [slotId]: slotId };
+      this.selectedPiece = null;
+      this.selectedSlot = null;
+      this.wrongSlot = null;
+      this.wrongPiece = null;
+      this.heartExcited = true;
+      setTimeout(() => { this.heartExcited = false; }, 1000);
+      if (this.placedCount === 6) {
+        this.statusMessage = 'Heart assembled! Now tap Trace Blood Flow to pump blood in 1-to-6 order.';
+        this.speakShort('Awesome! You assembled the entire human heart! Now let us trace how blood flows through it!');
+        if (!this.s1Claimed && window.saxazClaimMilestone) {
+          const rw = await window.saxazClaimMilestone('heart_s1:ch:' + chId);
+          if (rw) this.s1Claimed = true;
+        }
+      } else {
+        this.statusMessage = 'Snapped in! ' + (6 - this.placedCount) + ' more to complete the heart.';
+      }
+    },
+    async tapPieceCard(pt) {
+      if (this.placed[pt.id]) return;
+      if (this.selectedSlot) {
+        if (this.selectedSlot === pt.id) {
+          await this.completePlacement(pt.id);
+        } else {
+          const targetSlot = this.selectedSlot;
+          this.wrongSlot = targetSlot;
+          this.wrongPiece = pt.id;
+          this.statusMessage = 'Not that piece for the highlighted spot — blue deoxygenated chambers are on the diagram left, red oxygenated on the diagram right!';
+          setTimeout(() => {
+            if (this.wrongSlot === targetSlot) this.wrongSlot = null;
+            if (this.wrongPiece === pt.id) this.wrongPiece = null;
+          }, 900);
+        }
+        return;
+      }
+      this.selectedPiece = (this.selectedPiece === pt.id ? null : pt.id);
+      this.statusMessage = this.selectedPiece
+        ? ('Now tap where ' + pt.label + ' goes on the heart diagram!')
+        : 'Tap any heart piece on the right or any ? pin on the heart diagram to match them!';
+    },
+    async placeIntoSlot(slotId) {
+      if (this.placed[slotId]) return;
+      if (!this.selectedPiece) {
+        this.selectedSlot = (this.selectedSlot === slotId ? null : slotId);
+        this.statusMessage = this.selectedSlot
+          ? 'Pin selected! Now tap the matching heart piece card on the right!'
+          : 'Tap any heart piece on the right or any ? pin on the heart diagram to match them!';
+        return;
+      }
+      if (this.selectedPiece === slotId) {
+        await this.completePlacement(slotId);
+      } else {
+        this.wrongSlot = slotId;
+        this.statusMessage = 'Not that spot — remember blue deoxygenated chambers are on the diagram left, red oxygenated on the diagram right!';
+        setTimeout(() => { if (this.wrongSlot === slotId) this.wrongSlot = null; }, 900);
+      }
+    },
+    resetStage1() {
+      this.placed = {};
+      this.selectedPiece = null;
+      this.selectedSlot = null;
+      this.wrongSlot = null;
+      this.wrongPiece = null;
+      this.statusMessage = 'Tap any heart piece on the right or any ? pin on the heart diagram to match them!';
+    },
+    flowStepIndex(id) {
+      return this.flowDone.indexOf(id);
+    },
+    async tapFlowStation(pt) {
+      if (this.flowDone.includes(pt.id)) return;
+      const expectedOrder = this.flowDone.length;
+      if (pt.order === expectedOrder) {
+        this.flowDone = [...this.flowDone, pt.id];
+        this.wrongFlow = null;
+        this.heartExcited = true;
+        setTimeout(() => { this.heartExcited = false; }, 950);
+        if (this.flowDone.length === 6) {
+          this.statusMessage = 'Full Double Circulation active! Watch blood pump continuously through all 6 steps.';
+          // Inside the summary: mark it done; if the tutor was waiting here she carries on reading
+          const wasCalled = this.gameCall === 'heart';
+          if (typeof this.onGameWon === 'function') this.onGameWon('heart', '');
+          if (!wasCalled) this.speakShort('Amazing work! You traced the exact blood-flow order of double circulation!');
+          if (!this.s2Claimed && window.saxazClaimMilestone) {
+            const rw = await window.saxazClaimMilestone('heart_s2:ch:' + chId);
+            if (rw) this.s2Claimed = true;
+          }
+        } else {
+          const nextPt = this.orderedFlowParts[this.flowDone.length];
+          this.statusMessage = 'Step ' + this.flowDone.length + ' locked! Next: ' + (nextPt ? nextPt.flowHint : '');
+        }
+      } else {
+        this.wrongFlow = pt.id;
+        const nextPt = this.orderedFlowParts[expectedOrder];
+        this.statusMessage = 'Try Step ' + (expectedOrder + 1) + ' first: ' + (nextPt ? nextPt.flowHint : '');
+        setTimeout(() => { if (this.wrongFlow === pt.id) this.wrongFlow = null; }, 900);
+      }
+    },
+    resetStage2() {
+      this.flowDone = [];
+      this.wrongFlow = null;
+      this.statusMessage = 'Tap the 6 pins on the beating heart in exact blood-flow order (1 to 6)!';
+    },
+    replayHeartLab() {
+      this.stage = 1;
+      this.placed = {};
+      this.flowDone = [];
+      this.selectedPiece = null;
+      this.selectedSlot = null;
+      this.wrongSlot = null;
+      this.wrongPiece = null;
+      this.wrongFlow = null;
+      this.heartExcited = false;
+      this.statusMessage = 'Tap any heart piece on the right or any ? pin on the heart diagram to match them!';
+    }
+  };
+};
+</script>

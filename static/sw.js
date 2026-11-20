@@ -1,8 +1,13 @@
-// SAXAZ V2 Kinetic OS Progressive Web App Service Worker
-const CACHE_NAME = 'saxaz-v2-kinetic-os-v99';
+// SAXAZ V4 Studio Progressive Web App Service Worker
+const CACHE_NAME = 'saxaz-v4-studio-v540';
 const PRECACHE_ASSETS = [
-  '/static/css/app.css?v=99',
-  '/static/css/v2-studio.css?v=99',
+  '/static/css/app.css?v=250',
+  '/static/css/v2-studio.css?v=540',
+  '/static/css/saxaz-fun.css?v=540',
+  '/static/css/sx3.css?v=540',
+  '/static/css/saxaz-ext.css?v=540',
+  '/static/css/saxaz-match.css?v=2',
+  '/static/js/saxaz-player.js?v=515',
   '/static/images/pwa-icon-192.png?v=2',
   '/static/images/pwa-icon-512.png?v=2'
 ];

@@ -15,11 +15,13 @@
 
     <!-- Top Navigation & Package Toolbar -->
     <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
-      <a href="/student/digi-library/subjects/{{ paper.subject_id }}"
-         class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-base-100 border-2 border-base-300 text-xs font-black uppercase tracking-widest text-base-content/70 hover:text-base-content hover:border-primary transition-all shadow-sm">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-        <span>Back to {{ paper.subject_name }}</span>
-      </a>
+      <div class="flex flex-wrap items-center gap-2">
+        <a href="/student/digi-library/books/{{ paper.book_id }}?subject={{ paper.subject_id }}"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-base-100 border-2 border-base-300 text-xs font-black uppercase tracking-widest text-base-content/80 hover:text-base-content hover:border-primary transition-all shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+          <span>Back to Book ({{ paper.subject_name }})</span>
+        </a>
+      </div>
 
       <!-- Interactive Package Quick-Launch Bar -->
       <div class="flex flex-wrap items-center gap-2">
@@ -47,9 +49,9 @@
     </div>
 
     <!-- Sleek Chapter Learning Studio Header -->
-    <div class="brilliant-card bg-base-100 rounded-3xl p-6 sm:p-8">
+    <div class="brilliant-card bg-base-100 rounded-3xl p-4 sm:p-8">
       <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-5">
-        <div class="flex items-center gap-4 sm:gap-5">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5">
           {% if paper.subject_thumbnail_url %}
             <img src="{{ paper.subject_thumbnail_url }}" alt="{{ paper.subject_name }}" class="w-20 sm:w-24 h-auto object-contain rounded-2xl shadow-md border-2 border-base-300 bg-base-200/40 shrink-0" />
           {% elif paper.book_thumbnail_url %}
@@ -90,8 +92,41 @@
         </div>
       </div>
 
+      <!-- All Subjects in This Question Bank Book + Chapters in Current Subject -->
+      {% if paper.book_subjects and paper.book_subjects|length > 1 %}
+      <div class="mt-5 pt-4 border-t-2 border-base-200">
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <span class="text-[11px] font-black uppercase tracking-wider text-base-content/60">Subjects in This Question Bank Book</span>
+          <a href="/student/digi-library/books/{{ paper.book_id }}?subject={{ paper.subject_id }}" class="text-[11px] font-black text-amber-600 hover:underline">Open 3D Book Pages &rarr;</a>
+        </div>
+        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
+          {% for bsubj in paper.book_subjects %}
+          <a href="/student/digi-library/banks/{{ bsubj.first_bank_id }}"
+             class="px-3 py-1.5 rounded-xl text-xs font-black shrink-0 transition-all border no-underline"
+             style="{% if bsubj.id == paper.subject_id %}background: #f8b000; color: #151515; border-color: #151515;{% else %}border-color: rgba(120,90,30,0.2);{% endif %}">
+            {{ bsubj.name }}
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if paper.subject_banks and paper.subject_banks|length > 1 %}
+      <div class="mt-3 pt-3 border-t border-base-200 flex items-center gap-2 overflow-x-auto no-scrollbar">
+        <span class="text-[11px] font-black uppercase tracking-wider text-base-content/60 shrink-0">{{ paper.subject_name }} Chapters:</span>
+        {% for sbank in paper.subject_banks %}
+        <a href="/student/digi-library/banks/{{ sbank.id }}"
+           class="px-3 py-1.5 rounded-xl text-xs font-black shrink-0 transition-all border no-underline"
+           style="{% if sbank.id == paper.id %}background: #151515; color: #f8b000; border-color: #151515;{% else %}border-color: rgba(120,90,30,0.22);{% endif %}">
+          <span>{{ sbank.title }}</span>
+          <span class="opacity-70 ml-1">({{ sbank.question_count }})</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
       <!-- Ordered Question Strip (in Card Mode) -->
-      <div x-show="viewMode === 'card' && questions.length > 0" class="mt-6 pt-4 border-t-2 border-base-200 flex items-center gap-2 overflow-x-auto no-scrollbar">
+      <div x-show="viewMode === 'card' && questions.length > 0" class="mt-4 pt-4 border-t-2 border-base-200 flex items-center gap-2 overflow-x-auto no-scrollbar">
         <template x-for="(q, idx) in questions" :key="q.id">
           <button type="button"
                   @click="goToQuestion(idx)"
@@ -106,10 +141,18 @@
     </div>
 
     <!-- ====================================================
-         MODE 1: FOCUSED INTERACTIVE STUDY CARD (DEFAULT)
+         MODE 1: FOCUSED INTERACTIVE STUDY CARD (3D BOOK PAGE)
          ==================================================== -->
     <template x-if="viewMode === 'card' && currentQuestion">
-      <div class="brilliant-card bg-base-100 rounded-3xl p-6 sm:p-8 space-y-6">
+      <div class="sx-q-book-viewport"
+           x-ref="qBookViewport"
+           @touchstart.passive="onQTouchStart($event)"
+           @touchmove.passive="onQTouchMove($event)"
+           @touchend.passive="onQTouchEnd($event)">
+
+        <!-- Base Question Book Page Sheet -->
+        <div id="sx-active-q-sheet" class="brilliant-card sx-q-book-sheet bg-base-100 rounded-3xl p-4 sm:p-8 space-y-5 sm:space-y-6">
+          <div x-show="qIsFlipping || qIsDragging" x-ref="qUnderShadow" style="display:none;" class="sx-q-under-shadow"></div>
 
         <!-- Question Header Bar -->
         <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b-2 border-base-200">
@@ -215,7 +258,7 @@
         </div>
 
         <!-- Attached Video Explanation Player (Hidden when Self-Test is active) -->
-        <div x-show="showAnswer && currentQuestionVideos.length > 0" x-transition class="bg-base-200/60 border-2 border-base-300 rounded-3xl p-5 sm:p-6 space-y-4">
+        <div x-show="showAnswer && currentQuestionVideos.length > 0" x-transition class="bg-base-200/60 border-2 border-base-300 rounded-3xl p-3 sm:p-6 space-y-3 sm:space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div class="flex items-center gap-2 text-base-content font-black text-xs sm:text-sm uppercase tracking-wider">
               <span class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style="background: #f8b000; color: #151515;">
@@ -245,7 +288,7 @@
 
           <template x-if="showAnswer && activeVideo && activeVideo.type !== 'youtube' && !(activeVideo.url || '').startsWith('vtok_') && activeVideo.url">
             <div class="relative w-full aspect-video rounded-2xl overflow-hidden shadow-lg border-2 border-base-300 bg-black">
-              <video class="w-full h-full object-contain" controls controlsList="nodownload" oncontextmenu="return false;" :src="activeVideo.url"></video>
+              <video class="w-full h-full object-contain" controls playsinline webkit-playsinline controlsList="nodownload" oncontextmenu="return false;" :src="activeVideo.url"></video>
             </div>
           </template>
         </div>
@@ -280,18 +323,18 @@
           </div>
 
           <!-- Prev / Next Navigation -->
-          <div class="flex items-center gap-2 ml-auto">
+          <div class="flex items-center gap-2 w-full sm:w-auto sm:ml-auto justify-between sm:justify-end pr-0 sm:pr-0">
             <button type="button"
                     @click="prevQuestion()"
                     :disabled="currentIdx === 0"
-                    class="btn btn-sm bg-base-100 hover:bg-base-200 text-base-content border-2 border-base-300 rounded-xl font-black inline-flex items-center gap-1">
+                    class="btn btn-sm flex-1 sm:flex-initial bg-base-100 hover:bg-base-200 text-base-content border-2 border-base-300 rounded-xl font-black inline-flex items-center justify-center gap-1">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
               <span>Previous</span>
             </button>
             <button type="button"
                     @click="nextQuestion()"
                     :disabled="currentIdx >= questions.length - 1"
-                    class="tactile-btn btn btn-sm rounded-xl font-black px-5 border-2 inline-flex items-center gap-1"
+                    class="tactile-btn btn btn-sm flex-1 sm:flex-initial rounded-xl font-black px-5 border-2 inline-flex items-center justify-center gap-1"
                     style="background: #f8b000; color: #151515; border-color: #151515;">
               <span>Next Question</span>
               <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
@@ -309,6 +352,33 @@
                x-html="(explanationsMap[currentQuestion.id] || '').replace(/\n/g, '<br/>')"></div>
         </div>
 
+        </div>
+
+        <!-- 6-Segment Articulated 3D Bending & Curving Question Page Leaf -->
+        <div x-show="qIsFlipping || qIsDragging"
+             x-ref="qTurningLeaf"
+             style="display:none;"
+             class="sx-q-turning-leaf">
+          <div class="sx-q-seg sx-q-seg-0" x-ref="qSeg0">
+            <div class="sx-q-strip"><div class="sx-q-strip-front"><div class="sx-q-slice sx-q-slice-0" x-ref="qSliceF0"></div><div class="sx-q-shade" x-ref="qShade0"></div></div><div class="sx-q-strip-back"><div class="sx-q-slice sx-q-slice-0 sx-q-back-paper"></div><div class="sx-q-bshade" x-ref="qBshade0"></div></div></div>
+            <div class="sx-q-seg sx-q-seg-child" x-ref="qSeg1">
+              <div class="sx-q-strip"><div class="sx-q-strip-front"><div class="sx-q-slice sx-q-slice-1" x-ref="qSliceF1"></div><div class="sx-q-shade" x-ref="qShade1"></div></div><div class="sx-q-strip-back"><div class="sx-q-slice sx-q-slice-1 sx-q-back-paper"></div><div class="sx-q-bshade" x-ref="qBshade1"></div></div></div>
+              <div class="sx-q-seg sx-q-seg-child" x-ref="qSeg2">
+                <div class="sx-q-strip"><div class="sx-q-strip-front"><div class="sx-q-slice sx-q-slice-2" x-ref="qSliceF2"></div><div class="sx-q-shade" x-ref="qShade2"></div></div><div class="sx-q-strip-back"><div class="sx-q-slice sx-q-slice-2 sx-q-back-paper"><div class="sx-q-back-wm"><span>{{ paper.title }}</span></div></div><div class="sx-q-bshade" x-ref="qBshade2"></div></div></div>
+                <div class="sx-q-seg sx-q-seg-child" x-ref="qSeg3">
+                  <div class="sx-q-strip"><div class="sx-q-strip-front"><div class="sx-q-slice sx-q-slice-3" x-ref="qSliceF3"></div><div class="sx-q-shade" x-ref="qShade3"></div></div><div class="sx-q-strip-back"><div class="sx-q-slice sx-q-slice-3 sx-q-back-paper"><div class="sx-q-back-wm"><span>{{ paper.title }}</span></div></div><div class="sx-q-bshade" x-ref="qBshade3"></div></div></div>
+                  <div class="sx-q-seg sx-q-seg-child" x-ref="qSeg4">
+                    <div class="sx-q-strip"><div class="sx-q-strip-front"><div class="sx-q-slice sx-q-slice-4" x-ref="qSliceF4"></div><div class="sx-q-shade" x-ref="qShade4"></div></div><div class="sx-q-strip-back"><div class="sx-q-slice sx-q-slice-4 sx-q-back-paper"></div><div class="sx-q-bshade" x-ref="qBshade4"></div></div></div>
+                    <div class="sx-q-seg sx-q-seg-child" x-ref="qSeg5">
+                      <div class="sx-q-strip sx-q-strip-outer"><div class="sx-q-strip-front sx-q-strip-outer-r"><div class="sx-q-slice sx-q-slice-5" x-ref="qSliceF5"></div><div class="sx-q-shade" x-ref="qShade5"></div></div><div class="sx-q-strip-back sx-q-strip-outer-r"><div class="sx-q-slice sx-q-slice-5 sx-q-back-paper"></div><div class="sx-q-bshade" x-ref="qBshade5"></div></div></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </template>
 
@@ -317,13 +387,13 @@
          ==================================================== -->
     <div x-show="viewMode === 'book'" style="display: none;" class="space-y-6">
       <template x-for="(q, idx) in questions" :key="q.id">
-        <div class="brilliant-card bg-base-100 rounded-3xl p-6 space-y-4">
-          <div class="flex items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
-              <span class="w-10 h-10 rounded-xl font-black text-sm flex items-center justify-center" style="background: #f8b000; color: #151515;" x-text="`Q${idx + 1}`"></span>
+        <div class="brilliant-card bg-base-100 rounded-3xl p-4 sm:p-6 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2.5">
+            <div class="flex items-center gap-2.5">
+              <span class="w-10 h-10 rounded-xl font-black text-sm flex items-center justify-center shrink-0" style="background: #f8b000; color: #151515;" x-text="`Q${idx + 1}`"></span>
               <span class="px-2.5 py-0.5 rounded-lg text-[11px] font-black uppercase border" style="background: rgba(248,176,0,0.2); color: #151515; border-color: rgba(248,176,0,0.5);" x-text="q.question_type || 'STUDY Q&A'"></span>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-1.5">
               <button type="button" @click="speak(q.question_text + '. Answer: ' + q.model_answer)" class="btn btn-xs bg-base-100 hover:bg-base-200 text-base-content border border-base-300 rounded-xl font-bold inline-flex items-center gap-1">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
                 <span>Read Aloud</span>
@@ -532,6 +602,171 @@
 </div>
 
 <style>
+/* Hover up ONLY — never tilt cards on the Questions page, and never transform during video fullscreen */
+.brilliant-card:not(.sx-fs-ancestor):hover,
+.sx-surface-card:not(.sx-fs-ancestor):hover {
+  transform: translateY(-4px) !important;
+}
+
+/* 3D Question Book Page & 6-Segment Articulated Bending Paper Leaf Styles */
+.sx-q-book-viewport {
+  position: relative;
+  perspective: 2200px;
+  perspective-origin: 38% 45%;
+  transform-style: preserve-3d;
+}
+.sx-q-book-sheet {
+  position: relative;
+  padding-left: 2.25rem !important;
+  border-radius: 12px 28px 28px 12px !important;
+  box-shadow:
+    4px 4px 0 #f4ebd6,
+    6px 6px 0 rgba(120, 90, 30, 0.2),
+    9px 9px 0 #efe5cf,
+    10px 10px 0 rgba(120, 90, 30, 0.16),
+    0 20px 42px -18px rgba(90, 60, 10, 0.35) !important;
+}
+@media (max-width: 640px) {
+  .sx-q-book-sheet {
+    padding-left: 1.35rem !important;
+    padding-right: 0.9rem !important;
+  }
+}
+[data-theme="dark"] .sx-q-book-sheet {
+  box-shadow:
+    4px 4px 0 #141821,
+    6px 6px 0 rgba(248, 176, 0, 0.16),
+    9px 9px 0 #0f131a,
+    0 20px 42px -18px rgba(0, 0, 0, 0.7) !important;
+}
+.sx-q-book-sheet::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 14px;
+  border-radius: 12px 0 0 12px;
+  background: #f7b317;
+  border-right: 1px solid rgba(120, 90, 30, 0.16);
+  pointer-events: none;
+}
+.sx-q-under-shadow {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px 28px 28px 12px;
+  pointer-events: none;
+  z-index: 15;
+  background: #f7b317;
+  will-change: opacity, transform;
+}
+.sx-q-turning-leaf {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  pointer-events: none;
+}
+.sx-q-seg {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  will-change: transform;
+}
+.sx-q-seg-0 {
+  left: 0;
+  width: 16.6667%;
+}
+.sx-q-seg-child {
+  left: 100%;
+  width: 100%;
+}
+.sx-q-strip {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: calc(100% + 1.5px);
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+}
+.sx-q-strip-outer {
+  width: 100%;
+}
+.sx-q-strip-front,
+.sx-q-strip-back {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-top: 1.5px solid rgba(120, 90, 30, 0.25);
+  border-bottom: 1.5px solid rgba(120, 90, 30, 0.25);
+}
+.sx-q-strip-front {
+  background: #ffffff;
+  transform: rotateY(0deg) translateZ(0.4px);
+}
+[data-theme="dark"] .sx-q-strip-front {
+  background: #f7b317;
+  border-color: rgba(248, 176, 0, 0.24);
+}
+.sx-q-strip-back {
+  background: #ffffff;
+  transform: rotateY(180deg) translateZ(0.4px);
+}
+[data-theme="dark"] .sx-q-strip-back {
+  background: #f7b317;
+  border-color: rgba(248, 176, 0, 0.24);
+}
+.sx-q-strip-outer-r {
+  border-radius: 0 28px 28px 0;
+  border-right: 1.5px solid rgba(120, 90, 30, 0.3);
+}
+.sx-q-slice {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 600%;
+  padding: 1.25rem 1.5rem 1.25rem 2.25rem;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+.sx-q-slice-0 { left: 0%; }
+.sx-q-slice-1 { left: -100%; }
+.sx-q-slice-2 { left: -200%; }
+.sx-q-slice-3 { left: -300%; }
+.sx-q-slice-4 { left: -400%; }
+.sx-q-slice-5 { left: -500%; }
+.sx-q-back-paper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sx-q-back-wm {
+  padding: 12px 20px;
+  border-radius: 16px;
+  border: 1.5px dashed rgba(217, 119, 6, 0.35);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(180, 83, 9, 0.65);
+  transform: scaleX(-1);
+}
+.sx-q-shade,
+.sx-q-bshade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  will-change: background, opacity;
+}
+
 .question-palette-drawer,
 .mini-tutor-drawer {
   top: 4rem !important;
@@ -582,6 +817,108 @@ document.addEventListener('alpine:init', () => {
     currentAudio: null,
     isSpeaking: false,
     speakingText: '',
+
+    // 3D Physical Question Page-Flip state (Hardware GPU Composited — 60/120fps)
+    qIsFlipping: false,
+    qIsDragging: false,
+    qFlipDir: 'next',
+    _qLeafAngle: 0,
+    qLeafIdx: 0,
+    qTouchStartX: 0,
+    qTouchStartY: 0,
+    qDragActive: false,
+    qDragTargetIdx: 0,
+    qRafId: null,
+
+    get qLeafQuestion() {
+      return this.questions[this.qLeafIdx] || null;
+    },
+
+    syncQLeafSlices() {
+      const q = this.qLeafQuestion;
+      if (!q) return;
+      const html = `
+        <div style="display:flex;align-items:center;gap:12px;padding-bottom:12px;margin-bottom:14px;border-bottom:2px solid rgba(120,90,30,0.16);">
+          <span style="width:40px;height:40px;border-radius:14px;background:#f8b000;color:#151515;font-weight:900;display:inline-flex;align-items:center;justify-content:center;">Q${this.qLeafIdx + 1}</span>
+          <span style="font-size:12px;font-weight:800;opacity:0.65;">Question ${this.qLeafIdx + 1} of ${this.questions.length}</span>
+        </div>
+        <div style="font-size:18px;font-weight:900;line-height:1.45;margin-bottom:14px;">${this.escapeHtml(q.question_text || '')}</div>
+        ${this.showAnswer ? `<div style="padding:14px;border-radius:18px;background:rgba(248,176,0,0.12);border:2px solid #f8b000;font-size:14px;font-weight:600;line-height:1.5;">${this.escapeHtml((q.model_answer || '').slice(0, 260))}</div>` : ''}
+      `;
+      for (let i = 0; i < 6; i++) {
+        const el = this.$refs['qSliceF' + i];
+        if (el) el.innerHTML = html;
+      }
+    },
+
+    applyQLeafFrame(ang) {
+      this._qLeafAngle = ang;
+      const p = Math.min(1, Math.max(0, Math.abs(ang) / 180));
+      const bendSign = this.qFlipDir === 'next' ? -1 : 1;
+      const spineProgress = Math.pow(p, 1.38);
+      const baseAngle = -spineProgress * 180;
+      const curlEnvelope = Math.sin(p * Math.PI);
+      const maxTotalBend = 58 * curlEnvelope * bendSign;
+      const segWeights = [0.24, 0.25, 0.21, 0.16, 0.14];
+      const peelSkew = curlEnvelope * 2.1 * bendSign;
+      const segAngles = [
+        baseAngle,
+        maxTotalBend * segWeights[0],
+        maxTotalBend * segWeights[1],
+        maxTotalBend * segWeights[2],
+        maxTotalBend * segWeights[3],
+        maxTotalBend * segWeights[4]
+      ];
+      for (let i = 0; i < 6; i++) {
+        const segEl = this.$refs['qSeg' + i];
+        if (!segEl) continue;
+        const a = segAngles[i];
+        if (i === 0) {
+          const zTilt = curlEnvelope * 0.85 * bendSign;
+          segEl.style.transform = `translate3d(0,0,0) rotateY(${a.toFixed(2)}deg) rotateZ(${zTilt.toFixed(2)}deg)`;
+        } else {
+          const skew = (peelSkew * (i / 5)).toFixed(2);
+          segEl.style.transform = `translate3d(0,0,0) rotateY(${a.toFixed(2)}deg) skewY(${skew}deg)`;
+        }
+        const fShade = this.$refs['qShade' + i];
+        if (fShade) {
+          const distFromCrest = Math.abs((i / 5) - (1 - p));
+          const highlight = Math.max(0, (1 - distFromCrest * 1.9)) * curlEnvelope * 0.44;
+          const edgeShadow = (i / 5) * curlEnvelope * 0.25;
+          fShade.style.background = 'transparent';
+        }
+        const bShade = this.$refs['qBshade' + i];
+        if (bShade) {
+          const backShadow = (1 - (i / 5)) * curlEnvelope * 0.32;
+          bShade.style.background = 'transparent';
+        }
+      }
+      const shadowEl = this.$refs.qUnderShadow;
+      if (shadowEl) {
+        shadowEl.style.opacity = ((1 - p * 0.75) * (0.25 + curlEnvelope * 0.75)).toFixed(3);
+        shadowEl.style.transform = `scaleX(${(1 - p * 0.58).toFixed(3)})`;
+        shadowEl.style.transformOrigin = 'left center';
+      }
+    },
+
+    animateQLeafTo(startAngle, endAngle, durationMs, onDone) {
+      if (this.qRafId) cancelAnimationFrame(this.qRafId);
+      const t0 = performance.now();
+      const step = (now) => {
+        const elapsed = now - t0;
+        const t = Math.min(1, Math.max(0, elapsed / durationMs));
+        const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        this.applyQLeafFrame(startAngle + (endAngle - startAngle) * eased);
+        if (t < 1) {
+          this.qRafId = requestAnimationFrame(step);
+        } else {
+          this.applyQLeafFrame(endAngle);
+          this.qRafId = null;
+          if (onDone) onDone();
+        }
+      };
+      this.qRafId = requestAnimationFrame(step);
+    },
 
     get questions() {
       if (!this.paper || !this.paper.modules || !this.paper.modules.length) return [];
@@ -651,12 +988,18 @@ document.addEventListener('alpine:init', () => {
           if (!isNaN(parsedIdx) && parsedIdx >= 0 && parsedIdx < this.questions.length) {
             this.currentIdx = parsedIdx;
           }
+        } else if (this.questions.length > 0) {
+          const savedIdx = parseInt(localStorage.getItem('saxaz_digi_last_idx_' + (this.paper?.id || '0')), 10);
+          if (!isNaN(savedIdx) && savedIdx >= 0 && savedIdx < this.questions.length) {
+            this.currentIdx = savedIdx;
+          }
         }
       } catch (e) {}
       window.addEventListener('resize', () => {
         this.isDesktop = window.innerWidth >= 1024;
       });
       this.syncVideoForCurrentQuestion();
+      this.syncContinueState();
 
       const handleScratchpadPayload = (detail, forceSend = false) => {
         if (!detail || !detail.dataUrl) return;
@@ -814,10 +1157,171 @@ document.addEventListener('alpine:init', () => {
       });
     },
 
+    syncContinueState() {
+      try {
+        if (!this.paper || !this.paper.id) return;
+        const studiedCount = Object.values(this.studiedMap || {}).filter(Boolean).length;
+        const totalQ = this.questions.length || 1;
+        const pct = Math.min(100, Math.round((studiedCount > 0 ? studiedCount : (this.currentIdx + 1)) * 100 / totalQ));
+        localStorage.setItem('saxaz_digi_last_idx_' + this.paper.id, String(this.currentIdx));
+        const digiPayload = {
+          mode: 'digi',
+          badge: 'Digital Library',
+          title: this.paper.title || 'Digital Library Chapter',
+          subject_name: this.paper.subject_name || 'Digital Library',
+          subtitle: `${this.paper.subject_name || 'Subject'} · Q${this.currentIdx + 1} of ${totalQ}`,
+          progress_pct: pct,
+          progress_label: `${studiedCount} of ${totalQ} questions studied (${pct}%)`,
+          resume_url: `/student/digi-library/banks/${this.paper.id}?q=${this.currentIdx}`,
+          secondary_url: (this.paper.book_id && this.paper.subject_id) ? `/student/digi-library/books/${this.paper.book_id}?subject=${this.paper.subject_id}` : '/student/digi-library',
+          secondary_label: 'Open Book Page',
+          secondary_icon: 'menu_book',
+          ts: Math.floor(Date.now() / 1000)
+        };
+        localStorage.setItem('saxaz_continue_digi', JSON.stringify(digiPayload));
+        localStorage.setItem('saxaz_continue_active_mode', 'digi');
+        fetch('/student/api/continue-state', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mode: 'digi',
+            bank_id: this.paper.id,
+            subject_id: this.paper.subject_id,
+            question_idx: this.currentIdx,
+            studied_count: studiedCount
+          })
+        }).catch(() => {});
+      } catch (e) {}
+    },
+
     goToQuestion(idx) {
-      if (idx < 0 || idx >= this.questions.length) return;
-      this.currentIdx = idx;
-      this.syncVideoForCurrentQuestion();
+      if (idx < 0 || idx >= this.questions.length || idx === this.currentIdx || this.qIsFlipping) return;
+      this.stopSpeaking();
+      const dir = idx > this.currentIdx ? 'next' : 'prev';
+      this.qFlipDir = dir;
+
+      if (dir === 'next') {
+        this.qLeafIdx = this.currentIdx;
+        this.syncQLeafSlices();
+        this.currentIdx = idx;
+        this.syncVideoForCurrentQuestion();
+        this.syncContinueState();
+        this.qIsFlipping = true;
+        this.applyQLeafFrame(0);
+        this.$nextTick(() => {
+          this.syncQLeafSlices();
+          this.animateQLeafTo(0, -180, 480, () => {
+            this.qIsFlipping = false;
+            this.applyQLeafFrame(0);
+          });
+        });
+      } else {
+        this.qLeafIdx = idx;
+        this.syncQLeafSlices();
+        this.currentIdx = idx;
+        this.syncVideoForCurrentQuestion();
+        this.syncContinueState();
+        this.qIsFlipping = true;
+        this.applyQLeafFrame(-180);
+        this.$nextTick(() => {
+          this.syncQLeafSlices();
+          this.animateQLeafTo(-180, 0, 480, () => {
+            this.qIsFlipping = false;
+            this.applyQLeafFrame(0);
+          });
+        });
+      }
+    },
+
+    onQTouchStart(e) {
+      if (document.documentElement.classList.contains('sx-video-fs-lock')) return;
+      if (this.qIsFlipping || !e.touches || e.touches.length !== 1) return;
+      // Do not intercept touch gestures inside the video player or form controls
+      if (e.target && e.target.closest && e.target.closest('[data-saxaz-protected="true"], video, input, select, button')) return;
+      this.qTouchStartX = e.touches[0].clientX;
+      this.qTouchStartY = e.touches[0].clientY;
+      this.qDragActive = false;
+    },
+
+    onQTouchMove(e) {
+      if (document.documentElement.classList.contains('sx-video-fs-lock')) return;
+      if (this.qIsFlipping || !this.qTouchStartX || !e.touches || !e.touches.length) return;
+      const dx = e.touches[0].clientX - this.qTouchStartX;
+      const dy = e.touches[0].clientY - this.qTouchStartY;
+
+      if (!this.qDragActive) {
+        if (Math.abs(dx) < 14 || Math.abs(dy) > Math.abs(dx) * 0.85) return;
+        if (dx < 0 && this.currentIdx < this.questions.length - 1) {
+          this.qDragActive = true;
+          this.qIsDragging = true;
+          this.qFlipDir = 'next';
+          this.qDragTargetIdx = this.currentIdx + 1;
+          this.qLeafIdx = this.currentIdx;
+          this.syncQLeafSlices();
+          this.currentIdx = this.qDragTargetIdx;
+          this.syncVideoForCurrentQuestion();
+        } else if (dx > 0 && this.currentIdx > 0) {
+          this.qDragActive = true;
+          this.qIsDragging = true;
+          this.qFlipDir = 'prev';
+          this.qDragTargetIdx = this.currentIdx - 1;
+          this.qLeafIdx = this.qDragTargetIdx;
+          this.syncQLeafSlices();
+        } else {
+          return;
+        }
+      }
+
+      const vw = (this.$refs.qBookViewport && this.$refs.qBookViewport.clientWidth) ? this.$refs.qBookViewport.clientWidth : Math.min(window.innerWidth, 600);
+      const prog = Math.min(1, Math.max(0, Math.abs(dx) / (vw * 0.72)));
+      if (this.qFlipDir === 'next') {
+        this.applyQLeafFrame(-(prog * 180));
+      } else {
+        this.applyQLeafFrame(-180 + (prog * 180));
+      }
+    },
+
+    onQTouchEnd(e) {
+      if (document.documentElement.classList.contains('sx-video-fs-lock')) return;
+      if (!this.qTouchStartX) return;
+      this.qTouchStartX = 0;
+      this.qTouchStartY = 0;
+      if (!this.qDragActive) return;
+      this.qDragActive = false;
+
+      const prog = this.qFlipDir === 'next'
+        ? (Math.abs(this._qLeafAngle) / 180)
+        : ((180 + this._qLeafAngle) / 180);
+      const commit = prog > 0.15;
+      this.qIsDragging = false;
+      this.qIsFlipping = true;
+
+      if (this.qFlipDir === 'next') {
+        const targetAngle = commit ? -180 : 0;
+        const dur = Math.max(160, Math.round((1 - (commit ? prog : 1 - prog)) * 340));
+        this.animateQLeafTo(this._qLeafAngle, targetAngle, dur, () => {
+          if (!commit) {
+            this.currentIdx = this.qLeafIdx;
+            this.syncVideoForCurrentQuestion();
+          } else {
+            this.syncContinueState();
+          }
+          this.qIsFlipping = false;
+          this.applyQLeafFrame(0);
+        });
+      } else {
+        const targetAngle = commit ? 0 : -180;
+        const dur = Math.max(160, Math.round((1 - (commit ? prog : 1 - prog)) * 340));
+        this.animateQLeafTo(this._qLeafAngle, targetAngle, dur, () => {
+          if (commit) {
+            this.currentIdx = this.qDragTargetIdx;
+            this.syncVideoForCurrentQuestion();
+            this.syncContinueState();
+          }
+          this.qIsFlipping = false;
+          this.applyQLeafFrame(0);
+        });
+      }
     },
 
     prevQuestion() {
@@ -828,12 +1332,24 @@ document.addEventListener('alpine:init', () => {
       if (this.currentIdx < this.questions.length - 1) this.goToQuestion(this.currentIdx + 1);
     },
 
-    toggleStudied(qId) {
+    async toggleStudied(qId) {
+      if (this.studiedMap[qId]) {
+        const res = await window.saxazConfirm({
+          title: 'Unmark Question?',
+          text: 'Mark this question as not understood yet so you can revise it again?',
+          tone: 'warning',
+          icon: 'help',
+          confirmButtonText: 'Yes, Unmark',
+          cancelButtonText: 'Keep Understood'
+        });
+        if (!res.isConfirmed) return;
+      }
       const nextState = !this.studiedMap[qId];
       this.studiedMap[qId] = nextState;
       try {
         localStorage.setItem('saxaz_digi_studied_' + (this.paper?.id || '0'), JSON.stringify(this.studiedMap));
       } catch (e) {}
+      this.syncContinueState();
       if (nextState) {
         fetch('/student/digi-library/study-progress', {
           method: 'POST',
@@ -919,16 +1435,7 @@ document.addEventListener('alpine:init', () => {
         };
         await audio.play();
       } catch (e) {
-        console.error('TTS error, falling back to browser speechSynthesis:', e);
-        if (window.speechSynthesis) {
-          try {
-            const utter = new SpeechSynthesisUtterance(text);
-            utter.onend = () => { this.isSpeaking = false; this.speakingText = ''; };
-            utter.onerror = () => { this.isSpeaking = false; this.speakingText = ''; };
-            window.speechSynthesis.speak(utter);
-            return;
-          } catch (sErr) {}
-        }
+        console.error('OpenAI TTS error:', e);
         this.isSpeaking = false;
         this.speakingText = '';
       }

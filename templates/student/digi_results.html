@@ -1,122 +1,85 @@
 {% extends "base.html" %}
+{% block title %}{{ attempt.bank_title }} — Practice Report | SAXAZ{% endblock %}
 
 {% block content %}
-<div class="w-full max-w-4xl mx-auto pb-16 px-2 sm:px-4 space-y-8">
-  
-  <!-- Top Navigation -->
-  <div class="flex items-center justify-between gap-4 flex-wrap">
-    <a href="/student/digi-library/subjects/{{ attempt.subject_id }}" class="inline-flex items-center gap-2 text-sm font-bold text-base-content/70 hover:text-primary transition-colors">
-      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-      <span>Back to {{ attempt.subject_name }}</span>
-    </a>
+{% set total_q = attempt.total_questions or (attempt.answers|length) %}
+{% set correct_q = attempt.correct_count or 0 %}
+{% set wrong_q = (attempt.answers|length) - correct_q %}
+{% set accuracy = ((correct_q / total_q) * 100)|round|int if total_q > 0 else 0 %}
 
-    <a href="/student/digi-library/banks/{{ attempt.bank_id }}" class="btn btn-primary btn-sm rounded-full font-bold px-5 text-primary-content shadow-xs gap-1.5">
-      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-      <span>Practice Again</span>
-    </a>
-  </div>
+<div class="sx-wrap">
 
-  <!-- Summary Banner (No Marks — Purely Correct vs Wrong) -->
-  {% set total_q = attempt.total_questions or (attempt.answers|length) %}
-  {% set correct_q = attempt.correct_count or 0 %}
-  {% set wrong_q = (attempt.answers|length) - correct_q %}
-  {% set accuracy = ((correct_q / total_q) * 100)|round|int if total_q > 0 else 0 %}
+  <!-- Summary Header Card -->
+  <div class="sx-tile" style="margin-bottom:22px;padding:24px 28px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:20px;">
+    <div>
+      <span class="sx-eyebrow"><i></i>{{ attempt.book_title }} &bull; {{ attempt.subject_name }}</span>
+      <h1 class="sx-display" style="font-size:clamp(1.75rem,3vw,2.4rem);font-weight:800;line-height:1.1;margin:6px 0 6px;">
+        {{ attempt.bank_title }} <span style="color:#c47c00;">Report</span>
+      </h1>
+      <p style="margin:0;color:var(--sx-mute);font-weight:600;font-size:0.88rem;">
+        Completed on {{ (attempt.completed_at or attempt.started_at)[:16] }}
+      </p>
+    </div>
 
-  <div class="bg-base-100 rounded-[28px] p-6 sm:p-8 border border-base-300/60 shadow-md relative overflow-hidden">
-    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-      <div class="space-y-2">
-        <div class="flex items-center gap-2 flex-wrap">
-          <span class="badge badge-primary badge-sm font-bold uppercase tracking-wider">{{ attempt.book_title }}</span>
-          <span class="badge badge-ghost badge-sm font-bold">{{ attempt.subject_name }}</span>
-        </div>
-        <h1 class="text-2xl sm:text-3xl font-black text-base-content">{{ attempt.bank_title }} — Practice Report</h1>
-        <p class="text-sm text-base-content/60 font-medium">Completed on {{ (attempt.completed_at or attempt.started_at)[:16] }}</p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;">
+      <div style="padding:10px 12px;border-radius:16px;background:rgba(25,135,84,0.14);color:#198754;text-align:center;flex:1 1 80px;min-width:76px;">
+        <div class="sx-display" style="font-size:1.4rem;font-weight:800;">{{ correct_q }}</div>
+        <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;">Correct</div>
       </div>
-
-      <!-- Correct / Wrong Stat Pills -->
-      <div class="flex items-center gap-3 flex-wrap">
-        <div class="bg-success/10 border border-success/30 px-4 py-3 rounded-2xl text-center min-w-[95px]">
-          <div class="text-2xl font-black text-success">{{ correct_q }}</div>
-          <div class="text-[11px] font-bold uppercase tracking-wider text-success/80">Correct</div>
-        </div>
-        <div class="bg-error/10 border border-error/30 px-4 py-3 rounded-2xl text-center min-w-[95px]">
-          <div class="text-2xl font-black text-error">{{ wrong_q if wrong_q >= 0 else 0 }}</div>
-          <div class="text-[11px] font-bold uppercase tracking-wider text-error/80">Wrong</div>
-        </div>
-        <div class="bg-base-200 border border-base-300 px-4 py-3 rounded-2xl text-center min-w-[95px]">
-          <div class="text-2xl font-black text-base-content">{{ accuracy }}%</div>
-          <div class="text-[11px] font-bold uppercase tracking-wider text-base-content/60">Accuracy</div>
-        </div>
+      <div style="padding:10px 12px;border-radius:16px;background:rgba(220,53,69,0.14);color:#dc3545;text-align:center;flex:1 1 80px;min-width:76px;">
+        <div class="sx-display" style="font-size:1.4rem;font-weight:800;">{{ wrong_q if wrong_q >= 0 else 0 }}</div>
+        <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;">Needs Review</div>
+      </div>
+      <div style="padding:10px 12px;border-radius:16px;background:var(--sx-bg-2);border:1px solid var(--sx-line);text-align:center;flex:1 1 80px;min-width:76px;">
+        <div class="sx-display" style="font-size:1.4rem;font-weight:800;">{{ accuracy }}%</div>
+        <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;color:var(--sx-mute);">Accuracy</div>
       </div>
     </div>
   </div>
 
-  <!-- Questions & Answers Breakdown -->
-  <div class="space-y-5">
-    <h2 class="text-xl font-extrabold text-base-content">Question Breakdown</h2>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+    <h2 class="sx-display" style="font-size:1.35rem;font-weight:800;margin:0;">Question Breakdown</h2>
+    <div class="sx-actions">
+      <a href="/student/digi-library/subjects/{{ attempt.subject_id }}" class="sx-btn sx-btn-ghost">
+        <span class="material-symbols-outlined">arrow_back</span>Back to {{ attempt.subject_name }}
+      </a>
+      <a href="/student/digi-library/banks/{{ attempt.bank_id }}" class="sx-btn sx-btn-gold">
+        <span class="material-symbols-outlined">replay</span>Practice Again
+      </a>
+    </div>
+  </div>
 
+  <div style="display:flex;flex-direction:column;gap:14px;">
     {% for ans in attempt.answers %}
-    <div class="bg-base-100 rounded-[24px] p-5 sm:p-6 border-2 shadow-sm space-y-4 {% if ans.is_correct %}border-success/30{% else %}border-error/30{% endif %}">
-      <div class="flex items-start justify-between gap-4">
-        <div class="flex items-start gap-3">
-          <span class="w-8 h-8 rounded-xl font-black text-sm flex items-center justify-center shrink-0 mt-0.5 {% if ans.is_correct %}bg-success text-white{% else %}bg-error text-white{% endif %}">
+    <div class="sx-tile" style="border-left:5px solid {% if ans.is_correct %}#198754{% else %}#dc3545{% endif %};display:flex;flex-direction:column;gap:14px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+          <span style="width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:0.84rem;color:#fff;flex:none;background:{% if ans.is_correct %}#198754{% else %}#dc3545{% endif %};">
             {{ loop.index }}
           </span>
-          <h3 class="text-base sm:text-lg font-bold text-base-content leading-snug">{{ ans.question_text }}</h3>
+          <h3 class="sx-display" style="font-size:1.1rem;font-weight:800;margin:3px 0 0;line-height:1.35;">{{ ans.question_text }}</h3>
         </div>
-
-        <!-- Strictly Correct or Wrong Badge (No Marks) -->
-        {% if ans.is_correct %}
-          <span class="badge badge-success text-white font-black uppercase tracking-wider px-3 py-3 gap-1.5 shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            Correct
-          </span>
-        {% else %}
-          <span class="badge badge-error text-white font-black uppercase tracking-wider px-3 py-3 gap-1.5 shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            Wrong
-          </span>
-        {% endif %}
+        <span style="padding:4px 10px;border-radius:999px;font-size:0.7rem;font-weight:800;text-transform:uppercase;{% if ans.is_correct %}background:rgba(25,135,84,0.15);color:#198754;{% else %}background:rgba(220,53,69,0.15);color:#dc3545;{% endif %}">
+          {% if ans.is_correct %}Correct{% else %}Review{% endif %}
+        </span>
       </div>
 
-      {% if ans.media_url %}
-      <div class="rounded-xl overflow-hidden bg-base-200/50 p-2 border border-base-300 max-w-md">
-        <img src="{{ ans.media_url }}" alt="Question Image" class="max-h-52 object-contain mx-auto rounded-lg" />
-      </div>
-      {% endif %}
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-        <div class="bg-base-200/60 rounded-2xl p-4 border border-base-content/10">
-          <div class="text-xs font-black uppercase tracking-wider text-base-content/50 mb-1">Your Answer</div>
-          <p class="text-sm font-medium text-base-content whitespace-pre-line">{{ ans.answer_text }}</p>
-          {% if ans.drawing_url %}
-          <div class="mt-3">
-            <img src="{{ ans.drawing_url }}" alt="Attached Work" class="max-h-40 rounded-xl border border-base-300 bg-white p-1" />
-          </div>
-          {% endif %}
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px;">
+        <div style="padding:14px 16px;border-radius:14px;background:var(--sx-bg-2);border:1px solid var(--sx-line);">
+          <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--sx-mute);margin-bottom:4px;">Your Response</div>
+          <div style="font-size:0.88rem;font-weight:600;white-space:pre-line;">{{ ans.answer_text }}</div>
         </div>
-
-        <div class="bg-primary/5 rounded-2xl p-4 border border-primary/20">
-          <div class="text-xs font-black uppercase tracking-wider text-primary mb-1">Correct Answer</div>
-          <p class="text-sm font-medium text-base-content whitespace-pre-line">{{ ans.model_answer }}</p>
-          {% if ans.answer_media_url %}
-          <div class="mt-3">
-            <img src="{{ ans.answer_media_url }}" alt="Model Answer Image" class="max-h-40 rounded-xl border border-base-300 bg-white p-1" />
-          </div>
-          {% endif %}
+        <div style="padding:14px 16px;border-radius:14px;background:rgba(248,176,0,0.1);border:1px solid rgba(216,155,0,0.35);">
+          <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#c47c00;margin-bottom:4px;">Model Answer</div>
+          <div style="font-size:0.88rem;font-weight:600;white-space:pre-line;">{{ ans.model_answer }}</div>
         </div>
       </div>
 
       {% if ans.ai_feedback %}
-      <div class="bg-base-200/40 rounded-2xl p-4 border border-base-content/10">
-        <div class="text-xs font-black uppercase tracking-wider text-secondary mb-1">AI Feedback</div>
-        <p class="text-sm text-base-content/80 leading-relaxed">{{ ans.ai_feedback }}</p>
+      <div style="padding:12px 16px;border-radius:14px;background:var(--sx-bg-2);border:1px solid var(--sx-line);font-size:0.84rem;color:var(--sx-mute);font-weight:600;">
+        <b style="color:var(--sx-ink);">AI Tutor Feedback:</b> {{ ans.ai_feedback }}
       </div>
       {% endif %}
-    </div>
-    {% else %}
-    <div class="bg-base-100 rounded-[24px] p-10 text-center border border-base-300/60">
-      <p class="text-base-content/60 font-medium">No answers were recorded in this session.</p>
     </div>
     {% endfor %}
   </div>

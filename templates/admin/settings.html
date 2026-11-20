@@ -5,7 +5,7 @@
 {% block content %}
 <div class="max-w-4xl mx-auto space-y-6 pb-20 pt-12">
   <div class="flex flex-col items-center text-center mb-8">
-    <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">My Preferences</h1>
+    <h1 class="text-4xl font-extrabold text-[#231f20]">My Preferences</h1>
     <p class="text-base-content/70 mt-2">Customize your personal admin experience. These settings apply only to your account.</p>
   </div>
 
@@ -22,8 +22,12 @@
   {% endif %}
 
   <div class="brilliant-card bg-base-100 shadow-sm border border-base-300 overflow-hidden">
-    <div class="p-8 md:p-12 relative z-10">
-      <form method="POST" action="/admin/settings" x-data="adminSettings()" x-effect="document.body.classList.toggle('custom-cursor-active', cursorMode === '1')">
+    <div class="p-5 sm:p-8 md:p-12 relative z-10">
+      <form method="POST" action="/admin/settings"
+            data-confirm="Save your updated Admin UI & Sound preferences?"
+            data-confirm-title="Save Admin Preferences?"
+            data-confirm-btn="Save Preferences"
+            x-data="adminSettings()" x-effect="document.body.classList.toggle('custom-cursor-active', cursorMode === '1')">
         <!-- Install Mobile / Desktop Web App (PWA) -->
         <div class="flex flex-row items-center justify-between p-5 rounded-3xl gap-4 bg-primary/5 border border-primary/20 mb-10 max-w-4xl mx-auto"
              x-data="{ installed: window.isSaxazStandalone && window.isSaxazStandalone() }"
@@ -58,21 +62,21 @@
               <h2 class="text-2xl font-black text-center mb-2">UI Sound Effects</h2>
               <p class="text-base-content/60 text-center mb-6 font-medium min-h-[3rem] flex items-center justify-center">Toggle all platform interactive sounds.</p>
             
-              <div class="bg-base-200 p-2 rounded-full inline-flex shadow-inner border border-base-300 gap-1">
-                <label class="cursor-pointer w-20 py-3 rounded-full text-base font-bold transition-all duration-300 flex items-center justify-center gap-2"
-                    :class="sfxMode === '1' ? 'bg-base-100 text-primary shadow-sm ring-1 ring-base-300 scale-105' : 'text-base-content/60 hover:text-base-content hover:bg-base-300/50'">
+              <div class="sx-seg sx-seg-grid" style="max-width:340px;">
+                <label class="sx-seg-btn"
+                    :class="sfxMode === '1' ? 'is-active' : ''">
                   <input type="radio" name="sfx_mode" value="1" class="sr-only" x-model="sfxMode" />
                   On
                 </label>
                 
-                <label class="cursor-pointer w-24 py-3 rounded-full text-base font-bold transition-all duration-300 flex items-center justify-center gap-2"
-                    :class="sfxMode === '2' ? 'bg-base-100 text-secondary shadow-sm ring-1 ring-base-300 scale-105' : 'text-base-content/60 hover:text-base-content hover:bg-base-300/50'">
+                <label class="sx-seg-btn"
+                    :class="sfxMode === '2' ? 'is-active' : ''">
                   <input type="radio" name="sfx_mode" value="2" class="sr-only" x-model="sfxMode" />
                   Custom
                 </label>
                 
-                <label class="cursor-pointer w-20 py-3 rounded-full text-base font-bold transition-all duration-300 flex items-center justify-center gap-2"
-                    :class="sfxMode === '0' ? 'bg-base-100 text-error shadow-sm ring-1 ring-base-300 scale-105' : 'text-base-content/60 hover:text-base-content hover:bg-base-300/50'">
+                <label class="sx-seg-btn"
+                    :class="sfxMode === '0' ? 'is-active is-danger' : ''">
                   <input type="radio" name="sfx_mode" value="0" class="sr-only" x-model="sfxMode" />
                   Off
                 </label>
@@ -106,15 +110,15 @@
               <h2 class="text-2xl font-black text-center mb-2">Custom Cursor</h2>
               <p class="text-base-content/60 text-center mb-6 font-medium min-h-[3rem] flex items-center justify-center">Magical, animated glowing cursors.</p>
               
-              <div class="bg-base-200 p-2 rounded-full inline-flex shadow-inner border border-base-300 gap-1">
-                <label class="cursor-pointer w-32 py-3 rounded-full text-base font-bold transition-all duration-300 flex items-center justify-center gap-2"
-                    :class="cursorMode === '1' ? 'bg-base-100 text-primary shadow-sm ring-1 ring-base-300 scale-105' : 'text-base-content/60 hover:text-base-content hover:bg-base-300/50'">
+              <div class="sx-seg sx-seg-grid" style="max-width:260px;">
+                <label class="sx-seg-btn"
+                    :class="cursorMode === '1' ? 'is-active' : ''">
                   <input type="radio" name="cursor_mode" value="1" class="sr-only" x-model="cursorMode" />
                   On
                 </label>
                 
-                <label class="cursor-pointer w-32 py-3 rounded-full text-base font-bold transition-all duration-300 flex items-center justify-center gap-2"
-                    :class="cursorMode === '0' ? 'bg-base-100 text-error shadow-sm ring-1 ring-base-300 scale-105' : 'text-base-content/60 hover:text-base-content hover:bg-base-300/50'">
+                <label class="sx-seg-btn"
+                    :class="cursorMode === '0' ? 'is-active is-danger' : ''">
                   <input type="radio" name="cursor_mode" value="0" class="sr-only" x-model="cursorMode" />
                   Off
                 </label>

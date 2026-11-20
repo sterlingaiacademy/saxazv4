@@ -1,44 +1,376 @@
 {% extends "base.html" %}
-
-{% block title %}Exam Results - SAXAZ{% endblock %}
-{% block topbar_title %}Exam Results{% endblock %}
+{% block title %}Quiz Points | SAXAZ{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto space-y-8 pb-20">
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-    <h1 class="text-2xl sm:text-3xl font-black text-gray-900">Your Exam History</h1>
-    <a href="/student/exams" class="inline-flex items-center self-start sm:self-auto text-base-content/60 hover:text-primary transition-colors font-semibold bg-base-200 px-4 sm:px-5 py-2 rounded-full border border-base-300 text-xs sm:text-sm">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-      Back to Exams
-    </a>
-  </div>
+{% set first_name = (user.name or 'Champion').strip().split(' ')[0] | capitalize %}
+{% set real_attempts = attempts | selectattr('exam_type', 'equalto', 'real') | list %}
+{% set mock_attempts = attempts | rejectattr('exam_type', 'equalto', 'real') | list %}
+{% set completed_real_count = real_attempts | selectattr('status', 'equalto', 'completed') | list | length %}
+{% set completed_mock_count = mock_attempts | selectattr('status', 'equalto', 'completed') | list | length %}
 
-  <div class="brilliant-card p-4 sm:p-8 flex flex-col">
-    <div class="space-y-3 sm:space-y-4 flex-1">
-      {% for attempt in attempts %}
-        <a href="/student/attempts/{{ attempt.id }}" class="flex items-center justify-between p-3.5 sm:p-5 bg-gray-50 rounded-2xl sm:rounded-[1.5rem] border border-transparent hover:bg-white hover:border-gray-200 hover:shadow-md transition-all duration-300 cursor-pointer group transform hover:-translate-y-1 gap-3">
-          <div class="flex items-center gap-3 sm:gap-5 min-w-0">
-            <div class="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-{{ attempt.grade_color }}/10 flex items-center justify-center text-{{ attempt.grade_color }} text-lg sm:text-2xl font-black shadow-inner shrink-0 group-hover:scale-110 transition-transform duration-300">{{ attempt.grade }}</div>
-            <div class="min-w-0">
-              <div class="text-sm sm:text-[15px] font-black text-gray-900 group-hover:text-primary transition-colors truncate">{{ attempt.exam_title }}</div>
-              <div class="text-[10px] sm:text-[11px] text-gray-500 font-bold uppercase tracking-widest mt-1">{{ attempt.date_str }}</div>
-            </div>
-          </div>
-          <div class="text-right shrink-0">
-            <div class="text-lg sm:text-2xl font-black text-gray-900">{{ attempt.pct }}%</div>
-            <div class="text-[9px] sm:text-[11px] font-bold text-{{ attempt.grade_color }} uppercase tracking-widest mt-0.5 sm:mt-1.5">{{ attempt.grade_label }}</div>
-          </div>
-        </a>
-      {% else %}
-        <div class="flex flex-col items-center justify-center h-full text-center py-16 opacity-60">
-          <div class="text-5xl mb-4 text-gray-300">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
-          </div>
-          <div class="text-base font-black text-gray-900 mb-1">No Exam Results Yet</div>
-          <div class="text-sm text-gray-500 font-medium">Take an exam to see your history here.</div>
+{% set ns = namespace(best_real_pct=0, best_real_id=None, best_mock_pct=0, best_mock_id=None) %}
+{% for a in real_attempts %}
+  {% if a.status == 'completed' %}
+    {% set a_pct = (a.overall_pct if (a.overall_pct is defined and a.overall_pct is not none) else (a.pct or 0)) %}
+    {% if a_pct >= ns.best_real_pct %}
+      {% set ns.best_real_pct = a_pct %}
+      {% set ns.best_real_id = a.id %}
+    {% endif %}
+  {% endif %}
+{% endfor %}
+{% for a in mock_attempts %}
+  {% if a.status == 'completed' %}
+    {% set a_pct = (a.overall_pct if (a.overall_pct is defined and a.overall_pct is not none) else (a.pct or 0)) %}
+    {% if a_pct >= ns.best_mock_pct %}
+      {% set ns.best_mock_pct = a_pct %}
+      {% set ns.best_mock_id = a.id %}
+    {% endif %}
+  {% endif %}
+{% endfor %}
+
+{% set earned_xp = stats.xp_earned if stats and stats.xp_earned is defined else (user.total_xp or 0) %}
+{% set current_league = stats.league if stats and stats.league else ('Diamond' if earned_xp >= 3500 else ('Gold' if earned_xp >= 1500 else ('Silver' if earned_xp >= 500 else 'Bronze'))) %}
+{% set streak_days = stats.streak_days if stats and stats.streak_days is defined else 0 %}
+{% set next_xp = 500 if earned_xp < 500 else (1500 if earned_xp < 1500 else 3500) %}
+{% set next_league = 'Silver' if earned_xp < 500 else ('Gold' if earned_xp < 1500 else 'Diamond') %}
+{% set bar_max = 3500 if earned_xp >= 1500 else 1500 %}
+{% set bar_pct = ((earned_xp / bar_max) * 100)|round(1) if bar_max > 0 else 0 %}
+{% if bar_pct > 100 %}{% set bar_pct = 100 %}{% endif %}
+
+{% set ring_circ = 238.8 %}
+{% set real_dash = ((ns.best_real_pct / 100.0) * ring_circ)|round(1) %}
+{% set mock_dash = ((ns.best_mock_pct / 100.0) * ring_circ)|round(1) %}
+{% set vid_done = videos_watched_count or 0 %}
+{% set vid_tot = total_videos_count or 4 %}
+{% set coin_bal = user.coin_balance or 0 %}
+
+<div class="sx-ext-inner-wrap sx-qp-wrap" x-data="{ filterType: 'all' }">
+
+  <!-- 1. CHAMPIONSHIP TROPHY & 4-TIER LEAGUE HERO -->
+  <section class="sx-qp-hero">
+    <div class="sx-qp-hero-main">
+      <div>
+        <div class="sx-qp-badge-row">
+          <span class="sx-qp-pill-dark">
+            <span class="material-symbols-outlined" style="font-size:16px;">emoji_events</span>
+            <span>{{ current_league }} League</span>
+          </span>
+          <span class="sx-qp-pill-light">
+            <span class="material-symbols-outlined" style="font-size:16px;color:#f7b317;">local_fire_department</span>
+            <span>{{ streak_days }} Day Streak</span>
+          </span>
+          <span class="sx-qp-pill-light">
+            <span class="material-symbols-outlined" style="font-size:16px;">paid</span>
+            <span>{{ coin_bal }} Score Coins</span>
+          </span>
         </div>
+
+        <h1 class="sx-qp-hero-title">Quiz Points &amp; League Arena</h1>
+        <p class="sx-qp-hero-sub">
+          Way to go, {{ first_name }}! Every practice quiz, proctored board exam, and interactive lesson builds your XP League rank and unlocks Store Coins for Play Books &amp; kits.
+        </p>
+
+        <div class="sx-qp-hero-ctas">
+          <a href="/student/shop" class="sx-qp-btn-dark">
+            <span class="material-symbols-outlined" style="font-size:19px;">local_mall</span>
+            <span>Redeem Coins ({{ coin_bal }}) &rarr;</span>
+          </a>
+          <a href="/student/exams" class="sx-qp-btn-white">
+            <span class="material-symbols-outlined" style="font-size:19px;">quiz</span>
+            <span>Take Practice Exam</span>
+          </a>
+          <a href="/student/dashboard" class="sx-qp-btn-white" style="padding:10px 18px;">
+            <span>&larr; Dashboard</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="sx-qp-trophy-stage">
+        <img src="/static/images/saxaz_web/store/qp_trophy_hero.webp?v=540"
+             alt="SAXAZ Championship Trophy"
+             class="sx-qp-trophy-img">
+        <div class="sx-qp-xp-floating-chip">
+          <span class="material-symbols-outlined" style="font-size:18px;color:#f7b317;">bolt</span>
+          <strong>{{ earned_xp }} XP</strong>
+          <span style="font-size:0.78rem;opacity:0.78;">/ {{ bar_max }} XP</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attached Dark-Ink 4-Tier League Milestone Track -->
+    <div class="sx-qp-league-strip">
+      <div class="sx-qp-league-top">
+        <span class="sx-qp-league-label">
+          <span class="material-symbols-outlined" style="font-size:17px;">military_tech</span>
+          <span>MILESTONE LEAGUE TRACK</span>
+        </span>
+        <span class="sx-qp-league-next">
+          {% if earned_xp < 3500 %}
+            <strong style="color:#f7b317;">{{ next_xp - earned_xp }} XP</strong> needed to unlock <strong>{{ next_league }} League</strong>
+          {% else %}
+            <strong style="color:#f7b317;">Diamond Grandmaster Unlocked!</strong> Maximum tier achieved
+          {% endif %}
+        </span>
+      </div>
+
+      <div class="sx-qp-track-rail">
+        <div class="sx-qp-track-fill" style="width:{{ bar_pct }}%;"></div>
+      </div>
+
+      <div class="sx-qp-tiers-grid">
+        {% for t_name, t_xp, t_icon in [
+          ('Bronze', 0, 'shield'),
+          ('Silver', 500, 'award_star'),
+          ('Gold', 1500, 'workspace_premium'),
+          ('Diamond', 3500, 'diamond')
+        ] %}
+        {% set is_curr = (current_league|lower == t_name|lower) %}
+        {% set is_reach = (earned_xp >= t_xp) %}
+        <div class="sx-qp-tier-node {{ 'is-current' if is_curr else ('is-reached' if is_reach else '') }}">
+          <span class="sx-qp-tier-icon">
+            <span class="material-symbols-outlined" style="font-size:18px;">{{ t_icon }}</span>
+          </span>
+          <div>
+            <div class="sx-qp-tier-name">{{ t_name }}{% if is_curr %} &middot; Current{% endif %}</div>
+            <div class="sx-qp-tier-xp">{{ t_xp }} XP</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 4 HIGH-IMPACT VISUAL SCORE & PROGRESS CARDS -->
+  <section class="sx-qp-stats-grid" aria-label="Performance highlights">
+    <!-- Real Exam Best Radial Card -->
+    <div class="sx-qp-stat-card">
+      <span class="sx-qp-stat-eyebrow">REAL EXAM BEST</span>
+      <div class="sx-qp-ring-box">
+        <svg class="sx-qp-ring-svg" viewBox="0 0 92 92" aria-hidden="true">
+          <circle cx="46" cy="46" r="38" fill="none" stroke="rgba(35,31,32,0.12)" stroke-width="9"></circle>
+          <circle cx="46" cy="46" r="38" fill="none"
+                  stroke="{{ '#16a34a' if ns.best_real_pct >= 80 else '#f7b317' }}"
+                  stroke-width="9"
+                  stroke-linecap="round"
+                  stroke-dasharray="{{ real_dash }} {{ ring_circ }}"></circle>
+        </svg>
+        <div class="sx-qp-ring-val">{{ ns.best_real_pct }}%</div>
+      </div>
+      <div class="sx-qp-stat-foot">{{ completed_real_count }} completed attempt{{ '' if completed_real_count == 1 else 's' }}</div>
+      <span class="sx-qp-stat-chip">
+        <span class="material-symbols-outlined" style="font-size:14px;">verified</span>
+        <span>Official Proctored</span>
+      </span>
+    </div>
+
+    <!-- Mock Exam Best Radial Card -->
+    <div class="sx-qp-stat-card">
+      <span class="sx-qp-stat-eyebrow">MOCK EXAM BEST</span>
+      <div class="sx-qp-ring-box">
+        <svg class="sx-qp-ring-svg" viewBox="0 0 92 92" aria-hidden="true">
+          <circle cx="46" cy="46" r="38" fill="none" stroke="rgba(35,31,32,0.12)" stroke-width="9"></circle>
+          <circle cx="46" cy="46" r="38" fill="none"
+                  stroke="{{ '#16a34a' if ns.best_mock_pct >= 80 else '#f7b317' }}"
+                  stroke-width="9"
+                  stroke-linecap="round"
+                  stroke-dasharray="{{ mock_dash }} {{ ring_circ }}"></circle>
+        </svg>
+        <div class="sx-qp-ring-val">{{ ns.best_mock_pct }}%</div>
+      </div>
+      <div class="sx-qp-stat-foot">{{ completed_mock_count }} completed attempt{{ '' if completed_mock_count == 1 else 's' }}</div>
+      <span class="sx-qp-stat-chip">
+        <span class="material-symbols-outlined" style="font-size:14px;">{{ 'lock_open' if ns.best_mock_pct >= 80 else 'trending_up' }}</span>
+        <span>{{ 'Real Exam Unlocked' if ns.best_mock_pct >= 80 else '80%+ Unlocks Real' }}</span>
+      </span>
+    </div>
+
+    <!-- Video Episodes Segmented Card -->
+    <div class="sx-qp-stat-card">
+      <span class="sx-qp-stat-eyebrow">VIDEO LESSONS</span>
+      <div>
+        <div class="sx-qp-stat-big">{{ vid_done }} / {{ vid_tot }}</div>
+        <div class="sx-qp-ep-bars" aria-hidden="true">
+          {% for ep_i in range(1, (vid_tot if vid_tot <= 6 else 4) + 1) %}
+          <span class="sx-qp-ep-seg {{ 'is-on' if ep_i <= vid_done else '' }}"></span>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="sx-qp-stat-foot">Chapter episodes watched</div>
+      <a href="/student/chapters/3" class="sx-qp-stat-chip" style="text-decoration:none;">
+        <span class="material-symbols-outlined" style="font-size:14px;">smart_display</span>
+        <span>Watch Lessons &rarr;</span>
+      </a>
+    </div>
+
+    <!-- Dark Ink Coin Wallet & Streak Card -->
+    <div class="sx-qp-stat-card is-dark">
+      <span class="sx-qp-stat-eyebrow">REWARD WALLET</span>
+      <div>
+        <div class="sx-qp-stat-big" style="color:#f7b317;">{{ coin_bal }}</div>
+        <div style="font-size:0.82rem;font-weight:800;color:#ffffff;margin-top:4px;">
+          Worth Rs {{ '%.2f'|format(coin_bal / 100.0) }} INR
+        </div>
+      </div>
+      <div class="sx-qp-stat-foot">{{ current_league }} Tier &middot; {{ streak_days }} day streak</div>
+      <a href="/student/shop" class="sx-qp-stat-chip" style="text-decoration:none;">
+        <span class="material-symbols-outlined" style="font-size:14px;">shopping_bag</span>
+        <span>Open Play Store &rarr;</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- 3. UNLOCKABLE ACHIEVEMENT MEDALS SHELF -->
+  {% set medals = [
+    ('First Steps', 'Complete your 1st quiz attempt', 'rocket_launch', (completed_mock_count + completed_real_count) >= 1),
+    ('Mock Master', 'Score 80%+ on any Mock Exam', 'verified', ns.best_mock_pct >= 80),
+    ('Board Topper', 'Score 85%+ on an Official Real Exam', 'workspace_premium', ns.best_real_pct >= 85),
+    ('Visual Learner', 'Watch at least 2 Video Episodes', 'smart_display', vid_done >= 2),
+    ('Silver+ Champion', 'Reach 500+ Total XP in SAXAZ', 'military_tech', earned_xp >= 500)
+  ] %}
+  {% set m_ns = namespace(unlocked_cnt=0) %}
+  {% for _, _, _, m_ok in medals %}{% if m_ok %}{% set m_ns.unlocked_cnt = m_ns.unlocked_cnt + 1 %}{% endif %}{% endfor %}
+
+  <section class="sx-qp-medals-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+      <div>
+        <span class="sx-ext-eyebrow" style="color:#231f20;">TROPHY CABINET</span>
+        <h2 style="font-family:var(--font-heading);font-size:1.38rem;font-weight:900;margin:2px 0 0;color:#231f20;">
+          Achievement Badges
+        </h2>
+      </div>
+      <span class="sx-qp-pill-dark">
+        <span class="material-symbols-outlined" style="font-size:15px;">stars</span>
+        <span>{{ m_ns.unlocked_cnt }} / {{ medals|length }} Unlocked</span>
+      </span>
+    </div>
+
+    <div class="sx-qp-medals-grid">
+      {% for m_title, m_desc, m_icon, m_unlocked in medals %}
+      <div class="sx-qp-medal {{ 'is-unlocked' if m_unlocked else '' }}">
+        <div class="sx-qp-medal-disc">
+          <span class="material-symbols-outlined" style="font-size:26px;">{{ m_icon }}</span>
+        </div>
+        <div class="sx-qp-medal-title">{{ m_title }}</div>
+        <div class="sx-qp-medal-sub">{{ m_desc }}</div>
+        <span class="sx-qp-medal-tag">{{ 'Unlocked' if m_unlocked else 'Locked' }}</span>
+      </div>
       {% endfor %}
     </div>
-  </div>
+  </section>
+
+  <!-- 4. SCORE TICKET RECENT ATTEMPTS HISTORY -->
+  <section class="sx-qp-attempts-card">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;margin-bottom:20px;">
+      <div>
+        <span class="sx-ext-eyebrow" style="color:#231f20;">EXAM SCORE TICKETS</span>
+        <h2 style="font-family:var(--font-heading);font-size:1.45rem;font-weight:900;margin:2px 0 0;color:#231f20;">
+          Recent Attempts
+        </h2>
+      </div>
+
+      <div class="sx-seg sx-seg-sm sx-seg-wrap" role="tablist" aria-label="Filter exam history">
+        <button type="button" role="tab" @click="filterType = 'all'" class="sx-seg-btn" :class="filterType === 'all' && 'is-active'">
+          All ({{ attempts|length }})
+        </button>
+        <button type="button" role="tab" @click="filterType = 'real'" class="sx-seg-btn" :class="filterType === 'real' && 'is-active'">
+          Real ({{ real_attempts|length }})
+        </button>
+        <button type="button" role="tab" @click="filterType = 'mock'" class="sx-seg-btn" :class="filterType === 'mock' && 'is-active'">
+          Mock ({{ mock_attempts|length }})
+        </button>
+      </div>
+    </div>
+
+    {% if attempts %}
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      {% for att in attempts %}
+      {% set is_real = (att.exam_type == 'real') %}
+      {% set is_done = (att.status == 'completed') %}
+      {% set row_pct = (att.overall_pct if (att.overall_pct is defined and att.overall_pct is not none) else (att.pct or 0)) %}
+      {% set target_url = ('/student/attempts/' ~ att.id) if is_done else ('/student/exams/' ~ att.exam_paper_id) %}
+      <div x-show="filterType === 'all' || (filterType === 'real' && {{ 'true' if is_real else 'false' }}) || (filterType === 'mock' && {{ 'false' if is_real else 'true' }})"
+           data-card-href="{{ target_url }}"
+           role="link"
+           tabindex="0"
+           class="sx-qp-attempt-ticket">
+
+        <!-- Left Score Emblem -->
+        <div class="sx-qp-score-badge {{ ('is-high' if row_pct >= 80 else '') if is_done else 'is-live' }}">
+          {% if is_done %}
+            <span class="sx-qp-score-num">{{ row_pct }}%</span>
+            <span class="sx-qp-score-lbl">{{ 'Top' if row_pct >= 80 else 'Score' }}</span>
+          {% else %}
+            <span class="material-symbols-outlined" style="font-size:24px;">pending_actions</span>
+            <span class="sx-qp-score-lbl">Saved</span>
+          {% endif %}
+        </div>
+
+        <!-- Middle Ticket Metadata -->
+        <div style="min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px;">
+            <span style="padding:3px 10px;border-radius:999px;font-size:0.7rem;font-weight:900;text-transform:uppercase;background:{{ '#f7b317' if is_real else '#231f20' }};color:{{ '#231f20' if is_real else '#ffffff' }};border:1.5px solid #231f20;">
+              {{ 'Real Exam' if is_real else 'Mock Exam' }}
+            </span>
+            {% if not is_done %}
+            <span style="padding:3px 10px;border-radius:999px;font-size:0.7rem;font-weight:900;text-transform:uppercase;background:#ffffff;color:#231f20;border:1.5px solid #231f20;">
+              IN PROGRESS
+            </span>
+            {% endif %}
+            <span style="font-size:0.78rem;color:rgba(35,31,32,0.7);font-weight:700;">{{ att.date_str }}</span>
+            {% if att.time_taken_str and is_done %}
+            <span style="font-size:0.78rem;color:rgba(35,31,32,0.7);font-weight:700;">&middot; {{ att.time_taken_str }}</span>
+            {% endif %}
+          </div>
+
+          {% if att.subject_name or att.chapter_name %}
+          <div style="font-size:0.78rem;font-weight:800;color:rgba(35,31,32,0.68);margin-bottom:2px;">
+            {{ att.subject_name }}{% if att.subject_name and att.chapter_name %} &middot; {% endif %}{{ att.chapter_name }}
+          </div>
+          {% endif %}
+
+          <div style="font-size:1.06rem;font-weight:900;color:#231f20;">{{ att.exam_title }}</div>
+
+          {% if is_done %}
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:4px;">
+            <span style="font-size:0.82rem;color:rgba(35,31,32,0.78);font-weight:800;">
+              {{ att.total_marks_awarded }} / {{ att.total_max_marks }} marks
+            </span>
+            <div class="sx-qp-marks-rail">
+              <div class="sx-qp-marks-fill {{ 'is-high' if row_pct >= 80 else '' }}" style="width:{{ row_pct if row_pct <= 100 else 100 }}%;"></div>
+            </div>
+          </div>
+          {% else %}
+          <div style="font-size:0.82rem;color:rgba(35,31,32,0.72);font-weight:700;margin-top:4px;">
+            Saved in progress &middot; tap Resume to continue right where you left off
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Right CTA -->
+        <div class="sx-qp-attempt-cta">
+          {% if is_done %}
+          <a href="/student/attempts/{{ att.id }}" class="sx-qp-btn-dark" style="min-height:40px;padding:8px 18px;font-size:0.82rem;">
+            <span>Review Report &rarr;</span>
+          </a>
+          {% else %}
+          <a href="/student/exams/{{ att.exam_paper_id }}" class="sx-qp-btn-yellow" style="min-height:40px;padding:8px 18px;font-size:0.82rem;">
+            <span>Resume &rarr;</span>
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:38px 18px;border:1.5px dashed rgba(35,31,32,0.22);border-radius:18px;background:#f8f9fa;">
+      <span class="material-symbols-outlined" style="font-size:42px;color:#f7b317;">emoji_events</span>
+      <p style="margin:8px 0 18px;color:rgba(35,31,32,0.75);font-weight:700;font-size:0.95rem;">
+        No exams completed yet! Start a practice Mock Exam to earn your first Quiz Points &amp; League Trophy.
+      </p>
+      <a href="/student/exams" class="sx-qp-btn-yellow">Open Practice Exams &rarr;</a>
+    </div>
+    {% endif %}
+  </section>
+
 </div>
 {% endblock %}

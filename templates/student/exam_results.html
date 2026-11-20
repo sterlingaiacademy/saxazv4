@@ -1,298 +1,733 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto space-y-8 pb-20">
-  
-  <!-- Centered Back Navigation Button -->
-  <div class="flex justify-center mb-6 mt-2">
-    <a href="/student/chapters/{{ attempt.chapter_id }}/exams" 
-       class="inline-flex items-center gap-2.5 px-6 py-2.5 rounded-full font-bold text-sm tracking-wide transition-all duration-300 shadow-md hover:shadow-lg active:scale-95 border backdrop-blur-md bg-base-100/90 text-base-content border-base-content/20 hover:border-primary/50 hover:bg-base-200/90 group cursor-pointer">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary transition-transform group-hover:-translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-      <span>Back to Exams</span>
+{% set init_pct = (attempt.total_marks_awarded / attempt.total_max_marks * 100) if attempt.total_max_marks > 0 else 0 %}
+{% set ns = namespace(total_q=0, full_q=0, review_q=0, next_mock_id=attempt.mock_exam_id or attempt.exam_paper_id, next_mock_title='Mock Test') %}
+{% for mgrp in attempt.module_groups %}
+  {% for ans in mgrp.answers %}
+    {% set ns.total_q = ns.total_q + 1 %}
+    {% set m_aw = (ans.marks_awarded or 0)|float %}
+    {% set m_mx = (ans.max_marks or 1)|float %}
+    {% if m_mx > 0 and m_aw >= m_mx %}
+      {% set ns.full_q = ns.full_q + 1 %}
+    {% else %}
+      {% set ns.review_q = ns.review_q + 1 %}
+    {% endif %}
+  {% endfor %}
+{% endfor %}
+{% if sibling_mocks %}
+  {% set mock_ns = namespace(found=false) %}
+  {% for sm in sibling_mocks %}
+    {% if not mock_ns.found and (sm.best_pct is none or sm.best_pct < 80) and sm.id != attempt.exam_paper_id %}
+      {% set ns.next_mock_id = sm.id %}
+      {% set ns.next_mock_title = sm.title %}
+      {% set mock_ns.found = true %}
+    {% endif %}
+  {% endfor %}
+  {% if not mock_ns.found %}
+    {% for sm in sibling_mocks %}
+      {% if not mock_ns.found and sm.id == attempt.exam_paper_id %}
+        {% set ns.next_mock_id = sm.id %}
+        {% set ns.next_mock_title = sm.title %}
+        {% set mock_ns.found = true %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+  {% if not mock_ns.found and sibling_mocks|length > 0 %}
+    {% set ns.next_mock_id = sibling_mocks[0].id %}
+    {% set ns.next_mock_title = sibling_mocks[0].title %}
+  {% endif %}
+{% endif %}
+
+<div class="sx-results-wrap"
+     x-data="{
+       totalMarks: {{ attempt.total_marks_awarded or 0 }},
+       maxMarks: {{ attempt.total_max_marks or 1 }},
+       totalQuestions: {{ ns.total_q }},
+       fullCount: {{ ns.full_q }},
+       reviewCount: {{ ns.review_q }},
+       qFilter: 'all',
+       allExpanded: false,
+       get pct() { return this.maxMarks > 0 ? Math.round((this.totalMarks / this.maxMarks) * 100) : 0; },
+       get gradeLabel() {
+         if (this.pct >= 90) return 'Outstanding · A+';
+         if (this.pct >= 80) return 'Excellent · A';
+         if (this.pct >= 65) return 'Good Progress · B';
+         if (this.pct >= 50) return 'Fair Effort · C';
+         return 'Needs Practice';
+       },
+       toggleAllQuestions() {
+         this.allExpanded = !this.allExpanded;
+         window.dispatchEvent(new CustomEvent('sx-qtoggle-all', { detail: { open: this.allExpanded } }));
+       },
+       setFilter(mode) {
+         this.qFilter = mode;
+         if (mode === 'review') {
+           window.dispatchEvent(new CustomEvent('sx-qfilter-review'));
+         }
+       }
+     }"
+     @sx-qscore-upgraded.window="fullCount = Math.min(totalQuestions, fullCount + 1); reviewCount = Math.max(0, reviewCount - 1);">
+
+  <!-- 1. Dark Back Pill & Actions -->
+  <div class="sx-ext-back-bar">
+    <a href="/student/chapters/{{ attempt.chapter_id }}" class="sx-ext-back-link">
+      <span class="material-symbols-outlined" style="font-size:20px;">arrow_back</span>
+      <span>Back to Chapter</span>
     </a>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <a href="/student/attempts" class="sx-ext-cta-soft" style="min-height:36px;padding:6px 14px;font-size:0.8rem;">
+        Quiz points &amp; History
+      </a>
+      {% if attempt.exam_type == 'real' %}
+      <a href="/student/real-exams/{{ attempt.exam_paper_id }}/intro" class="sx-ext-cta-yellow" style="min-height:36px;padding:6px 16px;font-size:0.82rem;">
+        Retake Real Exam
+      </a>
+      {% else %}
+      <a href="/student/exams/{{ attempt.exam_paper_id }}?fresh=1" class="sx-ext-cta-yellow" style="min-height:36px;padding:6px 16px;font-size:0.82rem;">
+        New Practice Run
+      </a>
+      {% endif %}
+    </div>
   </div>
 
   {% if attempt.overall_feedback and 'CHEATING' in attempt.overall_feedback %}
-  <div class="alert alert-error rounded-2xl shadow-lg border border-error/40 flex items-center gap-4 p-5 text-white">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 shrink-0 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+  <div style="padding:14px 18px;border-radius:18px;background:#231f20;border:2px solid #f7b317;display:flex;align-items:flex-start;gap:12px;color:#ffffff;">
+    <span class="material-symbols-outlined" style="color:#f7b317;font-size:24px;flex-shrink:0;">gpp_bad</span>
     <div>
-      <div class="font-extrabold text-base">Proctoring Violation Recorded</div>
-      <div class="text-xs text-white/90 font-medium mt-0.5">{{ attempt.overall_feedback | replace('**', '') }}</div>
+      <div class="sx-display" style="font-weight:800;font-size:0.95rem;color:#f7b317;">Proctoring Violation Recorded</div>
+      <div style="font-size:0.82rem;color:#ffffff;opacity:0.88;margin-top:2px;">{{ attempt.overall_feedback | replace('**', '') }}</div>
     </div>
   </div>
   {% endif %}
 
-  <!-- Final Score Card (Vibrant & Fun) -->
-  <div class="relative rounded-3xl sm:rounded-[2.5rem] overflow-hidden bg-base-100 border border-base-content/10 shadow-2xl p-5 sm:p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6 sm:gap-8">
-    <!-- Glowing Orbs -->
-    <div class="absolute -top-24 -right-24 w-64 h-64 bg-primary/20 rounded-full blur-[80px] pointer-events-none"></div>
-    <div class="absolute -bottom-24 -left-24 w-64 h-64 bg-secondary/20 rounded-full blur-[80px] pointer-events-none"></div>
-    
-    <div class="relative z-10 flex-1 space-y-3 sm:space-y-4 text-center md:text-left">
-      <div class="inline-block bg-base-200 backdrop-blur-md rounded-full px-3.5 py-1 text-[10px] font-bold text-base-content uppercase tracking-widest border border-base-content/10 shadow-sm">Exam Completed</div>
-      <h1 class="text-2xl sm:text-3xl md:text-4xl font-black text-base-content leading-tight">{{ attempt.exam_title }}</h1>
-      <p class="text-base-content/70 text-xs sm:text-sm max-w-md mx-auto md:mx-0">The AI has finished evaluating your answers. Check your performance breakdown and personalized feedback below.</p>
+  {% if request.query_params.get('coins_added') %}
+  <div style="margin-bottom:14px;padding:14px 20px;border-radius:18px;background:#231f20;color:#ffffff;border:2px solid #f7b317;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="background:#f7b317;color:#231f20;padding:4px 12px;border-radius:999px;font-size:0.82rem;font-weight:900;">
+        +{{ request.query_params.get('coins_added') }} Coins
+      </span>
+      <span style="font-size:0.9rem;font-weight:700;">One-time exam milestone unlocked and added to your wallet!</span>
     </div>
-    
-    <div class="relative z-10 flex gap-3 sm:gap-4 shrink-0 w-full sm:w-auto justify-center">
-      {% set pct = (attempt.total_marks_awarded / attempt.total_max_marks * 100) if attempt.total_max_marks > 0 else 0 %}
-      
-      <div class="bg-base-200 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-base-content/10 flex flex-col items-center justify-center flex-1 sm:flex-initial sm:min-w-[120px] shadow-sm">
-        <div class="relative w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center mb-1.5 sm:mb-2">
-          <svg class="w-full h-full transform -rotate-90 drop-shadow-md absolute inset-0" viewBox="0 0 36 36">
-            <path class="text-base-content/10" stroke-width="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-            <path class="text-transparent" style="stroke: url(#gradient)" stroke-dasharray="{{ pct }}, 100" stroke-width="3" stroke-linecap="round" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-            <defs>
-              <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                {% if pct >= 80 %}
-                  <stop offset="0%" stop-color="#22c55e" />
-                  <stop offset="100%" stop-color="#10b981" />
-                {% elif pct >= 50 %}
-                  <stop offset="0%" stop-color="#f59e0b" />
-                  <stop offset="100%" stop-color="#f97316" />
-                {% else %}
-                  <stop offset="0%" stop-color="#ef4444" />
-                  <stop offset="100%" stop-color="#f43f5e" />
-                {% endif %}
-              </linearGradient>
-            </defs>
+    <a href="/student/shop" class="sx-ext-cta-yellow" style="min-height:36px;padding:6px 16px;font-size:0.8rem;">
+      Open Shop &rarr;
+    </a>
+  </div>
+  {% endif %}
+
+  <!-- 2. Clean Score Summary Hero -->
+  <section class="sx-results-hero">
+    <div style="min-width:0;display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        {% if attempt.exam_type == 'real' %}
+        <span class="sx-chip" style="background:#f7b317;border:1px solid #231f20;color:#231f20;font-size:0.7rem;font-weight:800;">
+          {{ icon('award', 13, 'sx-ico-inline') }}
+          <span>Official Real Exam</span>
+        </span>
+        {% else %}
+        <span class="sx-chip" style="background:#231f20;border:1px solid #231f20;color:#f7b317;font-size:0.7rem;font-weight:800;">
+          {{ icon('bolt', 13, 'sx-ico-inline') }}
+          <span>Practice Mock Exam</span>
+        </span>
+        {% endif %}
+
+        <span class="sx-chip"
+              :style="pct >= 80
+                ? 'background:rgba(22,163,74,0.15);border:1px solid rgba(22,163,74,0.4);color:#16a34a;font-size:0.7rem;font-weight:800;'
+                : (pct >= 50
+                  ? 'background:#f7b317;border:1px solid #231f20;color:#231f20;font-size:0.7rem;font-weight:800;'
+                  : 'background:rgba(220,38,38,0.14);border:1px solid rgba(220,38,38,0.38);color:#dc2626;font-size:0.7rem;font-weight:800;')"
+              x-text="gradeLabel"></span>
+      </div>
+
+      <h1 class="sx-display" style="font-size:clamp(1.45rem,2.6vw,2.05rem);font-weight:800;letter-spacing:-0.025em;line-height:1.15;margin:0;color:var(--sx-ink);">
+        {{ attempt.exam_title }}
+      </h1>
+
+      <p style="margin:0;font-size:0.88rem;color:var(--sx-mute);font-weight:600;line-height:1.5;">
+        <template x-if="reviewCount > 0">
+          <span>
+            You scored full marks on <strong style="color:var(--sx-ink);" x-text="fullCount"></strong> of <strong style="color:var(--sx-ink);" x-text="totalQuestions"></strong> questions.
+            Tap any question row below (or filter by <strong>Needs Review</strong>) to inspect your feedback and model answers.
+          </span>
+        </template>
+        <template x-if="reviewCount === 0">
+          <span>
+            Spotless performance! You earned full marks on every single question in this paper. Tap any question row below to review your answers.
+          </span>
+        </template>
+      </p>
+    </div>
+
+    <!-- 4 Crisp Symmetrical Metric Tiles -->
+    <div class="sx-results-stats">
+      <!-- 1. Accuracy Ring -->
+      <div class="sx-rstat">
+        <div style="position:relative;width:54px;height:54px;display:grid;place-items:center;">
+          <svg viewBox="0 0 36 36" style="width:54px;height:54px;transform:rotate(-90deg);">
+            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none" stroke="currentColor" stroke-width="3.4" style="opacity:0.12;" />
+            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  :stroke="pct >= 80 ? '#16a34a' : (pct >= 50 ? '#f7b317' : '#dc2626')"
+                  stroke-width="3.4"
+                  stroke-linecap="round"
+                  :stroke-dasharray="`${pct}, 100`"
+                  stroke-dasharray="{{ init_pct }}, 100" />
           </svg>
-          <span class="text-lg sm:text-xl font-black text-base-content">{{ "%.0f"|format(pct) }}<span class="text-[10px] text-base-content/50">%</span></span>
+          <span class="sx-display" style="position:absolute;font-size:0.9rem;font-weight:900;color:var(--sx-ink);">
+            <span x-text="pct">{{ "%.0f"|format(init_pct) }}</span>%
+          </span>
         </div>
-        <div class="text-[9px] sm:text-[10px] uppercase tracking-widest text-base-content/50 font-bold">Accuracy</div>
+        <span class="sx-rstat-lbl">Accuracy</span>
       </div>
-      
-      <div class="bg-base-200 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-base-content/10 flex flex-col items-center justify-center flex-1 sm:flex-initial sm:min-w-[120px] shadow-sm">
-        <div class="text-xl sm:text-2xl font-black text-base-content mb-1 sm:mb-2">{{ attempt.total_marks_awarded }}<span class="text-xs sm:text-sm text-base-content/40">/{{ attempt.total_max_marks }}</span></div>
-        <div class="text-[9px] sm:text-[10px] uppercase tracking-widest text-base-content/50 font-bold">Total Marks</div>
+
+      <!-- 2. Total Marks -->
+      <div class="sx-rstat">
+        <div class="sx-rstat-val">
+          <span x-text="totalMarks">{{ attempt.total_marks_awarded }}</span><span style="font-size:0.82rem;color:var(--sx-mute);font-weight:700;">/{{ attempt.total_max_marks }}</span>
+        </div>
+        <span class="sx-rstat-lbl">Total Marks</span>
       </div>
+
+      <!-- 3. Time Taken -->
+      <div class="sx-rstat">
+        <div class="sx-rstat-val" style="font-size:1.08rem;display:inline-flex;align-items:center;gap:4px;">
+          <span class="material-symbols-outlined" style="font-size:17px;color:#231f20;">timer</span>
+          <span>{{ attempt.time_taken_str or '—' }}</span>
+        </div>
+        <span class="sx-rstat-lbl">Time Taken</span>
+      </div>
+
+      <!-- 4. Question Summary -->
+      <div class="sx-rstat" style="cursor:pointer;"
+           @click="reviewCount > 0 ? setFilter(qFilter === 'review' ? 'all' : 'review') : null"
+           data-tip="Click to filter questions that need review">
+        <div class="sx-rstat-val" style="color:#16a34a;">
+          <span x-text="fullCount">{{ ns.full_q }}</span><span style="font-size:0.82rem;color:var(--sx-mute);font-weight:700;">/{{ ns.total_q }}</span>
+        </div>
+        <span class="sx-rstat-lbl" x-text="reviewCount > 0 ? `${reviewCount} To Review` : 'All Correct'"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Next-Step Chapter Progression Card (80% Unlock Gate + Mock Test 1/2/3 Scores) -->
+  {% if real_exam_info or sibling_mocks %}
+  <section style="padding:18px 20px;border-radius:20px;background:#ffffff;border:2px solid #231f20;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;">
+      <div style="display:flex;align-items:flex-start;gap:12px;min-width:0;flex:1 1 260px;">
+        <span style="width:42px;height:42px;border-radius:12px;background:{{ '#f7b317' if (real_exam_info and not real_exam_info.is_locked) else '#231f20' }};border:1.5px solid #231f20;color:{{ '#231f20' if (real_exam_info and not real_exam_info.is_locked) else '#f7b317' }};display:grid;place-items:center;flex-shrink:0;">
+          <span class="material-symbols-outlined" style="font-size:22px;">{{ 'verified' if (real_exam_info and not real_exam_info.is_locked) else 'lock' }}</span>
+        </span>
+        <div style="min-width:0;">
+          {% if real_exam_info and not real_exam_info.is_locked %}
+          <h2 class="sx-display" style="margin:0;font-size:1.05rem;font-weight:900;color:#231f20;">
+            Official Real Exam Unlocked! (80%+ Achieved)
+          </h2>
+          <p style="margin:3px 0 0;font-size:0.82rem;color:rgba(35,31,32,0.75);font-weight:600;line-height:1.45;">
+            {% if attempt.exam_type == 'real' %}
+              Want to sharpen weak areas before retaking the Real Exam? Practice any Mock Test below with guided AI feedback!
+            {% else %}
+              Awesome work! You have achieved {{ real_exam_info.best_mock_pct }}% in Mock Practice and unlocked the timed, proctored Official Real Exam.
+            {% endif %}
+          </p>
+          {% else %}
+          <h2 class="sx-display" style="margin:0;font-size:1.05rem;font-weight:900;color:#231f20;">
+            Score 80% (24/30 Marks) to Unlock Official Real Exam
+          </h2>
+          <p style="margin:3px 0 0;font-size:0.82rem;color:rgba(35,31,32,0.75);font-weight:600;line-height:1.45;">
+            Current Best Mock Score: <strong>{{ real_exam_info.best_mock_pct if real_exam_info else 0 }}%</strong>. Retry missed questions below or practice the next Mock Test to reach 80%!
+          </p>
+          {% endif %}
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0;">
+        {% if real_exam_info and not real_exam_info.is_locked %}
+          {% if attempt.exam_type == 'real' %}
+          <a href="/student/exams/{{ ns.next_mock_id }}"
+             class="sx-ext-cta-soft"
+             style="min-height:40px;padding:8px 16px;font-size:0.82rem;text-decoration:none;">
+            <span>Practice {{ ns.next_mock_title }} &rarr;</span>
+          </a>
+          <a href="/student/real-exams/{{ real_exam_info.id }}/intro"
+             class="sx-ext-cta-yellow"
+             style="min-height:40px;padding:8px 18px;font-size:0.82rem;text-decoration:none;">
+            <span>Start Real Exam &rarr;</span>
+          </a>
+          {% else %}
+          <a href="/student/real-exams/{{ real_exam_info.id }}/intro"
+             class="sx-ext-cta-yellow"
+             style="min-height:42px;padding:9px 20px;font-size:0.85rem;text-decoration:none;">
+            <span>Start Real Exam &rarr;</span>
+          </a>
+          {% endif %}
+        {% else %}
+        <a href="/student/exams/{{ ns.next_mock_id }}?fresh=1"
+           class="sx-ext-cta-yellow"
+           style="min-height:42px;padding:9px 18px;font-size:0.84rem;text-decoration:none;">
+          <span>Practice {{ ns.next_mock_title }} &rarr;</span>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if sibling_mocks and sibling_mocks|length > 0 %}
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-top:12px;border-top:1px solid rgba(35,31,32,0.12);">
+      <span style="font-size:0.7rem;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;color:rgba(35,31,32,0.68);margin-right:2px;">
+        Chapter Mock Tests:
+      </span>
+      {% for sm in sibling_mocks %}
+      <a href="/student/exams/{{ sm.id }}"
+         style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;text-decoration:none;font-size:0.76rem;font-weight:800;border:1.5px solid #231f20;background:{{ '#f7b317' if sm.id == attempt.exam_paper_id else '#ffffff' }};color:#231f20;">
+        <span>{{ sm.title }}</span>
+        <span style="padding:1px 7px;border-radius:999px;font-size:0.68rem;font-weight:900;background:#231f20;color:{{ '#f7b317' if sm.best_pct is not none else '#ffffff' }};">
+          {{ (sm.best_pct ~ '%') if sm.best_pct is not none else 'Try' }}
+        </span>
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  <!-- 4. Question-by-Question Review Header + Filter Segmented Pills -->
+  <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-top:4px;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span class="material-symbols-outlined" style="color:#231f20;font-size:22px;">fact_check</span>
+      <h2 class="sx-display" style="margin:0;font-size:1.22rem;font-weight:800;color:var(--sx-ink);">Question-by-Question Review</h2>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <div class="sx-seg sx-seg-sm" role="tablist" aria-label="Filter questions">
+        <button type="button" role="tab"
+                class="sx-seg-btn"
+                :class="qFilter === 'all' && 'is-active'"
+                @click="setFilter('all')"
+                data-tip="Show every question in this exam">
+          <span>All</span>
+          <span style="opacity:0.7;" x-text="`(${totalQuestions})`"></span>
+        </button>
+        <button type="button" role="tab"
+                class="sx-seg-btn"
+                :class="qFilter === 'review' && 'is-active'"
+                @click="setFilter('review')"
+                data-tip="Show only questions where you lost marks">
+          <span>Needs Review</span>
+          <span style="opacity:0.75;" x-text="`(${reviewCount})`"></span>
+        </button>
+        <button type="button" role="tab"
+                class="sx-seg-btn"
+                :class="qFilter === 'full' && 'is-active'"
+                @click="setFilter('full')"
+                data-tip="Show questions where you earned full marks">
+          <span>Full Marks</span>
+          <span style="opacity:0.7;" x-text="`(${fullCount})`"></span>
+        </button>
+      </div>
+
+      <button type="button"
+              @click="toggleAllQuestions()"
+              class="sx-btn sx-btn-soft"
+              style="padding:6px 12px;min-height:35px;font-size:0.75rem;"
+              :data-tip="allExpanded ? 'Collapse all question details' : 'Expand all question details'">
+        <span class="material-symbols-outlined" style="font-size:16px;" x-text="allExpanded ? 'unfold_less' : 'unfold_more'">unfold_more</span>
+        <span x-text="allExpanded ? 'Collapse All' : 'Expand All'">Expand All</span>
+      </button>
     </div>
   </div>
 
-  <!-- Module-wise Breakdown -->
-  <div class="space-y-6 mt-12">
-    <div class="flex items-center gap-3 px-2">
-      <span class="text-2xl text-primary"><svg xmlns="http://www.w3.org/2000/svg" class="w-[1em] h-[1em] inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg></span>
-      <h3 class="text-xl font-bold text-base-content">Performance Breakdown</h3>
+  <!-- Empty State when "Needs Review" filter has 0 items -->
+  <div x-show="qFilter === 'review' && reviewCount === 0" x-cloak
+       class="sx-tile"
+       style="padding:26px 20px;text-align:center;">
+    <div style="width:44px;height:44px;border-radius:14px;background:rgba(22,163,74,0.15);color:#16a34a;display:grid;place-items:center;margin:0 auto 8px;">
+      {{ icon('check', 22) }}
     </div>
+    <h3 class="sx-display" style="margin:0 0 4px;font-size:1.05rem;font-weight:800;">Zero Mistakes Left!</h3>
+    <p style="margin:0 0 12px;font-size:0.84rem;color:var(--sx-mute);font-weight:600;">Every question in this exam has full marks.</p>
+    <button type="button" @click="setFilter('all')" class="sx-btn sx-btn-soft" style="padding:7px 14px;font-size:0.78rem;">Show All Questions</button>
+  </div>
 
-    {% for module_name, group in attempt.answers|groupby('module_name') %}
+  <!-- Module Cards & Collapsed-by-Default Question Rows -->
+  <div style="display:flex;flex-direction:column;gap:16px;">
+    {% for mgrp in attempt.module_groups %}
+      {% set module_name = mgrp.module_name %}
+      {% set group = mgrp.answers %}
       {% set mod_awarded = group|sum(attribute='marks_awarded') %}
       {% set mod_max = group|sum(attribute='max_marks') %}
-      {% set mod_pct = (mod_awarded / mod_max * 100) if mod_max > 0 else 0 %}
-      
-      <div class="bg-base-100 border border-base-content/10 rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden shadow-xl">
-        <!-- Module Header -->
-        <div class="bg-gradient-to-r from-base-200 to-transparent px-4 sm:px-8 py-4 sm:py-5 border-b border-base-content/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-          <div>
-            <div class="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">Module</div>
-            <h4 class="text-base sm:text-lg font-bold text-base-content">{{ module_name }}</h4>
+      {% set mod_ns = namespace(rev=0, full=0) %}
+      {% for a_chk in group %}
+        {% if (a_chk.max_marks or 1)|float > 0 and (a_chk.marks_awarded or 0)|float >= (a_chk.max_marks or 1)|float %}
+          {% set mod_ns.full = mod_ns.full + 1 %}
+        {% else %}
+          {% set mod_ns.rev = mod_ns.rev + 1 %}
+        {% endif %}
+      {% endfor %}
+
+      <section class="sx-module-card"
+               x-show="qFilter === 'all' || (qFilter === 'review' && {{ mod_ns.rev }} > 0) || (qFilter === 'full' && {{ mod_ns.full }} > 0)">
+        <div class="sx-module-head">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0;">
+            {% if mgrp.section_group == 'HOTS' %}
+            <span class="sx-chip" style="padding:2px 9px;font-size:0.65rem;font-weight:900;background:#231f20;color:#f7b317;border:1px solid #231f20;">HOTS</span>
+            {% elif mgrp.section_group == 'POWER_UP' %}
+            <span class="sx-chip" style="padding:2px 9px;font-size:0.65rem;font-weight:900;background:#f7b317;color:#231f20;border:1px solid #231f20;">POWER UP</span>
+            {% endif %}
+            <h3 class="sx-display" style="margin:0;font-size:0.98rem;font-weight:800;color:var(--sx-ink);">{{ module_name }}</h3>
           </div>
-          <div class="bg-base-200 rounded-full px-4 sm:px-5 py-1.5 sm:py-2 border border-base-content/10 font-bold text-xs sm:text-sm text-base-content flex items-center gap-2 shadow-sm">
-            <div class="w-2 h-2 rounded-full {{ 'bg-success shadow-[0_0_8px_#22c55e]' if mod_pct >= 80 else 'bg-warning shadow-[0_0_8px_#f59e0b]' if mod_pct >= 50 else 'bg-error shadow-[0_0_8px_#ef4444]' }}"></div>
+
+          <span class="sx-chip" style="padding:4px 11px;font-size:0.75rem;font-weight:800;background:var(--sx-card);border:1px solid var(--sx-line);color:var(--sx-ink);">
             {{ mod_awarded }} / {{ mod_max }} Marks
-          </div>
+          </span>
         </div>
-        
-        <!-- Module Questions (Accordion) -->
-        <div class="divide-y divide-base-content/5 px-1 sm:px-2">
-          {% set outer_loop = loop %}
+
+        <div>
           {% for ans in group %}
-          {% set is_correct = ((ans.marks_awarded / ans.max_marks) >= 0.5) if (ans.max_marks and ans.max_marks > 0) else false %}
-          
-          <div class="collapse collapse-arrow rounded-2xl bg-transparent hover:bg-base-content/[0.02] transition-colors m-1 sm:m-2">
-            <input type="radio" name="accordion-{{ outer_loop.index0 }}" {% if loop.first %}checked="checked"{% endif %} /> 
-            
-            <!-- Question Header -->
-            <div class="collapse-title text-sm sm:text-base font-medium px-3.5 sm:px-6 py-4 sm:py-5 flex flex-col gap-1 pr-10 sm:pr-12">
-              <div class="flex justify-between items-start gap-3 sm:gap-6 w-full">
-                <div class="flex-1 space-y-2 min-w-0">
-                  <span class="text-base-content leading-snug font-bold">{{ loop.index }}. {{ ans.question_text }}</span>
+          {% set should_open = false %}
+
+          <article class="sx-qreview-card"
+                   x-data="{
+                     open: {{ 'true' if should_open else 'false' }},
+                     marks: {{ ans.marks_awarded or 0 }},
+                     maxMarks: {{ ans.max_marks or 1 }},
+                     ansText: {{ (ans.answer_text or '') | tojson | forceescape }},
+                     aiFeedback: {{ (ans.ai_feedback or '') | tojson | forceescape }},
+                     isRetry: {{ 'true' if ans.is_retry else 'false' }},
+                     retriedInSession: false,
+                     retryCount: {{ ans.retry_count or 0 }},
+                     prevMarks: {{ ans.previous_marks if ans.previous_marks is not none else 'null' }},
+                     prevAns: {{ (ans.previous_answer or '') | tojson | forceescape }},
+                     impDelta: {{ ans.improvement_delta or 0 }},
+                     impPct: {{ ans.improvement_pct or 0 }},
+                     qType: {{ (ans.question_type or 'LONG_ANSWER') | tojson | forceescape }},
+                     options: (() => { try { return JSON.parse({{ (ans.options_json or '[]') | tojson | forceescape }}); } catch(e) { return []; } })(),
+                     retryOpen: false,
+                     retryInput: '',
+                     regrading: false,
+                     retryError: null,
+                     loadingWhy: false,
+                     explanation: null,
+                     whyError: null,
+                     showVideo: false,
+                     get isFullMarks() { return this.maxMarks > 0 && this.marks >= this.maxMarks; },
+                     get isPartialMarks() { return this.marks > 0 && this.marks < this.maxMarks; },
+                     get statusClass() { return this.isFullMarks ? 'is-full' : (this.isPartialMarks ? 'is-partial' : 'is-zero'); },
+                     formatOpt(opt, idx) {
+                       const raw = String(opt ?? '').trim();
+                       const stripped = raw.replace(/^(?:\([A-Za-z]\)|[A-Za-z][\.\)\:])\s*/, '');
+                       return `${String.fromCharCode(65 + idx)}. ${stripped}`;
+                     },
+                     async submitQuestionRetry() {
+                       if (!this.retryInput || !this.retryInput.trim()) {
+                         this.retryError = 'Please enter or select your improved answer first.';
+                         return;
+                       }
+                       const wasFullBefore = this.isFullMarks;
+                       this.regrading = true;
+                       this.retryError = null;
+                       try {
+                         const fd = new FormData();
+                         fd.append('answer', this.retryInput.trim());
+                         const res = await fetch('/student/attempts/{{ attempt.id }}/grade/{{ ans.question_id }}', {
+                           method: 'POST',
+                           body: fd
+                         });
+                         const data = await res.json();
+                         if (!res.ok || !data.success) {
+                           this.retryError = data.error || 'Failed to grade retry.';
+                           return;
+                         }
+                         this.prevMarks = data.previous_marks !== undefined && data.previous_marks !== null ? data.previous_marks : this.marks;
+                         this.prevAns = data.previous_answer || this.ansText;
+                         this.marks = data.marks;
+                         this.ansText = this.retryInput.trim();
+                         this.aiFeedback = data.feedback || this.aiFeedback;
+                         this.isRetry = true;
+                         this.retriedInSession = true;
+                         this.retryCount = data.retry_count || (this.retryCount + 1);
+                         this.impDelta = data.improvement_delta !== undefined ? data.improvement_delta : Number((this.marks - this.prevMarks).toFixed(2));
+                         this.impPct = data.improvement_pct !== undefined ? data.improvement_pct : Number((((this.marks - this.prevMarks) / this.maxMarks) * 100).toFixed(1));
+                         if (data.attempt_total_marks !== undefined && data.attempt_total_marks !== null) {
+                           this.totalMarks = data.attempt_total_marks;
+                         }
+                         if (!wasFullBefore && this.isFullMarks) {
+                           window.dispatchEvent(new CustomEvent('sx-qscore-upgraded'));
+                         }
+                         this.retryOpen = false;
+                       } catch (err) {
+                         this.retryError = 'Network error while grading retry.';
+                       } finally {
+                         this.regrading = false;
+                       }
+                     },
+                     async askWhy() {
+                       if (this.loadingWhy) return;
+                       this.loadingWhy = true;
+                       this.whyError = null;
+                       try {
+                         const res = await fetch('/student/exams/ask_why', {
+                           method: 'POST',
+                           headers: {'Content-Type': 'application/json'},
+                           body: JSON.stringify({
+                             question_text: this.$el.dataset.question || '',
+                             student_answer: this.ansText || '',
+                             correct_answer: this.$el.dataset.model || '',
+                             marks_awarded: Number(this.marks || 0),
+                             max_marks: Number(this.maxMarks || 1),
+                             is_retry: Boolean(this.isRetry)
+                           })
+                         });
+                         const data = await res.json();
+                         this.explanation = data.explanation;
+                       } catch (e) {
+                         this.whyError = 'Could not load step-by-step explanation right now.';
+                       } finally {
+                         this.loadingWhy = false;
+                       }
+                     },
+                     toggleVideo() {
+                       this.showVideo = !this.showVideo;
+                       if (this.showVideo) {
+                         this.$nextTick(() => {
+                           setTimeout(() => {
+                             if (window.SaxazVideoVault) window.SaxazVideoVault.scan(this.$el);
+                           }, 40);
+                         });
+                       }
+                     }
+                   }"
+                   data-question="{{ ans.question_text }}"
+                   data-model="{{ ans.model_answer }}"
+                   @sx-qtoggle-all.window="open = $event.detail.open; if (open) { $nextTick(() => { if (window.saxazWakeLivingIllustrations) window.saxazWakeLivingIllustrations(); }); }"
+                   @sx-qfilter-review.window="if (!isFullMarks) { open = true; $nextTick(() => { if (window.saxazWakeLivingIllustrations) window.saxazWakeLivingIllustrations(); }); }"
+                   x-show="qFilter === 'all' || (qFilter === 'review' && !isFullMarks) || (qFilter === 'full' && isFullMarks)">
+
+            <!-- Entire Question Row Header is Clickable -->
+            <button type="button"
+                    class="sx-qreview-head"
+                    @click="open = !open; if (open) { $nextTick(() => { if (window.saxazWakeLivingIllustrations) window.saxazWakeLivingIllustrations(); }); }"
+                    :aria-expanded="open"
+                    :data-tip="open ? 'Click to collapse question details' : 'Click to inspect answer & feedback'">
+              <div style="display:flex;align-items:flex-start;gap:12px;min-width:0;flex:1;">
+                <span class="sx-qnum-badge" :class="statusClass">{{ ans.display_label or loop.index }}</span>
+                <div style="min-width:0;flex:1;">
+                  <div style="font-size:0.93rem;font-weight:700;line-height:1.45;color:var(--sx-ink);white-space:pre-line;">{{ ans.clean_question_text or ans.question_text }}</div>
                   {% if ans.media_url %}
-                  <div class="pt-1">
-                    <img src="{{ ans.media_url }}" alt="Question Image" class="max-h-40 rounded-xl border border-base-content/10 object-contain bg-base-200/50 p-1">
+                  <div style="margin-top:8px;">
+                    <img src="{{ ans.media_url }}" alt="Question diagram" style="max-height:140px;border-radius:12px;border:1px solid var(--sx-line);background:var(--sx-bg-2);padding:4px;object-fit:contain;">
                   </div>
                   {% endif %}
-                </div>
-                <div class="flex items-center gap-1.5 sm:gap-2 bg-base-200 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-base-content/10 shrink-0 shadow-sm">
-                  <span class="text-xs font-black {{ 'text-success drop-shadow-[0_0_5px_rgba(34,197,94,0.3)]' if is_correct else 'text-warning drop-shadow-[0_0_5px_rgba(245,158,11,0.3)]' }}">
-                    {{ ans.marks_awarded }}
-                  </span>
-                  <span class="text-xs text-base-content/40 font-bold">/ {{ ans.max_marks }}</span>
                 </div>
               </div>
-            </div>
-            
-            <!-- Question Details -->
-            <div class="collapse-content px-3.5 sm:px-6 pb-5 sm:pb-6 pt-2">
-              <div class="space-y-4">
-                
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <!-- Student Answer -->
-                  <div class="bg-base-200 p-4 sm:p-5 rounded-2xl border border-base-content/10 relative overflow-hidden group shadow-sm {% if attempt.exam_type == 'real' and attempt.status != 'completed' %}lg:col-span-2{% endif %}">
-                    <div class="absolute top-0 left-0 w-1 h-full bg-base-content/10 group-hover:bg-primary/50 transition-colors"></div>
-                    <h4 class="text-[10px] font-bold text-base-content/50 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                      <span class="text-sm"><svg xmlns="http://www.w3.org/2000/svg" class="w-[1em] h-[1em] inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span> Your Answer
-                    </h4>
-                    <p class="text-base-content/80 text-sm leading-relaxed">{{ ans.answer_text }}</p>
-                    {% if ans.drawing_url %}
-                    <div class="mt-4 pt-3 border-t border-base-content/10">
-                      <div class="text-[11px] font-bold text-base-content/60 mb-2 flex items-center gap-1.5">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                        <span>Attached Handwritten Work / Diagram</span>
-                      </div>
-                      <div class="rounded-xl overflow-hidden border border-base-content/15 bg-white p-2 shadow-xs max-w-md">
-                        <img src="{{ ans.drawing_url }}" alt="Your Attached Drawing" class="max-h-60 mx-auto object-contain">
-                      </div>
-                    </div>
-                    {% endif %}
+
+              <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:6px;">
+                <template x-if="(isRetry && impDelta > 0) || retriedInSession">
+                  <span :style="impDelta > 0
+                          ? 'padding:3px 8px;border-radius:999px;font-size:0.68rem;font-weight:800;background:rgba(22,163,74,0.15);color:#16a34a;border:1px solid rgba(22,163,74,0.38);'
+                          : 'padding:3px 8px;border-radius:999px;font-size:0.68rem;font-weight:800;background:var(--sx-bg-2);color:var(--sx-mute);border:1px solid var(--sx-line);'"
+                        x-text="impDelta > 0 ? `+${impDelta} Improved` : 'Retried'"></span>
+                </template>
+
+                <span style="padding:4px 10px;border-radius:10px;background:var(--sx-bg-2);border:1.5px solid var(--sx-line);font-family:var(--sx-display);font-size:0.8rem;font-weight:900;white-space:nowrap;">
+                  <span :style="isFullMarks ? 'color:#16a34a;' : (isPartialMarks ? 'color:#231f20;' : 'color:#dc2626;')" x-text="marks">{{ ans.marks_awarded }}</span>
+                  <span style="color:var(--sx-mute);font-weight:700;">/ {{ ans.max_marks }}</span>
+                </span>
+
+                <span class="material-symbols-outlined"
+                      :style="`font-size:20px;color:var(--sx-mute);transition:transform 0.18s ease;${open ? 'transform:rotate(180deg);' : ''}`">expand_more</span>
+              </div>
+            </button>
+
+            <!-- Expanded Question Review Body -->
+            <div x-show="open" x-collapse class="sx-qreview-body">
+
+              <!-- Side-by-Side: Your Answer vs Expected Answer -->
+              <div class="sx-ans-grid">
+                <div class="sx-ans-box" {% if attempt.exam_type == 'real' and attempt.status != 'completed' %}style="grid-column:1 / -1;"{% endif %}>
+                  <div class="sx-ans-label">
+                    <span>Your Answer</span>
+                    <template x-if="isRetry && prevMarks !== null && (impDelta !== 0 || retriedInSession)">
+                      <span :style="impDelta > 0 ? 'text-transform:none;letter-spacing:0;font-weight:800;color:#16a34a;' : 'text-transform:none;letter-spacing:0;font-weight:800;color:var(--sx-mute);'"
+                            x-text="`Prev: ${prevMarks}/${maxMarks} → Now: ${marks}/${maxMarks}`"></span>
+                    </template>
                   </div>
-                  
-                  {% if attempt.exam_type == 'mock' or attempt.status == 'completed' %}
-                  <!-- Correct Answer -->
-                  <div class="bg-primary/5 p-4 sm:p-5 rounded-2xl border border-primary/20 relative overflow-hidden group shadow-sm">
-                    <div class="absolute top-0 left-0 w-1 h-full bg-primary/30 group-hover:bg-primary transition-colors"></div>
-                    <h4 class="text-[10px] font-bold text-primary opacity-80 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-                      <span class="text-sm"><svg xmlns="http://www.w3.org/2000/svg" class="w-[1em] h-[1em] inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span> Correct Answer
-                    </h4>
-                    <p class="text-base-content/80 text-sm leading-relaxed">{{ ans.model_answer }}</p>
-                    {% if ans.answer_media_url %}
-                    <div class="mt-3">
-                      <img src="{{ ans.answer_media_url }}" alt="Correct Answer Image" class="max-h-40 rounded-xl border border-primary/20 object-contain bg-white/50 p-1">
+                  <div style="font-size:0.88rem;line-height:1.55;color:var(--sx-ink);white-space:pre-line;"
+                       x-text="ansText && ansText.trim() ? ansText : 'No answer submitted.'">{{ ans.answer_text or 'No answer submitted.' }}</div>
+
+                  {% if ans.drawing_url %}
+                  <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--sx-line);">
+                    <div style="font-size:0.7rem;font-weight:800;color:var(--sx-mute);margin-bottom:6px;">Attached Diagram / Sketch</div>
+                    <div style="border-radius:12px;overflow:hidden;border:1px solid var(--sx-line);background:#ffffff;padding:6px;max-width:360px;">
+                      <img src="{{ ans.drawing_url }}" alt="Your Attached Drawing" style="max-height:190px;margin:0 auto;object-fit:contain;">
                     </div>
-                    {% endif %}
                   </div>
                   {% endif %}
                 </div>
-                
+
                 {% if attempt.exam_type == 'mock' or attempt.status == 'completed' %}
-                <!-- Feedback FIXED VISIBILITY -->
-                <div class="relative p-4 sm:p-5 rounded-2xl border overflow-hidden
-                  {{ 'bg-success/5 border-success/20' if is_correct else 'bg-warning/5 border-warning/20' }}"
-                  data-question="{{ ans.question_text }}"
-                  data-student="{{ ans.answer_text }}"
-                  data-model="{{ ans.model_answer }}"
-                  x-data="{ 
-                    loadingWhy: false, 
-                    explanation: null, 
-                    error: null,
-                    async askWhy() {
-                      this.loadingWhy = true;
-                      this.error = null;
-                      try {
-                        const res = await fetch('/student/exams/ask_why', {
-                          method: 'POST',
-                          headers: {'Content-Type': 'application/json'},
-                          body: JSON.stringify({
-                            question_text: this.$el.dataset.question || '',
-                            student_answer: this.$el.dataset.student || '',
-                            correct_answer: this.$el.dataset.model || ''
-                          })
-                        });
-                        const data = await res.json();
-                        this.explanation = data.explanation;
-                      } catch (e) {
-                        this.error = 'Failed to get explanation.';
-                      } finally {
-                        this.loadingWhy = false;
-                      }
-                    }
-                  }">
-                  
-                  <!-- Decorative subtle background glow -->
-                  <div class="absolute -top-10 -right-10 w-32 h-32 blur-3xl opacity-20 pointer-events-none {{ 'bg-success' if is_correct else 'bg-warning' }}"></div>
-                  
-                  <div class="flex flex-wrap items-center justify-between gap-2 mb-3 relative z-10">
-                    <h4 class="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2
-                      {{ 'text-success' if is_correct else 'text-warning' }}">
-                      <span class="relative flex h-3 w-3">
-                       <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-40 {{ 'bg-success' if is_correct else 'bg-warning' }}"></span>
-                       <span class="relative inline-flex rounded-full h-3 w-3 {{ 'bg-success' if is_correct else 'bg-warning' }}"></span>
-                      </span>
-                      Feedback & Suggestions
-                    </h4>
-                    <div class="flex items-center gap-2 flex-wrap">
-                      <button @click.prevent.stop="askWhy()" x-show="!explanation && !loadingWhy" class="btn btn-xs rounded-full {{ 'btn-success text-success-content' if is_correct else 'btn-warning text-warning-content' }} border-none hover:scale-105 transition-transform shadow-sm">
-                        Why?
-                      </button>
-                      <a href="/student/tutor?q={{ ans.question_text | urlencode }}" target="_blank" class="btn btn-xs rounded-full btn-ghost border border-base-content/20 hover:bg-base-content/10 transition-transform shadow-2xs gap-1 inline-flex items-center text-base-content/80" title="Ask AI Tutor for guidance on this question (opens in new tab)">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                        Ask Tutor
-                      </a>
-                      <span x-show="loadingWhy" class="loading loading-dots loading-sm {{ 'text-success' if is_correct else 'text-warning' }}"></span>
-                    </div>
+                <div class="sx-ans-box is-model">
+                  <div class="sx-ans-label">
+                    <span>Expected / Model Answer</span>
                   </div>
-                  
-                  <p class="text-base-content text-sm leading-relaxed relative z-10">{{ ans.ai_feedback }}</p>
-                  
-                  <!-- The generated why explanation -->
-                  <div x-show="explanation" x-collapse class="mt-4 pt-4 border-t border-base-content/10 relative z-10">
-                    <h4 class="text-[10px] font-bold uppercase tracking-widest mb-2 opacity-50 flex items-center gap-1.5">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-                      Detailed Explanation
-                    </h4>
-                    <div class="text-sm font-medium leading-relaxed" x-html="explanation"></div>
-                  </div>
-                  <div x-show="error" class="mt-2 text-xs text-error font-bold" x-text="error"></div>
-                </div>
-                {% endif %}
-                
-                {% if ans.explanation_video_url %}
-                <!-- Explanation Video Player -->
-                <div class="mt-4 pt-3 border-t border-base-content/10" x-data="{ showVideo: false }">
-                  <button @click.prevent.stop="showVideo = !showVideo" type="button" class="btn btn-sm btn-ghost gap-2 rounded-xl text-primary font-bold hover:bg-primary/10 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                    </svg>
-                    <span x-text="showVideo ? 'Hide Video Explanation' : 'Watch Video Explanation'"></span>
-                  </button>
-                  <div x-show="showVideo" x-collapse class="mt-3 rounded-2xl overflow-hidden border border-base-content/10 bg-black aspect-video max-w-2xl shadow-lg">
-                    {% if ans.explanation_video_type == 'youtube' or ans.explanation_video_url.startswith('vtok_') or (ans.explanation_video_url.startswith('http') and ('youtube.com' in ans.explanation_video_url or 'youtu.be' in ans.explanation_video_url)) %}
-                      <div class="w-full h-full" data-saxaz-video="{{ ans.explanation_video_url | video_vault_token }}"></div>
-                    {% else %}
-                      <video class="w-full h-full object-contain" controls controlsList="nodownload" oncontextmenu="return false;" src="{{ ans.explanation_video_url }}"></video>
+                  <div style="font-size:0.88rem;line-height:1.55;color:var(--sx-ink);white-space:pre-line;">{{ ans.model_answer }}</div>
+                  {% if ans.answer_media_url %}
+                  <div class="sx-living-illus" data-sx-pop-illus="excretory" style="margin:10px 0 0;max-width:260px;">
+                    <img class="sx-illus-img" src="{{ ans.answer_media_url }}?v=540" alt="Model Answer Diagram" style="max-height:240px;">
+                    {% if ans.answer_media_url.endswith('.webp') %}
+                    <canvas class="sx-illus-canvas" width="350" height="360" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="{{ ans.answer_media_url | replace('.webp', '_sheet.webp') }}?v=540" style="max-height:240px;"></canvas>
                     {% endif %}
                   </div>
+                  {% endif %}
                 </div>
                 {% endif %}
-                
               </div>
+
+              {% if attempt.exam_type == 'mock' or attempt.status == 'completed' %}
+              <!-- Concise Evaluator Feedback -->
+              <div class="sx-feedback-box" :class="isFullMarks && 'is-full'">
+                <div :style="isFullMarks
+                       ? 'font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px;color:#16a34a;'
+                       : 'font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px;color:#231f20;'">
+                  AI Examiner Feedback
+                </div>
+                <div style="white-space:pre-line;" x-text="aiFeedback">{{ ans.ai_feedback }}</div>
+
+                <!-- Step-by-Step "Why This Score?" Drawer -->
+                <div x-show="explanation" x-collapse style="margin-top:10px;padding-top:10px;border-top:1px solid var(--sx-line);">
+                  <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:var(--sx-mute);margin-bottom:4px;">
+                    Step-by-Step Breakdown
+                  </div>
+                  <div style="font-size:0.85rem;line-height:1.55;" x-html="explanation"></div>
+                </div>
+                <div x-show="whyError" x-cloak style="margin-top:6px;font-size:0.76rem;font-weight:700;color:#dc2626;" x-text="whyError"></div>
+              </div>
+              {% endif %}
+
+              <!-- Unified Question Action Strip -->
+              <div class="sx-qaction-bar">
+                {% if attempt.exam_type != 'real' %}
+                <button type="button"
+                        @click="retryOpen = !retryOpen; if (retryOpen && !retryInput) retryInput = (ansText === 'No answer provided' || ansText === 'No answer submitted.') ? '' : ansText;"
+                        class="sx-btn"
+                        :class="isFullMarks ? 'sx-btn-soft' : 'sx-btn-gold'"
+                        style="padding:7px 14px;font-size:0.77rem;min-height:34px;"
+                        data-tip="Rewrite or select a better answer for instant AI re-grading">
+                  <span class="material-symbols-outlined" style="font-size:16px;">refresh</span>
+                  <span x-text="retryOpen ? 'Cancel Retry' : (isFullMarks ? 'Practice Retry' : 'Retry & Improve Score')"></span>
+                </button>
+                {% endif %}
+
+                {% if attempt.exam_type == 'mock' or attempt.status == 'completed' %}
+                <button type="button"
+                        x-show="!explanation"
+                        @click="askWhy()"
+                        :disabled="loadingWhy"
+                        class="sx-btn sx-btn-soft"
+                        style="padding:7px 13px;font-size:0.77rem;min-height:34px;"
+                        data-tip="Get a clear explanation of why you received this score">
+                  <span class="material-symbols-outlined" style="font-size:16px;color:#231f20;">help</span>
+                  <span x-text="loadingWhy ? 'Explaining...' : 'Why This Score?'">Why This Score?</span>
+                </button>
+                {% endif %}
+
+                {% if ans.explanation_video_url %}
+                <button type="button"
+                        @click="toggleVideo()"
+                        class="sx-btn sx-btn-soft"
+                        style="padding:7px 13px;font-size:0.77rem;min-height:34px;"
+                        data-tip="Watch the animated video walkthrough for this question">
+                  <span class="material-symbols-outlined" style="font-size:16px;color:#231f20;">play_circle</span>
+                  <span x-text="showVideo ? 'Hide Video' : 'Video Solution'">Video Solution</span>
+                </button>
+                {% endif %}
+              </div>
+
+              {% if attempt.exam_type != 'real' %}
+              <!-- Inline Retry Composer (Mock Practice Only — Official Real Exam Scores Never Mutate) -->
+              <div x-show="retryOpen" x-collapse
+                   style="padding:14px 16px;border-radius:16px;background:#ffffff;border:1.5px solid #231f20;display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:0.78rem;font-weight:800;color:#231f20;">
+                  <span>Write or choose an improved answer for instant AI re-grading:</span>
+                  <span style="color:rgba(35,31,32,0.68);" x-text="`Current: ${marks}/${maxMarks}`"></span>
+                </div>
+
+                <template x-if="(qType === 'MCQ' || qType === 'ASSERTION_REASON') && options.length > 0">
+                  <div style="display:grid;gap:8px;">
+                    <template x-for="(opt, oIdx) in options" :key="oIdx">
+                      <button type="button"
+                              @click="retryInput = formatOpt(opt, oIdx)"
+                              :style="`text-align:left;padding:10px 14px;border-radius:12px;font-size:0.84rem;font-weight:700;cursor:pointer;border:1.5px solid ${retryInput === formatOpt(opt, oIdx) ? '#231f20' : 'rgba(35,31,32,0.22)'};background:${retryInput === formatOpt(opt, oIdx) ? '#f7b317' : '#ffffff'};color:#231f20;`"
+                              x-text="formatOpt(opt, oIdx)"></button>
+                    </template>
+                  </div>
+                </template>
+
+                <template x-if="(qType !== 'MCQ' && qType !== 'ASSERTION_REASON') || options.length === 0">
+                  <textarea x-model="retryInput"
+                            data-no-copypaste="true"
+                            @paste.prevent="window.saxazBlockCopyPaste($event, 'paste')"
+                            @copy.prevent="window.saxazBlockCopyPaste($event, 'copy')"
+                            @cut.prevent="window.saxazBlockCopyPaste($event, 'cut')"
+                            @drop="window.saxazBlockCopyPaste($event, 'paste')"
+                            rows="3"
+                            placeholder="Type your improved answer in your own words..."
+                            style="width:100%;padding:11px 13px;border-radius:12px;border:1.5px solid rgba(35,31,32,0.28);background:#ffffff;color:#231f20;font-size:0.88rem;font-weight:600;resize:vertical;outline:none;"></textarea>
+                </template>
+
+                <div x-show="retryError" x-cloak style="font-size:0.76rem;font-weight:700;color:#dc2626;" x-text="retryError"></div>
+
+                <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px;">
+                  <button type="button"
+                          @click="retryOpen = false"
+                          class="sx-btn sx-btn-soft"
+                          style="padding:7px 13px;font-size:0.76rem;min-height:34px;">
+                    Cancel
+                  </button>
+                  <button type="button"
+                          @click="submitQuestionRetry()"
+                          :disabled="regrading"
+                          class="sx-btn sx-btn-gold"
+                          style="padding:7px 16px;font-size:0.78rem;min-height:34px;"
+                          data-tip="Submit your updated answer and calculate improvement">
+                    <span x-show="regrading" class="loading loading-spinner loading-xs"></span>
+                    <span x-text="regrading ? 'Grading...' : 'Grade Updated Answer'">Grade Updated Answer</span>
+                  </button>
+                </div>
+              </div>
+              {% endif %}
+
+              {% if ans.explanation_video_url %}
+              <!-- Inline Protected Video Solution Drawer -->
+              <div x-show="showVideo" x-collapse>
+                <div style="border-radius:16px;overflow:hidden;border:1.5px solid #231f20;background:#231f20;aspect-ratio:16/9;max-width:680px;">
+                  {% if ans.explanation_video_type == 'youtube' or ans.explanation_video_url.startswith('vtok_') or (ans.explanation_video_url.startswith('http') and ('youtube.com' in ans.explanation_video_url or 'youtu.be' in ans.explanation_video_url)) %}
+                    <div style="width:100%;height:100%;" data-saxaz-video="{{ ans.explanation_video_url | video_vault_token }}"></div>
+                  {% else %}
+                    <video style="width:100%;height:100%;object-fit:contain;" controls controlsList="nodownload" oncontextmenu="return false;" src="{{ ans.explanation_video_url }}"></video>
+                  {% endif %}
+                </div>
+              </div>
+              {% endif %}
+
             </div>
-          </div>
+          </article>
           {% endfor %}
         </div>
-      </div>
+      </section>
     {% endfor %}
   </div>
 </div>
 
 <script>
   window.addEventListener('DOMContentLoaded', () => {
-    const accuracy = {{ "%.0f"|format(pct) }};
+    const accuracy = {{ "%.0f"|format(init_pct) }};
     if (accuracy >= 70 && typeof confetti === 'function') {
       setTimeout(() => {
-        confetti({
-          particleCount: 80,
-          spread: 60,
-          origin: { y: 0.6 }
-        });
-        setTimeout(() => {
-          confetti({
-            particleCount: 50,
-            angle: 60,
-            spread: 50,
-            origin: { x: 0.1, y: 0.7 }
-          });
-          confetti({
-            particleCount: 50,
-            angle: 120,
-            spread: 50,
-            origin: { x: 0.9, y: 0.7 }
-          });
-        }, 350);
-      }, 500);
+        confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+      }, 450);
     }
   });
 </script>
 {% endblock %}
-

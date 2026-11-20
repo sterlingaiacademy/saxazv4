@@ -180,29 +180,16 @@ def parse_questions_with_ai(text: str, question_type: str = 'LONG_ANSWER') -> li
     last_error = None
 
     for chunk in chunks[:8]:
-      try:
-        response = client.chat.completions.create(
-          model="gpt-5.4-mini",
-          messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Extract all questions, answers, images, and YouTube links in exact sequential order from this text:\n\n{chunk}"}
-          ],
-          response_format={"type": "json_object"},
-          temperature=0.1,
-          max_completion_tokens=12000
-        )
-      except Exception as primary_err:
-        logger.warning(f"Primary parser model (gpt-5.4-mini) notice: {primary_err}, falling back to gpt-4o-mini...")
-        response = client.chat.completions.create(
-          model="gpt-4o-mini",
-          messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Extract all questions, answers, images, and YouTube links in exact sequential order from this text:\n\n{chunk}"}
-          ],
-          response_format={"type": "json_object"},
-          temperature=0.1,
-          max_tokens=12000
-        )
+      response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+          {"role": "system", "content": system_prompt},
+          {"role": "user", "content": f"Extract all questions, answers, images, and YouTube links in exact sequential order from this text:\n\n{chunk}"}
+        ],
+        response_format={"type": "json_object"},
+        temperature=0.1,
+        max_tokens=12000
+      )
       result_str = response.choices[0].message.content
       data = json.loads(result_str)
       if "error" in data and not data.get("questions"):

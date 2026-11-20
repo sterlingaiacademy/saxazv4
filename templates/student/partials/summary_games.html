@@ -1,0 +1,475 @@
+{#
+  SAXAZ Summary Games v6: Simple, Spacious, Joyful Full-Screen 3D Drag-and-Drop Games
+  Logic: /static/js/summary-games.js   Styles: /static/css/summary-games.css
+#}
+
+{% macro molecule_defs() %}{% endmacro %}
+
+{% set GX_TOK_MAP = {
+  'co2': 'tok_co2',
+  'h2o': 'tok_h2o',
+  'o2': 'tok_o2',
+  'light': 'tok_sunlight',
+  'glucose': 'tok_glucose',
+  'urea': 'tok_urea',
+  'nacl': 'tok_salt',
+  'protein': 'tok_protein',
+  'rbc': 'tok_rbc',
+  'wbc': 'tok_wbc',
+  'platelet': 'tok_platelet',
+  'plasma': 'tok_plasma',
+  'germ': 'tok_germ',
+  'urine': 'tok_urine_drop',
+  'food': 'tok_food_apple',
+  'chyme': 'tok_food_chyme',
+  'waste': 'tok_food_waste'
+} %}
+
+{% macro mol(id, cls='') %}<img class="gx-mol {{ cls }}" src="/static/images/saxaz_web/games/{{ GX_TOK_MAP.get(id, 'tok_' ~ id) }}.webp?v=22" alt="" draggable="false">{% endmacro %}
+
+{# ---------------------------------------------------------------------- #}
+{# Spacious Full-Screen Game Card Shell                                    #}
+{# ---------------------------------------------------------------------- #}
+{% macro game_shell(gid, factory, title, goal_fn, layout='side', host='mascot_nutrition') %}
+<section class="sx-game gx gx-{{ gid }}" data-sx-game="{{ gid }}" x-data="{{ factory }}()" x-init="gInit()"
+         :class="[gDone && 'is-done']" aria-label="{{ title }}">
+  <header class="sx-game-head">
+    <span class="sx-game-host">
+      <img :src="'/static/images/saxaz_web/games/{{ host }}' + (gDone ? '_cheer' : '') + '.webp?v=22'" alt="" draggable="false">
+    </span>
+    <div class="sx-game-title-wrap">
+      <div class="sx-game-kicker-row">
+        <span class="sx-game-badge"><span class="material-symbols-outlined" aria-hidden="true">sports_esports</span>Fun Mini-Game</span>
+      </div>
+      <h4 class="sx-game-title">{{ title }}</h4>
+    </div>
+    <span class="sx-game-coin" x-show="!gClaimed">+5 Coins</span>
+    <span class="sx-game-coin is-done" x-show="gClaimed" x-cloak><span class="material-symbols-outlined" aria-hidden="true">check_circle</span>Won</span>
+  </header>
+
+  <p class="sx-game-goal" x-text="{{ goal_fn }}()"></p>
+
+  <div class="gx-body is-{{ layout }}">
+    {{ caller() }}
+  </div>
+
+  <footer class="sx-game-foot">
+    <p class="sx-game-msg" :class="'is-' + gMood" x-text="gMsg" aria-live="polite"></p>
+    <div class="sx-game-foot-actions">
+      <button type="button" class="sx-game-link" x-show="gStarted && !gDone" x-cloak @click="gReplay()">
+        <span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>Reset
+      </button>
+      <button type="button" class="sx-game-link" x-show="gDone" x-cloak @click="gReplay()">
+        <span class="material-symbols-outlined" aria-hidden="true">replay</span>Play Again
+      </button>
+      <button type="button" class="sx-game-link is-next-btn" x-show="gDone" x-cloak @click="$dispatch('sx-game-next')">
+        <span>Next Summary</span>
+        <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+      </button>
+    </div>
+  </footer>
+</section>
+{% endmacro %}
+
+
+{# ======================================================================= #}
+{# 1. PHOTOSYNTHESIS: Simple 3D Drag & Drop into the Leaf                  #}
+{# ======================================================================= #}
+{% macro game_leaf() %}
+{% call game_shell('leaf', 'sxGameLeaf', 'Make Plant Food: Photosynthesis Drag & Drop', 'lfGoal', 'side', 'mascot_nutrition') %}
+<div class="gx-stage lf-stage" :class="[gDone && 'is-won']" style="aspect-ratio: 16 / 10; --ar: 1.6;">
+  <img class="gx-img" src="/static/images/saxaz_web/games/stage_leaf.webp?v=22" alt="3D cutaway cross-section of a plant leaf" draggable="false">
+  <canvas class="gx-stage-canvas" width="560" height="315"
+          data-gx-sheet="/static/images/saxaz_web/games/stage_leaf_sheet.webp?v=22"
+          data-gx-cols="4" data-gx-frames="16" data-gx-fps="10"></canvas>
+  <div class="lf-glow" aria-hidden="true"></div>
+
+  <div class="gx-zone is-rect lf-z-palisade" data-drop="palisade" :class="lfSun && 'is-filled'">
+    <span class="gx-zone-tag" x-text="lfSun ? 'Sunlight Captured!' : '1. Chloroplasts (Drop Sunlight)'"></span>
+  </div>
+  <div class="gx-zone lf-z-stoma" data-drop="stoma" :class="lfCo2 >= 2 && 'is-filled'">
+    <span class="gx-zone-tag" x-text="'2. Stoma Pore (' + lfCo2 + '/2 CO2)'"></span>
+  </div>
+  <div class="gx-zone lf-z-xylem" data-drop="xylem" :class="lfH2o >= 2 && 'is-filled'">
+    <span class="gx-zone-tag" x-text="'3. Xylem Pipe (' + lfH2o + '/2 Water)'"></span>
+  </div>
+  <div class="gx-fx"></div>
+</div>
+
+<aside class="gx-panel">
+  <div class="gx-tray-box" x-show="!gDone">
+    <span class="gx-tray-title">Drag (or tap) each 3D item onto the matching leaf zone</span>
+    <div class="gx-cards-grid is-two-col">
+      <button type="button" class="gx-token is-light" data-drag="light">
+        {{ mol('light') }}
+        <small>Sunlight</small>
+      </button>
+      <button type="button" class="gx-token" data-drag="co2">
+        {{ mol('co2') }}
+        <small>CO<sub>2</sub> from Air</small>
+      </button>
+      <button type="button" class="gx-token" data-drag="co2">
+        {{ mol('co2') }}
+        <small>CO<sub>2</sub> from Air</small>
+      </button>
+      <button type="button" class="gx-token" data-drag="h2o">
+        {{ mol('h2o') }}
+        <small>Water (H<sub>2</sub>O)</small>
+      </button>
+      <button type="button" class="gx-token" data-drag="h2o">
+        {{ mol('h2o') }}
+        <small>Water (H<sub>2</sub>O)</small>
+      </button>
+      <button type="button" class="gx-token" data-drag="o2">
+        {{ mol('o2') }}
+        <small>Oxygen (O<sub>2</sub>)</small>
+      </button>
+    </div>
+  </div>
+
+  <div class="gx-win-card" x-show="gDone" x-cloak>
+    {{ mol('glucose') }}
+    <div>
+      <b>Photosynthesis Complete!</b>
+      <small>Chloroplasts turned Sunlight + CO<sub>2</sub> + Water into sweet Glucose and fresh Oxygen!</small>
+    </div>
+  </div>
+
+  <div class="gx-eq">
+    <span class="gx-eq-term" :class="lfCo2 >= 2 && 'is-full'">{{ mol('co2') }}<b x-text="lfCo2 + '/2'"></b></span>
+    <span class="gx-eq-op">+</span>
+    <span class="gx-eq-term" :class="lfH2o >= 2 && 'is-full'">{{ mol('h2o') }}<b x-text="lfH2o + '/2'"></b></span>
+    <span class="gx-eq-op">+</span>
+    <span class="gx-eq-term" :class="lfSun && 'is-full'">{{ mol('light') }}<b>Sun</b></span>
+    <span class="gx-eq-op">&rarr;</span>
+    <span class="gx-eq-term is-product" :class="gDone && 'is-on'">{{ mol('glucose') }}<b>Glucose</b></span>
+    <span class="gx-eq-op">+</span>
+    <span class="gx-eq-term is-product" :class="gDone && 'is-on'">{{ mol('o2') }}<b>O<sub>2</sub></b></span>
+  </div>
+</aside>
+{% endcall %}
+{% endmacro %}
+
+
+{# ======================================================================= #}
+{# 2. DIGESTION: Drag & Match the 5 Digestive Organs!                      #}
+{# ======================================================================= #}
+{% macro game_food() %}
+{% call game_shell('food', 'sxGameFood', 'Food Journey: Match the 5 Digestive Organs!', 'dgGoal', 'side', 'mascot_nutrition') %}
+<div class="gx-stage dg-stage" style="aspect-ratio: 3 / 4; --ar: 0.75;">
+  <img class="gx-img" src="/static/images/saxaz_web/games/stage_digestive.webp?v=22" alt="3D human digestive system cutaway" draggable="false">
+  <canvas class="gx-stage-canvas" width="390" height="520"
+          data-gx-sheet="/static/images/saxaz_web/games/stage_digestive_sheet.webp?v=22"
+          data-gx-cols="4" data-gx-frames="16" data-gx-fps="10"></canvas>
+
+  {% for z, num, x, y in [
+    ('mouth', '1', 42, 21),
+    ('oesophagus', '2', 52, 37),
+    ('stomach', '3', 56, 55),
+    ('small', '4', 49, 73),
+    ('large', '5', 36, 66)
+  ] %}
+  <div class="gx-zone dg-pin" data-drop="{{ z }}" style="left:{{ x }}%;top:{{ y }}%;" :class="dgMatched.includes('{{ z }}') && 'is-filled'">
+    <b x-text="dgMatched.includes('{{ z }}') ? dgShort('{{ z }}') : '{{ num }}'"></b>
+  </div>
+  {% endfor %}
+
+  <div class="dg-bolus-float" :style="dgBolusPosStyle()">
+    <img :src="dgBolusSprite()" alt="" draggable="false">
+  </div>
+  <div class="gx-fx"></div>
+</div>
+
+<aside class="gx-panel">
+  <div class="gx-tray-box" x-show="!gDone">
+    <span class="gx-tray-title">Drag (or tap) each Organ Card onto spots 1 to 5 on the body</span>
+    <div class="gx-cards-stack">
+      {% for z, name, job, tok in [
+        ('mouth', '1. Mouth', 'Teeth chew & saliva breaks down starch', 'food'),
+        ('oesophagus', '2. Food Pipe', 'Carries chewed food down to stomach', 'food'),
+        ('stomach', '3. Stomach', 'Acid & enzymes break down proteins', 'chyme'),
+        ('small', '4. Small Intestine', 'Digests & absorbs food into blood', 'glucose'),
+        ('large', '5. Large Intestine', 'Absorbs extra water & removes waste', 'waste')
+      ] %}
+      <button type="button" class="gx-token is-row-card" data-drag="{{ z }}">
+        {{ mol(tok, 'is-card-icon') }}
+        <span><b>{{ name }}</b><small>{{ job }}</small></span>
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="gx-win-card" x-show="gDone" x-cloak>
+    {{ mol('glucose') }}
+    <div>
+      <b>All 5 Digestive Organs Matched!</b>
+      <small>Mouth &rarr; Food Pipe &rarr; Stomach &rarr; Small Intestine &rarr; Large Intestine!</small>
+    </div>
+  </div>
+</aside>
+{% endcall %}
+{% endmacro %}
+
+
+{# ======================================================================= #}
+{# 3. BREATHING: Drag & Match the 4 Breathing & Energy Steps!              #}
+{# ======================================================================= #}
+{% macro game_breathe() %}
+{% call game_shell('breathe', 'sxGameBreathe', 'Breathing & ATP Energy: Drag & Match!', 'brGoal', 'side', 'mascot_respiration') %}
+<div class="gx-stage br-stage" :class="gDone && 'is-won'" style="aspect-ratio: 3 / 4; --ar: 0.75;">
+  <img class="gx-img" src="/static/images/saxaz_web/games/stage_breathe.webp?v=22" alt="3D lungs, trachea and diaphragm" draggable="false">
+  <canvas class="gx-breathe-canvas" width="390" height="520"
+          data-br-sheet="/static/images/saxaz_web/games/stage_breathe_sheet.webp?v=22"></canvas>
+
+  {% for z, tag, x, y in [
+    ('trachea', '1. Windpipe (Trachea)', 50, 26),
+    ('alveoli', '2. Lungs (O2 to Blood)', 36, 51),
+    ('diaphragm', '3. Diaphragm Muscle', 50, 73),
+    ('atp', '4. Cell ATP Energy', 68, 52)
+  ] %}
+  <div class="gx-zone br-pin" data-drop="{{ z }}" style="left:{{ x }}%;top:{{ y }}%;" :class="brMatched.includes('{{ z }}') && 'is-filled'">
+    <span class="gx-zone-tag">{{ tag }}</span>
+  </div>
+  {% endfor %}
+  <div class="gx-fx"></div>
+</div>
+
+<aside class="gx-panel">
+  <div class="gx-tray-box" x-show="!gDone">
+    <span class="gx-tray-title">Drag (or tap) each 3D Breathing Card onto its matching zone</span>
+    <div class="gx-cards-stack">
+      <button type="button" class="gx-token is-row-card" data-drag="trachea">
+        {{ mol('o2', 'is-card-icon') }}
+        <span><b>Fresh Oxygen In (O<sub>2</sub>)</b><small>Enters nose &amp; travels down the Trachea</small></span>
+      </button>
+      <button type="button" class="gx-token is-row-card" data-drag="alveoli">
+        {{ mol('rbc', 'is-card-icon') }}
+        <span><b>Oxygen Enters Blood</b><small>Lungs load O<sub>2</sub> into blood &amp; release CO<sub>2</sub></small></span>
+      </button>
+      <button type="button" class="gx-token is-row-card" data-drag="diaphragm">
+        {{ mol('co2', 'is-card-icon') }}
+        <span><b>Diaphragm Pull &amp; Push</b><small>Pulls down to inhale, relaxes up to exhale</small></span>
+      </button>
+      <button type="button" class="gx-token is-row-card" data-drag="atp">
+        {{ mol('glucose', 'is-card-icon') }}
+        <span><b>Glucose + O<sub>2</sub> &rarr; ATP</b><small>Cells break down glucose to store ATP energy!</small></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="gx-win-card" x-show="gDone" x-cloak>
+    {{ mol('o2') }}
+    <div>
+      <b>Respiration Unlocked!</b>
+      <small>Glucose + Oxygen &rarr; Carbon dioxide + Water + ATP Energy!</small>
+    </div>
+  </div>
+</aside>
+{% endcall %}
+{% endmacro %}
+
+
+{# ======================================================================= #}
+{# 4. BLOOD: Meet the Blood Crew — Simple 4-Card 3D Drag & Drop!           #}
+{# ======================================================================= #}
+{% macro game_blood() %}
+{% call game_shell('blood', 'sxGameBlood', 'Inside a Blood Vessel: Meet the Blood Crew!', 'bdGoal', 'side', 'mascot_transport') %}
+<div class="gx-stage bd-stage" :class="gDone && 'is-won'" style="aspect-ratio: 16 / 10; --ar: 1.6;">
+  <img class="gx-img" src="/static/images/saxaz_web/games/stage_blood.webp?v=22" alt="3D cutaway inside a blood vessel" draggable="false">
+  <canvas class="gx-stage-canvas" width="560" height="315"
+          data-gx-sheet="/static/images/saxaz_web/games/stage_blood_sheet.webp?v=22"
+          data-gx-cols="4" data-gx-frames="16" data-gx-fps="11"></canvas>
+
+  {% for z, hint in [
+    ('rbc', 'Red Discs'),
+    ('wbc', 'White Guardian'),
+    ('platelet', 'Star Pluggers'),
+    ('plasma', 'Golden Liquid')
+  ] %}
+  <div class="gx-zone bd-z-{{ z }}" data-drop="{{ z }}" :class="bdDone.includes('{{ z }}') && 'is-filled'">
+    <span class="bd-pin" x-show="bdDone.includes('{{ z }}')" x-cloak x-text="bdName('{{ z }}')"></span>
+    <span class="gx-zone-tag" x-show="!bdDone.includes('{{ z }}')">{{ hint }}</span>
+  </div>
+  {% endfor %}
+  <div class="gx-fx"></div>
+</div>
+
+<aside class="gx-panel">
+  <div class="gx-tray-box" x-show="!gDone">
+    <span class="gx-tray-title">Drag (or tap) each 3D Card onto its crew member in the vessel</span>
+    <div class="gx-cards-stack">
+      {% for z, name, job, tok in [
+        ('rbc', 'Red Blood Cell (RBC)', 'Carries oxygen to every cell', 'rbc'),
+        ('wbc', 'White Blood Cell (WBC)', 'Fights disease & invading germs', 'wbc'),
+        ('platelet', 'Platelets', 'Helps clot blood when cut', 'platelet'),
+        ('plasma', 'Plasma', 'Carries food, hormones & waste', 'plasma')
+      ] %}
+      <button type="button" class="gx-token is-row-card" data-drag="{{ z }}">
+        {{ mol(tok, 'is-card-icon') }}
+        <span><b>{{ name }}</b><small>{{ job }}</small></span>
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="gx-win-card" x-show="gDone" x-cloak>
+    {{ mol('rbc') }}
+    <div>
+      <b>All 4 Blood Crew Matched!</b>
+      <small>RBCs carry oxygen, WBCs fight germs, Platelets clot cuts, and Plasma carries food &amp; waste!</small>
+    </div>
+  </div>
+</aside>
+{% endcall %}
+{% endmacro %}
+
+
+{# ======================================================================= #}
+{# 5. PUMP: Easy 6-Tap Heart Super-Pump to 30 Feet!                        #}
+{# ======================================================================= #}
+{% macro game_pump() %}
+{% call game_shell('pump', 'sxGamePump', 'Heart Super-Pump: Shoot Blood 30 Feet High!', 'pmGoal', 'side', 'mascot_transport') %}
+<div class="gx-stage pm-stage" style="aspect-ratio: 3 / 4; --ar: 0.75;"
+     @pointerdown="pmDown($event)" @pointerup="pmUp()" @pointerleave="pmUp()" @pointercancel="pmUp()">
+  <div class="pm-heart-wrap" :class="pmSqueeze && 'is-squeeze'">
+    <img class="pm-heart-fallback" src="/static/images/saxaz_web/syllabus/nutshell_p2_img2.webp?v=540" alt="3D Human Heart" draggable="false">
+    <canvas class="pm-heart-canvas" width="262" height="360"
+            data-pm-sheet="/static/images/saxaz_web/syllabus/nutshell_p2_img2_sheet.webp?v=540"></canvas>
+  </div>
+  <span class="pm-hint" x-show="!gDone">Tap the 3D Heart 6 Times!</span>
+  <div class="pm-live-pill">
+    <span><b x-text="Math.round(pmFt)"></b> / 30 ft</span>
+    <span class="pm-dot"></span>
+    <span><b x-text="pmBeats"></b> / 6 pumps</span>
+  </div>
+  <div class="gx-fx"></div>
+</div>
+<aside class="gx-panel pm-tower-card">
+  <div class="pm-diorama">
+    <img class="pm-diorama-img" src="/static/images/saxaz_web/games/stage_pump_tower.webp?v=22" alt="3-storey school building, tree and student height comparison" draggable="false">
+    <div class="pm-fountain-col">
+      <div class="pm-tube">
+        <div class="pm-blood" :style="'height:' + pmPct().toFixed(1) + '%'">
+          <span class="pm-geyser"></span>
+        </div>
+      </div>
+    </div>
+    <div class="pm-diorama-badges">
+      <span class="pm-mark is-30" :class="pmFt >= 30 && 'is-hit'"><b>30 ft</b><small>3-Storey Roof!</small></span>
+      <span class="pm-mark is-15" :class="pmFt >= 15 && 'is-hit'"><b>15 ft</b><small>Tall Tree</small></span>
+      <span class="pm-mark is-6" :class="pmFt >= 6 && 'is-hit'"><b>6 ft</b><small>Student</small></span>
+    </div>
+  </div>
+</aside>
+{% endcall %}
+{% endmacro %}
+
+
+{# ======================================================================= #}
+{# 6. KIDNEY: Calm 2-Zone Drag & Drop Filter Sorter!                       #}
+{# ======================================================================= #}
+{% macro game_kidney() %}
+{% call game_shell('kidney', 'sxGameKidney', 'Kidney Filter Sort: Drag Waste Out & Keep Useful Items!', 'kdGoal', 'side', 'mascot_excretion') %}
+<div class="gx-stage kd-stage" :class="gDone && 'is-won'" style="aspect-ratio: 3 / 4; --ar: 0.75;">
+  <img class="gx-img" src="/static/images/saxaz_web/games/stage_kidney.webp?v=22" alt="3D kidneys, nephrons, ureters and translucent urinary bladder" draggable="false">
+  <canvas class="gx-stage-canvas" width="390" height="520"
+          data-gx-sheet="/static/images/saxaz_web/games/stage_kidney_sheet.webp?v=22"
+          data-gx-cols="4" data-gx-frames="16" data-gx-fps="10"></canvas>
+  <div class="kd-urine" :style="'--fill:' + kdFill().toFixed(1) + '%'" aria-hidden="true"><span></span></div>
+
+  <div class="gx-zone is-rect kd-z-waste" data-drop="waste" :class="kdWasteDone >= 3 && 'is-filled'">
+    <span class="gx-zone-tag" x-text="'Kidneys: Drop Harmful Waste (' + kdWasteDone + '/3)'"></span>
+  </div>
+  <div class="gx-zone is-rect kd-z-keep" data-drop="keep" :class="kdKeepDone >= 3 && 'is-filled'">
+    <span class="gx-zone-tag" x-text="'Bloodstream: Keep Useful Items (' + kdKeepDone + '/3)'"></span>
+  </div>
+  <div class="gx-fx"></div>
+</div>
+
+<aside class="gx-panel">
+  <div class="gx-tray-box" x-show="!gDone">
+    <span class="gx-tray-title">Sort all 6 items: Drag Waste to Kidneys &amp; Good Items to Blood!</span>
+    <div class="gx-cards-grid is-two-col">
+      {% for kind, label, tok in [
+        ('waste', 'Urea (Waste)', 'urea'),
+        ('keep', 'Glucose (Food)', 'glucose'),
+        ('waste', 'Extra Salt', 'nacl'),
+        ('keep', 'Red Blood Cell', 'rbc'),
+        ('waste', 'Extra Water', 'h2o'),
+        ('keep', 'Useful Protein', 'protein')
+      ] %}
+      <button type="button" class="gx-token" data-drag="{{ kind }}" data-item-name="{{ label }}">
+        {{ mol(tok) }}
+        <small>{{ label }}</small>
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="gx-win-card" x-show="gDone" x-cloak>
+    {{ mol('urine') }}
+    <div>
+      <b>Blood Sparkling Clean!</b>
+      <small>1 million Nephrons removed Urea, Extra Salt &amp; Water as Urine while keeping Glucose, Protein &amp; RBCs!</small>
+    </div>
+  </div>
+</aside>
+{% endcall %}
+{% endmacro %}
+
+
+{# ======================================================================= #}
+{# 7. TEAM: Drag Each Life-Process Job onto Its 3D Mascot Hero!            #}
+{# ======================================================================= #}
+{% macro game_team() %}
+{% call game_shell('team', 'sxGameTeam', 'The 4 Life-Process Heroes: Drag & Match the Team!', 'tmGoal', 'stack', 'mascot_excretion') %}
+<div class="tm-stage">
+  <div class="tm-team">
+    <template x-for="m in tmTeam" :key="m.id">
+      <div class="tm-mate gx-drop-card" :data-drop="m.id" :style="'--c:' + m.color" :class="tmMatched.includes(m.id) && 'is-matched'">
+        <span class="tm-ring">
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <circle cx="50" cy="50" r="46" class="tm-ring-bg"/>
+            <circle cx="50" cy="50" r="46" class="tm-ring-fg" :stroke-dashoffset="tmMatched.includes(m.id) ? '0' : '215'" transform="rotate(-90 50 50)"/>
+          </svg>
+          <img class="tm-hero-fallback" :src="'/static/images/saxaz_web/games/' + m.img + (tmMatched.includes(m.id) ? '_cheer' : '') + '.webp?v=22'" :alt="m.name" draggable="false">
+          <canvas class="tm-hero-canvas" width="220" height="220" :data-hero-id="m.id" :data-hero-sheet="'/static/images/saxaz_web/games/' + m.img + '_sheet.webp?v=22'"></canvas>
+        </span>
+        <b x-text="m.name"></b>
+        <span class="tm-slot-pill" x-text="tmMatched.includes(m.id) ? m.doneLabel : 'Drop Matching Job Here'"></span>
+      </div>
+    </template>
+  </div>
+
+  <div class="gx-tray-box is-wide" x-show="!gDone" style="margin-top:16px;">
+    <span class="gx-tray-title">Drag (or tap) each Life-Process Job Card onto its matching 3D Hero above</span>
+    <div class="tm-jobs-grid">
+      <button type="button" class="gx-token is-row-card" data-drag="tra">
+        {{ mol('rbc', 'is-card-icon') }}
+        <span><b>Delivers Food &amp; O<sub>2</sub></b><small>Pumps blood to every cell</small></span>
+      </button>
+      <button type="button" class="gx-token is-row-card" data-drag="nut">
+        {{ mol('food', 'is-card-icon') }}
+        <span><b>Gives Us Food &amp; Fuel</b><small>Takes in food for growth</small></span>
+      </button>
+      <button type="button" class="gx-token is-row-card" data-drag="exc">
+        {{ mol('urine', 'is-card-icon') }}
+        <span><b>Removes Harmful Waste</b><small>Filters blood &amp; cleans inside</small></span>
+      </button>
+      <button type="button" class="gx-token is-row-card" data-drag="res">
+        {{ mol('o2', 'is-card-icon') }}
+        <span><b>Releases ATP Energy</b><small>Breaks down glucose with O<sub>2</sub></small></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="gx-win-card" x-show="gDone" x-cloak style="margin-top:16px;">
+    {{ mol('glucose') }}
+    <div>
+      <b>All 4 Life-Process Heroes United!</b>
+      <small>Nutrition, Respiration, Transportation, and Excretion work together nonstop like a team to keep us alive!</small>
+    </div>
+  </div>
+</div>
+{% endcall %}
+{% endmacro %}

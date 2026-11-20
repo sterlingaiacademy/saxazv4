@@ -1,0 +1,564 @@
+/* ==========================================================================
+   SAXAZ MATCH LAYER (saxaz-match.css)
+   --------------------------------------------------------------------------
+   Final visual polish so the app reads like https://saxaz.com.
+   Loaded LAST (after saxaz-ext.css) in base.html and auth_base.html.
+
+   Rules of this layer:
+     - Visual only: colors, borders, radii, shadows, type, spacing.
+     - Never touches `transition`, `animation`, or `transform`, so every
+       existing hover lift / press bounce / keyframe keeps working.
+     - Measurements are from computed styles on saxaz.com at 1440px wide.
+   ========================================================================== */
+
+:root {
+  /* saxaz.com tokens */
+  --sxm-ink: #231f20;
+  --sxm-ink-2: #241f21;
+  --sxm-yellow: #f7b317;
+  --sxm-row-gray: #b8b8b8;
+  --sxm-row-yellow: #f7b512;
+  --sxm-side-bg: #dfe4e8;
+  --sxm-side-pill: #c9cfd5;
+  --sxm-slate: #0f172a;
+  --sxm-muted: rgba(15, 23, 42, 0.65);
+  --sxm-line: rgba(0, 0, 0, 0.32);
+  --sxm-line-soft: rgba(148, 163, 184, 0.28);
+  --sxm-cream: #fffdf7;
+  --sxm-cream-line: rgba(247, 179, 23, 0.28);
+  /* saxaz.com uses an indigo-tinted soft drop under primary buttons */
+  --sxm-btn-shadow: 0 18px 36px rgba(79, 70, 229, 0.18);
+  --sxm-btn-shadow-hover: 0 22px 42px rgba(79, 70, 229, 0.24);
+  --sxm-btn-shadow-press: 0 8px 18px rgba(79, 70, 229, 0.16);
+  --sxm-card-shadow: 0 18px 40px -24px rgba(15, 23, 42, 0.18);
+  /* Sidebar column: 330px at 1440 (22.92vw) like saxaz.com */
+  --sxm-side-w: clamp(240px, 22.92vw, 330px);
+  --sxm-font-body: "saxazBodyFont", "Manrope", "Segoe UI", sans-serif;
+  --sxm-font-dash: "dashboardFont", "Montserrat", "Arial Black", sans-serif;
+  --sxm-font-card: "saxazSoraFont", "Sora", "Manrope", sans-serif;
+  --sxm-font-cond: "Helvetica Neue Std", "Arial Narrow", sans-serif;
+}
+
+/* --------------------------------------------------------------------------
+   1. SHELL — header, sidebar, footer
+   -------------------------------------------------------------------------- */
+body .sx-ext-header {
+  background: var(--sxm-ink-2) !important;
+}
+
+@media (min-width: 1101px) {
+  /* Sidebar column the full height of the page (the gray used to stop at 100vh) */
+  body .sx-ext-workspace {
+    grid-template-columns: var(--sxm-side-w) minmax(0, 1fr) !important;
+    background: linear-gradient(90deg, var(--sxm-side-bg) 0, var(--sxm-side-bg) var(--sxm-side-w), #ffffff var(--sxm-side-w)) !important;
+  }
+}
+
+body .sx-ext-sidebar {
+  background: var(--sxm-side-bg) !important;
+  padding: 30px 18px 24px !important;
+  gap: 10px !important;
+}
+
+body .sx-ext-nav-list {
+  gap: 10px !important;
+}
+
+body .sx-ext-nav-pill {
+  min-height: 56px !important;
+  padding: 0 18px !important;
+  border: 3px solid #ffffff !important;
+  background: var(--sxm-side-pill);
+  font-family: var(--sxm-font-body) !important;
+  font-size: clamp(14px, 1vw, 15.5px) !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.01em !important;
+  color: var(--sxm-ink) !important;
+  box-shadow: none !important;
+}
+
+body .sx-ext-nav-pill.is-active {
+  background: var(--sxm-yellow) !important;
+  font-weight: 400 !important;
+}
+
+body .sx-ext-nav-pill svg,
+body .sx-ext-nav-pill .material-symbols-outlined {
+  width: 18px !important;
+  height: 18px !important;
+  font-size: 18px !important;
+}
+
+body .sx-ext-canvas {
+  background: transparent !important;
+}
+
+/* Footer: pure black, plain "Support" text link, no yellow rule */
+body .saxaz-site-footer {
+  background: #000000 !important;
+  border-top: 0 !important;
+  padding: 32px 40px !important;
+}
+
+body .saxaz-footer-tagline {
+  color: rgba(255, 255, 255, 0.82) !important;
+  font-size: 12.6px !important;
+  line-height: 1.6 !important;
+  font-weight: 500 !important;
+  max-width: 30ch !important;
+}
+
+body .saxaz-footer-meta {
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-size: 12.6px !important;
+  font-weight: 500 !important;
+}
+
+body .saxaz-footer-link {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  color: rgba(255, 255, 255, 0.78) !important;
+  font-size: 12.6px !important;
+  font-weight: 500 !important;
+}
+
+body .saxaz-footer-link:hover {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. TYPE — saxaz.com headings
+   -------------------------------------------------------------------------- */
+body .sx-ext-hero-title {
+  font-family: var(--sxm-font-dash) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.03em !important;
+}
+
+body .sx-ext-section-h2 {
+  font-family: var(--sxm-font-dash) !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+}
+
+/* Eyebrows are amber on saxaz.com ("LEADERBOARD", "MILESTONE PROGRESS") */
+body .sx-ext-eyebrow {
+  color: var(--sxm-yellow) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.12em !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. BUTTONS — flat amber / ink, soft shadow (no hard black offset edges)
+   Hover/press motion from the earlier layers is kept, only the shadow
+   color changes so the "lift" reads like saxaz.com.
+   -------------------------------------------------------------------------- */
+body .sx-ext-cta-yellow,
+body .sx-btn-gold {
+  background: var(--sxm-yellow) !important;
+  color: #03101e !important;
+  border: 1px solid transparent !important;
+  font-weight: 800 !important;
+  box-shadow: var(--sxm-btn-shadow) !important;
+}
+
+body .sx-ext-cta-yellow:hover,
+body .sx-btn-gold:hover {
+  box-shadow: var(--sxm-btn-shadow-hover) !important;
+}
+
+body .sx-ext-cta-dark {
+  background: var(--sxm-ink-2) !important;
+  color: #ffffff !important;
+  border: 0 !important;
+}
+
+/* Secondary (white) buttons: thin cream border like "Back to dashboard" */
+body .sx-ext-cta-soft,
+body .sx-btn-ghost {
+  background: linear-gradient(180deg, #ffffff 0%, var(--sxm-cream) 100%) !important;
+  border: 1px solid var(--sxm-cream-line) !important;
+  color: var(--sxm-ink) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 10px 24px -14px rgba(247, 179, 23, 0.55) !important;
+}
+
+/* Tactile buttons on the chapter page: keep the bounce, soften the edge */
+body .sx-fun-btn-dark,
+body .sx-nutshell-viewall-btn {
+  border: 1px solid transparent !important;
+  box-shadow: 0 10px 22px -10px rgba(35, 31, 32, 0.45) !important;
+}
+
+body .sx-nutshell-viewall-btn {
+  border-color: rgba(35, 31, 32, 0.14) !important;
+}
+
+body .sx-fun-btn-dark:hover,
+body .sx-nutshell-viewall-btn:hover {
+  box-shadow: 0 16px 28px -12px rgba(35, 31, 32, 0.5) !important;
+}
+
+body .sx-fun-btn-dark:active,
+body .sx-nutshell-viewall-btn:active {
+  box-shadow: 0 6px 14px -8px rgba(35, 31, 32, 0.45) !important;
+}
+
+body .sx-nutshell-viewall-btn.is-open {
+  box-shadow: 0 8px 18px -10px rgba(35, 31, 32, 0.5) !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. CARDS & SURFACES — 28px radius, hairline border, soft shadow
+   -------------------------------------------------------------------------- */
+body .sx-ext-surface {
+  border: 1px solid var(--sxm-line-soft) !important;
+  border-radius: 28px !important;
+  box-shadow: var(--sxm-card-shadow) !important;
+}
+
+/* Chapter hero card: hairline + soft shadow instead of a thick black frame */
+body .sx-nutshell-card,
+body .sx-nutshell-card.is-lit {
+  border: 1px solid rgba(35, 31, 32, 0.12) !important;
+  box-shadow: 0 24px 48px -28px rgba(15, 23, 42, 0.35) !important;
+}
+
+body .sx-nutshell-sec,
+body .sx-discuss-card,
+body .sx-issue-ch-card {
+  border: 1px solid var(--sxm-line-soft) !important;
+  box-shadow: var(--sxm-card-shadow) !important;
+}
+
+/* Summary video chips: soft lift instead of a black underline */
+body .sx-summary-vid-pill {
+  border: 1px solid rgba(35, 31, 32, 0.16) !important;
+  box-shadow: 0 10px 22px -14px rgba(15, 23, 42, 0.4) !important;
+}
+
+body .sx-summary-vid-pill:hover {
+  box-shadow: 0 18px 30px -14px rgba(15, 23, 42, 0.42) !important;
+}
+
+body .sx-summary-vid-pill:active {
+  box-shadow: 0 6px 14px -10px rgba(15, 23, 42, 0.4) !important;
+}
+
+body .sx-summary-vid-pill.is-watched {
+  border-color: transparent !important;
+  box-shadow: 0 12px 24px -14px rgba(247, 179, 23, 0.9) !important;
+}
+
+/* --------------------------------------------------------------------------
+   5. INNER-PAGE NAV — black back bar + cream breadcrumb
+   -------------------------------------------------------------------------- */
+body .sx-ext-back-bar {
+  background: var(--sxm-ink-2) !important;
+  min-height: 60px !important;
+  padding: 10px 26px !important;
+  box-shadow: 0 18px 36px -20px rgba(15, 23, 42, 0.55) !important;
+}
+
+body .sx-ext-back-link {
+  color: #f8f2e8 !important;
+  font-size: 14.4px !important;
+  font-weight: 700 !important;
+}
+
+body .sx-ext-crumb-bar,
+body nav[aria-label="Breadcrumb"] {
+  background: linear-gradient(180deg, #ffffff 0%, var(--sxm-cream) 100%) !important;
+  border: 1px solid var(--sxm-cream-line) !important;
+  border-radius: 999px !important;
+  padding: 10px 16px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: rgba(35, 31, 32, 0.8) !important;
+}
+
+body .sx-ext-crumb-bar a,
+body nav[aria-label="Breadcrumb"] a {
+  color: var(--sxm-yellow) !important;
+  font-weight: 500 !important;
+  text-decoration: underline !important;
+  text-decoration-color: currentColor !important;
+  text-decoration-thickness: 1px !important;
+  text-underline-offset: 3px !important;
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+}
+
+/* Current crumb: plain text (it was a yellow pill with a black border) */
+body nav[aria-label="Breadcrumb"] > span:not([aria-hidden]) {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  font-weight: 500 !important;
+  color: var(--sxm-ink) !important;
+}
+
+/* saxaz.com uses " / " separators */
+body nav[aria-label="Breadcrumb"] > span[aria-hidden="true"] {
+  font-size: 0 !important;
+}
+
+body nav[aria-label="Breadcrumb"] > span[aria-hidden="true"]::after {
+  content: "/";
+  font-size: 13px;
+  color: rgba(35, 31, 32, 0.6);
+}
+
+/* Reading / Normal toggle: rounded-12 segmented control with amber gradient */
+body .sx-ext-mode-switch {
+  border-radius: 16px !important;
+  border: 1px solid var(--sxm-cream-line) !important;
+  background: #ffffff !important;
+}
+
+body .sx-ext-mode-switch button {
+  border-radius: 12px !important;
+  color: #72614c !important;
+}
+
+body .sx-ext-mode-switch button.is-active {
+  background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%) !important;
+  color: #18181b !important;
+  box-shadow: 0 10px 24px rgba(251, 191, 36, 0.22) !important;
+}
+
+/* Segmented pickers (language, narration) + mock switcher: same amber
+   gradient "Normal / Reading" treatment as saxaz.com, no black outline */
+body .sx-seg-btn.is-active {
+  background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%) !important;
+  color: #18181b !important;
+  border-color: transparent !important;
+  box-shadow: 0 10px 24px rgba(251, 191, 36, 0.22) !important;
+}
+
+body .sx-mock-tab {
+  border: 1px solid rgba(35, 31, 32, 0.16) !important;
+}
+
+body .sx-mock-tab:hover {
+  border-color: rgba(247, 179, 23, 0.6) !important;
+}
+
+body .sx-mock-tab.is-active {
+  border-color: transparent !important;
+  box-shadow: 0 10px 24px rgba(251, 191, 36, 0.28) !important;
+}
+
+/* --------------------------------------------------------------------------
+   6. FORMS — 52px fields, 16px radius, 1px border
+   -------------------------------------------------------------------------- */
+body .sx-ext-field-label {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: #475569 !important;
+}
+
+body .sx-ext-field-input {
+  min-height: 52px !important;
+  padding: 15px 16px !important;
+  border: 1px solid var(--sxm-line) !important;
+  border-radius: 16px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  color: var(--sxm-slate) !important;
+  font-size: 14.4px !important;
+  font-weight: 400 !important;
+}
+
+body .sx-ext-field-input[readonly],
+body .sx-ext-field-input:disabled {
+  background: #f8f8f8 !important;
+}
+
+/* --------------------------------------------------------------------------
+   7. SUBJECTS — alternating gray / amber rows, colored icon bubbles
+   -------------------------------------------------------------------------- */
+body .sx-issue-acc-list {
+  gap: 16px !important;
+}
+
+body .sx-issue-acc-bar {
+  background: var(--sxm-row-gray) !important;
+  border: 0 !important;
+  border-radius: 4px !important;
+  min-height: 66px !important;
+  box-shadow: none !important;
+}
+
+body .sx-issue-acc-bar.is-yellow {
+  background: var(--sxm-row-yellow) !important;
+  border: 0 !important;
+}
+
+body .sx-issue-acc-title {
+  font-family: var(--sxm-font-cond) !important;
+  color: #252328 !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* Colored bubble with white ring + drop shadow, cycling the logo palette */
+body .sx-issue-acc-bubble {
+  border: 3px solid #ffffff !important;
+  box-shadow: 0 8px 18px -6px rgba(0, 0, 0, 0.45) !important;
+  color: #ffffff !important;
+}
+
+body .sx-issue-acc-list > div:nth-child(6n + 1) .sx-issue-acc-bubble { background: #5cb947 !important; }
+body .sx-issue-acc-list > div:nth-child(6n + 2) .sx-issue-acc-bubble { background: #f0b964 !important; }
+body .sx-issue-acc-list > div:nth-child(6n + 3) .sx-issue-acc-bubble { background: #5b3fa0 !important; }
+body .sx-issue-acc-list > div:nth-child(6n + 4) .sx-issue-acc-bubble { background: #e0168a !important; }
+body .sx-issue-acc-list > div:nth-child(6n + 5) .sx-issue-acc-bubble { background: #3aa79b !important; }
+body .sx-issue-acc-list > div:nth-child(6n + 6) .sx-issue-acc-bubble { background: #1591d2 !important; }
+
+body .sx-issue-acc-chev {
+  border-width: 1.5px !important;
+  background: transparent !important;
+}
+
+body .sx-issue-acc-body {
+  border: 1px solid var(--sxm-line-soft) !important;
+  border-top: 0 !important;
+}
+
+/* --------------------------------------------------------------------------
+   8. DASHBOARD — donut track + issue cards
+   -------------------------------------------------------------------------- */
+body .sx-ext-issue-card {
+  border: 1px solid rgba(35, 31, 32, 0.55) !important;
+  border-radius: 0 !important;
+}
+
+body .sx-ext-issue-chip {
+  font-family: var(--sxm-font-body) !important;
+  font-weight: 600 !important;
+}
+
+/* --------------------------------------------------------------------------
+   9. LOGIN — light fields and a flat amber button, like saxaz.com/login
+   -------------------------------------------------------------------------- */
+#stitch-tailwind-root .saxaz-login-input {
+  background: #f8f8f8 !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+}
+
+#stitch-tailwind-root .saxaz-login-input:focus-within {
+  border-color: rgba(247, 179, 23, 0.9) !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 4px rgba(247, 179, 23, 0.16) !important;
+}
+
+#stitch-tailwind-root .saxaz-login-input input {
+  font-size: 15px !important;
+  font-weight: 400 !important;
+  color: #1d1d1d !important;
+}
+
+#stitch-tailwind-root .saxaz-login-input > .material-symbols-outlined {
+  color: rgba(0, 0, 0, 0.42) !important;
+}
+
+#stitch-tailwind-root .saxaz-login-field__head label,
+#stitch-tailwind-root .saxaz-login-field__head span {
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.11em !important;
+  color: rgba(0, 0, 0, 0.76) !important;
+}
+
+#stitch-tailwind-root .saxaz-login-brand p {
+  color: rgba(0, 0, 0, 0.7) !important;
+  font-size: 14.4px !important;
+  font-weight: 400 !important;
+}
+
+#stitch-tailwind-root .saxaz-login-submit {
+  background: #f8b109 !important;
+  color: #111111 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  font-size: 16.5px !important;
+  font-weight: 900 !important;
+}
+
+#stitch-tailwind-root .saxaz-login-submit:hover {
+  box-shadow: 0 14px 28px -14px rgba(248, 177, 9, 0.9) !important;
+}
+
+/* Student / Parent switch: same light pill as the fields */
+#stitch-tailwind-root .sx-role-tabs {
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  background: #f8f8f8 !important;
+}
+
+#stitch-tailwind-root .sx-forgot-box {
+  border: 1px solid var(--sxm-cream-line) !important;
+  background: var(--sxm-cream) !important;
+}
+
+#stitch-tailwind-root .sx-forgot-close {
+  border: 0 !important;
+}
+
+/* --------------------------------------------------------------------------
+   10. MOBILE — keep the 16px gutters saxaz.com uses
+   -------------------------------------------------------------------------- */
+@media (max-width: 640px) {
+  /* Header fit at phone width: logo + coins + avatar + menu used to overflow 390px */
+  body .sx-ext-header {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    gap: 8px !important;
+  }
+
+  body .sx-ext-logo-img {
+    height: 26px !important;
+    width: auto !important;
+  }
+
+  body .sx-header-right {
+    gap: 6px !important;
+    min-width: 0;
+  }
+
+  body .sx-coin-pill {
+    padding: 5px 10px 5px 6px !important;
+    font-size: 0.8rem !important;
+    gap: 6px !important;
+  }
+
+  body .sx-coin-pill > span:last-child,
+  body .sx-header-user-badge {
+    display: none !important;
+  }
+
+  body .sx-ext-menu-trigger {
+    min-height: 38px !important;
+    padding: 7px 14px !important;
+    font-size: 0.85rem !important;
+    border-width: 1.5px !important;
+  }
+
+  body .saxaz-site-footer {
+    padding: 24px 16px !important;
+  }
+
+  body .sx-ext-back-bar {
+    min-height: 52px !important;
+    padding: 8px 18px !important;
+  }
+
+  body .sx-ext-crumb-bar,
+  body nav[aria-label="Breadcrumb"] {
+    border-radius: 18px !important;
+  }
+}

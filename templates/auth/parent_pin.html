@@ -1,129 +1,173 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="saxazlight">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
-  <title>Parent Portal Locked - SAXAZ</title>
-  <!-- Tailwind CSS + DaisyUI (compiled static) -->
-  <link rel="stylesheet" href="/static/css/app.css">
-  <style>
-    @media (max-width: 640px) {
-      input:not([type="radio"]):not([type="checkbox"]), select, textarea {
-        font-size: 16px !important;
-      }
-    }
-    /* Dynamic Responsive Split Layout for Desktop & Mobile */
-    @media (min-width: 1024px) {
-      body.auth-split-body {
-        display: flex !important;
-        flex-direction: row !important;
-        height: 100vh !important;
-        width: 100vw !important;
-        overflow: hidden !important;
-      }
-      .auth-left-panel {
-        display: flex !important;
-        width: 55% !important;
-        height: 100vh !important;
-        position: relative !important;
-        overflow: hidden !important;
-      }
-      .auth-right-panel {
-        display: flex !important;
-        width: 45% !important;
-        height: 100vh !important;
-        overflow-y: auto !important;
-      }
-    }
-    @media (max-width: 1023px) {
-      body.auth-split-body {
-        display: flex !important;
-        flex-direction: column !important;
-        min-height: 100vh !important;
-        width: 100% !important;
-        overflow-y: auto !important;
-      }
-      .auth-left-panel {
-        display: none !important;
-      }
-      .auth-right-panel {
-        display: flex !important;
-        width: 100% !important;
-        min-height: 100vh !important;
-        overflow-y: auto !important;
-        padding-top: 3rem !important;
-        padding-bottom: 3rem !important;
-      }
-    }
-  </style>
-</head>
-<body class="auth-split-body font-sans antialiased bg-base-100 text-base-content w-full">
+{% extends "auth_base.html" %}
+{% block title %}Parent Security PIN - SAXAZ{% endblock %}
 
-  <!-- Left Panel (Yellow) -->
-  <div class="auth-left-panel bg-primary flex-col justify-between relative overflow-hidden px-12 pt-16">
-    
-    <!-- Quote Text -->
-    <div class="z-10 max-w-2xl mt-8">
-      <h1 class="text-[3.5rem] leading-[1.05] font-black tracking-tighter text-[#1a1a1a] uppercase">
-        What we know <br>
-        is a drop, <br>
-        what we <br>
-        <span class="text-white">don't know <br> is an ocean.</span>
-      </h1>
-      <div class="mt-4 w-12 h-1 bg-black"></div>
-      <p class="mt-2 text-2xl font-medium text-black">Isaac Newton</p>
-    </div>
-    
-    <!-- Scientist Image -->
-    <div class="absolute bottom-0 right-[-10%] w-[85%] h-auto max-h-[85vh] object-cover object-bottom z-0 pointer-events-none">
-      <img src="/static/images/newton.jpg" alt="Isaac Newton" class="w-full h-full object-contain object-bottom mix-blend-multiply opacity-95 filter contrast-125 saturate-110">
-    </div>
+{% block content %}
+<style>
+  .sx-pin-toggle-btn {
+    appearance: none;
+    border: 2px solid #231f20;
+    background: #f7b317;
+    color: #231f20;
+    border-radius: 999px;
+    padding: 0.35rem 0.85rem;
+    margin-right: 0.65rem;
+    font-size: 0.8rem;
+    font-weight: 800;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex-shrink: 0;
+  }
+  .sx-pin-help-box {
+    margin-top: 0.65rem;
+    padding: 0.95rem 2.4rem 0.95rem 1rem;
+    background: #ffffff;
+    color: #231f20;
+    border: 2px solid #231f20;
+    border-radius: 1rem;
+    position: relative;
+    font-size: 0.88rem;
+    font-weight: 700;
+    line-height: 1.5;
+  }
+  .sx-pin-help-box a {
+    color: #231f20;
+    font-weight: 800;
+    text-decoration: underline;
+    text-decoration-color: #f7b317;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+  .sx-pin-help-close {
+    position: absolute;
+    top: 0.55rem;
+    right: 0.55rem;
+    width: 1.85rem;
+    height: 1.85rem;
+    border-radius: 999px;
+    border: 1.5px solid #231f20;
+    background: #f7b317;
+    color: #231f20;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+  }
+</style>
 
+<div id="stitch-tailwind-root"
+     x-data="{
+       showPin: false,
+       forgotPin: false
+     }">
+  <div class="saxaz-login-shell">
+    <aside class="saxaz-login-story">
+      <div class="saxaz-login-story__content">
+        <div class="saxaz-login-story__quote-wrap">
+          <h1 class="saxaz-login-story__quote">
+            <span>EDUCATION IS</span>
+            <span>WHAT REMAINS</span>
+            <span>AFTER ONE HAS</span>
+            <span>FORGOTTEN</span>
+            <span class="is-light">WHAT ONE HAS</span>
+            <span class="is-light">LEARNED IN</span>
+            <span class="is-light">SCHOOL.</span>
+          </h1>
+          <div class="saxaz-login-story__author">
+            <span class="saxaz-login-story__author-line"></span>
+            <p>Einstein</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="saxaz-login-story__figure">
+        <img src="/static/images/saxaz_web/albert_einstein.png"
+             alt="Albert Einstein"
+             class="saxaz-login-story__figure-image" />
+      </div>
+    </aside>
+
+    <main class="saxaz-login-panel">
+      <div class="saxaz-login-panel__inner" style="max-width: 27rem;">
+        <div class="saxaz-login-brand">
+          <div style="margin-bottom: 0.65rem;">
+            <img src="/static/images/saxaz_web/logo.png" alt="SAXAZ" class="saxaz-login-brand__logo" style="width: 9rem;" />
+          </div>
+          <h1 style="font-weight: 800; font-size: clamp(1.85rem, 2.4vw, 2.35rem); color: #231f20; margin: 0;">
+            <span>Parent Security PIN</span>
+          </h1>
+          <p style="margin-top: 0.55rem; color: #231f20; font-size: 0.95rem; font-weight: 600;">
+            Enter your 4-digit security PIN to unlock Parent Portal.
+          </p>
+        </div>
+
+        {% if error %}
+        <div class="saxaz-login-message-stack">
+          <p class="saxaz-login-message" style="background: #231f20; color: #ffffff; border: 2px solid #f7b317;">
+            {{ error }}
+          </p>
+        </div>
+        {% endif %}
+
+        <form action="/login/parent-pin" method="POST" class="saxaz-login-form">
+          <input type="hidden" name="uid" value="{{ uid }}">
+          <div class="saxaz-login-form__pane">
+            <div class="saxaz-login-field">
+              <div class="saxaz-login-field__head">
+                <label for="sx-parent-pin">4-DIGIT SECURITY PIN</label>
+                <a href="#forgot-pin" @click.prevent="forgotPin = !forgotPin">Forgot PIN?</a>
+              </div>
+              <div class="saxaz-login-input">
+                <span class="material-symbols-outlined">lock</span>
+                <input id="sx-parent-pin"
+                       :type="showPin ? 'text' : 'password'"
+                       name="pin"
+                       placeholder="0000"
+                       required
+                       maxlength="4"
+                       pattern="[0-9]{4}"
+                       inputmode="numeric"
+                       autocomplete="one-time-code"
+                       autofocus
+                       class="is-code"
+                       style="font-size: 1.4rem; font-weight: 800;" />
+                <button type="button"
+                        class="sx-pin-toggle-btn"
+                        @click="showPin = !showPin"
+                        :aria-label="showPin ? 'Hide PIN' : 'Show PIN'">
+                  <span class="material-symbols-outlined" style="font-size: 1.05rem;" x-text="showPin ? 'visibility_off' : 'visibility'">visibility</span>
+                  <span x-text="showPin ? 'Hide' : 'Show'">Show</span>
+                </button>
+              </div>
+              <div x-show="forgotPin" x-cloak class="sx-pin-help-box">
+                <p style="margin: 0;">
+                  Forgot your Parent Security PIN? Contact SAXAZ Support at
+                  <a href="mailto:support@saxaz.com">support@saxaz.com</a>
+                  or call <a href="tel:+918943348988">+91 8943348988</a> to verify and reset it.
+                </p>
+                <button type="button" class="sx-pin-help-close" @click="forgotPin = false" aria-label="Close">
+                  <span class="material-symbols-outlined" style="font-size: 1rem;">close</span>
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" class="saxaz-login-submit">
+              <span>Unlock Parent Portal</span>
+              <span class="material-symbols-outlined">arrow_forward</span>
+            </button>
+          </div>
+        </form>
+
+        <p class="saxaz-login-panel__signup" style="margin-top: 1.75rem;">
+          <a href="{{ back_href | default('/login') }}" style="display: inline-flex; align-items: center; gap: 0.35rem;">
+            <span class="material-symbols-outlined" style="font-size: 1.1rem; text-decoration: none;">arrow_back</span>
+            <span>Back to Student View</span>
+          </a>
+        </p>
+      </div>
+    </main>
   </div>
-
-  <!-- Right Panel (PIN Form) -->
-  <div class="auth-right-panel bg-white flex flex-col justify-center items-center px-8 sm:px-16 lg:px-24 relative z-20">
-    
-    <div class="w-full max-w-md">
-      
-      <div class="mb-10 text-center">
-        <div class="w-20 h-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-6">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-        </div>
-        <h2 class="text-4xl font-black text-[#1a1a1a] tracking-tight mb-2">
-          Portal Locked
-        </h2>
-        <p class="text-base-content/60 text-sm">Please enter your 4-digit Parent PIN to access analytics.</p>
-      </div>
-
-      {% if error %}
-      <div class="alert alert-error bg-red-50 text-red-700 border-red-200 mb-6 text-sm py-3 rounded-2xl shadow-sm justify-center">
-        <span>{{ error }}</span>
-      </div>
-      {% endif %}
-
-      <form action="/login/parent-pin" method="POST" class="space-y-6">
-        <input type="hidden" name="uid" value="{{ uid }}">
-        
-        <div class="form-control w-full">
-          <input type="password" name="pin" placeholder="••••" 
-              class="input input-bordered w-full text-center bg-base-200/50 border-transparent focus:bg-white focus:border-primary focus:ring-1 focus:ring-primary rounded-full transition-all tracking-[1em] text-3xl h-16 font-black" required maxlength="4" pattern="[0-9]{4}">
-        </div>
-
-        <div class="mt-8">
-          <button type="submit" class="btn btn-primary w-full rounded-full text-[15px] font-bold py-3 h-auto min-h-0 text-[#1a1a1a] shadow-[0_4px_14px_0_rgba(244,170,0,0.39)] hover:shadow-[0_6px_20px_rgba(244,170,0,0.23)] hover:-translate-y-[1px] transition-all">
-            Unlock Portal
-          </button>
-        </div>
-      </form>
-      
-      <div class="text-center mt-8 text-sm">
-        <a href="/login" class="font-bold text-base-content/50 hover:text-[#1a1a1a] transition-colors underline decoration-2 underline-offset-2">Cancel and Go Back</a>
-      </div>
-      
-    </div>
-    
-  </div>
-
-</body>
-</html>
+</div>
+{% endblock %}

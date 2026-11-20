@@ -1,205 +1,63 @@
-<!-- Digital Scratchpad Partial (SAXAZ Interactive Dotted Canvas Studio) -->
-<div x-data="digitalScratchpad()" class="fixed inset-0 pointer-events-none z-50">
+<!-- Digital Scratchpad Partial (SAXAZ Clean Diagram Studio) -->
+<div x-data="digitalScratchpad()">
 
   <!-- Scratchpad Floating Panel -->
-  <div x-show="isOpen" 
-       x-transition:enter="transition duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
-       x-transition:enter-start="opacity-0 scale-95 -translate-y-3"
+  <div x-show="isOpen" x-cloak
+       @mousedown="bringToFront()"
+       @touchstart.passive="bringToFront()"
+       x-transition:enter="transition duration-200 ease-out"
+       x-transition:enter-start="opacity-0 scale-95 -translate-y-2"
        x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-       x-transition:leave="transition duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
+       x-transition:leave="transition duration-150 ease-in"
        x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-       x-transition:leave-end="opacity-0 scale-95 -translate-y-3"
-       class="scratchpad-panel absolute rounded-3xl overflow-hidden pointer-events-auto flex flex-col select-none z-[100]"
-       style="z-index: 100;"
-       :style="`top: ${pos.y}px; left: ${pos.x}px; width: ${boxSize.width}px; height: ${boxSize.height}px;`"
+       x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
+       class="scratchpad-panel fixed rounded-3xl overflow-hidden pointer-events-auto flex flex-col select-none"
+       :style="{ position: 'fixed', zIndex: panelZ, display: isOpen ? 'flex' : 'none', top: pos.y + 'px', left: pos.x + 'px', width: boxSize.width + 'px', height: boxSize.height + 'px' }"
        @click.stop>
     
-    <!-- 1. Sleek SAXAZ Top Bar (Drag Handle + Ask Tutor to Draw + Size & Close) -->
+    <!-- 1. Top Bar (Drag Handle + Close) -->
     <div @mousedown="startDrag($event)" 
          @touchstart.passive="startTouchDrag($event)"
-         class="scratchpad-header px-3 py-2.5 flex flex-wrap justify-between items-center gap-x-2 gap-y-1.5 cursor-move select-none shrink-0">
+         class="scratchpad-header px-3.5 py-2.5 flex justify-between items-center gap-2 cursor-move select-none shrink-0">
       
       <!-- Brand / Title -->
-      <div class="flex items-center gap-2 shrink-0 order-1">
-        <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-xl flex items-center justify-center shadow-sm shrink-0" style="background: #f8b000; color: #151515;">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+      <div class="flex items-center gap-2.5 shrink-0">
+        <div class="w-7 h-7 rounded-xl flex items-center justify-center shrink-0" style="background: #231f20; color: #f7b317;">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
           </svg>
         </div>
-        <span class="scratchpad-title font-extrabold text-xs sm:text-sm tracking-tight" style="color: #0f172a;">Scratchpad</span>
-      </div>
-
-      <!-- Interactive Quick Draw Input & Ideas Button (Adapts to 2nd row when Scratchpad is Small) -->
-      <div x-show="!isRealExamPage"
-           class="flex items-center gap-1.5 min-w-0"
-           :class="boxSize.width < 560 ? 'w-full order-3 pt-1.5 border-t border-slate-200' : 'flex-1 max-w-xs order-2'"
-           @mousedown.stop @touchstart.stop>
-        <form @submit.prevent="requestTutorDraw(quickDrawInput)" class="scratchpad-search-form flex items-center flex-1 min-w-0 rounded-full px-2.5 py-1" style="background: #f8fafc; border: 1px solid #cbd5e1;">
-          <input type="text"
-                 x-model="quickDrawInput"
-                 placeholder="Ask Tutor to draw anything..."
-                 class="scratchpad-search-input w-full bg-transparent border-none focus:outline-none text-[11px] font-bold placeholder-slate-400 min-w-0"
-                 style="color: #0f172a;" />
-          <button type="submit"
-                  class="ml-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0 cursor-pointer transition-transform active:scale-95 shadow-2xs"
-                  style="background: #f8b000; color: #151515;"
-                  title="Generate step-by-step drawing">
-            Draw
-          </button>
-        </form>
-        <button type="button"
-                @click="showIdeas = !showIdeas; $nextTick(() => resizeCanvas())"
-                class="scratchpad-pill-btn px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0 cursor-pointer transition-colors flex items-center gap-1"
-                :style="showIdeas ? 'background: #f8b000; color: #151515; border: 1px solid #e5a000;' : 'background: #ffffff; color: #b45309; border: 1px solid #fcd34d;'"
-                title="Explore diagram blueprints">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
-          <span>Blueprints</span>
-        </button>
-      </div>
-
-      <!-- Right Controls: Size Presets & Close -->
-      <div class="flex items-center gap-1.5 shrink-0 ml-auto sm:ml-0"
-           :class="boxSize.width < 560 ? 'order-2' : 'order-3'"
-           @mousedown.stop>
-        <div class="scratchpad-size-box hidden sm:flex items-center rounded-lg p-0.5 text-[10px] font-bold" style="background: #f1f5f9; border: 1px solid #e2e8f0; color: #475569;">
-          <button @click="setSize(480, 460)" :style="boxSize.width <= 500 ? 'background: #ffffff; color: #b45309; box-shadow: 0 1px 2px rgba(0,0,0,0.08); font-weight: 800;' : 'color: #64748b;'" class="px-1.5 py-0.5 rounded transition-all cursor-pointer" title="Compact (S)">S</button>
-          <button @click="setSize(620, 520)" :style="boxSize.width > 500 && boxSize.width <= 680 ? 'background: #ffffff; color: #b45309; box-shadow: 0 1px 2px rgba(0,0,0,0.08); font-weight: 800;' : 'color: #64748b;'" class="px-1.5 py-0.5 rounded transition-all cursor-pointer" title="Medium (M)">M</button>
-          <button @click="setSize(780, 620)" :style="boxSize.width > 680 ? 'background: #ffffff; color: #b45309; box-shadow: 0 1px 2px rgba(0,0,0,0.08); font-weight: 800;' : 'color: #64748b;'" class="px-1.5 py-0.5 rounded transition-all cursor-pointer" title="Large (L)">L</button>
+        <div>
+          <span class="scratchpad-title font-extrabold text-xs sm:text-sm tracking-tight block leading-tight" style="color: #231f20;">Diagram &amp; Rough Work Scratchpad</span>
+          <span class="text-[10px] font-semibold block leading-none mt-0.5" style="color: rgba(35,31,32,0.72);">Draw neatly with pen, line, or circle tools, then click Attach</span>
         </div>
-
-        <button @click="isOpen = false; cancelDrawing = true; window.dispatchEvent(new CustomEvent('tutor-drawing-finished'))"
-                class="scratchpad-close-btn w-7 h-7 rounded-full flex items-center justify-center cursor-pointer transition-colors"
-                style="background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;"
-                title="Close Scratchpad">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-        </button>
       </div>
-    </div>
 
-    <!-- Collapsible Blueprint Chips Bar (Wraps cleanly so chips are never cut off) -->
-    <div x-show="showIdeas"
-         x-transition:enter="transition ease-out duration-150"
-         x-transition:enter-start="opacity-0 -translate-y-1"
-         x-transition:enter-end="opacity-100 translate-y-0"
-         class="scratchpad-subbar px-3 py-2 flex flex-wrap items-center gap-1.5 max-h-28 overflow-y-auto hover-scrollbar shrink-0"
-         style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: none;">
-      <button type="button" @click="surpriseDraw()" class="px-2.5 py-1 rounded-full text-[10px] font-black shrink-0 cursor-pointer transition-transform hover:scale-105 flex items-center gap-1 shadow-2xs" style="background: #f8b000; color: #151515;">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg>
-        <span>Surprise Me</span>
-      </button>
-      <template x-for="idea in ideaPresets" :key="idea.key">
+      <!-- AI Blueprint Controls Strictly Disabled on Exam Pages -->
+      <div x-show="false" aria-hidden="true"></div>
+
+      <!-- Close Button (Strokes stay saved in canvas memory) -->
+      <div class="flex items-center gap-1.5 shrink-0" @mousedown.stop @touchstart.stop>
         <button type="button"
-                @click="requestTutorDraw(idea.key, idea.label); showIdeas = false; $nextTick(() => resizeCanvas())"
-                class="scratchpad-chip-btn px-2.5 py-1 rounded-full text-[10px] font-bold shrink-0 cursor-pointer transition-colors whitespace-nowrap hover:border-amber-400"
-                style="background: #ffffff; color: #334155; border: 1px solid #cbd5e1;"
-                x-text="idea.chip"></button>
-      </template>
-    </div>
-
-    <!-- Compact Adaptive Live Tutor Playback HUD (Only visible during drawing/playback) -->
-    <div x-show="isPlayerActive"
-         x-transition:enter="transition ease-out duration-150"
-         x-transition:enter-start="opacity-0 -translate-y-1"
-         x-transition:enter-end="opacity-100 translate-y-0"
-         class="scratchpad-subbar relative px-3 py-1.5 flex flex-wrap items-center justify-between gap-1.5 shrink-0 select-none"
-         style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0; color: #0f172a; display: none;">
-      
-      <!-- Left: Play/Pause + Prev/Next + Step Info -->
-      <div class="flex items-center gap-1.5 min-w-0 flex-1">
-        <button @click="togglePlayPause()" 
-                type="button"
-                class="px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1 cursor-pointer shrink-0 transition-transform active:scale-95 shadow-2xs"
-                style="background: #f8b000; color: #151515;">
-          <template x-if="!isPaused && !isFinished">
-            <span class="flex items-center gap-1"><svg class="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>Pause</span>
-          </template>
-          <template x-if="isPaused && !isFinished">
-            <span class="flex items-center gap-1"><svg class="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>Play</span>
-          </template>
-          <template x-if="isFinished">
-            <span class="flex items-center gap-1"><svg class="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>Replay</span>
-          </template>
+                @click="requestCloseScratchpad()"
+                class="scratchpad-close-btn w-7 h-7 rounded-full flex items-center justify-center cursor-pointer transition-colors"
+                style="background: #231f20; color: #ffffff;"
+                title="Close Scratchpad (your strokes stay saved)">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
-
-        <button @click="stepBackward()" type="button" class="scratchpad-chip-btn w-6 h-6 rounded-md flex items-center justify-center cursor-pointer shrink-0" style="background: #ffffff; color: #334155; border: 1px solid #cbd5e1;" title="Previous step">
-          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-        <button @click="stepForward()" type="button" class="scratchpad-chip-btn w-6 h-6 rounded-md flex items-center justify-center cursor-pointer shrink-0" style="background: #ffffff; color: #334155; border: 1px solid #cbd5e1;" title="Next step">
-          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-        </button>
-
-        <span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-black shrink-0"
-              style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a;"
-              x-text="isPreparingDrawing ? '...' : `${Math.min(totalSteps, currentStepIndex + 1)}/${totalSteps}`"></span>
-
-        <span class="scratchpad-step-text text-[11px] font-bold truncate" style="color: #334155;" x-text="currentStepGuide || tutorDrawingTitle"></span>
-      </div>
-
-      <!-- Right: Scrubber + Speed Cycle + Trace + Instant + Dismiss -->
-      <div class="flex items-center gap-1 shrink-0 ml-auto">
-        <input x-show="boxSize.width >= 540"
-               type="range" 
-               min="0" 
-               :max="Math.max(1, totalSteps - 1)" 
-               :value="currentStepIndex" 
-               @input="onScrubInput($event.target.value)" 
-               @change="onScrubInput($event.target.value, true)"
-               class="w-16 sm:w-20 h-1 rounded-lg cursor-pointer"
-               style="accent-color: #f8b000;"
-               title="Scrub step timeline">
-
-        <button @click="cycleSpeed()"
-                type="button"
-                class="scratchpad-chip-btn px-2 py-0.5 rounded-md text-[10px] font-black cursor-pointer"
-                style="background: #ffffff; color: #b45309; border: 1px solid #fcd34d;"
-                title="Click to cycle playback speed"
-                x-text="`${drawSpeedMultiplier}x`"></button>
-
-        <button @click="toggleTraceMode()" 
-                type="button"
-                class="scratchpad-chip-btn px-2 py-0.5 rounded-md text-[10px] font-black cursor-pointer transition-all flex items-center gap-1"
-                :style="traceMode ? 'background: #f8b000; color: #151515; border: 1px solid #e5a000;' : 'background: #ffffff; color: #475569; border: 1px solid #cbd5e1;'"
-                title="Dim blueprint to trace & practice over it">
-          <span x-text="traceMode ? 'Tracing ON' : 'Trace'"></span>
-        </button>
-
-        <button @click="finishInstantly()"
-                x-show="!isFinished && !isPreparingDrawing"
-                type="button"
-                class="scratchpad-chip-btn px-2 py-0.5 rounded-md text-[10px] font-black uppercase cursor-pointer flex items-center justify-center"
-                style="background: #ffffff; color: #d97706; border: 1px solid #fcd34d;"
-                title="Finish drawing instantly">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-        </button>
-
-        <button @click="closePlayer()" 
-                type="button"
-                class="w-5 h-5 rounded flex items-center justify-center cursor-pointer"
-                style="color: #64748b;"
-                title="Hide playback bar">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-      </div>
-
-      <!-- Thin Bottom Progress Line -->
-      <div class="absolute bottom-0 left-0 right-0 h-[2px]" style="background: #e2e8f0;">
-        <div class="h-full transition-all duration-100"
-             style="background: #f8b000;"
-             :style="`width: ${totalSteps > 0 ? Math.round(((currentStepIndex + 1) / totalSteps) * 100) : 0}%`"></div>
       </div>
     </div>
 
-    <!-- 2. Spacious Dual-Layer Dotted Canvas Area (Background: Tutor Blueprint | Foreground: Student Strokes) -->
+    <!-- 2. Clean White Drawing Canvas Area -->
     <div class="scratchpad-canvas-wrap flex-1 relative overflow-hidden" 
          x-ref="canvasContainer"
-         style="touch-action: none; cursor: crosshair; background-color: #ffffff; background-image: radial-gradient(#94a3b8 1.5px, transparent 1.5px); background-size: 20px 20px;">
+         style="touch-action: none; cursor: crosshair; background-color: #ffffff;">
       
-      <!-- Layer 1: Tutor Blueprint Canvas (Dims in Trace Mode so Student Strokes Stay 100% Crisp) -->
+      <!-- Background Canvas (Reserved for non-exam playback if ever used) -->
       <canvas x-ref="tutorCanvas"
-              class="absolute inset-0 w-full h-full block bg-transparent pointer-events-none transition-opacity duration-200"
-              :style="traceMode ? 'opacity: 0.26;' : 'opacity: 1;'"></canvas>
+              class="absolute inset-0 w-full h-full block bg-transparent pointer-events-none"></canvas>
 
-      <!-- Layer 2: Student Freehand / Shape Canvas (Always 100% Full Opacity) -->
+      <!-- Student Freehand / Shape Canvas -->
       <canvas x-ref="scratchCanvas" 
               class="relative z-10 w-full h-full block bg-transparent"
               @pointerdown="startStroke($event)"
@@ -208,279 +66,143 @@
               @pointercancel="stopStroke($event)"
               @pointerleave="stopStroke($event)"></canvas>
 
-      <!-- Active Trace Mode Indicator Pill -->
-      <div x-show="traceMode"
-           x-transition.opacity
-           class="pointer-events-none absolute bottom-2.5 left-3 z-20 px-2.5 py-1 rounded-full text-[10px] font-black flex items-center gap-1.5 shadow-md"
-           style="background: rgba(255,255,255,0.96); color: #b45309; border: 1px solid #fcd34d; display: none;">
-        <span class="w-1.5 h-1.5 rounded-full animate-pulse" style="background: #f8b000;"></span>
-        <span x-text="`Trace Mode (${tutorDrawingTitle || 'Blueprint'}): Draw over the faint guide, then Attach or Send`"></span>
-      </div>
-
       <!-- Floating Toast Badge Inside Canvas -->
-      <div x-show="toastMessage"
+      <div x-show="toastMessage" x-cloak
            x-transition.opacity
-           class="pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 z-30 px-3.5 py-1.5 rounded-full text-[11px] font-black shadow-lg flex items-center gap-1.5 whitespace-nowrap"
-           style="background: #ffffff; color: #0f172a; border: 1.5px solid #f8b000; display: none;">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" style="color: #d97706;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+           class="pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 z-30 px-3.5 py-1.5 rounded-full text-[11px] font-extrabold flex items-center gap-1.5 whitespace-nowrap"
+           style="background: #231f20; color: #f7b317; border: 1.5px solid #f7b317;">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
         <span x-text="toastMessage"></span>
-      </div>
-
-      <!-- Preparing New Drawing Overlay -->
-      <div x-show="isPreparingDrawing"
-           class="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/85 backdrop-blur-[2px]"
-           style="display: none;">
-        <div class="w-11 h-11 rounded-2xl flex items-center justify-center shadow-md mb-2.5" style="background: #fffbeb; color: #d97706; border: 2px solid #f8b000;">
-          <svg class="w-5 h-5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-          </svg>
-        </div>
-        <p class="text-xs font-black" style="color: #0f172a;" x-text="`Sketching ${tutorDrawingTitle || 'Diagram'}...`"></p>
-        <p class="text-[10px] font-semibold mt-0.5" style="color: #64748b;">Crafting step-by-step vector strokes</p>
-      </div>
-
-      <!-- Live Tutor Drawing Virtual Stylus / Nib Cursor -->
-      <div x-show="isTutorDrawing && !isPaused && !isPreparingDrawing"
-           class="pointer-events-none absolute z-20 transition-transform duration-75"
-           :style="`transform: translate(${penPos.x}px, ${penPos.y}px); top: 0; left: 0; will-change: transform;`"
-           style="display: none;">
-        <div class="relative" style="top: -28px; left: 0;">
-          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style="filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.35)); transform: rotate(-15deg); transform-origin: 0px 28px;">
-            <polygon points="4,24 24,4 28,8 8,28" fill="#151515" stroke="#ffffff" stroke-width="1.2"/>
-            <polygon points="4,24 11,17 15,21 8,28" fill="#f8b000"/>
-            <polygon points="1,27 4,24 8,28" fill="#cbd5e1" stroke="#ffffff" stroke-width="0.8"/>
-            <circle cx="0" cy="28" r="2.2" :fill="activePenColor" stroke="#ffffff" stroke-width="1"/>
-          </svg>
-          <div class="absolute -top-1 -right-2 w-3.5 h-3.5 rounded-full border-2 border-white shadow-md animate-pulse"
-               :style="`background-color: ${activePenColor};`"></div>
-        </div>
       </div>
     </div>
 
-    <!-- 3. Adaptive SAXAZ Bottom Studio Dock (Colors, Brush Dots, Shape Tools, Undo, Eraser, Clear, Attach/Send & Resize) -->
-    <div class="scratchpad-toolbar px-2.5 sm:px-3 py-2 flex flex-wrap items-center justify-between gap-x-1.5 gap-y-1.5 shrink-0">
+    <!-- 3. Bottom Studio Dock (4 Swatches, 3 Brush Dots, Pen/Line/Circle, Undo, Eraser, Clear, Attach & Resize) -->
+    <div class="scratchpad-toolbar px-3 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0">
       
-      <!-- Left: Color Swatches -->
-      <div class="scratchpad-dock-pill flex items-center gap-1 sm:gap-1.5 px-2 py-1 rounded-full shrink-0" style="background: #f1f5f9; border: 1px solid #e2e8f0;">
+      <!-- Left: 4 Crisp Diagram Color Swatches (#231f20, #f7b317, #dc2626, #16a34a) -->
+      <div class="scratchpad-dock-pill flex items-center gap-1.5 px-2.5 py-1 rounded-full shrink-0" style="background: #ffffff; border: 1.5px solid rgba(35,31,32,0.22);">
         <template x-for="swatch in colorSwatches" :key="swatch.key">
           <button type="button"
                   @click="setColor(swatch.key)"
                   class="transition-transform cursor-pointer shrink-0 rounded-full"
                   :class="activeColorKey === swatch.key && !isEraser ? 'scale-125' : 'opacity-85 hover:opacity-100'"
-                  :style="`width: ${boxSize.width < 520 ? 16 : 18}px; height: ${boxSize.width < 520 ? 16 : 18}px; background-color: ${swatch.hex}; border: ${activeColorKey === swatch.key && !isEraser ? '2.5px solid #f8b000' : '1.5px solid rgba(15,23,42,0.22)'};`"
+                  :style="`width: 18px; height: 18px; background-color: ${swatch.hex}; border: ${activeColorKey === swatch.key && !isEraser ? '2.5px solid #231f20' : '1.5px solid rgba(35,31,32,0.28)'}; box-shadow: ${activeColorKey === swatch.key && !isEraser ? '0 0 0 2px #f7b317' : 'none'};`"
                   :title="swatch.label"></button>
         </template>
       </div>
 
-      <!-- Brush Thickness Dots + Shape Tools (Custom Vector Icons, No Emojis) -->
-      <div class="scratchpad-dock-pill flex items-center gap-0.5 sm:gap-1 px-2 py-1 rounded-full shrink-0"
-           :class="boxSize.width < 600 ? 'ml-auto' : ''"
-           style="background: #f1f5f9; border: 1px solid #e2e8f0;">
+      <!-- Brush Thickness Dots + Shape Tools -->
+      <div class="scratchpad-dock-pill flex items-center gap-1 px-2.5 py-1 rounded-full shrink-0"
+           style="background: #ffffff; border: 1.5px solid rgba(35,31,32,0.22);">
         <!-- 3 Brush Size Dots -->
-        <button type="button" @click="brushSize = 2; isEraser = false" class="w-5 h-5 rounded-full flex items-center justify-center cursor-pointer" :style="brushSize === 2 && !isEraser ? 'background: #f8b000;' : ''" title="Fine stroke">
-          <span class="rounded-full" :style="`width: 4px; height: 4px; background: ${brushSize === 2 && !isEraser ? '#151515' : '#475569'};`"></span>
+        <button type="button" @click="brushSize = 2; isEraser = false" class="w-5 h-5 rounded-full flex items-center justify-center cursor-pointer" :style="brushSize === 2 && !isEraser ? 'background: #f7b317;' : 'background: transparent;'" title="Fine stroke">
+          <span class="rounded-full" style="width: 4px; height: 4px; background: #231f20;"></span>
         </button>
-        <button type="button" @click="brushSize = 4; isEraser = false" class="w-5 h-5 rounded-full flex items-center justify-center cursor-pointer" :style="brushSize === 4 && !isEraser ? 'background: #f8b000;' : ''" title="Medium stroke">
-          <span class="rounded-full" :style="`width: 7px; height: 7px; background: ${brushSize === 4 && !isEraser ? '#151515' : '#475569'};`"></span>
+        <button type="button" @click="brushSize = 4; isEraser = false" class="w-5 h-5 rounded-full flex items-center justify-center cursor-pointer" :style="brushSize === 4 && !isEraser ? 'background: #f7b317;' : 'background: transparent;'" title="Medium stroke">
+          <span class="rounded-full" style="width: 7px; height: 7px; background: #231f20;"></span>
         </button>
-        <button type="button" @click="brushSize = 8; isEraser = false" class="w-5 h-5 rounded-full flex items-center justify-center cursor-pointer" :style="brushSize === 8 && !isEraser ? 'background: #f8b000;' : ''" title="Bold stroke">
-          <span class="rounded-full" :style="`width: 10px; height: 10px; background: ${brushSize === 8 && !isEraser ? '#151515' : '#475569'};`"></span>
+        <button type="button" @click="brushSize = 8; isEraser = false" class="w-5 h-5 rounded-full flex items-center justify-center cursor-pointer" :style="brushSize === 8 && !isEraser ? 'background: #f7b317;' : 'background: transparent;'" title="Bold stroke">
+          <span class="rounded-full" style="width: 10px; height: 10px; background: #231f20;"></span>
         </button>
 
-        <span class="w-[1px] h-3.5 mx-0.5" style="background: #cbd5e1;"></span>
+        <span class="w-[1px] h-3.5 mx-0.5" style="background: rgba(35,31,32,0.2);"></span>
 
-        <!-- Freehand / Line / Circle Tools (Custom Vector SVGs) -->
-        <button type="button" @click="drawTool = 'pen'; isEraser = false" class="w-6 h-5 rounded-full flex items-center justify-center cursor-pointer" :style="drawTool === 'pen' && !isEraser ? 'background: #f8b000; color: #151515;' : 'color: #475569;'" title="Freehand Pen">
+        <!-- Freehand / Line / Circle Tools -->
+        <button type="button" @click="drawTool = 'pen'; isEraser = false" class="w-6 h-5 rounded-full flex items-center justify-center cursor-pointer" :style="drawTool === 'pen' && !isEraser ? 'background: #f7b317; color: #231f20;' : 'color: #231f20;'" title="Freehand Pen">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
         </button>
-        <button type="button" @click="drawTool = 'line'; isEraser = false" class="w-6 h-5 rounded-full flex items-center justify-center cursor-pointer" :style="drawTool === 'line' && !isEraser ? 'background: #f8b000; color: #151515;' : 'color: #475569;'" title="Straight Line Tool">
+        <button type="button" @click="drawTool = 'line'; isEraser = false" class="w-6 h-5 rounded-full flex items-center justify-center cursor-pointer" :style="drawTool === 'line' && !isEraser ? 'background: #f7b317; color: #231f20;' : 'color: #231f20;'" title="Straight Line Tool">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="19" x2="19" y2="5" stroke-linecap="round"/><circle cx="5" cy="19" r="1.5" fill="currentColor"/><circle cx="19" cy="5" r="1.5" fill="currentColor"/></svg>
         </button>
-        <button type="button" @click="drawTool = 'circle'; isEraser = false" class="w-6 h-5 rounded-full flex items-center justify-center cursor-pointer" :style="drawTool === 'circle' && !isEraser ? 'background: #f8b000; color: #151515;' : 'color: #475569;'" title="Circle Tool">
+        <button type="button" @click="drawTool = 'circle'; isEraser = false" class="w-6 h-5 rounded-full flex items-center justify-center cursor-pointer" :style="drawTool === 'circle' && !isEraser ? 'background: #f7b317; color: #231f20;' : 'color: #231f20;'" title="Circle Tool">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="8"/></svg>
         </button>
       </div>
 
-      <!-- Right / Row 2 when Small: Undo, Eraser, Clear, Attach/Send & Resize Corner -->
-      <div class="flex items-center gap-1.5"
-           :class="boxSize.width < 600 ? 'w-full justify-between pt-1.5 border-t border-slate-200' : 'ml-auto'">
-        <div class="flex items-center gap-1.5">
-          <!-- Undo Button -->
-          <button @click="undoStroke()"
-                  type="button"
-                  class="scratchpad-icon-btn w-7 h-7 rounded-full flex items-center justify-center cursor-pointer transition-colors shrink-0"
-                  style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1;"
-                  title="Undo last stroke (Ctrl+Z)">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
-          </button>
+      <!-- Right Controls: Undo, Eraser, Clear, Attach & Resize -->
+      <div class="flex items-center gap-1.5 ml-auto">
+        <button @click="undoStroke()"
+                type="button"
+                class="scratchpad-icon-btn w-7 h-7 rounded-full flex items-center justify-center cursor-pointer transition-colors shrink-0"
+                style="background: #ffffff; color: #231f20; border: 1.5px solid rgba(35,31,32,0.28);"
+                title="Undo last stroke (Ctrl+Z)">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+        </button>
 
-          <!-- Eraser Button -->
-          <button @click="toggleEraser()" 
-                  type="button"
-                  class="scratchpad-icon-btn w-7 h-7 rounded-full flex items-center justify-center cursor-pointer transition-all shrink-0"
-                  :style="isEraser ? 'background: #f8b000; color: #151515; border: 1px solid #e5a000;' : 'background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1;'"
-                  title="Eraser (erases your strokes without harming the blueprint)">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>
-          </button>
+        <button @click="toggleEraser()" 
+                type="button"
+                class="scratchpad-icon-btn w-7 h-7 rounded-full flex items-center justify-center cursor-pointer transition-all shrink-0"
+                :style="isEraser ? 'background: #f7b317; color: #231f20; border: 1.5px solid #231f20;' : 'background: #ffffff; color: #231f20; border: 1.5px solid rgba(35,31,32,0.28);'"
+                title="Eraser">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>
+        </button>
 
-          <!-- Smart Clear Canvas Button -->
-          <button @click="clearSmart()" 
-                  type="button"
-                  class="scratchpad-icon-btn w-7 h-7 rounded-full flex items-center justify-center cursor-pointer transition-colors shrink-0"
-                  style="background: #fef2f2; color: #ef4444; border: 1px solid #fecaca;"
-                  title="Clear your strokes (or click again to clear blueprint)">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-          </button>
-        </div>
+        <button @click="clearSmart()" 
+                type="button"
+                class="scratchpad-icon-btn w-7 h-7 rounded-full flex items-center justify-center cursor-pointer transition-colors shrink-0"
+                style="background: #ffffff; color: #231f20; border: 1.5px solid #231f20;"
+                title="Clear canvas">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        </button>
 
-        <div class="flex items-center gap-1.5">
-          <!-- Tutor & Digi-Library Study Page Actions: Attach to Agent Chat Input + Direct Send to Tutor -->
-          <template x-if="isTutorPage || isDigiStudyPage">
-            <div class="flex items-center gap-1">
-              <button @click="sendDrawingToTutor(false)" 
-                      type="button"
-                      class="scratchpad-pill-btn px-2.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 transition-transform active:scale-95 cursor-pointer shrink-0"
-                      style="background: #ffffff; color: #b45309; border: 1px solid #fcd34d;" 
-                      title="Attach drawing to AI Tutor chat box">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                <span>Attach</span>
-              </button>
-              <button @click="sendDrawingToTutor(true)" 
-                      type="button"
-                      class="px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-1 transition-transform active:scale-95 cursor-pointer shrink-0"
-                      style="background: #f8b000; color: #151515; box-shadow: 0 2px 0 #d97706;" 
-                      title="Send drawing directly to AI Tutor for instant feedback">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
-                <span>Send</span>
-              </button>
-            </div>
-          </template>
+        <button x-show="!isRealExamPage"
+                @click="sendDrawingToTutor(true)" 
+                type="button"
+                class="px-2.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 transition-transform active:scale-95 cursor-pointer shrink-0"
+                style="background: #ffffff; color: #231f20; border: 1.5px solid #231f20;" 
+                title="Send your sketch to Ask Tutor for feedback">
+          <span>Ask Tutor</span>
+        </button>
 
-          <!-- Exam Page Actions: Attach to Answer (+ Send to Mini-Tutor if open) -->
-          <template x-if="!isTutorPage && !isDigiStudyPage">
-            <div class="flex items-center gap-1">
-              <button x-show="isMiniTutorOpen"
-                      @click="sendDrawingToTutor(true)" 
-                      type="button"
-                      class="scratchpad-pill-btn px-2.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 transition-transform active:scale-95 cursor-pointer shrink-0"
-                      style="background: #ffffff; color: #b45309; border: 1px solid #fcd34d;" 
-                      title="Send drawing to Mini Tutor for feedback">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
-                <span>Tutor</span>
-              </button>
-              <button @click="attachDrawingToAnswer()" 
-                      type="button"
-                      class="px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-transform active:scale-95 cursor-pointer shrink-0"
-                      style="background: #f8b000; color: #151515; box-shadow: 0 2px 0 #d97706;" 
-                      title="Attach drawing to your exam answer">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                <span>Attach</span>
-              </button>
-            </div>
-          </template>
+        <button @click="attachDrawingToAnswer()" 
+                type="button"
+                class="px-3.5 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-transform active:scale-95 cursor-pointer shrink-0"
+                style="background: #f7b317; color: #231f20; border: 1.5px solid #231f20;" 
+                title="Attach your drawing to your answer">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          <span>Attach to Answer</span>
+        </button>
 
-          <!-- Corner Drag-Resize Handle -->
-          <div @mousedown.stop.prevent="startResize($event)" 
-               class="scratchpad-resize-btn hidden sm:flex w-6 h-6 rounded-full items-center justify-center cursor-se-resize select-none shrink-0"
-               style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0;"
-               title="Drag to resize Scratchpad">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 transform rotate-45" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M6 4a1 1 0 011 1v10a1 1 0 11-2 0V5a1 1 0 011-1zm6 0a1 1 0 011 1v10a1 1 0 11-2 0V5a1 1 0 011-1z" />
-            </svg>
-          </div>
+        <!-- Corner Drag-Resize Handle -->
+        <div @mousedown.stop.prevent="startResize($event)" 
+             class="scratchpad-resize-btn hidden sm:flex w-6 h-6 rounded-full items-center justify-center cursor-se-resize select-none shrink-0"
+             style="background: #ffffff; color: #231f20; border: 1.5px solid rgba(35,31,32,0.28);"
+             title="Drag to resize Scratchpad">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 transform rotate-45" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M6 4a1 1 0 011 1v10a1 1 0 11-2 0V5a1 1 0 011-1zm6 0a1 1 0 011 1v10a1 1 0 11-2 0V5a1 1 0 011-1z" />
+          </svg>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Global Docked Tab Button (Right Edge on Exam Pages) -->
-  <div id="scratchpad-dock-wrap" class="fixed pointer-events-auto z-40" style="top: 220px; right: 0;">
-    <button id="scratchpad-dock-btn" @click="toggleScratchpad" 
-        class="group relative overflow-hidden inline-flex items-center gap-2 px-3 py-2.5 rounded-l-2xl hover:-translate-x-2 transition-all duration-200 cursor-pointer select-none" 
-        title="Open Digital Scratchpad">
-      <div class="w-7 h-7 rounded-xl flex items-center justify-center font-bold text-xs shadow-xs group-hover:scale-110 transition-transform" style="background: #f8b000; color: #151515;">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-        </svg>
-      </div>
-      <div class="flex flex-col text-left">
-        <span class="font-extrabold text-[11px] uppercase tracking-wider leading-none" style="color: #0f172a;">Scratchpad</span>
-        <span class="text-[9px] font-mono leading-none mt-0.5 font-bold" style="color: #d97706;">Draw &amp; Solve</span>
-      </div>
-    </button>
+  <!-- Hidden Programmatic Trigger (Permanent floating right-edge dock is hidden to prevent distraction) -->
+  <div id="scratchpad-dock-wrap" style="display: none !important;" aria-hidden="true">
+    <button id="scratchpad-dock-btn" type="button" @click="toggleScratchpad()" tabindex="-1">Scratchpad</button>
   </div>
 </div>
 
-<!-- SAXAZ Studio Styling for Scratchpad (Matching Tools Box Light Slate Palette) -->
 <style>
+#scratchpad-dock-wrap {
+  display: none !important;
+}
 .scratchpad-panel {
-  background-color: rgba(255, 255, 255, 0.96) !important;
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(226, 232, 240, 0.95) !important;
-  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.04) !important;
-  color: #0f172a;
+  background-color: #ffffff !important;
+  border: 2px solid #231f20 !important;
+  box-shadow: 0 24px 56px rgba(35, 31, 32, 0.24) !important;
+  color: #231f20;
 }
 .scratchpad-header {
-  background: linear-gradient(to right, #f1f5f9, #ffffff, #f1f5f9) !important;
-  border-bottom: 1px solid #e2e8f0 !important;
+  background: #f7b317 !important;
+  border-bottom: 2px solid #231f20 !important;
 }
 .scratchpad-toolbar {
-  background: linear-gradient(to right, #f1f5f9, #ffffff, #f1f5f9) !important;
-  border-top: 1px solid #e2e8f0 !important;
-}
-#scratchpad-dock-btn {
   background: #ffffff !important;
-  color: #0f172a !important;
-  box-shadow: -6px 8px 25px rgba(15, 23, 42, 0.14) !important;
-  border-left: 2px solid #f8b000 !important;
-  border-top: 1px solid #e2e8f0 !important;
-  border-bottom: 1px solid #e2e8f0 !important;
+  border-top: 1.5px solid rgba(35, 31, 32, 0.16) !important;
 }
-[data-theme="dark"] .scratchpad-panel {
-  background-color: rgba(17, 24, 39, 0.96) !important;
-  border-color: #374151 !important;
-  color: #f9fafb !important;
-  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
-}
-[data-theme="dark"] .scratchpad-header,
-[data-theme="dark"] .scratchpad-toolbar {
-  background: linear-gradient(to right, #111827, #1f2937, #111827) !important;
-  border-color: #374151 !important;
-}
-[data-theme="dark"] .scratchpad-title,
-[data-theme="dark"] .scratchpad-step-text,
-[data-theme="dark"] .scratchpad-search-input {
-  color: #f9fafb !important;
-}
-[data-theme="dark"] .scratchpad-subbar {
-  background: #111827 !important;
-  border-color: #374151 !important;
-  color: #f9fafb !important;
-}
-[data-theme="dark"] .scratchpad-search-form,
-[data-theme="dark"] .scratchpad-size-box,
-[data-theme="dark"] .scratchpad-dock-pill,
-[data-theme="dark"] .scratchpad-close-btn,
-[data-theme="dark"] .scratchpad-resize-btn,
-[data-theme="dark"] .scratchpad-chip-btn,
-[data-theme="dark"] .scratchpad-icon-btn {
-  background: #1f2937 !important;
-  border-color: #374151 !important;
-  color: #e5e7eb !important;
-}
-#scratchpad-dock-wrap {
-  transition: right 300ms cubic-bezier(0.16, 1, 0.3, 1), top 300ms cubic-bezier(0.16, 1, 0.3, 1), bottom 300ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms ease;
-}
-@media (min-width: 1024px) {
-  body.question-palette-open #scratchpad-dock-wrap,
-  body.mini-tutor-open #scratchpad-dock-wrap {
-    top: auto !important;
-    bottom: 24px !important;
-    right: 440px !important;
-    z-index: 130 !important;
-  }
+.scratchpad-canvas-wrap {
+  background-color: #ffffff !important;
+  background-image: none !important;
 }
 @media (max-width: 640px) {
   .scratchpad-panel {
@@ -493,22 +215,9 @@
     max-width: calc(100vw - 16px) !important;
     height: 75dvh !important;
     max-height: 78dvh !important;
-    z-index: 150 !important;
     margin: 0 auto !important;
     border-radius: 1.5rem !important;
   }
-}
-
-/* Dotted Notebook Paper Grid */
-.scratchpad-canvas-wrap {
-  background-color: #ffffff !important;
-  background-image: radial-gradient(#94a3b8 1.5px, transparent 1.5px) !important;
-  background-size: 20px 20px !important;
-}
-:is([data-theme="dark"], [data-theme="dracula"], [data-theme="night"], [data-theme="black"], [data-theme="saxazdark"]) .scratchpad-canvas-wrap {
-  background-color: #0f172a !important;
-  background-image: radial-gradient(#475569 1.5px, transparent 1.5px) !important;
-  background-size: 20px 20px !important;
 }
 </style>
 
@@ -516,51 +225,26 @@
 function digitalScratchpad() {
   return {
     isOpen: false,
+    panelZ: 1212,
     pos: { x: 0, y: 0 },
-    boxSize: { width: 620, height: 520 },
+    boxSize: { width: 620, height: 500 },
     dragging: false,
     resizing: false,
     dragOffset: { x: 0, y: 0 },
     resizeStart: { x: 0, y: 0, width: 0, height: 0 },
     toastMessage: '',
     toastTimeout: null,
-    
-    // Quick Draw & Blueprint Presets (No emojis — clean textbook labels, Class 10 Biology 1–7 prioritized)
-    quickDrawInput: '',
-    showIdeas: false,
-    ideaPresets: [
-      { key: 'heart_anatomy', label: 'Human Heart — Labelled Diagram', chip: '1. Human Heart' },
-      { key: 'co2_photosynthesis_experiment', label: 'Experiment: CO₂ Essential for Photosynthesis', chip: '2. CO₂ Photosynthesis Exp.' },
-      { key: 'lime_water_experiment', label: 'Lime Water Experiment — Exhaled & Atmospheric Air', chip: '3. Lime Water Exp.' },
-      { key: 'open_stomatal_pore', label: 'Open Stomatal Pore', chip: '4. Open Stomatal Pore' },
-      { key: 'double_circulation', label: 'Double Circulation in Humans', chip: '5. Double Circulation' },
-      { key: 'nephron', label: 'Structure of a Nephron', chip: '6. Structure of a Nephron' },
-      { key: 'human_excretory_system', label: 'Human Excretory System', chip: '7. Human Excretory System' },
-      { key: 'digestive_system', label: 'Human Digestive System', chip: 'Digestive System' },
-      { key: 'respiratory_system', label: 'Human Respiratory System', chip: 'Respiratory System' },
-      { key: 'photosynthesis', label: 'Photosynthesis Process', chip: 'Photosynthesis' },
-      { key: 'brain_anatomy', label: 'Human Brain', chip: 'Human Brain' },
-      { key: 'eye_diagram', label: 'Human Eye', chip: 'Human Eye' },
-      { key: 'electric_circuit', label: 'Electric Circuit', chip: 'Electric Circuit' },
-      { key: 'prism_dispersion', label: 'Prism Dispersion', chip: 'Prism Dispersion' }
-    ],
 
-    // Page Context (Tutor vs Digi-Library Study vs Exams)
-    isTutorPage: window.location.pathname.includes('/tutor') || !!document.getElementById('chat-container'),
-    isDigiStudyPage: window.location.pathname.includes('/digi-library/banks/'),
     isRealExamPage: window.location.pathname.includes('/real-exams/'),
-    isMiniTutorOpen: false,
-    
-    // Student Drawing Tools & State (Foreground Layer: scratchCanvas)
+    isExamPage: true,
+
     colorSwatches: [
-      { key: 'primary', hex: '#151515', label: 'Charcoal Ink' },
-      { key: '#2563eb', hex: '#2563eb', label: 'Royal Blue' },
-      { key: '#dc2626', hex: '#dc2626', label: 'Crimson Red' },
-      { key: '#16a34a', hex: '#16a34a', label: 'Emerald Green' },
-      { key: '#f8b000', hex: '#f8b000', label: 'SAXAZ Gold' },
-      { key: '#9333ea', hex: '#9333ea', label: 'Vibrant Purple' }
+      { key: '#231f20', hex: '#231f20', label: 'Black Ink' },
+      { key: '#f7b317', hex: '#f7b317', label: 'Yellow Highlight' },
+      { key: '#dc2626', hex: '#dc2626', label: 'Red Label' },
+      { key: '#16a34a', hex: '#16a34a', label: 'Green Label' }
     ],
-    activeColorKey: 'primary',
+    activeColorKey: '#231f20',
     drawTool: 'pen',
     isEraser: false,
     brushSize: 4,
@@ -568,7 +252,7 @@ function digitalScratchpad() {
     ctx: null,
     tutorCtx: null,
     canvasLogicalW: 620,
-    canvasLogicalH: 420,
+    canvasLogicalH: 400,
     lastX: 0,
     lastY: 0,
     shapeStartX: 0,
@@ -577,90 +261,15 @@ function digitalScratchpad() {
     undoStack: [],
     hasUserStrokes: false,
 
-    // Live Tutor Drawing & Playback State (Background Layer: tutorCanvas)
-    isPlayerActive: false,
-    isTutorDrawing: false,
-    isPreparingDrawing: false,
-    isPaused: false,
-    isFinished: false,
-    currentStepIndex: 0,
-    totalSteps: 0,
-    stepsList: [],
-    staticDiagramKey: '',
-    tutorDrawingTitle: '',
-    currentStepGuide: '',
-    traceMode: false,
-    penPos: { x: 0, y: 0 },
-    activePenColor: '#2563eb',
-    drawSpeedMultiplier: 1,
-    instantFinish: false,
-    cancelDrawing: false,
-    playbackSeqId: 0,
-    _seekRafId: null,
-    _pendingSeekTarget: null,
+    bringToFront() {
+      window.__saxazFloatingToolZCounter = Math.max(1210, (window.__saxazFloatingToolZCounter || 1210) + 1);
+      this.panelZ = window.__saxazFloatingToolZCounter;
+    },
 
     showToast(msg) {
       this.toastMessage = msg;
       if (this.toastTimeout) clearTimeout(this.toastTimeout);
       this.toastTimeout = setTimeout(() => { this.toastMessage = ''; }, 2400);
-    },
-
-    cycleSpeed() {
-      const speeds = [1, 2, 4, 0.5];
-      const idx = speeds.indexOf(this.drawSpeedMultiplier);
-      this.drawSpeedMultiplier = speeds[(idx + 1) % speeds.length];
-    },
-
-    surpriseDraw() {
-      const funTopics = [
-        ...this.ideaPresets,
-        { key: 'Acoustic Guitar', label: 'Acoustic Guitar' },
-        { key: 'Tyrannosaurus Rex Dinosaur', label: 'T-Rex Dinosaur' },
-        { key: 'Deep Sea Submarine', label: 'Submarine' },
-        { key: 'Jet Airplane', label: 'Jet Airplane' },
-        { key: 'Cute Cat', label: 'Cute Cat' }
-      ];
-      const pick = funTopics[Math.floor(Math.random() * funTopics.length)];
-      this.showIdeas = false;
-      this.requestTutorDraw(pick.key, pick.label);
-    },
-
-    async requestTutorDraw(rawPrompt, displayLabel = '') {
-      const prompt = (rawPrompt || '').trim();
-      if (!prompt) return;
-      this.quickDrawInput = '';
-      const cleanTitle = (displayLabel || prompt.replace(/_/g, ' ')).replace(/\b\w/g, l => l.toUpperCase());
-
-      if (this.isTutorPage) {
-        window.dispatchEvent(new CustomEvent('scratchpad-request-tutor-draw', {
-          detail: { prompt: cleanTitle, rawKey: prompt }
-        }));
-        return;
-      }
-
-      // Direct fetch when used outside the Tutor page
-      window.dispatchEvent(new CustomEvent('tutor-draw-animated', {
-        detail: { steps: [], title: cleanTitle }
-      }));
-      try {
-        const res = await fetch('/student/tutor/generate-drawing', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: cleanTitle })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.steps && data.steps.length > 0) {
-            window.dispatchEvent(new CustomEvent('tutor-draw-animated', {
-              detail: { steps: data.steps, title: data.title || cleanTitle }
-            }));
-            return;
-          }
-        }
-      } catch (e) {}
-      window.dispatchEvent(new CustomEvent('tutor-draw-diagram', {
-        detail: { diagram: prompt, title: cleanTitle }
-      }));
     },
 
     saveUndoState() {
@@ -698,7 +307,6 @@ function digitalScratchpad() {
 
     buildCompositeExport() {
       const userCanvas = this.$refs.scratchCanvas;
-      const tutorCanvas = this.$refs.tutorCanvas;
       if (!userCanvas) return null;
 
       const exportCanvas = document.createElement('canvas');
@@ -706,127 +314,53 @@ function digitalScratchpad() {
       exportCanvas.height = userCanvas.height;
       const expCtx = exportCanvas.getContext('2d');
 
-      // Normalize userCanvas so white dark-mode strokes (#ffffff) become crisp dark charcoal ink (#151515) on the white export canvas
-      const normUserCanvas = document.createElement('canvas');
-      normUserCanvas.width = userCanvas.width;
-      normUserCanvas.height = userCanvas.height;
-      const normCtx = normUserCanvas.getContext('2d');
-      normCtx.drawImage(userCanvas, 0, 0);
-      try {
-        const imgData = normCtx.getImageData(0, 0, normUserCanvas.width, normUserCanvas.height);
-        const d = imgData.data;
-        for (let i = 0; i < d.length; i += 4) {
-          if (d[i + 3] > 25 && d[i] > 235 && d[i + 1] > 235 && d[i + 2] > 235) {
-            d[i] = 21;
-            d[i + 1] = 21;
-            d[i + 2] = 21;
-          }
-        }
-        normCtx.putImageData(imgData, 0, 0);
-      } catch (e) {}
-
-      // Solid white background for maximum vision contrast
       expCtx.fillStyle = '#ffffff';
       expCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
-
-      const hasTutorBlueprint = Boolean(this.totalSteps > 0 || this.staticDiagramKey);
-
-      if (hasTutorBlueprint && tutorCanvas) {
-        if (this.traceMode) {
-          // Draw blueprint as a faint 25% reference guide underneath
-          expCtx.save();
-          expCtx.globalAlpha = 0.25;
-          expCtx.drawImage(tutorCanvas, 0, 0);
-          expCtx.restore();
-
-          // Draw student's traced strokes at 100% bold opacity on top
-          expCtx.save();
-          expCtx.globalAlpha = 1.0;
-          expCtx.drawImage(normUserCanvas, 0, 0);
-          expCtx.restore();
-
-          // Stamp clean Trace Mode visual context banner at the bottom for Vision AI
-          const dpr = window.devicePixelRatio || 1;
-          expCtx.save();
-          const bannerH = Math.round(24 * dpr);
-          expCtx.fillStyle = '#151515';
-          expCtx.fillRect(0, exportCanvas.height - bannerH, exportCanvas.width, bannerH);
-          expCtx.fillStyle = '#f8b000';
-          expCtx.font = `bold ${Math.round(11 * dpr)}px Outfit, sans-serif`;
-          expCtx.textAlign = 'center';
-          expCtx.textBaseline = 'middle';
-          const bpName = this.tutorDrawingTitle || 'Diagram';
-          expCtx.fillText(
-            `TRACE MODE: "${bpName}" — Faint Background = Reference Blueprint | Bold Strokes = Student Trace`,
-            exportCanvas.width / 2,
-            exportCanvas.height - bannerH / 2
-          );
-          expCtx.restore();
-        } else {
-          // Normal mode: draw tutor blueprint + student strokes
-          expCtx.save();
-          expCtx.globalAlpha = this.hasUserStrokes ? 0.78 : 1.0;
-          expCtx.drawImage(tutorCanvas, 0, 0);
-          expCtx.restore();
-
-          if (this.hasUserStrokes) {
-            expCtx.save();
-            expCtx.globalAlpha = 1.0;
-            expCtx.drawImage(normUserCanvas, 0, 0);
-            expCtx.restore();
-          }
-        }
-      } else {
-        expCtx.drawImage(normUserCanvas, 0, 0);
-      }
+      expCtx.drawImage(userCanvas, 0, 0);
 
       return {
         dataUrl: exportCanvas.toDataURL('image/png'),
-        traceMode: Boolean(this.traceMode),
-        blueprintTitle: this.tutorDrawingTitle || '',
+        traceMode: false,
+        blueprintTitle: '',
         hasUserStrokes: Boolean(this.hasUserStrokes),
-        hasTutorBlueprint: hasTutorBlueprint
+        hasTutorBlueprint: false
       };
     },
 
     attachDrawingToAnswer() {
+      if (!this.hasUserStrokes) {
+        this.showToast('Please draw your diagram on the canvas first!');
+        return;
+      }
       const payload = this.buildCompositeExport();
       if (!payload) return;
       window.dispatchEvent(new CustomEvent('scratchpad-attach-drawing', { detail: payload }));
-      this.showToast(this.traceMode ? 'Traced drawing attached to answer!' : 'Drawing attached to your answer!');
+      this.showToast('Drawing attached to your answer!');
+      this.requestCloseScratchpad();
     },
 
     sendDrawingToTutor(autoSend = false) {
+      if (!this.hasUserStrokes) {
+        this.showToast('Please draw on the canvas first!');
+        return;
+      }
       const payload = this.buildCompositeExport();
       if (!payload) return;
       payload.autoSend = Boolean(autoSend);
       window.dispatchEvent(new CustomEvent('scratchpad-send-to-tutor', { detail: payload }));
-      if (autoSend) {
-        this.showToast(this.traceMode ? 'Sent traced blueprint to Tutor!' : 'Sent drawing to Tutor!');
-      } else {
-        this.showToast(this.traceMode ? 'Traced drawing attached to chat!' : 'Attached to Tutor chat!');
-      }
-    },
-
-    get currentPrimaryColor() {
-      const theme = document.documentElement.getAttribute('data-theme') || 'light';
-      const isDark = ['dark', 'dracula', 'night', 'black', 'saxazdark'].includes(theme);
-      return isDark ? '#ffffff' : '#151515';
+      this.showToast('Sent drawing to Ask Tutor!');
     },
 
     init() {
-      const checkMiniTutor = () => {
-        this.isMiniTutorOpen = document.body.classList.contains('mini-tutor-open');
-      };
-      checkMiniTutor();
-      const bodyObserver = new MutationObserver(checkMiniTutor);
-      bodyObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      if (window.innerWidth <= 640) {
+        this.boxSize.width = Math.max(300, window.innerWidth - 16);
+      }
 
       window.addEventListener('mousemove', (e) => {
         if (this.resizing) {
           const deltaX = e.clientX - this.resizeStart.x;
           const deltaY = e.clientY - this.resizeStart.y;
-          const newWidth = Math.max(380, Math.min(window.innerWidth - 32, this.resizeStart.width + deltaX));
+          const newWidth = Math.max(360, Math.min(window.innerWidth - 32, this.resizeStart.width + deltaX));
           const newHeight = Math.max(320, Math.min(window.innerHeight - 60, this.resizeStart.height + deltaY));
           this.boxSize = { width: newWidth, height: newHeight };
           this.$nextTick(() => this.resizeCanvas());
@@ -872,6 +406,9 @@ function digitalScratchpad() {
       });
 
       window.addEventListener('resize', () => {
+        if (window.innerWidth <= 640) {
+          this.boxSize.width = Math.max(300, window.innerWidth - 16);
+        }
         if (this.isOpen) {
           this.$nextTick(() => this.resizeCanvas());
         }
@@ -880,130 +417,45 @@ function digitalScratchpad() {
       window.addEventListener('toggle-scratchpad', () => {
         this.toggleScratchpad();
       });
-
-      window.addEventListener('tutor-draw-animated', (e) => {
-        const steps = e.detail?.steps || [];
-        const title = e.detail?.title || 'Educational Diagram';
-        if (!this.isOpen) {
-          this.isOpen = true;
-          document.body.classList.add('scratchpad-open');
-          if (this.pos.x === 0 && this.pos.y === 0) {
-            this.centerScratchpad();
-          }
-        }
-        if (!steps || steps.length === 0) {
-          this.playbackSeqId++;
-          this.cancelDrawing = true;
-          this.isTutorDrawing = false;
-          this.isPreparingDrawing = true;
-          this.isPlayerActive = true;
-          this.isPaused = false;
-          this.isFinished = false;
-          this.stepsList = [];
-          this.staticDiagramKey = '';
-          this.totalSteps = 0;
-          this.currentStepIndex = 0;
-          this.tutorDrawingTitle = title;
-          this.currentStepGuide = `Preparing blueprint for ${title}...`;
-          this.$nextTick(() => {
-            setTimeout(() => {
-              this.resizeCanvas(false);
-              this.clearTutorCanvas();
-            }, 25);
-          });
-          return;
-        }
-        this.playbackSeqId++;
-        this.cancelDrawing = true;
-        this.isPreparingDrawing = false;
-        this.staticDiagramKey = '';
-        this.$nextTick(() => {
-          setTimeout(() => {
-            this.resizeCanvas(false);
-            this.clearTutorCanvas();
-            this.playTutorDrawingSequence(steps, title);
-          }, 35);
-        });
-      });
-
-      window.addEventListener('tutor-draw-diagram', (e) => {
-        const diagram = e.detail?.diagram || 'convex_mirror';
-        const title = e.detail?.title || 'Convex Mirror Ray Diagram';
-        this.playbackSeqId++;
-        this.cancelDrawing = true;
-        this.isPreparingDrawing = false;
-        this.isTutorDrawing = false;
-        this.isPlayerActive = false;
-        this.isPaused = false;
-        this.isFinished = true;
-        this.stepsList = [];
-        this.totalSteps = 0;
-        this.currentStepIndex = 0;
-        this.staticDiagramKey = diagram;
-        this.tutorDrawingTitle = title;
-        this.currentStepGuide = '';
-        if (!this.isOpen) {
-          this.isOpen = true;
-          document.body.classList.add('scratchpad-open');
-          if (this.pos.x === 0 && this.pos.y === 0) {
-            this.centerScratchpad();
-          }
-        }
-        this.$nextTick(() => {
-          setTimeout(() => {
-            this.resizeCanvas(false);
-            this.clearTutorCanvas();
-            this.drawEducationalDiagram(diagram, title);
-          }, 50);
-        });
-      });
     },
 
     centerScratchpad() {
       const panelWidth = Math.min(this.boxSize.width, window.innerWidth - 32);
       const panelHeight = Math.min(this.boxSize.height, window.innerHeight - 80);
-      const startX = Math.max(16, Math.round((window.innerWidth - panelWidth) / 2));
+      const miniTutorOpen = document.body.classList.contains('mini-tutor-open') && window.innerWidth >= 1024;
+      const availableWidth = miniTutorOpen ? Math.max(panelWidth + 32, window.innerWidth - 430) : window.innerWidth;
+      const startX = Math.max(16, Math.round((availableWidth - panelWidth) / 2));
       const startY = Math.max(68, Math.round((window.innerHeight - panelHeight) / 2));
       this.pos = { x: startX, y: startY };
     },
 
+    requestCloseScratchpad() {
+      this.isOpen = false;
+      document.body.classList.remove('scratchpad-open');
+    },
+
     toggleScratchpad() {
-      this.isOpen = !this.isOpen;
-      document.body.classList.toggle('scratchpad-open', this.isOpen);
       if (this.isOpen) {
-        this.isTutorPage = window.location.pathname.includes('/tutor') || !!document.getElementById('chat-container');
-        this.isDigiStudyPage = window.location.pathname.includes('/digi-library/banks/');
-        this.isMiniTutorOpen = document.body.classList.contains('mini-tutor-open');
-        const btn = document.getElementById('scratchpad-dock-btn');
-        const isBtnVisible = btn && btn.offsetParent !== null && btn.getBoundingClientRect().width > 0;
-        if (isBtnVisible) {
-          const btnRect = btn.getBoundingClientRect();
-          const panelWidth = Math.min(this.boxSize.width, window.innerWidth - 32);
-          let startY = Math.round(btnRect.bottom + 12);
-          if (startY + this.boxSize.height > window.innerHeight - 20) {
-            startY = Math.max(80, window.innerHeight - this.boxSize.height - 20);
-          }
-          const isPaletteOpen = document.body.classList.contains('question-palette-open') || document.body.classList.contains('mini-tutor-open');
-          let startX;
-          if (isPaletteOpen && window.innerWidth >= 1024) {
-            startX = Math.max(16, window.innerWidth - panelWidth - 450);
-          } else {
-            startX = Math.max(16, Math.round(btnRect.right - panelWidth - 10));
-          }
-          this.pos = { x: startX, y: startY };
-        } else {
-          if (this.pos.x === 0 && this.pos.y === 0) {
-            this.centerScratchpad();
-          }
-        }
-        this.$nextTick(() => {
-          setTimeout(() => this.resizeCanvas(), 40);
-        });
+        this.requestCloseScratchpad();
+        return;
       }
+      if (window.innerWidth <= 640) {
+        this.boxSize.width = Math.max(300, window.innerWidth - 16);
+      }
+      this.isOpen = true;
+      this.bringToFront();
+      document.body.classList.add('scratchpad-open');
+      if (this.pos.x === 0 && this.pos.y === 0) {
+        this.centerScratchpad();
+      }
+      this.$nextTick(() => {
+        setTimeout(() => this.resizeCanvas(), 30);
+      });
     },
 
     startDrag(e) {
       if (e.target.closest('button') || e.target.closest('input') || e.target.closest('form')) return;
+      this.bringToFront();
       this.dragging = true;
       this.dragOffset = {
         x: e.clientX - this.pos.x,
@@ -1013,6 +465,7 @@ function digitalScratchpad() {
 
     startTouchDrag(e) {
       if (e.target.closest('button') || e.target.closest('input') || e.target.closest('form') || !e.touches || e.touches.length !== 1) return;
+      this.bringToFront();
       this.dragging = true;
       const touch = e.touches[0];
       this.dragOffset = {
@@ -1022,6 +475,7 @@ function digitalScratchpad() {
     },
 
     startResize(e) {
+      this.bringToFront();
       this.resizing = true;
       this.resizeStart = {
         x: e.clientX,
@@ -1029,11 +483,6 @@ function digitalScratchpad() {
         width: this.boxSize.width,
         height: this.boxSize.height
       };
-    },
-
-    setSize(w, h) {
-      this.boxSize = { width: w, height: h };
-      this.$nextTick(() => this.resizeCanvas());
     },
 
     setColor(key) {
@@ -1046,6 +495,9 @@ function digitalScratchpad() {
     },
 
     resizeCanvas(skipUserRestore = false) {
+      if (window.innerWidth <= 640) {
+        this.boxSize.width = Math.max(300, window.innerWidth - 16);
+      }
       const userCanvas = this.$refs.scratchCanvas;
       const tutorCanvas = this.$refs.tutorCanvas;
       const container = this.$refs.canvasContainer;
@@ -1053,7 +505,7 @@ function digitalScratchpad() {
 
       const rect = container.getBoundingClientRect();
       const width = rect.width > 0 ? rect.width : (this.boxSize.width || 620);
-      const height = rect.height > 0 ? rect.height : (this.boxSize.height - 96 || 420);
+      const height = rect.height > 0 ? rect.height : (this.boxSize.height - 96 || 400);
       this.canvasLogicalW = width;
       this.canvasLogicalH = height;
 
@@ -1067,7 +519,6 @@ function digitalScratchpad() {
 
       const dpr = window.devicePixelRatio || 1;
 
-      // Configure Foreground Student Canvas
       userCanvas.width = Math.round(width * dpr);
       userCanvas.height = Math.round(height * dpr);
       userCanvas.style.width = width + 'px';
@@ -1083,28 +534,12 @@ function digitalScratchpad() {
         this.ctx.drawImage(tempUserCanvas, 0, 0, width, height);
       }
 
-      // Configure Background Tutor Blueprint Canvas
       if (tutorCanvas) {
         tutorCanvas.width = Math.round(width * dpr);
         tutorCanvas.height = Math.round(height * dpr);
         tutorCanvas.style.width = width + 'px';
         tutorCanvas.style.height = height + 'px';
-
         this.tutorCtx = tutorCanvas.getContext('2d');
-        this.tutorCtx.setTransform(1, 0, 0, 1, 0, 0);
-        this.tutorCtx.scale(dpr, dpr);
-        this.tutorCtx.lineCap = 'round';
-        this.tutorCtx.lineJoin = 'round';
-
-        // Crisp vector re-render of tutor blueprint if steps or static diagram exist
-        if (!this.isPreparingDrawing) {
-          if (this.stepsList && this.stepsList.length > 0) {
-            const upTo = this.isFinished ? (this.totalSteps - 1) : Math.max(0, this.currentStepIndex);
-            this.renderTutorStepsSync(upTo);
-          } else if (this.staticDiagramKey) {
-            this.drawEducationalDiagram(this.staticDiagramKey, this.tutorDrawingTitle, true);
-          }
-        }
       }
     },
 
@@ -1118,51 +553,24 @@ function digitalScratchpad() {
       this.hasUserStrokes = false;
     },
 
-    clearTutorCanvas() {
-      const tutorCanvas = this.$refs.tutorCanvas;
-      if (!tutorCanvas || !this.tutorCtx) return;
-      this.tutorCtx.save();
-      this.tutorCtx.setTransform(1, 0, 0, 1, 0, 0);
-      this.tutorCtx.clearRect(0, 0, tutorCanvas.width, tutorCanvas.height);
-      this.tutorCtx.restore();
-    },
-
-    clearCanvas() {
-      this.clearUserCanvas();
-      this.clearTutorCanvas();
-    },
-
-    clearSmart() {
-      const hasBlueprint = Boolean(this.totalSteps > 0 || this.staticDiagramKey);
-      if (this.hasUserStrokes) {
-        this.saveUndoState();
+    async clearSmart() {
+      if (!this.hasUserStrokes) {
         this.clearUserCanvas();
-        if (hasBlueprint) {
-          this.showToast('Cleared your strokes! (Click Clear again to remove blueprint)');
-        } else {
-          this.showToast('Canvas cleared');
-        }
-      } else if (hasBlueprint) {
-        this.playbackSeqId++;
-        this.cancelDrawing = true;
-        this.isPlayerActive = false;
-        this.isTutorDrawing = false;
-        this.isPreparingDrawing = false;
-        this.isPaused = false;
-        this.isFinished = false;
-        this.stepsList = [];
-        this.totalSteps = 0;
-        this.currentStepIndex = 0;
-        this.staticDiagramKey = '';
-        this.tutorDrawingTitle = '';
-        this.currentStepGuide = '';
-        this.traceMode = false;
-        this.clearTutorCanvas();
-        this.showToast('Blueprint cleared');
-      } else {
-        this.clearCanvas();
-        this.showToast('Canvas cleared');
+        this.showToast('Canvas is already clear');
+        return;
       }
+      const res = await window.saxazConfirm({
+        title: 'Clear Your Drawing?',
+        text: 'Erase your strokes from the Scratchpad? (You can still press Undo if needed.)',
+        tone: 'danger',
+        icon: 'delete',
+        confirmButtonText: 'Yes, Clear',
+        cancelButtonText: 'Keep Drawing'
+      });
+      if (!res.isConfirmed) return;
+      this.saveUndoState();
+      this.clearUserCanvas();
+      this.showToast('Canvas cleared');
     },
 
     getCanvasPos(e) {
@@ -1194,7 +602,7 @@ function digitalScratchpad() {
     drawStroke(e) {
       if (!this.isDrawing || !this.ctx) return;
       const pos = this.getCanvasPos(e);
-      let strokeColor = this.activeColorKey === 'primary' ? this.currentPrimaryColor : this.activeColorKey;
+      const strokeColor = this.activeColorKey || '#231f20';
 
       if (!this.isEraser && this.shapeSnapshot && (this.drawTool === 'line' || this.drawTool === 'circle')) {
         this.ctx.putImageData(this.shapeSnapshot, 0, 0);
@@ -1237,1642 +645,6 @@ function digitalScratchpad() {
       if (this.ctx) {
         this.ctx.globalCompositeOperation = 'source-over';
       }
-    },
-
-    // -----------------------------------------------------------------
-    // Bulletproof Video Playback Engine & Live Tutor Drawing System
-    // -----------------------------------------------------------------
-    toggleTraceMode() {
-      this.traceMode = !this.traceMode;
-      if (this.traceMode) {
-        // If the blueprint is still mid-animation when student activates Trace Mode, complete it so they have the full guide ready to trace!
-        if (this.isTutorDrawing && !this.isFinished && this.totalSteps > 0) {
-          this.finishInstantly(true);
-        }
-        this.showToast('Trace Mode ON: Draw over the faint blueprint, then click Attach or Send!');
-      } else {
-        this.showToast('Trace Mode OFF');
-      }
-    },
-
-    closePlayer() {
-      this.playbackSeqId++;
-      this.isPlayerActive = false;
-      this.isTutorDrawing = false;
-      this.isPreparingDrawing = false;
-      this.isPaused = false;
-      this.cancelDrawing = true;
-    },
-
-    finishInstantly(silent = false) {
-      this.playbackSeqId++;
-      this.cancelDrawing = true;
-      this.instantFinish = false;
-      this.isPaused = false;
-      this.isTutorDrawing = false;
-      this.isFinished = true;
-      if (this.stepsList && this.totalSteps > 0) {
-        const lastIdx = this.totalSteps - 1;
-        this.currentStepIndex = lastIdx;
-        if (this.stepsList[lastIdx]?.guide) {
-          this.currentStepGuide = this.stepsList[lastIdx].guide;
-        }
-        this.renderTutorStepsSync(lastIdx);
-      }
-      if (!silent) {
-        this.showToast(`Finished: ${this.tutorDrawingTitle || 'Diagram'}`);
-      }
-      window.dispatchEvent(new CustomEvent('tutor-drawing-finished'));
-    },
-
-    togglePlayPause() {
-      if (this.isFinished || this.currentStepIndex >= this.totalSteps - 1) {
-        this.replayDrawing();
-        return;
-      }
-      if (!this.isPaused) {
-        // Pausing: immediately cancel mid-stroke animation and render current step cleanly
-        this.playbackSeqId++;
-        this.isPaused = true;
-        this.isTutorDrawing = false;
-        this.cancelDrawing = true;
-        this.renderTutorStepsSync(this.currentStepIndex);
-      } else {
-        // Resuming from pause or seek: ensure 0..currentStepIndex are rendered, then animate from currentStepIndex + 1
-        this.renderTutorStepsSync(this.currentStepIndex);
-        if (this.currentStepIndex < this.totalSteps - 1) {
-          this.currentStepIndex++;
-        }
-        this.isPaused = false;
-        this.isTutorDrawing = true;
-        this.cancelDrawing = false;
-        this.instantFinish = false;
-        this.runPlayLoop();
-      }
-    },
-
-    stepBackward() {
-      const prev = Math.max(0, this.currentStepIndex - 1);
-      this.seekToStep(prev);
-    },
-
-    stepForward() {
-      const next = Math.min(this.totalSteps - 1, this.currentStepIndex + 1);
-      this.seekToStep(next);
-    },
-
-    replayDrawing() {
-      if (!this.stepsList || this.stepsList.length === 0) return;
-      this.playbackSeqId++;
-      this.currentStepIndex = 0;
-      this.isPaused = false;
-      this.isFinished = false;
-      this.isTutorDrawing = true;
-      this.isPreparingDrawing = false;
-      this.cancelDrawing = false;
-      this.instantFinish = false;
-      this.clearTutorCanvas();
-      this.runPlayLoop();
-    },
-
-    onScrubInput(rawValue, immediate = false) {
-      if (!this.stepsList || this.stepsList.length === 0) return;
-      const target = Math.max(0, Math.min(this.totalSteps - 1, parseInt(rawValue, 10) || 0));
-
-      // Immediately halt any active async animation loop so it cannot overwrite the seeked frame
-      this.playbackSeqId++;
-      this.cancelDrawing = true;
-      this.isPaused = true;
-      this.isTutorDrawing = false;
-      this.instantFinish = false;
-      this.currentStepIndex = target;
-      this.isFinished = target >= this.totalSteps - 1;
-      if (this.stepsList[target]?.guide) {
-        this.currentStepGuide = this.stepsList[target].guide;
-      }
-
-      this._pendingSeekTarget = target;
-      if (immediate) {
-        if (this._seekRafId) {
-          cancelAnimationFrame(this._seekRafId);
-          this._seekRafId = null;
-        }
-        this.renderTutorStepsSync(target);
-        return;
-      }
-
-      if (!this._seekRafId) {
-        this._seekRafId = requestAnimationFrame(() => {
-          this._seekRafId = null;
-          if (this._pendingSeekTarget !== null) {
-            this.renderTutorStepsSync(this._pendingSeekTarget);
-          }
-        });
-      }
-    },
-
-    seekToStep(targetIndex) {
-      this.onScrubInput(targetIndex, true);
-    },
-
-    getCoordMetrics() {
-      const cw = this.canvasLogicalW > 0 ? this.canvasLogicalW : 620;
-      const ch = this.canvasLogicalH > 0 ? this.canvasLogicalH : 420;
-      const padX = Math.round(cw * 0.04);
-      const padY = Math.round(ch * 0.04);
-      const scaleX = (cw - padX * 2) / 800;
-      const scaleY = (ch - padY * 2) / 600;
-      const minScale = Math.min(scaleX, scaleY);
-      return {
-        cw,
-        ch,
-        padX,
-        padY,
-        scaleX,
-        scaleY,
-        minScale,
-        sx: (x) => Math.round(padX + (Number(x) || 0) * scaleX),
-        sy: (y) => Math.round(padY + (Number(y) || 0) * scaleY),
-        sr: (r) => Math.max(2, Math.round((Number(r) || 0) * minScale))
-      };
-    },
-
-    renderTutorStepsSync(upToIndex) {
-      if (!this.stepsList || this.stepsList.length === 0) return;
-      if (!this.tutorCtx) this.resizeCanvas();
-      if (!this.tutorCtx) return;
-
-      this.clearTutorCanvas();
-      this.activePenColor = '#2563eb';
-      const metrics = this.getCoordMetrics();
-      const maxIdx = Math.max(0, Math.min(this.stepsList.length - 1, upToIndex));
-
-      for (let i = 0; i <= maxIdx; i++) {
-        this.renderSingleStepSync(this.stepsList[i], metrics);
-      }
-    },
-
-    renderSingleStepSync(step, metrics = null) {
-      if (!step || !step.type) return;
-      const ctx = this.tutorCtx || this.ctx;
-      if (!ctx) return;
-      const m = metrics || this.getCoordMetrics();
-      const { padX, padY, scaleX, scaleY, minScale, sx, sy, sr } = m;
-
-      ctx.save();
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.setLineDash(Array.isArray(step.dash) ? step.dash : []);
-
-      switch (step.type) {
-        case 'color': {
-          if (step.color) {
-            this.activePenColor = step.color;
-          }
-          break;
-        }
-        case 'svg_path': {
-          if (!step.d || typeof step.d !== 'string') break;
-          const col = step.color || this.activePenColor || '#1e293b';
-          const width = Number(step.width) || 2.8;
-          this.activePenColor = col;
-          try {
-            if (!step._cachedPath2D) {
-              step._cachedPath2D = new Path2D(step.d);
-            }
-            ctx.translate(padX, padY);
-            ctx.scale(scaleX, scaleY);
-            if (step.fill && step.fill !== 'none' && step.fill !== 'rgba(0, 0, 0, 0)') {
-              ctx.fillStyle = step.fill;
-              ctx.fill(step._cachedPath2D);
-            }
-            ctx.strokeStyle = col;
-            ctx.lineWidth = width / minScale;
-            ctx.stroke(step._cachedPath2D);
-          } catch (e) {}
-          break;
-        }
-        case 'line': {
-          const x1 = sx(step.startX);
-          const y1 = sy(step.startY);
-          const x2 = sx(step.endX);
-          const y2 = sy(step.endY);
-          const col = step.color || this.activePenColor;
-          this.activePenColor = col;
-          ctx.strokeStyle = col;
-          ctx.lineWidth = Number(step.width) || 2.5;
-          ctx.beginPath();
-          ctx.moveTo(x1, y1);
-          ctx.lineTo(x2, y2);
-          ctx.stroke();
-          this.penPos = { x: x2, y: y2 };
-          break;
-        }
-        case 'curve': {
-          const x1 = sx(step.startX);
-          const y1 = sy(step.startY);
-          const cx = sx(step.cpX);
-          const cy = sy(step.cpY);
-          const x2 = sx(step.endX);
-          const y2 = sy(step.endY);
-          const col = step.color || this.activePenColor;
-          this.activePenColor = col;
-          ctx.strokeStyle = col;
-          ctx.lineWidth = Number(step.width) || 2.5;
-          ctx.beginPath();
-          ctx.moveTo(x1, y1);
-          ctx.quadraticCurveTo(cx, cy, x2, y2);
-          if (step.fill && step.fill !== 'none' && step.fill !== 'rgba(0, 0, 0, 0)') {
-            ctx.fillStyle = step.fill;
-            ctx.fill();
-          }
-          ctx.stroke();
-          this.penPos = { x: x2, y: y2 };
-          break;
-        }
-        case 'bezier': {
-          const x1 = sx(step.startX);
-          const y1 = sy(step.startY);
-          const c1x = sx(step.cp1X);
-          const c1y = sy(step.cp1Y);
-          const c2x = sx(step.cp2X);
-          const c2y = sy(step.cp2Y);
-          const x2 = sx(step.endX);
-          const y2 = sy(step.endY);
-          const col = step.color || this.activePenColor;
-          this.activePenColor = col;
-          ctx.strokeStyle = col;
-          ctx.lineWidth = Number(step.width) || 2.5;
-          ctx.beginPath();
-          ctx.moveTo(x1, y1);
-          ctx.bezierCurveTo(c1x, c1y, c2x, c2y, x2, y2);
-          if (step.fill && step.fill !== 'none' && step.fill !== 'rgba(0, 0, 0, 0)') {
-            ctx.fillStyle = step.fill;
-            ctx.fill();
-          }
-          ctx.stroke();
-          this.penPos = { x: x2, y: y2 };
-          break;
-        }
-        case 'path': {
-          if (!step.points || step.points.length < 2) break;
-          const pts = step.points.map(p => ({ x: sx(p.x), y: sy(p.y) }));
-          const col = step.color || this.activePenColor;
-          this.activePenColor = col;
-          ctx.strokeStyle = col;
-          ctx.lineWidth = Number(step.width) || 2.5;
-          ctx.beginPath();
-          ctx.moveTo(pts[0].x, pts[0].y);
-          for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-          if (step.closed) ctx.closePath();
-          if (step.fill && step.fill !== 'none' && step.fill !== 'rgba(0, 0, 0, 0)') {
-            ctx.fillStyle = step.fill;
-            ctx.fill();
-          }
-          ctx.stroke();
-          this.penPos = pts[pts.length - 1];
-          break;
-        }
-        case 'circle': {
-          const cx = sx(step.x);
-          const cy = sy(step.y);
-          const r = sr(step.radius);
-          const col = step.color || this.activePenColor;
-          this.activePenColor = col;
-          ctx.strokeStyle = col;
-          ctx.lineWidth = Number(step.width) || 2.5;
-          ctx.beginPath();
-          ctx.arc(cx, cy, r, 0, Math.PI * 2);
-          if (step.fill && step.fill !== 'none' && step.fill !== 'rgba(0, 0, 0, 0)') {
-            ctx.fillStyle = step.fill;
-            ctx.fill();
-          }
-          ctx.stroke();
-          this.penPos = { x: cx + r, y: cy };
-          break;
-        }
-        case 'arc': {
-          const cx = sx(step.x);
-          const cy = sy(step.y);
-          const r = sr(step.radius);
-          const startAng = Number(step.startAngle) || 0;
-          const endAng = Number(step.endAngle) || Math.PI;
-          const col = step.color || this.activePenColor;
-          this.activePenColor = col;
-          ctx.strokeStyle = col;
-          ctx.lineWidth = Number(step.width) || 2.5;
-          ctx.beginPath();
-          ctx.arc(cx, cy, r, startAng, endAng);
-          ctx.stroke();
-          this.penPos = { x: cx + r * Math.cos(endAng), y: cy + r * Math.sin(endAng) };
-          break;
-        }
-        case 'ellipse': {
-          const cx = sx(step.x);
-          const cy = sy(step.y);
-          const rx = sr(step.rx);
-          const ry = sr(step.ry);
-          const col = step.color || this.activePenColor;
-          this.activePenColor = col;
-          ctx.strokeStyle = col;
-          ctx.lineWidth = Number(step.width) || 2.5;
-          ctx.beginPath();
-          ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-          if (step.fill && step.fill !== 'none' && step.fill !== 'rgba(0, 0, 0, 0)') {
-            ctx.fillStyle = step.fill;
-            ctx.fill();
-          }
-          ctx.stroke();
-          this.penPos = { x: cx + rx, y: cy };
-          break;
-        }
-        case 'rect': {
-          const rx = sx(step.x);
-          const ry = sy(step.y);
-          const rw = Math.round((Number(step.w) || 0) * scaleX);
-          const rh = Math.round((Number(step.h) || 0) * scaleY);
-          const col = step.color || this.activePenColor;
-          this.activePenColor = col;
-          if (step.fill && step.fill !== 'none' && step.fill !== 'rgba(0, 0, 0, 0)') {
-            ctx.fillStyle = step.fill;
-            ctx.fillRect(rx, ry, rw, rh);
-          }
-          ctx.strokeStyle = col;
-          ctx.lineWidth = Number(step.width) || 2.5;
-          ctx.strokeRect(rx, ry, rw, rh);
-          this.penPos = { x: rx + rw, y: ry + rh };
-          break;
-        }
-        case 'arrow': {
-          const x1 = sx(step.startX);
-          const y1 = sy(step.startY);
-          const x2 = sx(step.endX);
-          const y2 = sy(step.endY);
-          const arrowColor = step.color || this.activePenColor;
-          this.activePenColor = arrowColor;
-          ctx.strokeStyle = arrowColor;
-          ctx.fillStyle = arrowColor;
-          ctx.lineWidth = Number(step.width) || 2.5;
-          ctx.beginPath();
-          ctx.moveTo(x1, y1);
-          ctx.lineTo(x2, y2);
-          ctx.stroke();
-
-          const angle = Math.atan2(y2 - y1, x2 - x1);
-          const headLen = Math.max(7, Math.min(14, sr(12)));
-          ctx.beginPath();
-          ctx.moveTo(x2, y2);
-          ctx.lineTo(x2 - headLen * Math.cos(angle - Math.PI / 6), y2 - headLen * Math.sin(angle - Math.PI / 6));
-          ctx.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 6), y2 - headLen * Math.sin(angle + Math.PI / 6));
-          ctx.closePath();
-          ctx.fill();
-          this.penPos = { x: x2, y: y2 };
-          break;
-        }
-        case 'text': {
-          const tx = sx(step.x);
-          const ty = sy(step.y);
-          const txt = step.text || '';
-          const fontSize = Math.max(10, Math.min(18, Math.round((Number(step.size) || 13) * minScale * 1.1)));
-          const txtColor = step.color || '#1e293b';
-          const align = step.align || 'center';
-          ctx.font = `bold ${fontSize}px Outfit, -apple-system, sans-serif`;
-          ctx.fillStyle = txtColor;
-          ctx.textAlign = align;
-          ctx.textBaseline = 'middle';
-          ctx.fillText(txt, tx, ty);
-          this.penPos = { x: tx, y: ty };
-          break;
-        }
-      }
-      ctx.restore();
-    },
-
-    async playTutorDrawingSequence(steps, title) {
-      if (!steps || steps.length === 0) return;
-
-      this.playbackSeqId++;
-      this.stepsList = steps;
-      this.totalSteps = steps.length;
-      this.currentStepIndex = 0;
-      this.tutorDrawingTitle = title || 'Educational Diagram';
-      this.currentStepGuide = steps[0]?.guide || '';
-      this.isPlayerActive = true;
-      this.isPreparingDrawing = false;
-      this.isTutorDrawing = true;
-      this.isPaused = false;
-      this.isFinished = false;
-      this.cancelDrawing = false;
-      this.instantFinish = false;
-
-      this.resizeCanvas(false);
-      this.clearTutorCanvas();
-
-      this.runPlayLoop();
-    },
-
-    async runPlayLoop() {
-      const mySeqId = ++this.playbackSeqId;
-      if (!this.tutorCtx) this.resizeCanvas(false);
-      if (!this.tutorCtx) {
-        this.isTutorDrawing = false;
-        return;
-      }
-
-      while (this.currentStepIndex < this.totalSteps) {
-        if (this.cancelDrawing || this.isPaused || this.playbackSeqId !== mySeqId) return;
-        if (this.instantFinish) {
-          this.finishInstantly();
-          return;
-        }
-
-        const stepIdx = this.currentStepIndex;
-        const step = this.stepsList[stepIdx];
-        if (step) {
-          if (step.guide) {
-            this.currentStepGuide = step.guide;
-          }
-          await this.renderSingleStep(step, true, mySeqId);
-        }
-
-        if (this.cancelDrawing || this.isPaused || this.playbackSeqId !== mySeqId) return;
-        if (this.instantFinish) {
-          this.finishInstantly();
-          return;
-        }
-
-        // Guarantee crisp vector completion of steps 0..stepIdx before moving to next step
-        this.renderTutorStepsSync(stepIdx);
-
-        if (this.currentStepIndex < this.totalSteps - 1) {
-          this.currentStepIndex++;
-        } else {
-          break;
-        }
-      }
-
-      if (this.playbackSeqId !== mySeqId) return;
-      this.isPaused = false;
-      this.isFinished = true;
-      this.isTutorDrawing = false;
-      this.showToast(`Finished: ${this.tutorDrawingTitle || 'Diagram'}`);
-      window.dispatchEvent(new CustomEvent('tutor-drawing-finished'));
-    },
-
-    getSvgPathSampler(dStr) {
-      if (!window._saxazSvgSampler) {
-        const svgNS = 'http://www.w3.org/2000/svg';
-        const svg = document.createElementNS(svgNS, 'svg');
-        svg.setAttribute('width', '0');
-        svg.setAttribute('height', '0');
-        svg.style.position = 'absolute';
-        svg.style.visibility = 'hidden';
-        svg.style.pointerEvents = 'none';
-        const pathEl = document.createElementNS(svgNS, 'path');
-        svg.appendChild(pathEl);
-        document.body.appendChild(svg);
-        window._saxazSvgSampler = pathEl;
-      }
-      window._saxazSvgSampler.setAttribute('d', dStr);
-      return window._saxazSvgSampler;
-    },
-
-    async renderSingleStep(step, animate = true, seqId = null) {
-      if (!step || !step.type) return;
-      const activeSeq = seqId !== null ? seqId : this.playbackSeqId;
-      const aborted = () => this.cancelDrawing || this.isPaused || this.instantFinish || this.playbackSeqId !== activeSeq;
-
-      if (!animate || this.instantFinish) {
-        this.renderSingleStepSync(step);
-        return;
-      }
-
-      const ctx = this.tutorCtx || this.ctx;
-      if (!ctx) return;
-
-      const m = this.getCoordMetrics();
-      const { sx, sy, sr } = m;
-      const delay = (ms) => new Promise(r => setTimeout(r, Math.max(1, ms / this.drawSpeedMultiplier)));
-
-      const traceLineSegment = async (x1, y1, x2, y2, strokeColor, width, dash = []) => {
-        if (aborted()) return;
-        ctx.save();
-        ctx.strokeStyle = strokeColor || this.activePenColor;
-        ctx.lineWidth = width || 2.5;
-        ctx.setLineDash(dash);
-
-        const dist = Math.hypot(x2 - x1, y2 - y1);
-        const numSteps = Math.max(3, Math.min(16, Math.round(dist / 12)));
-        let lastPtX = x1;
-        let lastPtY = y1;
-
-        for (let i = 1; i <= numSteps; i++) {
-          if (aborted()) {
-            ctx.restore();
-            return;
-          }
-          const t = i / numSteps;
-          const currX = x1 + (x2 - x1) * t;
-          const currY = y1 + (y2 - y1) * t;
-
-          ctx.beginPath();
-          ctx.moveTo(lastPtX, lastPtY);
-          ctx.lineTo(currX, currY);
-          ctx.stroke();
-
-          lastPtX = currX;
-          lastPtY = currY;
-          this.penPos = { x: currX, y: currY };
-          await delay(9);
-        }
-        ctx.restore();
-      };
-
-      switch (step.type) {
-        case 'svg_path': {
-          if (!step.d || typeof step.d !== 'string') break;
-          const col = step.color || this.activePenColor || '#1e293b';
-          const width = Number(step.width) || 2.8;
-          this.activePenColor = col;
-
-          try {
-            const sampler = this.getSvgPathSampler(step.d);
-            const totalLen = sampler.getTotalLength() || 0;
-            if (totalLen > 0) {
-              const samples = Math.max(6, Math.min(30, Math.round(totalLen / 14)));
-              const pt0 = sampler.getPointAtLength(0);
-              let prevX = sx(pt0.x);
-              let prevY = sy(pt0.y);
-              ctx.save();
-              ctx.strokeStyle = col;
-              ctx.lineWidth = width;
-              ctx.setLineDash(Array.isArray(step.dash) ? step.dash : []);
-
-              for (let i = 1; i <= samples; i++) {
-                if (aborted()) {
-                  ctx.restore();
-                  return;
-                }
-                const pt = sampler.getPointAtLength((i / samples) * totalLen);
-                const currX = sx(pt.x);
-                const currY = sy(pt.y);
-                ctx.beginPath();
-                ctx.moveTo(prevX, prevY);
-                ctx.lineTo(currX, currY);
-                ctx.stroke();
-                prevX = currX;
-                prevY = currY;
-                this.penPos = { x: currX, y: currY };
-                await delay(9);
-              }
-              ctx.restore();
-            }
-            if (aborted()) return;
-            this.renderSingleStepSync(step, m);
-            await delay(12);
-          } catch (e) {}
-          break;
-        }
-
-        case 'color': {
-          if (step.color) {
-            this.activePenColor = step.color;
-          }
-          if (!aborted()) await delay(18);
-          break;
-        }
-
-        case 'line': {
-          const x1 = sx(step.startX);
-          const y1 = sy(step.startY);
-          const x2 = sx(step.endX);
-          const y2 = sy(step.endY);
-          const col = step.color || this.activePenColor;
-          const width = Number(step.width) || 2.5;
-          const dash = Array.isArray(step.dash) ? step.dash : [];
-          await traceLineSegment(x1, y1, x2, y2, col, width, dash);
-          if (!aborted()) await delay(10);
-          break;
-        }
-
-        case 'curve': {
-          const x1 = sx(step.startX);
-          const y1 = sy(step.startY);
-          const cx = sx(step.cpX);
-          const cy = sy(step.cpY);
-          const x2 = sx(step.endX);
-          const y2 = sy(step.endY);
-          const col = step.color || this.activePenColor;
-          this.activePenColor = col;
-
-          const dist = Math.hypot(x2 - x1, y2 - y1) + Math.hypot(cx - x1, cy - y1);
-          const numSteps = Math.max(4, Math.min(18, Math.round(dist / 10)));
-          let prevX = x1;
-          let prevY = y1;
-          ctx.save();
-          ctx.strokeStyle = col;
-          ctx.lineWidth = Number(step.width) || 2.5;
-          ctx.setLineDash(Array.isArray(step.dash) ? step.dash : []);
-          for (let i = 1; i <= numSteps; i++) {
-            if (aborted()) {
-              ctx.restore();
-              return;
-            }
-            const t = i / numSteps;
-            const currX = (1 - t) * (1 - t) * x1 + 2 * (1 - t) * t * cx + t * t * x2;
-            const currY = (1 - t) * (1 - t) * y1 + 2 * (1 - t) * t * cy + t * t * y2;
-            ctx.beginPath();
-            ctx.moveTo(prevX, prevY);
-            ctx.lineTo(currX, currY);
-            ctx.stroke();
-            prevX = currX;
-            prevY = currY;
-            this.penPos = { x: currX, y: currY };
-            await delay(10);
-          }
-          ctx.restore();
-          if (aborted()) return;
-          this.renderSingleStepSync(step, m);
-          await delay(10);
-          break;
-        }
-
-        case 'bezier': {
-          const x1 = sx(step.startX);
-          const y1 = sy(step.startY);
-          const c1x = sx(step.cp1X);
-          const c1y = sy(step.cp1Y);
-          const c2x = sx(step.cp2X);
-          const c2y = sy(step.cp2Y);
-          const x2 = sx(step.endX);
-          const y2 = sy(step.endY);
-          const col = step.color || this.activePenColor;
-          this.activePenColor = col;
-
-          const dist = Math.hypot(x2 - x1, y2 - y1) + Math.hypot(c1x - x1, c1y - y1) + Math.hypot(c2x - c1x, c2y - c1y);
-          const numSteps = Math.max(5, Math.min(20, Math.round(dist / 10)));
-          let prevX = x1;
-          let prevY = y1;
-          ctx.save();
-          ctx.strokeStyle = col;
-          ctx.lineWidth = Number(step.width) || 2.5;
-          ctx.setLineDash(Array.isArray(step.dash) ? step.dash : []);
-          for (let i = 1; i <= numSteps; i++) {
-            if (aborted()) {
-              ctx.restore();
-              return;
-            }
-            const t = i / numSteps;
-            const currX = Math.pow(1 - t, 3) * x1 + 3 * Math.pow(1 - t, 2) * t * c1x + 3 * (1 - t) * Math.pow(t, 2) * c2x + Math.pow(t, 3) * x2;
-            const currY = Math.pow(1 - t, 3) * y1 + 3 * Math.pow(1 - t, 2) * t * c1y + 3 * (1 - t) * Math.pow(t, 2) * c2y + Math.pow(t, 3) * y2;
-            ctx.beginPath();
-            ctx.moveTo(prevX, prevY);
-            ctx.lineTo(currX, currY);
-            ctx.stroke();
-            prevX = currX;
-            prevY = currY;
-            this.penPos = { x: currX, y: currY };
-            await delay(10);
-          }
-          ctx.restore();
-          if (aborted()) return;
-          this.renderSingleStepSync(step, m);
-          await delay(10);
-          break;
-        }
-
-        case 'path': {
-          if (!step.points || step.points.length < 2) break;
-          const pts = step.points.map(p => ({ x: sx(p.x), y: sy(p.y) }));
-          const col = step.color || this.activePenColor;
-          const width = Number(step.width) || 2.5;
-          for (let pIdx = 1; pIdx < pts.length; pIdx++) {
-            if (aborted()) return;
-            await traceLineSegment(pts[pIdx - 1].x, pts[pIdx - 1].y, pts[pIdx].x, pts[pIdx].y, col, width);
-          }
-          if (aborted()) return;
-          if (step.closed && pts.length > 2) {
-            await traceLineSegment(pts[pts.length - 1].x, pts[pts.length - 1].y, pts[0].x, pts[0].y, col, width);
-          }
-          if (aborted()) return;
-          this.renderSingleStepSync(step, m);
-          await delay(10);
-          break;
-        }
-
-        case 'circle': {
-          const cx = sx(step.x);
-          const cy = sy(step.y);
-          const r = sr(step.radius);
-          const col = step.color || this.activePenColor;
-          this.activePenColor = col;
-
-          const segs = 16;
-          let prevX = cx + r;
-          let prevY = cy;
-          ctx.save();
-          ctx.strokeStyle = col;
-          ctx.lineWidth = Number(step.width) || 2.5;
-          ctx.setLineDash([]);
-          for (let i = 1; i <= segs; i++) {
-            if (aborted()) {
-              ctx.restore();
-              return;
-            }
-            const angle = (i / segs) * Math.PI * 2;
-            const currX = cx + r * Math.cos(angle);
-            const currY = cy + r * Math.sin(angle);
-            ctx.beginPath();
-            ctx.moveTo(prevX, prevY);
-            ctx.lineTo(currX, currY);
-            ctx.stroke();
-            prevX = currX;
-            prevY = currY;
-            this.penPos = { x: currX, y: currY };
-            await delay(9);
-          }
-          ctx.restore();
-          if (aborted()) return;
-          this.renderSingleStepSync(step, m);
-          await delay(10);
-          break;
-        }
-
-        case 'arc': {
-          const cx = sx(step.x);
-          const cy = sy(step.y);
-          const r = sr(step.radius);
-          const startAng = Number(step.startAngle) || 0;
-          const endAng = Number(step.endAngle) || Math.PI;
-          const col = step.color || this.activePenColor;
-          this.activePenColor = col;
-
-          const segs = 14;
-          let prevX = cx + r * Math.cos(startAng);
-          let prevY = cy + r * Math.sin(startAng);
-          ctx.save();
-          ctx.strokeStyle = col;
-          ctx.lineWidth = Number(step.width) || 2.5;
-          ctx.setLineDash([]);
-          for (let i = 1; i <= segs; i++) {
-            if (aborted()) {
-              ctx.restore();
-              return;
-            }
-            const angle = startAng + (endAng - startAng) * (i / segs);
-            const currX = cx + r * Math.cos(angle);
-            const currY = cy + r * Math.sin(angle);
-            ctx.beginPath();
-            ctx.moveTo(prevX, prevY);
-            ctx.lineTo(currX, currY);
-            ctx.stroke();
-            prevX = currX;
-            prevY = currY;
-            this.penPos = { x: currX, y: currY };
-            await delay(9);
-          }
-          ctx.restore();
-          if (!aborted()) await delay(10);
-          break;
-        }
-
-        case 'ellipse': {
-          const cx = sx(step.x);
-          const cy = sy(step.y);
-          const rx = sr(step.rx);
-          const ry = sr(step.ry);
-          const col = step.color || this.activePenColor;
-          this.activePenColor = col;
-
-          const segs = 16;
-          let prevX = cx + rx;
-          let prevY = cy;
-          ctx.save();
-          ctx.strokeStyle = col;
-          ctx.lineWidth = Number(step.width) || 2.5;
-          ctx.setLineDash([]);
-          for (let i = 1; i <= segs; i++) {
-            if (aborted()) {
-              ctx.restore();
-              return;
-            }
-            const angle = (i / segs) * Math.PI * 2;
-            const currX = cx + rx * Math.cos(angle);
-            const currY = cy + ry * Math.sin(angle);
-            ctx.beginPath();
-            ctx.moveTo(prevX, prevY);
-            ctx.lineTo(currX, currY);
-            ctx.stroke();
-            prevX = currX;
-            prevY = currY;
-            this.penPos = { x: currX, y: currY };
-            await delay(9);
-          }
-          ctx.restore();
-          if (aborted()) return;
-          this.renderSingleStepSync(step, m);
-          await delay(10);
-          break;
-        }
-
-        case 'rect': {
-          const rx = sx(step.x);
-          const ry = sy(step.y);
-          const rw = Math.round((Number(step.w) || 0) * m.scaleX);
-          const rh = Math.round((Number(step.h) || 0) * m.scaleY);
-          const col = step.color || this.activePenColor;
-          const width = Number(step.width) || 2.5;
-          const pts = [
-            { x: rx, y: ry },
-            { x: rx + rw, y: ry },
-            { x: rx + rw, y: ry + rh },
-            { x: rx, y: ry + rh }
-          ];
-          for (let i = 0; i < 4; i++) {
-            if (aborted()) return;
-            const next = pts[(i + 1) % 4];
-            await traceLineSegment(pts[i].x, pts[i].y, next.x, next.y, col, width);
-          }
-          if (aborted()) return;
-          this.renderSingleStepSync(step, m);
-          await delay(10);
-          break;
-        }
-
-        case 'arrow': {
-          const x1 = sx(step.startX);
-          const y1 = sy(step.startY);
-          const x2 = sx(step.endX);
-          const y2 = sy(step.endY);
-          const arrowColor = step.color || this.activePenColor;
-          await traceLineSegment(x1, y1, x2, y2, arrowColor, Number(step.width) || 2.5);
-          if (aborted()) return;
-          this.renderSingleStepSync(step, m);
-          await delay(12);
-          break;
-        }
-
-        case 'text': {
-          const tx = sx(step.x);
-          const ty = sy(step.y);
-          this.penPos = { x: tx, y: ty };
-          await delay(18);
-          if (aborted()) return;
-          this.renderSingleStepSync(step, m);
-          await delay(12);
-          break;
-        }
-      }
-    },
-
-    // -----------------------------------------------------------------
-    // Interactive Educational Diagram Drawing Engine (for Tutor & Student)
-    // -----------------------------------------------------------------
-    drawEducationalDiagram(key, title, silent = false) {
-      const canvas = this.$refs.tutorCanvas || this.$refs.scratchCanvas;
-      const container = this.$refs.canvasContainer;
-      if (!canvas || !container) return;
-      if (!this.tutorCtx) this.resizeCanvas();
-      
-      const ctx = this.tutorCtx || this.ctx;
-      const rect = container.getBoundingClientRect();
-      const w = rect.width;
-      const h = rect.height;
-      if (w <= 0 || h <= 0) return;
-
-      const dpr = window.devicePixelRatio || 1;
-      ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
-
-      const theme = document.documentElement.getAttribute('data-theme') || 'light';
-      const isDark = ['dark', 'dracula', 'night', 'black', 'saxazdark'].includes(theme);
-      const textColor = isDark ? '#f3f4f6' : '#111827';
-      const subTextColor = isDark ? '#9ca3af' : '#4b5563';
-      const axisColor = isDark ? '#6b7280' : '#9ca3af';
-      const mirrorColor = '#3b82f6';
-      const ray1Color = '#ef4444'; // Red
-      const ray2Color = '#8b5cf6'; // Purple
-      const objectColor = '#0284c7'; // Blue
-      const imageColor = '#10b981'; // Green
-      const virtualRayColor = '#f59e0b'; // Amber / dashed
-
-      const normalizedKey = (key || '').toLowerCase().replace(/[\s-]/g, '_');
-
-      if (normalizedKey.includes('convex_mirror') || (normalizedKey.includes('convex') && normalizedKey.includes('mirror'))) {
-        this.renderConvexMirrorDiagram(ctx, w, h, textColor, subTextColor, axisColor, mirrorColor, ray1Color, ray2Color, objectColor, imageColor, virtualRayColor, isDark);
-      } else if (normalizedKey.includes('concave_mirror') || (normalizedKey.includes('concave') && normalizedKey.includes('mirror'))) {
-        this.renderConcaveMirrorDiagram(ctx, w, h, textColor, subTextColor, axisColor, mirrorColor, ray1Color, ray2Color, objectColor, imageColor, virtualRayColor, isDark);
-      } else if (normalizedKey.includes('lens')) {
-        this.renderConvexLensDiagram(ctx, w, h, textColor, subTextColor, axisColor, mirrorColor, ray1Color, ray2Color, objectColor, imageColor, virtualRayColor, isDark);
-      } else if (normalizedKey.includes('reflection')) {
-        this.renderReflectionDiagram(ctx, w, h, textColor, subTextColor, axisColor, ray1Color, imageColor, isDark);
-      } else if (normalizedKey.includes('refraction') || normalizedKey.includes('slab')) {
-        this.renderRefractionDiagram(ctx, w, h, textColor, subTextColor, axisColor, ray1Color, imageColor, isDark);
-      } else if (normalizedKey.includes('triangle') || normalizedKey.includes('pythagoras')) {
-        this.renderTriangleDiagram(ctx, w, h, textColor, subTextColor, objectColor, imageColor, isDark);
-      } else if (normalizedKey.includes('circle') || normalizedKey.includes('tangent')) {
-        this.renderCircleDiagram(ctx, w, h, textColor, subTextColor, objectColor, imageColor, isDark);
-      } else {
-        this.renderGenericBoard(ctx, w, h, title || 'Tutor Diagram', textColor, subTextColor, axisColor, isDark);
-      }
-      if (!silent) {
-        this.showToast(`Drawn: ${title || 'Diagram'}`);
-      }
-    },
-
-    renderConvexMirrorDiagram(ctx, w, h, textColor, subTextColor, axisColor, mirrorColor, ray1Color, ray2Color, objectColor, imageColor, virtualRayColor, isDark) {
-      ctx.font = 'bold 15px Outfit, sans-serif';
-      ctx.fillStyle = textColor;
-      ctx.textAlign = 'center';
-      ctx.fillText('Convex Mirror — Ray Diagram (Virtual & Diminished Image)', w / 2, 26);
-      
-      ctx.font = '11px Outfit, sans-serif';
-      ctx.fillStyle = subTextColor;
-      ctx.fillText('Reflective surface bulges outward toward the object on the left', w / 2, 44);
-
-      const cy = Math.round(h * 0.50);
-      const cx = Math.round(w * 0.52);
-      const scale = Math.min(w / 520, h / 450);
-
-      // Principal Axis
-      ctx.beginPath();
-      ctx.strokeStyle = axisColor;
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([]);
-      ctx.moveTo(20, cy);
-      ctx.lineTo(w - 20, cy);
-      ctx.stroke();
-
-      ctx.font = 'bold 11px Outfit, sans-serif';
-      ctx.fillStyle = subTextColor;
-      ctx.textAlign = 'right';
-      ctx.fillText('Principal Axis', w - 24, cy - 8);
-
-      // Mirror Curve (Arc convex to left)
-      const mirrorRadius = 200 * scale;
-      const arcCenter = { x: cx + mirrorRadius, y: cy };
-      const arcAngle = 0.38;
-      
-      ctx.beginPath();
-      ctx.strokeStyle = mirrorColor;
-      ctx.lineWidth = 3.5;
-      ctx.arc(arcCenter.x, arcCenter.y, mirrorRadius, Math.PI - arcAngle, Math.PI + arcAngle, false);
-      ctx.stroke();
-
-      // Hatching on concave inner side
-      ctx.strokeStyle = '#9ca3af';
-      ctx.lineWidth = 1.2;
-      for (let a = -arcAngle; a <= arcAngle; a += 0.06) {
-        const hx = arcCenter.x - mirrorRadius * Math.cos(a);
-        const hy = arcCenter.y + mirrorRadius * Math.sin(a);
-        ctx.beginPath();
-        ctx.moveTo(hx, hy);
-        ctx.lineTo(hx + 8 * scale, hy - 6 * scale);
-        ctx.stroke();
-      }
-
-      const fDist = 75 * scale;
-      const cDist = 150 * scale;
-      const fx = cx + fDist;
-      const cPos = cx + cDist;
-
-      const drawPoint = (x, y, label, labelYOffset = 18) => {
-        ctx.beginPath();
-        ctx.fillStyle = textColor;
-        ctx.arc(x, y, 3.5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.font = 'bold 11px Outfit, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(label, x, y + labelYOffset);
-      };
-
-      drawPoint(cx, cy, 'P (Pole)', 18);
-      drawPoint(fx, cy, 'F (Focus)', 18);
-      drawPoint(cPos, cy, 'C (Center)', 18);
-
-      // Object AB
-      const objDist = 130 * scale;
-      const objHeight = 65 * scale;
-      const ox = cx - objDist;
-      const oy = cy - objHeight;
-
-      ctx.beginPath();
-      ctx.strokeStyle = objectColor;
-      ctx.fillStyle = objectColor;
-      ctx.lineWidth = 3;
-      ctx.moveTo(ox, cy);
-      ctx.lineTo(ox, oy);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(ox - 5, oy + 8);
-      ctx.lineTo(ox, oy);
-      ctx.lineTo(ox + 5, oy + 8);
-      ctx.fill();
-
-      ctx.font = 'bold 12px Outfit, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('A (Object)', ox, oy - 8);
-      ctx.fillText('B', ox, cy + 18);
-
-      // Ray 1: Parallel to Axis
-      const dy = oy;
-      const dx = arcCenter.x - Math.sqrt(mirrorRadius * mirrorRadius - (dy - cy) * (dy - cy));
-
-      ctx.beginPath();
-      ctx.strokeStyle = ray1Color;
-      ctx.lineWidth = 2;
-      ctx.setLineDash([]);
-      ctx.moveTo(ox, oy);
-      ctx.lineTo(dx, dy);
-      ctx.stroke();
-
-      // Reflected Ray
-      const slope1 = (dy - cy) / (dx - fx);
-      const reflect1EndX = dx - 70 * scale;
-      const reflect1EndY = dy - 70 * scale * slope1;
-
-      ctx.beginPath();
-      ctx.strokeStyle = ray1Color;
-      ctx.moveTo(dx, dy);
-      ctx.lineTo(reflect1EndX, reflect1EndY);
-      ctx.stroke();
-
-      // Virtual Ray 1 to F
-      ctx.beginPath();
-      ctx.strokeStyle = virtualRayColor;
-      ctx.lineWidth = 1.8;
-      ctx.setLineDash([4, 4]);
-      ctx.moveTo(dx, dy);
-      ctx.lineTo(fx, cy);
-      ctx.stroke();
-
-      // Ray 2: Directed towards C
-      const slope2 = (cy - oy) / (cPos - ox);
-      const ex = cx + 6 * scale;
-      const ey = cy - (cPos - ex) * slope2;
-
-      ctx.beginPath();
-      ctx.strokeStyle = ray2Color;
-      ctx.lineWidth = 2;
-      ctx.setLineDash([]);
-      ctx.moveTo(ox, oy);
-      ctx.lineTo(ex, ey);
-      ctx.stroke();
-
-      // Virtual Ray 2 to C
-      ctx.beginPath();
-      ctx.strokeStyle = virtualRayColor;
-      ctx.lineWidth = 1.8;
-      ctx.setLineDash([4, 4]);
-      ctx.moveTo(ex, ey);
-      ctx.lineTo(cPos, cy);
-      ctx.stroke();
-
-      // Virtual Image A'B'
-      const approxImgX = cx + (fDist * 0.42);
-      const approxImgY = cy - (objHeight * 0.42);
-
-      ctx.beginPath();
-      ctx.strokeStyle = imageColor;
-      ctx.fillStyle = imageColor;
-      ctx.lineWidth = 2.5;
-      ctx.setLineDash([]);
-      ctx.moveTo(approxImgX, cy);
-      ctx.lineTo(approxImgX, approxImgY);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(approxImgX - 3.5, approxImgY + 6);
-      ctx.lineTo(approxImgX, approxImgY);
-      ctx.lineTo(approxImgX + 3.5, approxImgY + 6);
-      ctx.fill();
-
-      ctx.font = 'bold 11px Outfit, sans-serif';
-      ctx.fillStyle = imageColor;
-      ctx.fillText("A' (Virtual Image)", approxImgX + 14, approxImgY - 6);
-      ctx.fillText("B'", approxImgX + 4, cy + 18);
-
-      // Bottom Summary Card
-      ctx.setLineDash([]);
-      const boxY = h - 60;
-      ctx.fillStyle = isDark ? 'rgba(30, 41, 59, 0.85)' : 'rgba(243, 244, 246, 0.95)';
-      ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)';
-      ctx.lineWidth = 1;
-      ctx.roundRect ? ctx.roundRect(14, boxY, w - 28, 50, 10) : ctx.rect(14, boxY, w - 28, 50);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.font = 'bold 10.5px Outfit, sans-serif';
-      ctx.fillStyle = '#059669';
-      ctx.textAlign = 'left';
-      ctx.fillText('CONVEX MIRROR PROPERTIES:', 24, boxY + 18);
-      ctx.font = '500 10.5px Outfit, sans-serif';
-      ctx.fillStyle = subTextColor;
-      ctx.fillText('• Virtual & Erect  • Diminished (smaller than object)  • Formed behind mirror between P and F', 24, boxY + 36);
-    },
-
-    renderConcaveMirrorDiagram(ctx, w, h, textColor, subTextColor, axisColor, mirrorColor, ray1Color, ray2Color, objectColor, imageColor, virtualRayColor, isDark) {
-      ctx.font = 'bold 15px Outfit, sans-serif';
-      ctx.fillStyle = textColor;
-      ctx.textAlign = 'center';
-      ctx.fillText('Concave Mirror — Real & Inverted Image', w / 2, 26);
-      
-      ctx.font = '11px Outfit, sans-serif';
-      ctx.fillStyle = subTextColor;
-      ctx.fillText('Object placed beyond Center of Curvature (C)', w / 2, 44);
-
-      const cy = Math.round(h * 0.50);
-      const cx = Math.round(w * 0.68);
-      const scale = Math.min(w / 520, h / 450);
-
-      // Principal axis
-      ctx.beginPath();
-      ctx.strokeStyle = axisColor;
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([]);
-      ctx.moveTo(20, cy);
-      ctx.lineTo(w - 20, cy);
-      ctx.stroke();
-
-      // Concave Mirror (curving inward, center on left)
-      const mirrorRadius = 200 * scale;
-      const arcCenter = { x: cx - mirrorRadius, y: cy };
-      const arcAngle = 0.38;
-
-      ctx.beginPath();
-      ctx.strokeStyle = mirrorColor;
-      ctx.lineWidth = 3.5;
-      ctx.arc(arcCenter.x, arcCenter.y, mirrorRadius, -arcAngle, arcAngle, false);
-      ctx.stroke();
-
-      // Hatching on outer right side
-      ctx.strokeStyle = '#9ca3af';
-      ctx.lineWidth = 1.2;
-      for (let a = -arcAngle; a <= arcAngle; a += 0.06) {
-        const hx = arcCenter.x + mirrorRadius * Math.cos(a);
-        const hy = arcCenter.y + mirrorRadius * Math.sin(a);
-        ctx.beginPath();
-        ctx.moveTo(hx, hy);
-        ctx.lineTo(hx + 8 * scale, hy - 6 * scale);
-        ctx.stroke();
-      }
-
-      const fDist = 75 * scale;
-      const cDist = 150 * scale;
-      const fx = cx - fDist;
-      const cPos = cx - cDist;
-
-      const drawPoint = (x, y, label) => {
-        ctx.beginPath();
-        ctx.fillStyle = textColor;
-        ctx.arc(x, y, 3.5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.font = 'bold 11px Outfit, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(label, x, y + 18);
-      };
-
-      drawPoint(cx, cy, 'P (Pole)');
-      drawPoint(fx, cy, 'F (Focus)');
-      drawPoint(cPos, cy, 'C (Center)');
-
-      // Object AB beyond C
-      const ox = cPos - 45 * scale;
-      const objHeight = 65 * scale;
-      const oy = cy - objHeight;
-
-      ctx.beginPath();
-      ctx.strokeStyle = objectColor;
-      ctx.fillStyle = objectColor;
-      ctx.lineWidth = 3;
-      ctx.moveTo(ox, cy);
-      ctx.lineTo(ox, oy);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(ox - 5, oy + 8);
-      ctx.lineTo(ox, oy);
-      ctx.lineTo(ox + 5, oy + 8);
-      ctx.fill();
-
-      ctx.font = 'bold 12px Outfit, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('A (Object)', ox, oy - 8);
-      ctx.fillText('B', ox, cy + 18);
-
-      // Ray 1: Parallel to axis, reflects through F
-      const dx = cx - 4 * scale;
-      ctx.beginPath();
-      ctx.strokeStyle = ray1Color;
-      ctx.lineWidth = 2;
-      ctx.moveTo(ox, oy);
-      ctx.lineTo(dx, oy);
-      ctx.lineTo(ox - 40 * scale, cy + 50 * scale);
-      ctx.stroke();
-
-      // Real Inverted Image A'B' between C and F
-      const imgX = (cPos + fx) / 2;
-      const imgHeight = 35 * scale;
-      const imgY = cy + imgHeight;
-
-      ctx.beginPath();
-      ctx.strokeStyle = imageColor;
-      ctx.fillStyle = imageColor;
-      ctx.lineWidth = 2.5;
-      ctx.moveTo(imgX, cy);
-      ctx.lineTo(imgX, imgY);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(imgX - 3.5, imgY - 6);
-      ctx.lineTo(imgX, imgY);
-      ctx.lineTo(imgX + 3.5, imgY - 6);
-      ctx.fill();
-
-      ctx.font = 'bold 11px Outfit, sans-serif';
-      ctx.fillText("A' (Real Inverted Image)", imgX, imgY + 16);
-      ctx.fillText("B'", imgX, cy - 6);
-
-      // Bottom Summary
-      const boxY = h - 60;
-      ctx.fillStyle = isDark ? 'rgba(30, 41, 59, 0.85)' : 'rgba(243, 244, 246, 0.95)';
-      ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)';
-      ctx.lineWidth = 1;
-      ctx.roundRect ? ctx.roundRect(14, boxY, w - 28, 50, 10) : ctx.rect(14, boxY, w - 28, 50);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.font = 'bold 10.5px Outfit, sans-serif';
-      ctx.fillStyle = '#059669';
-      ctx.textAlign = 'left';
-      ctx.fillText('CONCAVE MIRROR (Object beyond C):', 24, boxY + 18);
-      ctx.font = '500 10.5px Outfit, sans-serif';
-      ctx.fillStyle = subTextColor;
-      ctx.fillText('• Real & Inverted  • Diminished  • Formed in front of mirror between C and F', 24, boxY + 36);
-    },
-
-    renderReflectionDiagram(ctx, w, h, textColor, subTextColor, axisColor, ray1Color, imageColor, isDark) {
-      ctx.font = 'bold 15px Outfit, sans-serif';
-      ctx.fillStyle = textColor;
-      ctx.textAlign = 'center';
-      ctx.fillText('Laws of Reflection of Light', w / 2, 28);
-
-      const cy = Math.round(h * 0.65);
-      const cx = Math.round(w / 2);
-
-      // Plane Mirror surface
-      ctx.beginPath();
-      ctx.strokeStyle = '#3b82f6';
-      ctx.lineWidth = 4;
-      ctx.moveTo(40, cy);
-      ctx.lineTo(w - 40, cy);
-      ctx.stroke();
-
-      // Silvered Hatching below mirror
-      ctx.strokeStyle = '#9ca3af';
-      ctx.lineWidth = 1.2;
-      for (let x = 40; x <= w - 40; x += 12) {
-        ctx.beginPath();
-        ctx.moveTo(x, cy);
-        ctx.lineTo(x - 8, cy + 10);
-        ctx.stroke();
-      }
-
-      // Normal Line (Dashed)
-      ctx.beginPath();
-      ctx.strokeStyle = textColor;
-      ctx.lineWidth = 1.8;
-      ctx.setLineDash([5, 5]);
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(cx, cy - 130);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.font = 'bold 12px Outfit, sans-serif';
-      ctx.fillText('Normal (N)', cx, cy - 138);
-
-      // Incident Ray
-      const rayLen = 120;
-      const angle = 0.65; // ~37 degrees
-      const ix = cx - Math.sin(angle) * rayLen;
-      const iy = cy - Math.cos(angle) * rayLen;
-
-      ctx.beginPath();
-      ctx.strokeStyle = ray1Color;
-      ctx.lineWidth = 2.5;
-      ctx.moveTo(ix, iy);
-      ctx.lineTo(cx, cy);
-      ctx.stroke();
-
-      // Reflected Ray
-      const rx = cx + Math.sin(angle) * rayLen;
-      const ry = cy - Math.cos(angle) * rayLen;
-      ctx.beginPath();
-      ctx.strokeStyle = imageColor;
-      ctx.lineWidth = 2.5;
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(rx, ry);
-      ctx.stroke();
-
-      // Labels
-      ctx.font = 'bold 12px Outfit, sans-serif';
-      ctx.fillStyle = ray1Color;
-      ctx.fillText('Incident Ray', ix - 10, iy - 6);
-      ctx.fillStyle = imageColor;
-      ctx.fillText('Reflected Ray', rx + 10, ry - 6);
-
-      // Angles i and r arcs
-      ctx.beginPath();
-      ctx.strokeStyle = ray1Color;
-      ctx.lineWidth = 1.5;
-      ctx.arc(cx, cy, 35, -Math.PI / 2 - angle, -Math.PI / 2);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.strokeStyle = imageColor;
-      ctx.lineWidth = 1.5;
-      ctx.arc(cx, cy, 35, -Math.PI / 2, -Math.PI / 2 + angle);
-      ctx.stroke();
-
-      ctx.font = 'bold 12px Outfit, sans-serif';
-      ctx.fillStyle = ray1Color;
-      ctx.fillText('∠i', cx - 18, cy - 42);
-      ctx.fillStyle = imageColor;
-      ctx.fillText('∠r', cx + 18, cy - 42);
-
-      // Bottom Law Summary
-      const boxY = h - 60;
-      ctx.fillStyle = isDark ? 'rgba(30, 41, 59, 0.85)' : 'rgba(243, 244, 246, 0.95)';
-      ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)';
-      ctx.lineWidth = 1;
-      ctx.roundRect ? ctx.roundRect(14, boxY, w - 28, 50, 10) : ctx.rect(14, boxY, w - 28, 50);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.font = 'bold 11px Outfit, sans-serif';
-      ctx.fillStyle = '#059669';
-      ctx.textAlign = 'left';
-      ctx.fillText('LAWS OF REFLECTION:  ∠i = ∠r (Angle of Incidence = Angle of Reflection)', 24, boxY + 20);
-      ctx.font = '500 10.5px Outfit, sans-serif';
-      ctx.fillStyle = subTextColor;
-      ctx.fillText('The incident ray, reflected ray, and normal to the surface at the point of incidence all lie in the same plane.', 24, boxY + 38);
-    },
-
-    renderConvexLensDiagram(ctx, w, h, textColor, subTextColor, axisColor, mirrorColor, ray1Color, ray2Color, objectColor, imageColor, virtualRayColor, isDark) {
-      ctx.font = 'bold 15px Outfit, sans-serif';
-      ctx.fillStyle = textColor;
-      ctx.textAlign = 'center';
-      ctx.fillText('Convex Lens — Ray Diagram (Real & Inverted Image)', w / 2, 26);
-
-      const cy = Math.round(h * 0.50);
-      const cx = Math.round(w / 2);
-      const scale = Math.min(w / 520, h / 450);
-
-      // Principal Axis
-      ctx.beginPath();
-      ctx.strokeStyle = axisColor;
-      ctx.lineWidth = 1.5;
-      ctx.moveTo(20, cy);
-      ctx.lineTo(w - 20, cy);
-      ctx.stroke();
-
-      // Convex Lens (Oval)
-      ctx.beginPath();
-      ctx.strokeStyle = '#3b82f6';
-      ctx.fillStyle = isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.15)';
-      ctx.lineWidth = 2.5;
-      ctx.ellipse(cx, cy, 14 * scale, 85 * scale, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      // Points: O, F1, 2F1, F2, 2F2
-      const fDist = 70 * scale;
-      const drawPt = (x, lbl) => {
-        ctx.beginPath();
-        ctx.fillStyle = textColor;
-        ctx.arc(x, cy, 3, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.font = 'bold 11px Outfit, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(lbl, x, cy + 16);
-      };
-      drawPt(cx, 'O');
-      drawPt(cx - fDist, 'F1');
-      drawPt(cx - 2 * fDist, '2F1');
-      drawPt(cx + fDist, 'F2');
-      drawPt(cx + 2 * fDist, '2F2');
-
-      // Object AB beyond 2F1
-      const ox = cx - 2.3 * fDist;
-      const oh = 60 * scale;
-      ctx.beginPath();
-      ctx.strokeStyle = objectColor;
-      ctx.lineWidth = 3;
-      ctx.moveTo(ox, cy);
-      ctx.lineTo(ox, cy - oh);
-      ctx.stroke();
-      ctx.fillText('Object (AB)', ox, cy - oh - 6);
-
-      // Ray 1: Parallel -> refracts through F2
-      ctx.beginPath();
-      ctx.strokeStyle = ray1Color;
-      ctx.lineWidth = 2;
-      ctx.moveTo(ox, cy - oh);
-      ctx.lineTo(cx, cy - oh);
-      ctx.lineTo(cx + 2.5 * fDist, cy + (oh * 1.5));
-      ctx.stroke();
-
-      // Ray 2: Optical center O
-      ctx.beginPath();
-      ctx.strokeStyle = ray2Color;
-      ctx.lineWidth = 2;
-      ctx.moveTo(ox, cy - oh);
-      ctx.lineTo(cx + 2.5 * fDist, cy + (oh * 1.5));
-      ctx.stroke();
-
-      // Image
-      const imgX = cx + 1.6 * fDist;
-      const imgH = 42 * scale;
-      ctx.beginPath();
-      ctx.strokeStyle = imageColor;
-      ctx.lineWidth = 2.5;
-      ctx.moveTo(imgX, cy);
-      ctx.lineTo(imgX, cy + imgH);
-      ctx.stroke();
-      ctx.fillStyle = imageColor;
-      ctx.fillText("Real Image (A'B')", imgX, cy + imgH + 16);
-    },
-
-    renderRefractionDiagram(ctx, w, h, textColor, subTextColor, axisColor, ray1Color, imageColor, isDark) {
-      ctx.font = 'bold 15px Outfit, sans-serif';
-      ctx.fillStyle = textColor;
-      ctx.textAlign = 'center';
-      ctx.fillText('Refraction Through a Glass Slab', w / 2, 28);
-
-      const cy = Math.round(h * 0.45);
-      const cx = Math.round(w / 2);
-      const slabW = Math.min(260, w - 80);
-      const slabH = 100;
-
-      // Glass Slab
-      ctx.fillStyle = isDark ? 'rgba(56, 189, 248, 0.15)' : 'rgba(56, 189, 248, 0.12)';
-      ctx.strokeStyle = '#0284c7';
-      ctx.lineWidth = 2;
-      ctx.fillRect(cx - slabW / 2, cy - slabH / 2, slabW, slabH);
-      ctx.strokeRect(cx - slabW / 2, cy - slabH / 2, slabW, slabH);
-
-      ctx.font = 'bold 12px Outfit, sans-serif';
-      ctx.fillStyle = subTextColor;
-      ctx.fillText('Glass (Denser Medium)', cx, cy);
-
-      // Normal 1
-      const n1x = cx - 40;
-      ctx.setLineDash([4, 4]);
-      ctx.strokeStyle = textColor;
-      ctx.beginPath();
-      ctx.moveTo(n1x, cy - slabH / 2 - 35);
-      ctx.lineTo(n1x, cy - slabH / 2 + 35);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Normal 2
-      const n2x = cx + 15;
-      ctx.setLineDash([4, 4]);
-      ctx.beginPath();
-      ctx.moveTo(n2x, cy + slabH / 2 - 35);
-      ctx.lineTo(n2x, cy + slabH / 2 + 35);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Rays
-      ctx.strokeStyle = ray1Color;
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.moveTo(n1x - 60, cy - slabH / 2 - 50); // Incident
-      ctx.lineTo(n1x, cy - slabH / 2);
-      ctx.lineTo(n2x, cy + slabH / 2); // Refracted
-      ctx.lineTo(n2x + 60, cy + slabH / 2 + 50); // Emergent
-      ctx.stroke();
-
-      ctx.font = 'bold 11px Outfit, sans-serif';
-      ctx.fillStyle = ray1Color;
-      ctx.fillText('Incident Ray', n1x - 45, cy - slabH / 2 - 55);
-      ctx.fillText('Emergent Ray', n2x + 55, cy + slabH / 2 + 55);
-    },
-
-    renderTriangleDiagram(ctx, w, h, textColor, subTextColor, objectColor, imageColor, isDark) {
-      ctx.font = 'bold 15px Outfit, sans-serif';
-      ctx.fillStyle = textColor;
-      ctx.textAlign = 'center';
-      ctx.fillText('Right-Angled Triangle & Pythagoras Theorem', w / 2, 28);
-
-      const bx = Math.round(w * 0.28);
-      const by = Math.round(h * 0.72);
-      const tw = Math.min(220, w * 0.45);
-      const th = Math.min(180, h * 0.45);
-
-      ctx.beginPath();
-      ctx.strokeStyle = objectColor;
-      ctx.lineWidth = 3;
-      ctx.moveTo(bx, by);
-      ctx.lineTo(bx + tw, by);
-      ctx.lineTo(bx, by - th);
-      ctx.closePath();
-      ctx.stroke();
-
-      // 90 deg marker
-      ctx.strokeStyle = textColor;
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(bx, by - 16, 16, 16);
-
-      ctx.font = 'bold 13px Outfit, sans-serif';
-      ctx.fillStyle = textColor;
-      ctx.textAlign = 'center';
-      ctx.fillText('Base (b)', bx + tw / 2, by + 22);
-      ctx.textAlign = 'right';
-      ctx.fillText('Height (a)', bx - 10, by - th / 2);
-      ctx.textAlign = 'left';
-      ctx.fillStyle = imageColor;
-      ctx.fillText('Hypotenuse c = √(a² + b²)', bx + tw / 2 + 10, by - th / 2);
-
-      const boxY = h - 60;
-      ctx.fillStyle = isDark ? 'rgba(30, 41, 59, 0.85)' : 'rgba(243, 244, 246, 0.95)';
-      ctx.roundRect ? ctx.roundRect(14, boxY, w - 28, 50, 10) : ctx.rect(14, boxY, w - 28, 50);
-      ctx.fill();
-      ctx.fillStyle = '#059669';
-      ctx.fillText('Pythagoras Theorem: a² + b² = c²   |   sin θ = a/c, cos θ = b/c, tan θ = a/b', 24, boxY + 30);
-    },
-
-    renderCircleDiagram(ctx, w, h, textColor, subTextColor, objectColor, imageColor, isDark) {
-      ctx.font = 'bold 15px Outfit, sans-serif';
-      ctx.fillStyle = textColor;
-      ctx.textAlign = 'center';
-      ctx.fillText('Circle Geometry & Tangent Theorem', w / 2, 28);
-
-      const cx = Math.round(w / 2);
-      const cy = Math.round(h * 0.48);
-      const r = Math.min(90, h * 0.25);
-
-      ctx.beginPath();
-      ctx.strokeStyle = objectColor;
-      ctx.lineWidth = 3;
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.stroke();
-
-      // Center
-      ctx.beginPath();
-      ctx.fillStyle = textColor;
-      ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.font = 'bold 12px Outfit, sans-serif';
-      ctx.fillText('O (Center)', cx, cy - 8);
-
-      // Tangent line at bottom
-      const ty = cy + r;
-      ctx.beginPath();
-      ctx.strokeStyle = imageColor;
-      ctx.lineWidth = 2.5;
-      ctx.moveTo(cx - 130, ty);
-      ctx.lineTo(cx + 130, ty);
-      ctx.stroke();
-
-      // Radius to tangent
-      ctx.beginPath();
-      ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 2;
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(cx, ty);
-      ctx.stroke();
-
-      // 90 deg marker
-      ctx.strokeRect(cx, ty - 12, 12, 12);
-      ctx.fillText('Radius r', cx + 18, cy + r / 2);
-      ctx.fillStyle = imageColor;
-      ctx.fillText('Tangent Line (Perpendicular to Radius at Contact Point)', cx, ty + 20);
-    },
-
-    renderGenericBoard(ctx, w, h, title, textColor, subTextColor, axisColor, isDark) {
-      ctx.font = 'bold 16px Outfit, sans-serif';
-      ctx.fillStyle = textColor;
-      ctx.textAlign = 'center';
-      ctx.fillText(title, w / 2, 32);
-
-      // Grid guidelines
-      ctx.strokeStyle = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
-      ctx.lineWidth = 1;
-      for (let x = 20; x < w; x += 30) {
-        ctx.beginPath();
-        ctx.moveTo(x, 50);
-        ctx.lineTo(x, h - 50);
-        ctx.stroke();
-      }
-      for (let y = 50; y < h - 40; y += 30) {
-        ctx.beginPath();
-        ctx.moveTo(20, y);
-        ctx.lineTo(w - 20, y);
-        ctx.stroke();
-      }
-
-      ctx.font = '13px Outfit, sans-serif';
-      ctx.fillStyle = subTextColor;
-      ctx.fillText('Interactive Scratchpad Board — Use colored pens to annotate or solve problems', w / 2, h / 2);
-      window.dispatchEvent(new CustomEvent('tutor-drawing-finished'));
     }
   };
 }

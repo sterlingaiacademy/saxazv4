@@ -369,28 +369,37 @@ def get_students_analytics(conn):
   students = [dict(r) for r in cursor.fetchall()]
   
   for student in students:
-    # Get total available content count for this student's class
+    s_class_id = student['class_id'] or 1
+    # Get total available content count for this student's class (published & visible subjects only)
     cursor.execute("""
       SELECT COUNT(*) FROM content_items ci 
       JOIN chapters c ON ci.chapter_id = c.id 
       JOIN subjects s ON c.subject_id = s.id
-      WHERE c.status = 'published' AND s.class_id = ?
-    """, (student['class_id'],))
+      WHERE c.status = 'published' AND COALESCE(s.is_hidden, 0) = 0 AND s.class_id = ?
+    """, (s_class_id,))
     student['total_content_available'] = cursor.fetchone()[0] or 0
 
-    
-    # Get content progress count
-    cursor.execute("SELECT COUNT(*) FROM content_progress WHERE student_id = ? AND completed = 1", (student['id'],))
+    # Get content progress count (matching published & visible curriculum items)
+    cursor.execute("""
+      SELECT COUNT(DISTINCT cp.content_item_id)
+      FROM content_progress cp
+      JOIN content_items ci ON cp.content_item_id = ci.id
+      JOIN chapters c ON ci.chapter_id = c.id
+      JOIN subjects s ON c.subject_id = s.id
+      WHERE cp.student_id = ? AND cp.completed = 1
+        AND c.status = 'published' AND COALESCE(s.is_hidden, 0) = 0 AND s.class_id = ?
+    """, (student['id'], s_class_id))
     student['content_completed'] = cursor.fetchone()[0] or 0
     
-    # Get exam attempts
+    # Get exam attempts (published & visible curriculum only)
     cursor.execute("""
       SELECT
         a.id,
         COALESCE(SUM(ans.marks_awarded), a.total_marks_awarded, 0) as total_marks_awarded,
         COALESCE(
+          CASE WHEN e.type = 'mock' THEN NULLIF(SUM(COALESCE(q.max_marks, m.mark_value, 1)), 0) ELSE NULL END,
           NULLIF(a.total_max_marks, 0),
-          (SELECT SUM(q.max_marks) FROM questions q JOIN modules m ON q.module_id = m.id WHERE m.exam_paper_id = e.id),
+          NULLIF((SELECT SUM(COALESCE(q2.max_marks, m2.mark_value, 1)) FROM questions q2 JOIN modules m2 ON q2.module_id = m2.id WHERE m2.exam_paper_id = e.id AND COALESCE(q2.is_hidden, 0) = 0 AND COALESCE(q2.textbook_section, 'Questions') NOT IN ('HOTS', 'POWER_UP')), 0),
           e.target_marks,
           0
         ) as total_max_marks,
@@ -398,9 +407,17 @@ def get_students_analytics(conn):
         e.title
       FROM attempts a
       JOIN exam_papers e ON a.exam_paper_id = e.id
+      LEFT JOIN chapters c ON e.chapter_id = c.id
+      LEFT JOIN subjects s ON c.subject_id = s.id
       LEFT JOIN answers ans ON a.id = ans.attempt_id AND ans.is_latest = 1
-      WHERE a.student_id = ? AND (a.status = 'completed' OR ans.id IS NOT NULL)
-      GROUP BY a.id, e.title, a.started_at
+        AND TRIM(COALESCE(ans.answer_text, '')) NOT IN ('', 'No answer provided', 'no answer provided')
+      LEFT JOIN questions q ON ans.question_id = q.id
+      LEFT JOIN modules m ON q.module_id = m.id
+      WHERE a.student_id = ?
+        AND COALESCE(c.status, 'published') = 'published'
+        AND COALESCE(s.is_hidden, 0) = 0
+        AND (a.status = 'completed' OR ans.id IS NOT NULL)
+      GROUP BY a.id, e.id, e.type, e.title, a.started_at
       ORDER BY completed_at DESC
     """, (student['id'],))
     student['exam_attempts'] = [dict(r) for r in cursor.fetchall()]

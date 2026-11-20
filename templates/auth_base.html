@@ -1,84 +1,88 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="winter">
+<html lang="en" class="scrollbars-visible" data-theme="light" style="font-size: 17.5px;">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
   <title>{% block title %}SAXAZ{% endblock %}</title>
-  
-  <!-- Tailwind CSS + DaisyUI (compiled static, no CDN dependency) -->
-  <link rel="stylesheet" href="/static/css/app.css?v=99">
-  <link rel="stylesheet" href="/static/css/v2-studio.css?v=99">
+  <link rel="icon" href="/static/images/saxaz_web/favicon-saxaz-x-v1.png" type="image/png" sizes="64x64">
+  <link rel="apple-touch-icon" href="/static/images/saxaz_web/apple-touch-icon-saxaz-x-v1.png">
+
+  <!-- Material Symbols Outlined -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Anek+Malayalam:wght@400..700&family=Baloo+Chettan+2:wght@500..800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Manrope:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap" rel="stylesheet">
+
+  <!-- Compiled Tailwind + SAXAZ Stylesheets -->
+  <link rel="stylesheet" href="/static/css/app.css?v=250">
+  <link rel="stylesheet" href="/static/css/v2-studio.css?v=540">
+  <link rel="stylesheet" href="/static/css/saxaz-ext.css?v=540">
+  <link rel="stylesheet" href="/static/css/saxaz-match.css?v=2">
+  <script src="/static/js/fun.js?v=540" defer></script>
+
   <style>
-    @media (max-width: 640px) {
-      input:not([type="radio"]):not([type="checkbox"]), select, textarea {
-        font-size: 16px !important;
-      }
+    [x-cloak] { display: none !important; }
+    body.sx-auth-body {
+      margin: 0;
+      padding: 0;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+      color: #231f20;
+    }
+    .sx-auth-main-wrap {
+      flex: 1 0 auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .sx-auth-main-wrap > #stitch-tailwind-root {
+      flex: 1 0 auto;
+      min-height: 0;
     }
   </style>
-  
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  
-  <!-- HTMX -->
-  <script src="https://unpkg.com/htmx.org@1.9.11"></script>
-  
+
+  <script>
+    window.getSaxazTheme = () => 'light';
+    window.applySaxazTheme = () => {
+      localStorage.setItem('themeMode', 'light');
+      document.documentElement.setAttribute('data-theme', 'light');
+      document.documentElement.classList.remove('dark');
+      document.documentElement.style.colorScheme = 'light';
+      window.dispatchEvent(new CustomEvent('saxaz-theme-change', { detail: { theme: 'light' } }));
+      return 'light';
+    };
+    window.applySaxazTheme();
+
+    window.getSaxazFontSize = () => {
+      const cookieFont = document.cookie.split('; ').find(r => r.startsWith('fontSizeMode='))?.split('=')[1];
+      const saved = localStorage.getItem('fontSizeMode') || cookieFont || '1';
+      return Math.max(1, Math.min(4, parseInt(saved, 10) || 1));
+    };
+    window.applySaxazFontSize = (mode) => {
+      const m = Math.max(1, Math.min(4, parseInt(mode || 1, 10)));
+      const isSmallScreen = window.innerWidth < 640;
+      const desktopSizes = { 1: 17.5, 2: 19.0, 3: 20.5, 4: 22.5 };
+      const mobileSizes  = { 1: 16.5, 2: 18.0, 3: 19.5, 4: 21.0 };
+      const rootSize = isSmallScreen ? mobileSizes[m] : desktopSizes[m];
+      document.documentElement.style.setProperty('font-size', `${rootSize}px`, 'important');
+      document.documentElement.setAttribute('data-font-size', String(m));
+      localStorage.setItem('fontSizeMode', String(m));
+      document.cookie = `fontSizeMode=${m};path=/;max-age=31536000`;
+      window.dispatchEvent(new CustomEvent('saxaz-fontsize-change', { detail: { mode: m } }));
+      return m;
+    };
+    window.applySaxazFontSize(window.getSaxazFontSize());
+    window.addEventListener('resize', () => {
+      window.applySaxazFontSize(window.getSaxazFontSize());
+    }, { passive: true });
+  </script>
+
   <!-- Alpine.js -->
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  
-  <!-- Alpine.js theme & font size setup before paint -->
-  <script>
-    const getCookie = (name) => document.cookie.split('; ').find(row => row.startsWith(name + '='))?.split('=')[1];
-    
-    // Theme
-    const theme = getCookie('theme') || 'dracula';
-    document.documentElement.setAttribute('data-theme', theme);
-    
-    // Font Size
-    const fontSizeMode = parseInt(getCookie('fontSizeMode') || '1');
-    const rootSize = 14 + (fontSizeMode * 2); // 1: 16px, 2: 18px, 3: 20px, 4: 22px, 5: 24px
-    document.documentElement.style.fontSize = `${rootSize}px`;
-  </script>
-  <style>
-    /* Custom Space Background applied only to main content area to keep sidebar solid */
-    .space-bg {
-      background-color: #0d1117;
-      background-image: radial-gradient(circle at center, transparent 0%, #050505 100%), 
-               url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='50' cy='50' r='1' fill='%23ffffff' opacity='0.2'/%3E%3Ccircle cx='20' cy='30' r='0.5' fill='%23ffffff' opacity='0.3'/%3E%3Ccircle cx='80' cy='70' r='1.5' fill='%23ffffff' opacity='0.1'/%3E%3C/svg%3E");
-      background-size: cover, 150px 150px;
-      background-attachment: fixed;
-    }
-    
-    /* Hide sidebar/navbar in exam mode */
-    body.exam-mode .global-sidebar, body.exam-mode .global-topbar {
-      display: none !important;
-    }
-    body.exam-mode .main-content-wrapper {
-      margin-left: 0 !important;
-    }
-    html, body {
-      overscroll-behavior: none !important;
-      overscroll-behavior-y: none !important;
-    }
-  </style>
 </head>
-<body class="flex h-screen overflow-hidden font-sans text-base-content antialiased bg-base-200 space-bg"
-   x-data="{ 
-     theme: getCookie('theme') || 'dracula',
-     fontSizeMode: parseInt(getCookie('fontSizeMode') || '1')
-   }">
-
-  <!-- Main Content Area (No Sidebar/Topbar) -->
-  <div class="flex-1 flex flex-col h-screen overflow-y-auto relative w-full" style="overscroll-behavior: none;">
-    <!-- Main Scrollable View -->
-    <main class="flex-1 flex min-h-screen w-full">
-      <div class="w-full flex">
-        {% block content %}{% endblock %}
-      </div>
-    </main>
+<body class="scrollbars-visible sx-auth-body">
+  <div class="sx-auth-main-wrap">
+    {% block content %}{% endblock %}
   </div>
-
-  <!-- Global Toast Container for Notifications -->
-  <div id="toast-container" class="toast toast-top toast-end z-50 mt-4 pointer-events-none"></div>
-
+  {% include "footer.html" %}
 </body>
 </html>
