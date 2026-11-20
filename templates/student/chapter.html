@@ -22,7 +22,7 @@
 {% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="/static/css/saxaz-pages.css?v=3">
+<link rel="stylesheet" href="/static/css/saxaz-pages.css?v=4">
 {% from "student/partials/summary_games.html" import molecule_defs, game_leaf, game_food, game_breathe, game_blood, game_pump, game_kidney, game_team %}
 {{ molecule_defs() }}
 <link rel="stylesheet" href="/static/css/summary-games.css?v=23">
@@ -1612,43 +1612,44 @@
     </div>
   </template>
 
-  <!-- PRACTICE MOCK TESTS & OFFICIAL REAL EXAM (Giant Standalone 3D Emblem Buttons — Zero Card Wrapper) -->
+  <!-- PRACTICE MOCK TESTS & OFFICIAL REAL EXAM (Standalone 3D Emblem Buttons — Zero Card Background) -->
   <section id="chapter-exams" style="margin-bottom:28px;">
     <h2 class="sxp-h2">Tests<small>Practise with mock tests. Score 80% to unlock the real exam.</small></h2>
     <div class="sx-issue-badges-row">
       <a href="{{ '/student/exams/' ~ ns.first_mock_id if ns.first_mock_id else '#chapter-exams' }}"
-         aria-label="Mock Exam"
+         aria-label="Mock Exam ({% if ns.best_mock is not none %}Best {{ ns.best_mock }}%{% else %}0%{% endif %})"
          data-sx-surf-badge
          class="sx-issue-badge-card">
         <span class="sx-badge-stage">
           <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_mock_exam_idle.webp?v=540" alt="Mock Exam">
           <canvas class="sx-badge-canvas" width="340" height="340" data-sx-sheet="/static/images/saxaz_web/badge_mock_exam_sheet.webp?v=540"></canvas>
         </span>
-        <span class="sx-badge-caption">{% if ns.best_mock is not none %}Practise again &middot; best {{ ns.best_mock }}%{% else %}Start mock test{% endif %}</span>
+        <span class="sx-subject-pct-pill">{% if ns.best_mock is not none %}Best: {{ ns.best_mock }}%{% else %}0%{% endif %}</span>
       </a>
 
       {% if ns.first_real_id and real_unlocked %}
       <a href="/student/real-exams/{{ ns.first_real_id }}/intro"
-         aria-label="Real Exam"
+         aria-label="Real Exam ({% if ns.best_real is not none %}Best {{ ns.best_real }}%{% else %}0%{% endif %})"
          data-sx-surf-badge
          class="sx-issue-badge-card">
         <span class="sx-badge-stage">
           <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_real_exam_idle.webp?v=540" alt="Real Exam">
           <canvas class="sx-badge-canvas" width="340" height="340" data-sx-sheet="/static/images/saxaz_web/badge_real_exam_sheet.webp?v=540"></canvas>
         </span>
-        <span class="sx-badge-caption">{% if ns.best_real is not none %}Real exam &middot; best {{ ns.best_real }}%{% else %}Start real exam{% endif %}</span>
+        <span class="sx-subject-pct-pill">{% if ns.best_real is not none %}Best: {{ ns.best_real }}%{% else %}0%{% endif %}</span>
       </a>
       {% else %}
       <a href="#chapter-exams"
-         aria-label="Real Exam"
+         aria-label="Real Exam locked — score 80% to unlock"
          @click.prevent="handleRealExamClick($event)"
          data-sx-surf-badge
-         class="sx-issue-badge-card">
+         class="sx-issue-badge-card is-soon">
         <span class="sx-badge-stage">
+          <span class="sx-subject-lock" aria-hidden="true"><span class="material-symbols-outlined">lock</span></span>
           <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_real_exam_idle.webp?v=540" alt="Real Exam">
           <canvas class="sx-badge-canvas" width="340" height="340" data-sx-sheet="/static/images/saxaz_web/badge_real_exam_sheet.webp?v=540"></canvas>
         </span>
-        <span class="sx-badge-caption is-locked"><span class="material-symbols-outlined" aria-hidden="true">lock</span>Pass a mock test (80%) to unlock</span>
+        <span class="sx-subject-pct-pill is-soon"><span class="material-symbols-outlined" aria-hidden="true">lock</span>Score 80% to unlock</span>
       </a>
       {% endif %}
     </div>

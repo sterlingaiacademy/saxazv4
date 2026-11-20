@@ -255,19 +255,54 @@ label.sxp-filter { display: inline-flex; align-items: center; }
 .sxc .sx-summary-vid-play { border: 0 !important; background: #231f20; color: #f7b317; width: 32px; height: 32px; }
 .sxc .sx-summary-vid-play.is-watched { background: #ffffff; color: #231f20; }
 
-/* Tests: the two badges sit on flat gray / amber blocks */
-.sxc #chapter-exams .sx-issue-badges-row { max-width: none; gap: 12px; }
-.sxc #chapter-exams .sx-issue-badge-card {
-  max-width: none; padding: 18px 12px 22px !important; border-radius: 4px !important;
-  background: #c5c8cc !important; transition: transform .18s ease, box-shadow .18s ease;
+/* Tests: standalone 3D animated emblem buttons with zero card background */
+.sxc #chapter-exams .sx-issue-badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 36px;
+  max-width: none;
+  margin: 0;
 }
-.sxc #chapter-exams .sx-issue-badge-card:nth-child(2) { background: #f7b317 !important; }
-.sxc #chapter-exams .sx-issue-badge-card:hover { transform: translateY(-4px); box-shadow: 0 14px 28px rgba(35, 31, 32, 0.16) !important; }
-.sxc #chapter-exams .sx-badge-stage { max-width: 260px; }
-.sxc #chapter-exams .sx-badge-caption.is-locked { background: #ffffff; }
+.sxc #chapter-exams .sx-issue-badge-card,
+.sxc #chapter-exams .sx-issue-badge-card:nth-child(2) {
+  width: auto;
+  max-width: 280px;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transition: transform .2s cubic-bezier(.34, 1.56, .64, 1);
+}
+.sxc #chapter-exams .sx-issue-badge-card:hover {
+  transform: translateY(-6px) scale(1.04);
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.sxc #chapter-exams .sx-issue-badge-card:active {
+  transform: translateY(-1px) scale(0.99);
+}
+.sxc #chapter-exams .sx-badge-stage {
+  position: relative;
+  width: 260px;
+  max-width: 100%;
+  margin: -18px 0 -22px;
+  background: transparent !important;
+}
 
 @media (max-width: 640px) {
   .sxc .sx-path-step { min-height: 64px; padding: 10px 12px; }
-  .sxc #chapter-exams .sx-issue-badges-row { grid-template-columns: 1fr 1fr; }
-  .sxc #chapter-exams .sx-badge-caption { font-size: 0.78rem; padding: 7px 12px; text-align: center; }
+  .sxc #chapter-exams .sx-issue-badges-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    justify-items: center;
+    gap: 16px;
+  }
+  .sxc #chapter-exams .sx-badge-stage {
+    width: 100%;
+    max-width: 200px;
+    margin: -10px 0 -14px;
+  }
 }
