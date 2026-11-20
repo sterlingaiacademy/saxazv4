@@ -8,7 +8,7 @@
   <div class="sx-p-hero-inner">
     <div class="sx-p-hero-copy">
       <div class="sx-p-kicker">{{ user.class_name or 'Class 10' }} &middot; Parent Portal &middot; Practice Log</div>
-      <h1 class="sx-p-hero-h1">{{ user.name }}'s Mock Exams</h1>
+      <h1 class="sx-p-hero-h1">{{ (user.name or '')[:1]|upper }}{{ (user.name or '')[1:] }}'s Mock Exams</h1>
     </div>
     <div class="sx-p-hero-pills">
       <a href="/parent/dashboard" class="sx-p-pill sx-p-pill-white">&larr; Overview</a>
@@ -324,7 +324,7 @@
       </div>
       <div class="sx-p-hero-pills">
         <span class="sx-p-tag-neutral">{{ analytics.retry_history | length }} Retried Questions</span>
-        <span class="sx-p-tag-neutral">{{ analytics.questions_with_tutor_count or 0 }} times the tutor helped</span>
+        <span class="sx-p-tag-neutral">Tutor helped on {{ analytics.questions_with_tutor_count or 0 }} question{{ "" if (analytics.questions_with_tutor_count or 0) == 1 else "s" }}</span>
       </div>
     </div>
 

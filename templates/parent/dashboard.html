@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ user.name }}'s Learning Overview - Parent Portal{% endblock %}
+{% block title %}{{ (user.name or '')[:1]|upper }}{{ (user.name or '')[1:] }}'s Learning Overview - Parent Portal{% endblock %}
 {% block topbar_title %}Parent Portal{% endblock %}
 
 {% block hero_banner %}
@@ -8,7 +8,7 @@
   <div class="sx-p-hero-inner">
     <div class="sx-p-hero-copy">
       <div class="sx-p-kicker">{{ user.class_name or 'Class 10' }} &middot; Parent Portal</div>
-      <h1 class="sx-p-hero-h1">{{ user.name }}'s Learning Overview</h1>
+      <h1 class="sx-p-hero-h1">{{ (user.name or '')[:1]|upper }}{{ (user.name or '')[1:] }}'s Learning Overview</h1>
     </div>
     <div class="sx-p-hero-pills">
       <a href="/auth/switch-to-student" class="sx-p-pill sx-p-pill-black">Switch to Student View &rarr;</a>

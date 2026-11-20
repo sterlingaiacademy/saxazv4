@@ -42,21 +42,6 @@
           </button>
         {% endif %}
       </div>
-      {% if next_item %}
-        <button type="button"
-                onclick="fetch('/student/content/{{ item.id }}/complete', {method:'POST'}).finally(() => { window.location.href='/student/content/{{ next_item.id }}'; });"
-                class="sx-btn sx-btn-gold">
-          <span>Proceed to Next Summary (Part {{ (current_part_idx or 1) + 1 }})</span>
-          <span class="material-symbols-outlined">arrow_forward</span>
-        </button>
-      {% elif mock_exam %}
-        <button type="button"
-                onclick="fetch('/student/content/{{ item.id }}/complete', {method:'POST'}).finally(() => { window.location.href='/student/exams/{{ mock_exam.id }}'; });"
-                class="sx-btn sx-btn-gold">
-          <span>Proceed to Practice Mock Exam</span>
-          <span class="material-symbols-outlined">arrow_forward</span>
-        </button>
-      {% endif %}
     </div>
   </div>
 
@@ -212,37 +197,6 @@
         <div hx-post="/student/content/{{ item.id }}/complete" hx-trigger="revealed" hx-target="#progress-container-{{ item.id }}" hx-swap="innerHTML" style="height:1px;width:100%;margin-top:16px;"></div>
       </div>
     {% endif %}
-  </div>
-
-  <!-- Bottom Prev / Next / Practice Navigation -->
-  <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;">
-    <div style="max-width:100%;">
-      {% if prev_item %}
-      <a href="/student/content/{{ prev_item.id }}" class="sx-btn sx-btn-ghost" style="max-width:100%;">
-        <span class="material-symbols-outlined">arrow_back</span>
-        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Previous: {{ prev_item.title | truncate(30) }}</span>
-      </a>
-      {% else %}
-      <a href="/student/chapters/{{ item.chapter_id }}" class="sx-btn sx-btn-ghost">
-        <span class="material-symbols-outlined">arrow_back</span>
-        <span>Back to Chapter Studio</span>
-      </a>
-      {% endif %}
-    </div>
-
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;max-width:100%;">
-      <a href="/student/chapters/{{ item.chapter_id }}#chapter-exams" class="sx-btn sx-btn-ghost">
-        <span class="material-symbols-outlined" style="color:#198754;">quiz</span>Go to Chapter Quizzes
-      </a>
-      {% if next_item %}
-      <a href="/student/content/{{ next_item.id }}"
-         onclick="if(!event.metaKey && !event.ctrlKey){ event.preventDefault(); fetch('/student/content/{{ item.id }}/complete', {method:'POST'}).finally(() => { window.location.href='/student/content/{{ next_item.id }}'; }); }"
-         class="sx-btn sx-btn-gold" style="max-width:100%;">
-        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Next: {{ next_item.title | truncate(30) }}</span>
-        <span class="material-symbols-outlined">arrow_forward</span>
-      </a>
-      {% endif %}
-    </div>
   </div>
 
 </div>

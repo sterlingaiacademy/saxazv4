@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
 
+{% block title %}Your results | SAXAZ{% endblock %}
+
 {% block content %}
 {% set init_pct = (attempt.total_marks_awarded / attempt.total_max_marks * 100) if attempt.total_max_marks > 0 else 0 %}
 {% set ns = namespace(total_q=0, full_q=0, review_q=0, next_mock_id=attempt.mock_exam_id or attempt.exam_paper_id, next_mock_title='Mock Test') %}
@@ -227,7 +229,7 @@
           </h2>
           <p style="margin:3px 0 0;font-size:0.82rem;color:rgba(35,31,32,0.75);font-weight:600;line-height:1.45;">
             {% if attempt.exam_type == 'real' %}
-              Want to sharpen weak areas before retaking the Real Exam? Practice any Mock Test below with guided AI feedback!
+              Want to sharpen weak areas before retaking the Real Exam? Practice any Mock Test below and get feedback on every answer!
             {% else %}
               Awesome work! You have achieved {{ real_exam_info.best_mock_pct }}% in Mock Practice and unlocked the timed, proctored Official Real Exam.
             {% endif %}
@@ -590,7 +592,7 @@
                 <div :style="isFullMarks
                        ? 'font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px;color:#16a34a;'
                        : 'font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px;color:#231f20;'">
-                  AI Examiner Feedback
+                  Teacher's feedback
                 </div>
                 <div style="white-space:pre-line;" x-text="aiFeedback">{{ ans.ai_feedback }}</div>
 
@@ -613,7 +615,7 @@
                         class="sx-btn"
                         :class="isFullMarks ? 'sx-btn-soft' : 'sx-btn-gold'"
                         style="padding:7px 14px;font-size:0.77rem;min-height:34px;"
-                        data-tip="Rewrite or select a better answer for instant AI re-grading">
+                        data-tip="Rewrite or select a better answer to have it checked again">
                   <span class="material-symbols-outlined" style="font-size:16px;">refresh</span>
                   <span x-text="retryOpen ? 'Cancel Retry' : (isFullMarks ? 'Practice Retry' : 'Retry & Improve Score')"></span>
                 </button>
@@ -649,7 +651,7 @@
               <div x-show="retryOpen" x-collapse
                    style="padding:14px 16px;border-radius:16px;background:#ffffff;border:1.5px solid #231f20;display:flex;flex-direction:column;gap:10px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:0.78rem;font-weight:800;color:#231f20;">
-                  <span>Write or choose an improved answer for instant AI re-grading:</span>
+                  <span>Write or choose an improved answer to have it checked again:</span>
                   <span style="color:rgba(35,31,32,0.68);" x-text="`Current: ${marks}/${maxMarks}`"></span>
                 </div>
 

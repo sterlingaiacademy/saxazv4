@@ -112,7 +112,7 @@ def build_search_catalog(conn, user: dict) -> dict:
     subjects = [dict(r) for r in cursor.fetchall()]
     for sub in subjects:
       s_name = _clean_text(sub["name"])
-      s_desc = _clean_text(sub.get("description") or f"{s_name} chapters, videos and tests.")
+      s_desc = f"{s_name} chapters, videos and tests."
       synonyms = ""
       if s_name.lower() in ("maths", "mathematics", "math"):
         synonyms = "math maths mathematics algebra geometry trigonometry arithmetic quadratic equation equations calculus"
