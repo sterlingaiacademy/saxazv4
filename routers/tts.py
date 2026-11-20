@@ -15,6 +15,8 @@ import wave
 import httpx
 from dotenv import load_dotenv
 
+from services import tts_store
+
 load_dotenv(override=True)
 
 router = APIRouter(prefix="/api/tts", tags=["tts"])
@@ -736,6 +738,8 @@ class TTSRequest(BaseModel):
     engine: str | None = None
     emotion: str | None = None
     keywords: list[str] | None = None
+    # Chapter summaries ask for their narration to be saved permanently (generated once, replayed forever)
+    persist: bool = False
 
 
 @router.post("/prepare")
@@ -814,6 +818,8 @@ async def pcm_stream_tts(req: TTSRequest, request: Request):
     pace = _pace_bucket(speed)
     cache_key = ("pcm", voice_key, emo_key, pace, cleaned)
 
+    store_key = tts_store.make_key(voice_key, emo_key, pace, cleaned, req.keywords) if req.persist else None
+
     cached = _AUDIO_LRU_CACHE.get(cache_key)
     if cached and len(cached[0]) >= 2:
         _AUDIO_LRU_CACHE.move_to_end(cache_key)
@@ -829,6 +835,25 @@ async def pcm_stream_tts(req: TTSRequest, request: Request):
                 "Cache-Control": "private, max-age=86400",
             },
         )
+
+    # Saved narration: replay it with zero Gemini tokens
+    if store_key:
+        saved = await tts_store.get(store_key)
+        if saved:
+            even = saved[: len(saved) & ~1]
+            _store_in_lru(cache_key, even, "application/octet-stream", "saved")
+            return Response(
+                content=even,
+                status_code=200,
+                media_type="application/octet-stream",
+                headers={
+                    "X-Sample-Rate": "24000",
+                    "X-TTS-Engine": "gemini",
+                    "X-TTS-Actual-Model": "saved",
+                    "X-TTS-Emotion": emo_key,
+                    "Cache-Control": "private, max-age=86400",
+                },
+            )
 
     inflight = _INFLIGHT_TASKS.get(cache_key)
     if inflight and not inflight.done():
@@ -884,6 +909,11 @@ async def pcm_stream_tts(req: TTSRequest, request: Request):
                 even_len = len(collected) & ~1
                 final_b = bytes(collected[:even_len])
                 _store_in_lru(cache_key, final_b, "application/octet-stream", actual_model)
+                if store_key:
+                    try:
+                        await tts_store.put(store_key, final_b)
+                    except Exception as store_err:
+                        print(f"[TTS store] save failed: {store_err}")
                 wav_key = ("wav", voice_key, emo_key, pace, cleaned)
                 if wav_key not in _AUDIO_LRU_CACHE:
                     _store_in_lru(wav_key, _wrap_pcm16_as_wav(final_b, 24000), "audio/wav", actual_model)

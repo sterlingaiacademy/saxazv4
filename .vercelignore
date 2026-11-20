@@ -32,3 +32,6 @@ chemistry_playlist.json
 *.db-shm
 *.db-wal
 *.backup*
+
+# local saved narration stays local (live site uses Vercel Blob)
+tts_cache/

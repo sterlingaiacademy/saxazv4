@@ -1015,7 +1015,8 @@
           this.syncPlayer.prefetch(nextInSlide.spokenText, {
             emotion: meta.ttsEmotion || 'teaching',
             speed: 0.90,
-            keywords: nextInSlide.keywords
+            keywords: nextInSlide.keywords,
+            persist: true
           });
         } else if (!meta.game && sIdx + 1 < this.slidesMeta.length) {
           const nextSl = this.slideData[sIdx + 1];
@@ -1024,7 +1025,8 @@
             this.syncPlayer.prefetch(nextSl.beats[0].spokenText, {
               emotion: nextMeta.ttsEmotion || 'teaching',
               speed: 0.90,
-              keywords: nextSl.beats[0].keywords
+              keywords: nextSl.beats[0].keywords,
+              persist: true
             });
           }
         }
@@ -1033,6 +1035,7 @@
           emotion: meta.ttsEmotion || 'teaching',
           speed: 0.90,
           keywords: beat.keywords,
+          persist: true,
           startFrac: beatStartFrac,
           onStateChange: (st) => {
             if (myToken !== this.nutshellRunToken) return;

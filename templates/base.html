@@ -1790,6 +1790,34 @@
           return { cancel, donePromise };
         };
 
+        // Saved summary narration in the browser (Cache Storage), so replaying a summary needs no download at all
+        const SX_TTS_BROWSER_CACHE = 'saxaz-summary-voice-v1';
+        const sxTtsCacheUrl = async (key) => {
+          try {
+            const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(key));
+            return '/__summary_voice/' + Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('') + '.pcm';
+          } catch (e) { return null; }
+        };
+        window.__sxTtsBrowserGet = async (key) => {
+          if (!('caches' in window)) return null;
+          try {
+            const url = await sxTtsCacheUrl(key); if (!url) return null;
+            const cache = await caches.open(SX_TTS_BROWSER_CACHE);
+            const hit = await cache.match(url);
+            if (!hit) return null;
+            const ab = await hit.arrayBuffer();
+            return ab && ab.byteLength >= 4 ? { bytes: new Uint8Array(ab), sampleRate: parseInt(hit.headers.get('X-Sample-Rate') || '24000', 10) || 24000 } : null;
+          } catch (e) { return null; }
+        };
+        window.__sxTtsBrowserPut = async (key, bytes, sampleRate) => {
+          if (!('caches' in window) || !bytes || bytes.byteLength < 4) return;
+          try {
+            const url = await sxTtsCacheUrl(key); if (!url) return;
+            const cache = await caches.open(SX_TTS_BROWSER_CACHE);
+            await cache.put(url, new Response(bytes, { headers: { 'Content-Type': 'application/octet-stream', 'X-Sample-Rate': String(sampleRate || 24000) } }));
+          } catch (e) {}
+        };
+
         // Sample-Accurate WebAudio PCM Player with 60fps Lip-Sync RMS, Word Sync & 0-Token Instant Seeking
         window.saxazCreateSyncedSpeechPlayer = function() {
           let activeSources = [];
@@ -2026,6 +2054,12 @@
             if (myRun !== runId) return false;
 
             const pcmCacheKey = `${voice}|gemini|${emotion}|${speed.toFixed(2)}|${kwKey}|${clean}`;
+            const persist = Boolean(opts.persist);
+            if (persist && !window.__saxazPcmCache.has(pcmCacheKey) && window.__sxTtsBrowserGet) {
+              const saved = await window.__sxTtsBrowserGet(pcmCacheKey);
+              if (myRun !== runId) return false;
+              if (saved) window.__saxazPcmCache.set(pcmCacheKey, saved);
+            }
             const inflight = window.__saxazPrefetchInflight && window.__saxazPrefetchInflight.get
               ? window.__saxazPrefetchInflight.get(pcmCacheKey) : null;
             if (inflight && !window.__saxazPcmCache.has(pcmCacheKey)) {
@@ -2065,7 +2099,7 @@
               const res = await fetch('/api/tts/pcm-stream', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: clean, voice, engine: 'gemini', emotion, speed, keywords: keywords.length ? keywords : undefined }),
+                body: JSON.stringify({ text: clean, voice, engine: 'gemini', emotion, speed, keywords: keywords.length ? keywords : undefined, persist: persist || undefined }),
                 signal: abortCtrl.signal
               });
               if (myRun !== runId) return false;
@@ -2154,6 +2188,7 @@
                   if (oldest !== undefined) window.__saxazPcmCache.delete(oldest);
                 }
                 window.__saxazPcmCache.set(pcmCacheKey, { bytes: fullBytes, sampleRate });
+                if (persist && window.__sxTtsBrowserPut) window.__sxTtsBrowserPut(pcmCacheKey, fullBytes, sampleRate);
 
                 const mergedFloats = new Float32Array(liveSampleCount);
                 let fOff = 0;
@@ -2235,11 +2270,19 @@
             if (window.__saxazPcmCache.has(pcmCacheKey)) return;
             if (!(window.__saxazPrefetchInflight instanceof Map)) window.__saxazPrefetchInflight = new Map();
             if (window.__saxazPrefetchInflight.has(pcmCacheKey)) return;
-            const job = fetch('/api/tts/pcm-stream', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ text: clean, voice, engine: 'gemini', emotion, speed, keywords: keywords.length ? keywords : undefined })
-            }).then(async (res) => {
+            const persist = Boolean(opts.persist);
+            const job = (async () => {
+              if (persist && window.__sxTtsBrowserGet) {
+                const saved = await window.__sxTtsBrowserGet(pcmCacheKey);
+                if (saved) { window.__saxazPcmCache.set(pcmCacheKey, saved); return null; }
+              }
+              return fetch('/api/tts/pcm-stream', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: clean, voice, engine: 'gemini', emotion, speed, keywords: keywords.length ? keywords : undefined, persist: persist || undefined })
+              });
+            })().then(async (res) => {
+              if (!res) return;
               if (!res.ok) return;
               const sr = parseInt(res.headers.get('X-Sample-Rate') || '24000', 10) || 24000;
               const ab = await res.arrayBuffer();
@@ -2249,6 +2292,7 @@
                   if (oldest !== undefined) window.__saxazPcmCache.delete(oldest);
                 }
                 window.__saxazPcmCache.set(pcmCacheKey, { bytes: new Uint8Array(ab), sampleRate: sr });
+                if (persist && window.__sxTtsBrowserPut) window.__sxTtsBrowserPut(pcmCacheKey, new Uint8Array(ab), sr);
               }
             }).catch(() => {}).finally(() => {
               window.__saxazPrefetchInflight.delete(pcmCacheKey);

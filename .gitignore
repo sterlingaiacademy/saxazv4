@@ -62,3 +62,6 @@ static/img/test_*
 !static/sfx/*.wav
 # unused large videos stay local only
 media/*.mp4
+
+# Saved summary narration (generated once by Gemini, replayed forever)
+tts_cache/
