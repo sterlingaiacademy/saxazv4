@@ -2,8 +2,6 @@ __pycache__/
 *.pyc
 venv/
 .env
-media/
-static/uploads/
 *.db
 *.sqlite
 *.sqlite3
@@ -57,3 +55,10 @@ map_images.py
 build_chemistry.py
 static/img/test_*
 .vercel
+
+# --- Needed by the live site (Vercel deploys from git) ---
+!edusafari.db
+!static/manifest.json
+!static/sfx/*.wav
+# unused large videos stay local only
+media/*.mp4
