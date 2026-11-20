@@ -25,9 +25,9 @@
 <link rel="stylesheet" href="/static/css/saxaz-pages.css?v=5">
 {% from "student/partials/summary_games.html" import molecule_defs, game_leaf, game_food, game_breathe, game_blood, game_pump, game_kidney, game_team %}
 {{ molecule_defs() }}
-<link rel="stylesheet" href="/static/css/summary-games.css?v=24">
+<link rel="stylesheet" href="/static/css/summary-games.css?v=25">
 <script src="/static/js/summary-games.js?v=22"></script>
-<script src="/static/js/summary-storyboard.js?v=541"></script>
+<script src="/static/js/summary-storyboard.js?v=542"></script>
 {% set content_list = chapter.content if chapter and chapter.content is defined and chapter.content is iterable and chapter.content is not string else (modules if modules is defined else []) %}
 {% set exam_list = available_exams if available_exams is defined else (exams if exams is defined else []) %}
 {% set done_ids = completed_content_ids if completed_content_ids is defined else [] %}
@@ -115,12 +115,7 @@
       // Smart sentence-synced looping 3D popup animations & reactive tutor sprites
       activeCueIdx: 0,
       cuePopping: false,
-      cueBursting: false,
-      cueFactText: '',
-      cueFactClicks: 0,
-      cueFactTimer: null,
       tutorReactPose: '',
-      tutorReactCallout: '',
       tutorReacting: false,
       tutorReactTimer: null,
       smartCanvasLoop: null,
@@ -210,7 +205,7 @@
         // Preload all 8 Tutor poses (base + lip-sync + reactive pointing/amazed/cheer) for 0ms swap latency
         ['base', 'talking', 'laughing', 'thinking', 'serious', 'pointing', 'amazed', 'cheer'].forEach((pose) => {
           const im = new Image();
-          im.src = `/static/images/avatars/${this.tutorName}_${pose}.png?v=541`;
+          im.src = `/static/images/avatars/${this.tutorName}_${pose}.png?v=542`;
         });
         this.smartCanvasLoop = window.saxazCreateSmartCanvasLoop ? window.saxazCreateSmartCanvasLoop() : null;
         // Playful living idle animation cycle so Tutor smiles & gestures naturally even before clicking Play
@@ -440,20 +435,18 @@
         const pose = this.tutorReactPose
           ? this.tutorReactPose
           : ((this.nutshellLit && !this.nutshellPaused) ? this.nutshellEmotion : this.idlePose);
-        return `/static/images/avatars/${this.tutorName}_${pose}.png?v=541`;
+        return `/static/images/avatars/${this.tutorName}_${pose}.png?v=542`;
       },
 
-      triggerTutorReaction(pose, callout = '', ms = 1900) {
+      triggerTutorReaction(pose, ms = 1900) {
         if (!pose) return;
         this.tutorReactPose = pose;
-        if (callout) this.tutorReactCallout = callout;
         this.tutorReacting = false;
         this.$nextTick(() => { this.tutorReacting = true; });
         if (this.tutorReactTimer) clearTimeout(this.tutorReactTimer);
         this.tutorReactTimer = setTimeout(() => {
           this.tutorReactPose = '';
           this.tutorReacting = false;
-          if (!this.cueFactText) this.tutorReactCallout = '';
         }, ms);
       },
 
@@ -464,9 +457,9 @@
           const slideEl = document.querySelector(`[data-sx-slide="${this.activeSlide}"]`);
           if (!slideEl) return;
           const canvasEl = slideEl.querySelector('.sx-smart-canvas');
-          const btnEl = slideEl.querySelector('.sx-smart-canvas-btn');
+          const wrapEl = slideEl.querySelector('.sx-smart-canvas-wrap');
           if (canvasEl) {
-            this.smartCanvasLoop.setCue(canvasEl, btnEl, cue);
+            this.smartCanvasLoop.setCue(canvasEl, wrapEl, cue);
             this.smartCanvasLoop.preloadSlideCues(this.activeSlide);
             if (this.activeSlide + 1 < this.slidesMeta.length) {
               this.smartCanvasLoop.preloadSlideCues(this.activeSlide + 1);
@@ -481,7 +474,6 @@
         const clamped = Math.max(0, Math.min(list.length - 1, Number(cIdx) || 0));
         const changed = clamped !== this.activeCueIdx;
         this.activeCueIdx = clamped;
-        this.cueFactClicks = 0;
         if (changed || fromUser) {
           this.cuePopping = false;
           this.$nextTick(() => { this.cuePopping = true; });
@@ -489,27 +481,9 @@
         }
         const cue = list[clamped];
         if (cue && (changed || fromUser)) {
-          this.triggerTutorReaction(cue.tutorPose || 'pointing', cue.tutorCallout || '', 2100);
+          this.triggerTutorReaction(cue.tutorPose || 'pointing', 2100);
         }
         this.mountActiveCueCanvas();
-      },
-
-      interactWithCue() {
-        const cue = this.currentCue();
-        if (!cue) return;
-        this.cueBursting = false;
-        this.$nextTick(() => { this.cueBursting = true; });
-        setTimeout(() => { this.cueBursting = false; }, 440);
-        if (this.smartCanvasLoop) this.smartCanvasLoop.boost();
-        const facts = cue.tapFacts || [];
-        if (facts.length) {
-          this.cueFactText = facts[this.cueFactClicks % facts.length];
-          this.cueFactClicks += 1;
-          if (this.cueFactTimer) clearTimeout(this.cueFactTimer);
-          this.cueFactTimer = setTimeout(() => { this.cueFactText = ''; }, 4200);
-        }
-        const reactPose = (this.cueFactClicks % 2 === 1) ? 'amazed' : 'cheer';
-        this.triggerTutorReaction(reactPose, cue.tutorCallout || 'Nice discovery!', 2000);
       },
 
       tutorMotionStyle() {
@@ -847,9 +821,7 @@
         this.activeSlide = target;
         this.activeBeatIdx = 0;
         this.activeCueIdx = 0;
-        this.cueFactText = '';
         this.tutorReactPose = '';
-        this.tutorReactCallout = '';
         this.seekProgress = 0;
         this.$nextTick(() => {
           const row = this.$refs.slideTabs;
@@ -941,7 +913,6 @@
         this.nutshellBeatIdx = -1;
         this.nutshellEmotion = 'base';
         this.tutorReactPose = '';
-        this.tutorReactCallout = '';
         this.tutorScale = 1;
         this.seekProgress = 0;
         if (this.syncPlayer) this.syncPlayer.stop();
@@ -1042,7 +1013,7 @@
               this.nutshellLit = false;
               this.nutshellPaused = false;
               this.wasVoiceReading = false;
-              this.triggerTutorReaction('cheer', 'Chapter Complete!', 3000);
+              this.triggerTutorReaction('cheer', 3000);
               this.tutorScale = 1;
               this.clearWordHighlights(sIdx);
             }
@@ -1351,7 +1322,7 @@
               Hey {{ first_name }}! Tap anywhere for a fun 2-min tour!
             </div>
             <div class="sx-tutor-pop-avatar">
-              <img :src="'/static/images/avatars/' + tutorName + '_' + (nutshellHover ? 'cheer' : idlePose) + '.png'"
+              <img :src="'/static/images/avatars/' + tutorName + '_' + (nutshellHover ? 'cheer' : idlePose) + '.png?v=542'"
                    :alt="tutorDisplay">
             </div>
           </div>
@@ -1397,7 +1368,6 @@
 
         {% macro render_sync_tutor(eq_id) %}
             <div class="sx-sync-tutor-card" @click="toggleNutshellLightbulb()" style="cursor:pointer;">
-              <span class="sx-tutor-react-callout" x-show="tutorReactCallout" x-cloak x-text="tutorReactCallout"></span>
               <div class="sx-sync-tutor-figure" :class="[(nutshellLit && !nutshellPaused) && 'is-speaking', tutorReacting && 'is-reacting']">
                 <img :src="currentTutorImgSrc()" :alt="tutorDisplay" :style="tutorMotionStyle()">
               </div>
@@ -1415,30 +1385,9 @@
           <div class="sx-sync-visual-stack">
             {{ render_sync_tutor(eq_id) }}
             <div class="sx-smart-stage" data-sx-pop-illus="smart-{{ s_idx }}">
-              <button type="button"
-                      class="sx-smart-canvas-btn"
-                      :class="[cuePopping && 'is-popping-in', cueBursting && 'is-burst']"
-                      @click="interactWithCue()"
-                      :aria-label="(currentCue() && currentCue().tapLabel) ? currentCue().tapLabel : 'Interact with animation'">
-                <span class="sx-smart-fact-badge" x-show="cueFactText" x-cloak x-text="cueFactText"></span>
+              <div class="sx-smart-canvas-wrap" :class="cuePopping && 'is-popping-in'">
                 <img :src="(currentCue() && currentCue().idle) ? currentCue().idle : '{{ fallback_idle }}'" :alt="(currentCue() && currentCue().label) ? currentCue().label : 'Animated biology illustration'">
                 <canvas class="sx-smart-canvas" width="360" height="270"></canvas>
-              </button>
-
-              <div class="sx-smart-interact-bar">
-                <button type="button" class="sx-smart-tap-pill" @click="interactWithCue()">
-                  <span class="material-symbols-outlined" style="font-size:17px;" aria-hidden="true">touch_app</span>
-                  <span x-text="(currentCue() && currentCue().tapLabel) ? currentCue().tapLabel : 'Tap to Explore'"></span>
-                </button>
-                <div class="sx-smart-cue-dots" x-show="getSlideCues({{ s_idx }}).length > 1">
-                  <template x-for="(cueItem, ci) in getSlideCues({{ s_idx }})" :key="'cue-{{ s_idx }}-' + ci">
-                    <button type="button"
-                            class="sx-smart-cue-dot"
-                            :class="activeCueIdx === ci && 'is-active'"
-                            @click="selectCue(ci, true)"
-                            x-text="cueItem.label"></button>
-                  </template>
-                </div>
               </div>
             </div>
           </div>
