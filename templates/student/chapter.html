@@ -22,11 +22,12 @@
 {% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="/static/css/saxaz-pages.css?v=4">
+<link rel="stylesheet" href="/static/css/saxaz-pages.css?v=5">
 {% from "student/partials/summary_games.html" import molecule_defs, game_leaf, game_food, game_breathe, game_blood, game_pump, game_kidney, game_team %}
 {{ molecule_defs() }}
-<link rel="stylesheet" href="/static/css/summary-games.css?v=23">
+<link rel="stylesheet" href="/static/css/summary-games.css?v=24">
 <script src="/static/js/summary-games.js?v=22"></script>
+<script src="/static/js/summary-storyboard.js?v=541"></script>
 {% set content_list = chapter.content if chapter and chapter.content is defined and chapter.content is iterable and chapter.content is not string else (modules if modules is defined else []) %}
 {% set exam_list = available_exams if available_exams is defined else (exams if exams is defined else []) %}
 {% set done_ids = completed_content_ids if completed_content_ids is defined else [] %}
@@ -106,9 +107,23 @@
       syncPlayer: null,
       slidesReady: false,
       slideData: [],
+      activeBeatIdx: 0,
       lastHighlightedSlide: -1,
       lastHighlightedWord: -1,
       nutshellRunToken: 0,
+
+      // Smart sentence-synced looping 3D popup animations & reactive tutor sprites
+      activeCueIdx: 0,
+      cuePopping: false,
+      cueBursting: false,
+      cueFactText: '',
+      cueFactClicks: 0,
+      cueFactTimer: null,
+      tutorReactPose: '',
+      tutorReactCallout: '',
+      tutorReacting: false,
+      tutorReactTimer: null,
+      smartCanvasLoop: null,
 
       // Mini-games shown in spacious Full-Screen Overlay after Tutor invitation
       gameMap: {{ ({1: ['leaf'], 2: ['food'], 3: ['breathe'], 6: ['heart'], 7: ['blood'], 8: ['pump'], 9: ['kidney'], 11: ['team']} if chapter.id == 3 else {}) | tojson | safe }},
@@ -192,20 +207,21 @@
       ],
 
       init() {
-        // Preload all 5 high-res 1024x1024 Tutor poses so 60fps mouth & emotion sync has 0ms swap latency
-        ['base', 'talking', 'laughing', 'thinking', 'serious'].forEach((pose) => {
+        // Preload all 8 Tutor poses (base + lip-sync + reactive pointing/amazed/cheer) for 0ms swap latency
+        ['base', 'talking', 'laughing', 'thinking', 'serious', 'pointing', 'amazed', 'cheer'].forEach((pose) => {
           const im = new Image();
-          im.src = `/static/images/avatars/${this.tutorName}_${pose}.png`;
+          im.src = `/static/images/avatars/${this.tutorName}_${pose}.png?v=541`;
         });
-        // Playful living idle animation cycle so Tutor smiles & reacts naturally even before clicking Play
-        const idleCycle = ['base', 'laughing', 'base', 'base', 'thinking', 'base', 'laughing', 'base'];
+        this.smartCanvasLoop = window.saxazCreateSmartCanvasLoop ? window.saxazCreateSmartCanvasLoop() : null;
+        // Playful living idle animation cycle so Tutor smiles & gestures naturally even before clicking Play
+        const idleCycle = ['base', 'laughing', 'base', 'pointing', 'base', 'thinking', 'base', 'cheer'];
         let idleIdx = 0;
         setInterval(() => {
           if (!this.nutshellLit && !document.hidden) {
             idleIdx = (idleIdx + 1) % idleCycle.length;
             this.idlePose = idleCycle[idleIdx];
           }
-        }, 2100);
+        }, 2300);
         this.$nextTick(() => {
           this.ensureSlideWordsInitialized();
         });
@@ -371,7 +387,21 @@
         this.closeFullscreenGame(true);
       },
 
-      // ---------- Full-screen summary ----------
+      // ---------- Full-screen summary & whole-card launch ----------
+      openStoryFullscreen(autoPlay = true) {
+        if (!this.nutshellExpanded) {
+          this.nutshellExpanded = true;
+        }
+        this.ensureSlideWordsInitialized();
+        this.toggleSummaryFullscreen(true);
+        this.$nextTick(() => {
+          this.selectCue(this.activeCueIdx || 0, false);
+          if (autoPlay) {
+            this.startReadingSlide(this.activeSlide, 0);
+          }
+        });
+      },
+
       toggleSummaryFullscreen(force) {
         const card = this.$root.querySelector('.sx-nutshell-card');
         const want = typeof force === 'boolean' ? force : !this.summaryFs;
@@ -386,10 +416,100 @@
           if (card && card.requestFullscreen && !document.fullscreenElement) {
             card.requestFullscreen().catch(() => {});
           }
-          this.$nextTick(() => { if (card) card.scrollTop = 0; });
+          this.$nextTick(() => {
+            if (card) card.scrollTop = 0;
+            this.mountActiveCueCanvas();
+          });
         } else if (document.fullscreenElement && document.exitFullscreen) {
           document.exitFullscreen().catch(() => {});
         }
+      },
+
+      getSlideCues(sIdx = null) {
+        const idx = sIdx !== null ? sIdx : this.activeSlide;
+        return (window.SAXAZ_SUMMARY_CUES && window.SAXAZ_SUMMARY_CUES[idx]) ? window.SAXAZ_SUMMARY_CUES[idx] : [];
+      },
+
+      currentCue() {
+        const list = this.getSlideCues(this.activeSlide);
+        if (!list.length) return null;
+        return list[Math.min(this.activeCueIdx, list.length - 1)] || list[0];
+      },
+
+      currentTutorImgSrc() {
+        const pose = this.tutorReactPose
+          ? this.tutorReactPose
+          : ((this.nutshellLit && !this.nutshellPaused) ? this.nutshellEmotion : this.idlePose);
+        return `/static/images/avatars/${this.tutorName}_${pose}.png?v=541`;
+      },
+
+      triggerTutorReaction(pose, callout = '', ms = 1900) {
+        if (!pose) return;
+        this.tutorReactPose = pose;
+        if (callout) this.tutorReactCallout = callout;
+        this.tutorReacting = false;
+        this.$nextTick(() => { this.tutorReacting = true; });
+        if (this.tutorReactTimer) clearTimeout(this.tutorReactTimer);
+        this.tutorReactTimer = setTimeout(() => {
+          this.tutorReactPose = '';
+          this.tutorReacting = false;
+          if (!this.cueFactText) this.tutorReactCallout = '';
+        }, ms);
+      },
+
+      mountActiveCueCanvas() {
+        const cue = this.currentCue();
+        if (!cue || !this.smartCanvasLoop) return;
+        this.$nextTick(() => {
+          const slideEl = document.querySelector(`[data-sx-slide="${this.activeSlide}"]`);
+          if (!slideEl) return;
+          const canvasEl = slideEl.querySelector('.sx-smart-canvas');
+          const btnEl = slideEl.querySelector('.sx-smart-canvas-btn');
+          if (canvasEl) {
+            this.smartCanvasLoop.setCue(canvasEl, btnEl, cue);
+            this.smartCanvasLoop.preloadSlideCues(this.activeSlide);
+            if (this.activeSlide + 1 < this.slidesMeta.length) {
+              this.smartCanvasLoop.preloadSlideCues(this.activeSlide + 1);
+            }
+          }
+        });
+      },
+
+      selectCue(cIdx, fromUser = false) {
+        const list = this.getSlideCues(this.activeSlide);
+        if (!list.length) return;
+        const clamped = Math.max(0, Math.min(list.length - 1, Number(cIdx) || 0));
+        const changed = clamped !== this.activeCueIdx;
+        this.activeCueIdx = clamped;
+        this.cueFactClicks = 0;
+        if (changed || fromUser) {
+          this.cuePopping = false;
+          this.$nextTick(() => { this.cuePopping = true; });
+          setTimeout(() => { this.cuePopping = false; }, 480);
+        }
+        const cue = list[clamped];
+        if (cue && (changed || fromUser)) {
+          this.triggerTutorReaction(cue.tutorPose || 'pointing', cue.tutorCallout || '', 2100);
+        }
+        this.mountActiveCueCanvas();
+      },
+
+      interactWithCue() {
+        const cue = this.currentCue();
+        if (!cue) return;
+        this.cueBursting = false;
+        this.$nextTick(() => { this.cueBursting = true; });
+        setTimeout(() => { this.cueBursting = false; }, 440);
+        if (this.smartCanvasLoop) this.smartCanvasLoop.boost();
+        const facts = cue.tapFacts || [];
+        if (facts.length) {
+          this.cueFactText = facts[this.cueFactClicks % facts.length];
+          this.cueFactClicks += 1;
+          if (this.cueFactTimer) clearTimeout(this.cueFactTimer);
+          this.cueFactTimer = setTimeout(() => { this.cueFactText = ''; }, 4200);
+        }
+        const reactPose = (this.cueFactClicks % 2 === 1) ? 'amazed' : 'cheer';
+        this.triggerTutorReaction(reactPose, cue.tutorCallout || 'Nice discovery!', 2000);
       },
 
       tutorMotionStyle() {
@@ -418,9 +538,17 @@
         slideEls.forEach((slideEl, sIdx) => {
           const proseBlocks = slideEl.querySelectorAll('[data-sx-sync-prose]');
           const wordItems = [];
-          const spokenTokens = [];
+          const rawSentences = [];
+          let curSentWords = [];
+
+          const flushSentence = () => {
+            if (!curSentWords.length) return;
+            rawSentences.push(curSentWords);
+            curSentWords = [];
+          };
 
           proseBlocks.forEach((block) => {
+            const isHeadingOrEq = /^H[1-6]$/i.test(block.tagName || '') || block.classList.contains('sx-nutshell-eq');
             const blockText = (block.textContent || '').replace(/\s+/g, ' ').trim();
             const sentences = blockText.match(/[^.!?]+[.!?]*/g) || [blockText];
             let sentIdx = 0;
@@ -440,19 +568,39 @@
             const registerWordSpan = (spanEl, visWord, spkWord) => {
               const mood = currentMood();
               advanceSentenceTracker(visWord);
-              const coreLen = spkWord.replace(/[^a-zA-Z0-9]/g, '').length || 1;
-              let weight = Math.max(2.0, coreLen * 0.84);
-              if (/[,;:\u2014\-]$/.test(visWord)) weight += 3.6;
-              if (/[\.\!\?]$/.test(visWord)) weight += 7.2;
+              const syl = window.saxazCountSyllables ? window.saxazCountSyllables(spkWord) : Math.max(1.0, spkWord.length * 0.35);
+              let weight = Math.max(1.2, syl * 1.18);
+              if (/[,;:]$/.test(visWord)) weight += 2.2;
+              if (/[\.\!\?]$/.test(visWord)) weight += 4.2;
+              const isKey = window.saxazIsKeyScienceWord ? window.saxazIsKeyScienceWord(visWord) : false;
               const wIndex = wordItems.length;
               spanEl.classList.add('sx-sync-word');
+              if (isKey) spanEl.classList.add('is-key-term');
               spanEl.setAttribute('data-w-idx', String(wIndex));
               spanEl.addEventListener('click', (ev) => {
                 ev.stopPropagation();
                 this.seekOrStartAtWord(sIdx, wIndex);
               });
-              wordItems.push({ el: spanEl, vis: visWord, spk: spkWord, weight, mood, startFrac: 0, endFrac: 1 });
-              spokenTokens.push(spkWord);
+              const item = {
+                idx: wIndex,
+                el: spanEl,
+                vis: visWord,
+                spk: spkWord,
+                weight,
+                mood,
+                isKey,
+                beatIdx: 0,
+                beatStartFrac: 0,
+                beatEndFrac: 1,
+                cueIdx: 0,
+                startFrac: 0,
+                endFrac: 1
+              };
+              wordItems.push(item);
+              curSentWords.push(item);
+              if (/[\.\!\?]$/.test(visWord) && !/^\d+\.$/.test(visWord)) {
+                flushSentence();
+              }
             };
 
             const walkNode = (node) => {
@@ -474,10 +622,15 @@
                   if (!p) return;
                   if (/^\s+$/.test(p)) {
                     frag.appendChild(document.createTextNode(p));
+                  } else if (/^[\-\u2013\u2014\/]+$/.test(p)) {
+                    // Pure dash separators stay clean non-highlighted punctuation with a gentle natural pause
+                    frag.appendChild(document.createTextNode(p));
+                    if (wordItems.length > 0) wordItems[wordItems.length - 1].weight += 2.2;
                   } else {
                     const sp = document.createElement('span');
                     sp.textContent = p;
-                    registerWordSpan(sp, p, p);
+                    const spokenTok = (p === '+') ? 'plus' : p;
+                    registerWordSpan(sp, p, spokenTok);
                     frag.appendChild(sp);
                   }
                 });
@@ -486,14 +639,74 @@
             };
 
             walkNode(block);
-            if (wordItems.length > 0 && /^H[1-6]$/i.test(block.tagName || '')) {
+            if (isHeadingOrEq && wordItems.length > 0) {
               const lastW = wordItems[wordItems.length - 1];
               if (lastW && !/[\.\!\?]$/.test(lastW.vis)) {
-                lastW.weight += 6.2;
-                spokenTokens[spokenTokens.length - 1] = spokenTokens[spokenTokens.length - 1] + '.';
+                lastW.weight += 4.2;
+                lastW.spk = lastW.spk + '.';
               }
+              flushSentence();
+            } else {
+              flushSentence();
             }
           });
+          flushSentence();
+
+          // Map each word smoothly to the best matching Smart Popup Cue for this slide
+          const slideCues = (window.SAXAZ_SUMMARY_CUES && window.SAXAZ_SUMMARY_CUES[sIdx]) ? window.SAXAZ_SUMMARY_CUES[sIdx] : [];
+          let activeCueTracker = 0;
+          for (let wi = 0; wi < wordItems.length; wi++) {
+            const winText = wordItems.slice(wi, Math.min(wordItems.length, wi + 4)).map(w => w.vis).join(' ').toLowerCase();
+            for (let ci = activeCueTracker; ci < slideCues.length; ci++) {
+              const trigs = slideCues[ci].triggers || [];
+              if (trigs.some(tr => winText.includes(tr))) {
+                if (ci > activeCueTracker) activeCueTracker = ci;
+                break;
+              }
+            }
+            wordItems[wi].cueIdx = activeCueTracker;
+          }
+
+          // Group sentences into crisp 1-to-2 sentence beats (10..30 words) for zero-drift TTS sync & keyword emphasis!
+          const beats = [];
+          let accWords = [];
+          const commitBeat = () => {
+            if (!accWords.length) return;
+            const bIdx = beats.length;
+            const bTotalW = accWords.reduce((s, w) => s + w.weight, 0) || 1;
+            let bCum = 0;
+            accWords.forEach((w) => {
+              w.beatIdx = bIdx;
+              w.beatStartFrac = bCum / bTotalW;
+              bCum += w.weight;
+              w.beatEndFrac = bCum / bTotalW;
+            });
+            const spokenText = accWords.map(w => w.spk).join(' ').replace(/\s+/g, ' ').trim();
+            const keywords = window.saxazExtractBeatKeywords ? window.saxazExtractBeatKeywords(spokenText) : [];
+            beats.push({
+              idx: bIdx,
+              startWordIdx: accWords[0].idx,
+              endWordIdx: accWords[accWords.length - 1].idx,
+              words: accWords.slice(),
+              spokenText,
+              keywords,
+              cueIdx: accWords[0].cueIdx
+            });
+            accWords = [];
+          };
+
+          rawSentences.forEach((sentWords) => {
+            if (!sentWords.length) return;
+            const nextCue = sentWords[0].cueIdx;
+            const curCue = accWords.length ? accWords[0].cueIdx : nextCue;
+            // Always start a fresh beat when visual concept switches OR when beat reaches ~24 words
+            if (accWords.length > 0 && (nextCue !== curCue || accWords.length + sentWords.length > 26)) {
+              commitBeat();
+            }
+            accWords = accWords.concat(sentWords);
+            if (accWords.length >= 20) commitBeat();
+          });
+          commitBeat();
 
           const totalWeight = wordItems.reduce((acc, w) => acc + w.weight, 0) || 1;
           let cum = 0;
@@ -503,24 +716,10 @@
             w.endFrac = cum / totalWeight;
           });
 
-          // Where each mini-game sits inside the narration: pause once the
-          // tutor has read every word that comes before it.
-          const gates = [];
-          slideEl.querySelectorAll('[data-sx-game]').forEach((gEl) => {
-            let before = 0;
-            for (const w of wordItems) {
-              if (gEl.compareDocumentPosition(w.el) & Node.DOCUMENT_POSITION_PRECEDING) before += 1;
-              else break;
-            }
-            if (before > 0) {
-              gates.push({ id: gEl.getAttribute('data-sx-game'), frac: wordItems[before - 1].endFrac, atEnd: before >= wordItems.length });
-            }
-          });
-
           builtSlides[sIdx] = {
             words: wordItems,
-            gates,
-            spokenText: spokenTokens.join(' ').replace(/\s+/g, ' ').trim()
+            beats,
+            spokenText: wordItems.map(w => w.spk).join(' ').replace(/\s+/g, ' ').trim()
           };
         });
 
@@ -539,22 +738,25 @@
         this.lastHighlightedWord = -1;
       },
 
-      applyWordHighlightAtFrac(sIdx, frac) {
+      applyWordHighlightAtBeatFrac(sIdx, beatIdx, beatFrac) {
         this.ensureSlideWordsInitialized();
         const sl = this.slideData[sIdx];
-        if (!sl || !sl.words || !sl.words.length) return 'teaching';
-        const words = sl.words;
-        let activeIdx = words.length - 1;
-        for (let i = 0; i < words.length; i++) {
-          if (frac <= words[i].endFrac) {
-            activeIdx = i;
+        if (!sl || !sl.beats || !sl.beats[beatIdx]) return 'teaching';
+        const beat = sl.beats[beatIdx];
+        const bWords = beat.words;
+        let localActive = bWords[bWords.length - 1];
+        for (let i = 0; i < bWords.length; i++) {
+          if (beatFrac <= bWords[i].beatEndFrac) {
+            localActive = bWords[i];
             break;
           }
         }
+        const activeIdx = localActive.idx;
         if (this.lastHighlightedSlide !== sIdx || this.lastHighlightedWord !== activeIdx) {
           if (this.lastHighlightedSlide !== sIdx && this.lastHighlightedSlide >= 0) {
             this.clearWordHighlights(this.lastHighlightedSlide);
           }
+          const words = sl.words;
           for (let i = 0; i < words.length; i++) {
             const cl = words[i].el.classList;
             if (i < activeIdx) {
@@ -570,8 +772,17 @@
           }
           this.lastHighlightedSlide = sIdx;
           this.lastHighlightedWord = activeIdx;
+
+          // Smart sentence-synced popup swap!
+          if (typeof localActive.cueIdx === 'number' && localActive.cueIdx !== this.activeCueIdx) {
+            this.selectCue(localActive.cueIdx, false);
+          } else if (localActive.isKey && !this.tutorReactPose) {
+            // Subtle tutor reaction pulse whenever a key science word is emphasized!
+            const cue = this.currentCue();
+            this.triggerTutorReaction((cue && cue.tutorPose) ? cue.tutorPose : 'pointing', '', 1100);
+          }
         }
-        return words[activeIdx]?.mood || 'teaching';
+        return localActive.mood || 'teaching';
       },
 
       updateTutorLipSync(rms, mood) {
@@ -605,6 +816,7 @@
 
       wakeActiveSlideIllustration() {
         this.$nextTick(() => {
+          this.mountActiveCueCanvas();
           if (window.saxazWakeLivingIllustrations) window.saxazWakeLivingIllustrations();
         });
       },
@@ -633,6 +845,11 @@
           document.documentElement.classList.remove('sx-fs-lock');
         }
         this.activeSlide = target;
+        this.activeBeatIdx = 0;
+        this.activeCueIdx = 0;
+        this.cueFactText = '';
+        this.tutorReactPose = '';
+        this.tutorReactCallout = '';
         this.seekProgress = 0;
         this.$nextTick(() => {
           const row = this.$refs.slideTabs;
@@ -640,7 +857,7 @@
           if (row && tabEl) row.scrollTo({ left: tabEl.offsetLeft - row.clientWidth / 2 + tabEl.clientWidth / 2, behavior: 'smooth' });
         });
         this.clearWordHighlights();
-        this.wakeActiveSlideIllustration();
+        this.selectCue(0, false);
         if (shouldPlay) {
           this.startReadingSlide(target, 0);
         } else if (this.syncPlayer) {
@@ -652,9 +869,7 @@
 
       toggleNutshellLightbulb() {
         if (!this.nutshellExpanded) {
-          this.nutshellExpanded = true;
-          this.wakeActiveSlideIllustration();
-          this.$nextTick(() => this.startReadingSlide(this.activeSlide, 0));
+          this.openStoryFullscreen(true);
           return;
         }
         if (this.nutshellLit && !this.nutshellPaused) {
@@ -663,7 +878,6 @@
           this.updateTutorLipSync(0, 'teaching');
           return;
         }
-        // Tapping the tutor while she waits at a game = "skip it, keep reading"
         if (this.gameCall) {
           this.skipGame(this.gameCall);
           return;
@@ -673,34 +887,42 @@
           this.nutshellPaused = false;
           return;
         }
-        this.startReadingSlide(this.activeSlide, this.seekProgress >= 0.98 ? 0 : this.seekProgress);
+        this.playSlideBeat(this.activeSlide, this.activeBeatIdx || 0, this.seekProgress >= 0.98 ? 0 : this.seekProgress);
       },
 
       playNutshellFromBeat(bIdx) {
         const beat = this.nutshellBeats[bIdx];
         const targetSlide = beat && typeof beat.slideIdx === 'number' ? beat.slideIdx : bIdx;
-        this.nutshellExpanded = true;
         this.activeSlide = targetSlide;
-        this.wakeActiveSlideIllustration();
-        this.$nextTick(() => this.startReadingSlide(targetSlide, 0));
+        this.openStoryFullscreen(true);
       },
 
       seekOrStartAtWord(sIdx, wIdx) {
         this.ensureSlideWordsInitialized();
         const sl = this.slideData[sIdx];
         if (!sl || !sl.words || !sl.words[wIdx]) return;
-        const targetFrac = sl.words[wIdx].startFrac;
+        const wordObj = sl.words[wIdx];
+        const targetBeat = wordObj.beatIdx || 0;
+        const targetFrac = wordObj.beatStartFrac || 0;
         this.nutshellExpanded = true;
-        if (this.activeSlide === sIdx && this.syncPlayer && (this.nutshellLit || this.nutshellPaused) && this.syncPlayer.seekToFrac(targetFrac)) {
+        if (typeof wordObj.cueIdx === 'number') {
+          this.selectCue(wordObj.cueIdx, false);
+        }
+        if (
+          this.activeSlide === sIdx &&
+          this.activeBeatIdx === targetBeat &&
+          this.syncPlayer &&
+          (this.nutshellLit || this.nutshellPaused) &&
+          this.syncPlayer.seekToFrac(targetFrac)
+        ) {
           this.nutshellLit = true;
           this.nutshellPaused = false;
           this.seekProgress = targetFrac;
-          this.applyWordHighlightAtFrac(sIdx, targetFrac + 0.0005);
+          this.applyWordHighlightAtBeatFrac(sIdx, targetBeat, targetFrac + 0.001);
           return;
         }
         this.activeSlide = sIdx;
-        this.wakeActiveSlideIllustration();
-        this.startReadingSlide(sIdx, targetFrac);
+        this.playSlideBeat(sIdx, targetBeat, targetFrac);
       },
 
       stopNutshellVoice() {
@@ -718,13 +940,19 @@
         this.nutshellBuffering = false;
         this.nutshellBeatIdx = -1;
         this.nutshellEmotion = 'base';
+        this.tutorReactPose = '';
+        this.tutorReactCallout = '';
         this.tutorScale = 1;
         this.seekProgress = 0;
         if (this.syncPlayer) this.syncPlayer.stop();
         this.clearWordHighlights();
       },
 
-      async startReadingSlide(sIdx, startFrac = 0) {
+      async startReadingSlide(sIdx, startBeatIdx = 0) {
+        return this.playSlideBeat(sIdx, startBeatIdx, 0);
+      },
+
+      async playSlideBeat(sIdx, beatIdx = 0, beatStartFrac = 0) {
         if (window.__gameInvitePcm && window.__gameInvitePcm.cancel) window.__gameInvitePcm.cancel();
         this.ensureSlideWordsInitialized();
         if (!this.syncPlayer && window.saxazCreateSyncedSpeechPlayer) {
@@ -732,27 +960,51 @@
         }
         if (!this.syncPlayer) return;
 
+        const sl = this.slideData[sIdx];
+        if (!sl || !sl.beats || !sl.beats.length) return;
+        const clampedBeat = Math.max(0, Math.min(sl.beats.length - 1, beatIdx));
+        const beat = sl.beats[clampedBeat];
+        const meta = this.slidesMeta[sIdx] || { label: 'Summary', ttsEmotion: 'teaching' };
+
         this.nutshellRunToken += 1;
         const myToken = this.nutshellRunToken;
         this.activeSlide = sIdx;
+        this.activeBeatIdx = clampedBeat;
         this.gamePromptActive = false;
         this.wasVoiceReading = true;
         this.nutshellLit = true;
         this.nutshellPaused = false;
-        this.seekProgress = startFrac;
-        this.wakeActiveSlideIllustration();
+        this.seekProgress = beatStartFrac;
 
-        const meta = this.slidesMeta[sIdx] || { label: 'Summary', ttsEmotion: 'teaching' };
-        const sl = this.slideData[sIdx];
-        const spokenText = (sl && sl.spokenText) ? sl.spokenText : (this.nutshellBeats[sIdx]?.text || '');
-        if (!spokenText) return;
+        // Pop in this beat's synced looping 3D sprite right away
+        this.selectCue(beat.cueIdx || 0, false);
+        this.applyWordHighlightAtBeatFrac(sIdx, clampedBeat, beatStartFrac);
 
-        this.applyWordHighlightAtFrac(sIdx, startFrac);
+        // Background-prefetch the very next sentence beat for 0ms transitions & instant waveform alignment!
+        const nextInSlide = sl.beats[clampedBeat + 1];
+        if (nextInSlide && this.syncPlayer.prefetch) {
+          this.syncPlayer.prefetch(nextInSlide.spokenText, {
+            emotion: meta.ttsEmotion || 'teaching',
+            speed: 0.90,
+            keywords: nextInSlide.keywords
+          });
+        } else if (!meta.game && sIdx + 1 < this.slidesMeta.length) {
+          const nextSl = this.slideData[sIdx + 1];
+          const nextMeta = this.slidesMeta[sIdx + 1] || { ttsEmotion: 'teaching' };
+          if (nextSl && nextSl.beats && nextSl.beats[0] && this.syncPlayer.prefetch) {
+            this.syncPlayer.prefetch(nextSl.beats[0].spokenText, {
+              emotion: nextMeta.ttsEmotion || 'teaching',
+              speed: 0.90,
+              keywords: nextSl.beats[0].keywords
+            });
+          }
+        }
 
-        const ok = await this.syncPlayer.loadAndPlay(spokenText, {
+        const ok = await this.syncPlayer.loadAndPlay(beat.spokenText, {
           emotion: meta.ttsEmotion || 'teaching',
           speed: 0.90,
-          startFrac,
+          keywords: beat.keywords,
+          startFrac: beatStartFrac,
           onStateChange: (st) => {
             if (myToken !== this.nutshellRunToken) return;
             this.nutshellBuffering = Boolean(st.buffering);
@@ -760,11 +1012,16 @@
           onProgress: ({ frac, rms, buffering }) => {
             if (myToken !== this.nutshellRunToken) return;
             this.seekProgress = frac;
-            const wordMood = this.applyWordHighlightAtFrac(sIdx, frac);
+            const wordMood = this.applyWordHighlightAtBeatFrac(sIdx, clampedBeat, frac);
             this.updateTutorLipSync(buffering ? 0 : rms, wordMood);
           },
           onEnded: async () => {
             if (myToken !== this.nutshellRunToken) return;
+            // Continue smoothly to next sentence beat inside the same slide!
+            if (clampedBeat + 1 < sl.beats.length) {
+              this.playSlideBeat(sIdx, clampedBeat + 1, 0);
+              return;
+            }
             // Award +10 Coins milestone once student completes at least 1 slide
             const rKey = 'nutshell:ch:' + chId;
             if (!this.hasClaimed(rKey) && window.saxazClaimMilestone) {
@@ -772,7 +1029,6 @@
                 if (rw && !this.claimedKeys.includes(rKey)) this.claimedKeys.push(rKey);
               });
             }
-            // If this summary part has a game, Tutor asks whether to play the fun game or go to next summary!
             if (meta.game) {
               this.triggerTutorGamePrompt(sIdx);
               return;
@@ -780,13 +1036,13 @@
             if (sIdx + 1 < this.slidesMeta.length) {
               setTimeout(() => {
                 if (myToken !== this.nutshellRunToken) return;
-                this.startReadingSlide(sIdx + 1, 0);
-              }, 850);
+                this.playSlideBeat(sIdx + 1, 0, 0);
+              }, 550);
             } else {
               this.nutshellLit = false;
               this.nutshellPaused = false;
               this.wasVoiceReading = false;
-              this.nutshellEmotion = 'laughing';
+              this.triggerTutorReaction('cheer', 'Chapter Complete!', 3000);
               this.tutorScale = 1;
               this.clearWordHighlights(sIdx);
             }
@@ -897,9 +1153,7 @@
       },
       goPathStep(st) {
         if (st.key === 'summary') {
-          const el = document.getElementById('chapter-nutshell');
-          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          if (!this.nutshellLit) this.toggleNutshellLightbulb();
+          this.openStoryFullscreen(true);
         } else if (st.key === 'videos') {
           this.openSummaryVideos();
         } else if (st.key === 'mock') {
@@ -1051,8 +1305,15 @@
          @mouseenter="nutshellHover = true"
          @mouseleave="nutshellHover = false">
 
-      <!-- Part A1: Playful SAXAZ Yellow Poster Stage (Bold Two-Tone Title + Giant Borderless Living Tutor + Speech Bubble) -->
-      <div class="sx-nutshell-hero-band" x-show="!nutshellExpanded">
+      <!-- Part A1: Entire Yellow Poster Card Clickable to Open & Auto-Start Full-Screen Summary -->
+      <div class="sx-nutshell-hero-band"
+           x-show="!nutshellExpanded"
+           role="button"
+           tabindex="0"
+           aria-label="Open Chapter in a Nutshell full screen and play story"
+           @click="openStoryFullscreen(true)"
+           @keydown.enter.prevent="openStoryFullscreen(true)"
+           @keydown.space.prevent="openStoryFullscreen(true)">
         <div class="sx-nutshell-grid">
           <div class="sx-nutshell-hero-copy">
             <h1 class="sx-nutshell-hero-title">
@@ -1063,21 +1324,21 @@
             <div style="margin-top:24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
               <button type="button"
                       data-confetti
-                      @click="toggleNutshellLightbulb()"
+                      @click.stop="openStoryFullscreen(true)"
                       class="sx-fun-btn-dark">
                 <span class="material-symbols-outlined" style="font-size:20px;">play_circle</span>
                 <span x-text="hasClaimed('nutshell:ch:{{ chapter.id }}') ? ('Play Story with ' + tutorDisplay) : ('Play Story (+10 Coins)')"></span>
               </button>
 
               <button type="button"
-                      @click="toggleNutshellExpand()"
+                      @click.stop="openStoryFullscreen(false)"
                       class="sx-nutshell-viewall-btn"
                       :aria-expanded="nutshellExpanded ? 'true' : 'false'">
                 <span>View All</span>
                 <span class="material-symbols-outlined sx-nutshell-viewall-chev">expand_more</span>
               </button>
 
-              <button type="button" class="sx-fs-btn is-icon" @click="toggleSummaryFullscreen(true)"
+              <button type="button" class="sx-fs-btn is-icon" @click.stop="toggleSummaryFullscreen(true)"
                       aria-label="Open the summary full screen" title="Full screen">
                 <span class="material-symbols-outlined" aria-hidden="true">open_in_full</span>
               </button>
@@ -1085,18 +1346,12 @@
           </div>
 
           <!-- Giant Borderless Cutout Tutor + Playful Comic Speech Bubble -->
-          <div class="sx-tutor-pop"
-               data-confetti
-               role="button"
-               tabindex="0"
-               @click="toggleNutshellLightbulb()"
-               @keydown.enter.prevent="toggleNutshellLightbulb()"
-               @keydown.space.prevent="toggleNutshellLightbulb()">
+          <div class="sx-tutor-pop" data-confetti>
             <div class="sx-tutor-speech-bubble">
-              Hey {{ first_name }}! Tap me for a fun 2-min tour!
+              Hey {{ first_name }}! Tap anywhere for a fun 2-min tour!
             </div>
             <div class="sx-tutor-pop-avatar">
-              <img :src="'/static/images/avatars/' + tutorName + '_' + (nutshellHover ? 'laughing' : idlePose) + '.png'"
+              <img :src="'/static/images/avatars/' + tutorName + '_' + (nutshellHover ? 'cheer' : idlePose) + '.png'"
                    :alt="tutorDisplay">
             </div>
           </div>
@@ -1142,8 +1397,9 @@
 
         {% macro render_sync_tutor(eq_id) %}
             <div class="sx-sync-tutor-card" @click="toggleNutshellLightbulb()" style="cursor:pointer;">
-              <div class="sx-sync-tutor-figure" :class="(nutshellLit && !nutshellPaused) && 'is-speaking'">
-                <img :src="'/static/images/avatars/' + tutorName + '_' + ((nutshellLit && !nutshellPaused) ? nutshellEmotion : idlePose) + '.png'" :alt="tutorDisplay" :style="tutorMotionStyle()">
+              <span class="sx-tutor-react-callout" x-show="tutorReactCallout" x-cloak x-text="tutorReactCallout"></span>
+              <div class="sx-sync-tutor-figure" :class="[(nutshellLit && !nutshellPaused) && 'is-speaking', tutorReacting && 'is-reacting']">
+                <img :src="currentTutorImgSrc()" :alt="tutorDisplay" :style="tutorMotionStyle()">
               </div>
               <span class="sx-tutor-voice-pill" :class="[(nutshellLit && !nutshellPaused) && 'is-live', nutshellPaused && 'is-paused']">
                 <span class="sx-eq-bars" x-show="nutshellLit && !nutshellPaused">
@@ -1153,6 +1409,39 @@
                 <span x-text="nutshellBuffering ? 'Loading Voice...' : ((nutshellLit && !nutshellPaused) ? ('Pause ' + tutorDisplay) : (nutshellPaused ? ('Resume ' + tutorDisplay) : ('Tap ' + tutorDisplay + ' or Any Word')))"></span>
               </span>
             </div>
+        {% endmacro %}
+
+        {% macro render_smart_stage(s_idx, eq_id, fallback_idle) %}
+          <div class="sx-sync-visual-stack">
+            {{ render_sync_tutor(eq_id) }}
+            <div class="sx-smart-stage" data-sx-pop-illus="smart-{{ s_idx }}">
+              <button type="button"
+                      class="sx-smart-canvas-btn"
+                      :class="[cuePopping && 'is-popping-in', cueBursting && 'is-burst']"
+                      @click="interactWithCue()"
+                      :aria-label="(currentCue() && currentCue().tapLabel) ? currentCue().tapLabel : 'Interact with animation'">
+                <span class="sx-smart-fact-badge" x-show="cueFactText" x-cloak x-text="cueFactText"></span>
+                <img :src="(currentCue() && currentCue().idle) ? currentCue().idle : '{{ fallback_idle }}'" :alt="(currentCue() && currentCue().label) ? currentCue().label : 'Animated biology illustration'">
+                <canvas class="sx-smart-canvas" width="360" height="270"></canvas>
+              </button>
+
+              <div class="sx-smart-interact-bar">
+                <button type="button" class="sx-smart-tap-pill" @click="interactWithCue()">
+                  <span class="material-symbols-outlined" style="font-size:17px;" aria-hidden="true">touch_app</span>
+                  <span x-text="(currentCue() && currentCue().tapLabel) ? currentCue().tapLabel : 'Tap to Explore'"></span>
+                </button>
+                <div class="sx-smart-cue-dots" x-show="getSlideCues({{ s_idx }}).length > 1">
+                  <template x-for="(cueItem, ci) in getSlideCues({{ s_idx }})" :key="'cue-{{ s_idx }}-' + ci">
+                    <button type="button"
+                            class="sx-smart-cue-dot"
+                            :class="activeCueIdx === ci && 'is-active'"
+                            @click="selectCue(ci, true)"
+                            x-text="cueItem.label"></button>
+                  </template>
+                </div>
+              </div>
+            </div>
+          </div>
         {% endmacro %}
 
         {% macro render_part_footer(s_idx, game_id='', game_title='') %}
@@ -1187,13 +1476,7 @@
             </p>
             {{ render_part_footer(0) }}
           </div>
-          <div class="sx-sync-visual-stack">
-            {{ render_sync_tutor('eq0') }}
-            <div class="sx-living-illus is-wide" data-sx-pop-illus="team">
-              <img class="sx-illus-img" src="/static/images/saxaz_web/syllabus/nutshell_p1_img1.webp?v=540" alt="Life Processes Team">
-              <canvas class="sx-illus-canvas" width="408" height="272" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="/static/images/saxaz_web/syllabus/nutshell_p1_img1_sheet.webp?v=540"></canvas>
-            </div>
-          </div>
+          {{ render_smart_stage(0, 'eq0', '/static/images/saxaz_web/summary_sprites/anim_body_alive.webp?v=541') }}
         </div>
 
         <!-- PART 2 of 12: 1. Photosynthesis (Autotrophic Nutrition) -->
@@ -1209,13 +1492,7 @@
             </div>
             {{ render_part_footer(1, 'leaf', 'Make Plant Food: Photosynthesis Drag & Drop') }}
           </div>
-          <div class="sx-sync-visual-stack">
-            {{ render_sync_tutor('eq1') }}
-            <div class="sx-living-illus is-wide" data-sx-pop-illus="leaf_team">
-              <img class="sx-illus-img" src="/static/images/saxaz_web/syllabus/nutshell_p1_img1.webp?v=540" alt="Photosynthesis and Life Processes">
-              <canvas class="sx-illus-canvas" width="408" height="272" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="/static/images/saxaz_web/syllabus/nutshell_p1_img1_sheet.webp?v=540"></canvas>
-            </div>
-          </div>
+          {{ render_smart_stage(1, 'eq1', '/static/images/saxaz_web/summary_sprites/anim_nutrition_fuel.webp?v=541') }}
         </div>
 
         <!-- PART 3 of 12: Human Digestion (Heterotrophic Nutrition) -->
@@ -1229,13 +1506,7 @@
             </div>
             {{ render_part_footer(2, 'food', 'Food Journey: Match the 5 Digestive Organs') }}
           </div>
-          <div class="sx-sync-visual-stack">
-            {{ render_sync_tutor('eq2') }}
-            <div class="sx-living-illus" data-sx-pop-illus="mouth">
-              <img class="sx-illus-img" src="/static/images/saxaz_web/syllabus/nutshell_p1_img0.webp?v=540" alt="Mouth - Digestion begins here">
-              <canvas class="sx-illus-canvas" width="360" height="240" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="/static/images/saxaz_web/syllabus/nutshell_p1_img0_sheet.webp?v=540"></canvas>
-            </div>
-          </div>
+          {{ render_smart_stage(2, 'eq2', '/static/images/saxaz_web/syllabus/nutshell_p1_img0.webp?v=541') }}
         </div>
 
         <!-- PART 4 of 12: 2. Respiration & ATP Energy -->
@@ -1250,13 +1521,7 @@
             </div>
             {{ render_part_footer(3, 'breathe', 'Breathing & ATP Energy: Drag & Match') }}
           </div>
-          <div class="sx-sync-visual-stack">
-            {{ render_sync_tutor('eq3') }}
-            <div class="sx-living-illus" data-sx-pop-illus="lungs">
-              <img class="sx-illus-img" src="/static/images/saxaz_web/syllabus/nutshell_p2_img0.webp?v=540" alt="Lungs, Trachea and Diaphragm" style="border-radius:14px;">
-              <canvas class="sx-illus-canvas" width="270" height="360" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="/static/images/saxaz_web/syllabus/nutshell_p2_img0_sheet.webp?v=540" style="border-radius:14px;"></canvas>
-            </div>
-          </div>
+          {{ render_smart_stage(3, 'eq3', '/static/images/saxaz_web/summary_sprites/anim_lungs_breathe.webp?v=541') }}
         </div>
 
         <!-- PART 5 of 12: Human Breathing & Muscle Exercise -->
@@ -1267,13 +1532,7 @@
             </p>
             {{ render_part_footer(4) }}
           </div>
-          <div class="sx-sync-visual-stack">
-            {{ render_sync_tutor('eq4') }}
-            <div class="sx-living-illus" data-sx-pop-illus="lungs2">
-              <img class="sx-illus-img" src="/static/images/saxaz_web/syllabus/nutshell_p2_img0.webp?v=540" alt="Lungs, Trachea and Diaphragm" style="border-radius:14px;">
-              <canvas class="sx-illus-canvas" width="270" height="360" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="/static/images/saxaz_web/syllabus/nutshell_p2_img0_sheet.webp?v=540" style="border-radius:14px;"></canvas>
-            </div>
-          </div>
+          {{ render_smart_stage(4, 'eq4', '/static/images/saxaz_web/summary_sprites/anim_lungs_breathe.webp?v=541') }}
         </div>
 
         <!-- PART 6 of 12: Brain Control -->
@@ -1285,13 +1544,7 @@
             </p>
             {{ render_part_footer(5) }}
           </div>
-          <div class="sx-sync-visual-stack">
-            {{ render_sync_tutor('eq5') }}
-            <div class="sx-living-illus" data-sx-pop-illus="brain">
-              <img class="sx-illus-img" src="/static/images/saxaz_web/syllabus/nutshell_p2_img1.webp?v=540" alt="How is Breathing Controlled">
-              <canvas class="sx-illus-canvas" width="360" height="270" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="/static/images/saxaz_web/syllabus/nutshell_p2_img1_sheet.webp?v=540"></canvas>
-            </div>
-          </div>
+          {{ render_smart_stage(5, 'eq5', '/static/images/saxaz_web/summary_sprites/anim_pons_medulla.webp?v=541') }}
         </div>
 
         <!-- PART 7 of 12: 3. Transportation (Heart & Blood Vessels) -->
@@ -1303,13 +1556,7 @@
             </p>
             {{ render_part_footer(6, 'heart', 'Build & Pump the Human Heart') }}
           </div>
-          <div class="sx-sync-visual-stack">
-            {{ render_sync_tutor('eq6') }}
-            <div class="sx-living-illus" data-sx-pop-illus="heart">
-              <img class="sx-illus-img" src="/static/images/saxaz_web/syllabus/nutshell_p2_img2.webp?v=540" alt="Human Heart">
-              <canvas class="sx-illus-canvas" width="262" height="360" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="/static/images/saxaz_web/syllabus/nutshell_p2_img2_sheet.webp?v=540"></canvas>
-            </div>
-          </div>
+          {{ render_smart_stage(6, 'eq6', '/static/images/saxaz_web/syllabus/nutshell_p2_img2.webp?v=541') }}
         </div>
 
         <!-- PART 8 of 12: Blood Crew & Plant Transport -->
@@ -1326,13 +1573,7 @@
             </p>
             {{ render_part_footer(7, 'blood', 'Inside a Blood Vessel: Meet the Blood Crew') }}
           </div>
-          <div class="sx-sync-visual-stack">
-            {{ render_sync_tutor('eq7') }}
-            <div class="sx-living-illus" data-sx-pop-illus="heart2">
-              <img class="sx-illus-img" src="/static/images/saxaz_web/syllabus/nutshell_p2_img2.webp?v=540" alt="Blood and Transportation">
-              <canvas class="sx-illus-canvas" width="262" height="360" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="/static/images/saxaz_web/syllabus/nutshell_p2_img2_sheet.webp?v=540"></canvas>
-            </div>
-          </div>
+          {{ render_smart_stage(7, 'eq7', '/static/images/saxaz_web/summary_sprites/anim_blood_crew.webp?v=541') }}
         </div>
 
         <!-- PART 9 of 12: Oh my Heart -->
@@ -1344,13 +1585,7 @@
             </p>
             {{ render_part_footer(8, 'pump', 'Heart Super-Pump: Shoot Blood 30 Feet High') }}
           </div>
-          <div class="sx-sync-visual-stack">
-            {{ render_sync_tutor('eq8') }}
-            <div class="sx-living-illus" data-sx-pop-illus="heart_facts">
-              <img class="sx-illus-img" src="/static/images/saxaz_web/syllabus/nutshell_p3_img2.webp?v=540" alt="Oh my Heart - 250 crore times">
-              <canvas class="sx-illus-canvas" width="360" height="240" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="/static/images/saxaz_web/syllabus/nutshell_p3_img2_sheet.webp?v=540"></canvas>
-            </div>
-          </div>
+          {{ render_smart_stage(8, 'eq8', '/static/images/saxaz_web/syllabus/nutshell_p3_img2.webp?v=541') }}
         </div>
 
         <!-- PART 10 of 12: 4. Excretion (Kidneys & Nephrons) -->
@@ -1362,13 +1597,7 @@
             </p>
             {{ render_part_footer(9, 'kidney', 'Kidney Filter Sort: Drag Waste Out') }}
           </div>
-          <div class="sx-sync-visual-stack">
-            {{ render_sync_tutor('eq9') }}
-            <div class="sx-living-illus" data-sx-pop-illus="kidneys">
-              <img class="sx-illus-img" src="/static/images/saxaz_web/syllabus/nutshell_p3_img0.webp?v=540" alt="Kidneys and Urinary Bladder">
-              <canvas class="sx-illus-canvas" width="328" height="360" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="/static/images/saxaz_web/syllabus/nutshell_p3_img0_sheet.webp?v=540"></canvas>
-            </div>
-          </div>
+          {{ render_smart_stage(9, 'eq9', '/static/images/saxaz_web/syllabus/nutshell_p3_img0.webp?v=541') }}
         </div>
 
         <!-- PART 11 of 12: Urinary Path, Plant Excretion & Body Filters -->
@@ -1383,13 +1612,7 @@
             </p>
             {{ render_part_footer(10) }}
           </div>
-          <div class="sx-sync-visual-stack">
-            {{ render_sync_tutor('eq10') }}
-            <div class="sx-living-illus" data-sx-pop-illus="filters">
-              <img class="sx-illus-img" src="/static/images/saxaz_web/syllabus/nutshell_p3_img1.webp?v=540" alt="We are the Filters of the Body">
-              <canvas class="sx-illus-canvas" width="360" height="260" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="/static/images/saxaz_web/syllabus/nutshell_p3_img1_sheet.webp?v=540"></canvas>
-            </div>
-          </div>
+          {{ render_smart_stage(10, 'eq10', '/static/images/saxaz_web/summary_sprites/anim_body_excretors.webp?v=541') }}
         </div>
 
         <!-- PART 12 of 12: Conclusion -->
@@ -1403,13 +1626,7 @@
             </div>
             {{ render_part_footer(11, 'team', 'The 4 Life-Process Heroes: Team Match') }}
           </div>
-          <div class="sx-sync-visual-stack">
-            {{ render_sync_tutor('eq11') }}
-            <div class="sx-living-illus is-wide" data-sx-pop-illus="team_end">
-              <img class="sx-illus-img" src="/static/images/saxaz_web/syllabus/nutshell_p1_img1.webp?v=540" alt="Life Processes Team">
-              <canvas class="sx-illus-canvas" width="408" height="272" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="/static/images/saxaz_web/syllabus/nutshell_p1_img1_sheet.webp?v=540"></canvas>
-            </div>
-          </div>
+          {{ render_smart_stage(11, 'eq11', '/static/images/saxaz_web/syllabus/nutshell_p1_img1.webp?v=541') }}
         </div>
         {% else %}
         <template x-for="(b, bIdx) in nutshellBeats" :key="'gen-slide-' + bIdx">
@@ -1529,8 +1746,8 @@
                 data-sx-surf-badge
                 class="sx-issue-badge-card sx-summary-vid-badge">
           <span class="sx-badge-stage" style="max-width:126px;">
-            <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_chapter_summary_idle.webp?v=540" alt="Chapter Summary">
-            <canvas class="sx-badge-canvas" width="340" height="340" data-sx-sheet="/static/images/saxaz_web/badge_chapter_summary_sheet.webp?v=540"></canvas>
+            <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_chapter_summary_idle.webp?v=541" alt="Chapter Summary">
+            <canvas class="sx-badge-canvas" width="340" height="340" data-sx-sheet="/static/images/saxaz_web/badge_chapter_summary_sheet.webp?v=541"></canvas>
           </span>
         </button>
 
@@ -1621,8 +1838,8 @@
          data-sx-surf-badge
          class="sx-issue-badge-card">
         <span class="sx-badge-stage">
-          <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_mock_exam_idle.webp?v=540" alt="Mock Exam">
-          <canvas class="sx-badge-canvas" width="340" height="340" data-sx-sheet="/static/images/saxaz_web/badge_mock_exam_sheet.webp?v=540"></canvas>
+          <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_mock_exam_idle.webp?v=541" alt="Mock Exam">
+          <canvas class="sx-badge-canvas" width="340" height="340" data-sx-sheet="/static/images/saxaz_web/badge_mock_exam_sheet.webp?v=541"></canvas>
         </span>
         <span class="sx-subject-pct-pill">{% if ns.best_mock is not none %}Best: {{ ns.best_mock }}%{% else %}0%{% endif %}</span>
       </a>
@@ -1633,8 +1850,8 @@
          data-sx-surf-badge
          class="sx-issue-badge-card">
         <span class="sx-badge-stage">
-          <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_real_exam_idle.webp?v=540" alt="Real Exam">
-          <canvas class="sx-badge-canvas" width="340" height="340" data-sx-sheet="/static/images/saxaz_web/badge_real_exam_sheet.webp?v=540"></canvas>
+          <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_real_exam_idle.webp?v=541" alt="Real Exam">
+          <canvas class="sx-badge-canvas" width="340" height="340" data-sx-sheet="/static/images/saxaz_web/badge_real_exam_sheet.webp?v=541"></canvas>
         </span>
         <span class="sx-subject-pct-pill">{% if ns.best_real is not none %}Best: {{ ns.best_real }}%{% else %}0%{% endif %}</span>
       </a>
@@ -1646,8 +1863,8 @@
          class="sx-issue-badge-card is-soon">
         <span class="sx-badge-stage">
           <span class="sx-subject-lock" aria-hidden="true"><span class="material-symbols-outlined">lock</span></span>
-          <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_real_exam_idle.webp?v=540" alt="Real Exam">
-          <canvas class="sx-badge-canvas" width="340" height="340" data-sx-sheet="/static/images/saxaz_web/badge_real_exam_sheet.webp?v=540"></canvas>
+          <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_real_exam_idle.webp?v=541" alt="Real Exam">
+          <canvas class="sx-badge-canvas" width="340" height="340" data-sx-sheet="/static/images/saxaz_web/badge_real_exam_sheet.webp?v=541"></canvas>
         </span>
         <span class="sx-subject-pct-pill is-soon"><span class="material-symbols-outlined" aria-hidden="true">lock</span>Score 80% to unlock</span>
       </a>

@@ -113,6 +113,91 @@ _SCRIPT_LANG_PATTERNS = [
     (re.compile(r"[\u0600-\u06FF]"), "Arabic"),
 ]
 
+# Key biology & exam concepts that receive clear, warm vocal emphasis in Gemini 3.8 TTS
+_AUTO_EMPHASIS_TERMS = [
+    "Life Processes",
+    "Autotrophic Nutrition",
+    "Heterotrophic Nutrition",
+    "Photosynthesis",
+    "Chlorophyll",
+    "Carbon dioxide",
+    "Glucose",
+    "Oxygen",
+    "Nutrition",
+    "Digestion",
+    "Saliva",
+    "Starch",
+    "Stomach",
+    "Enzymes",
+    "Proteins",
+    "Small intestine",
+    "Absorption",
+    "Large intestine",
+    "Anaerobic respiration",
+    "Lactic acid",
+    "Energy currency",
+    "Respiration",
+    "Breathing",
+    "ATP",
+    "Trachea",
+    "Lungs",
+    "Pons",
+    "Medulla",
+    "Transportation",
+    "Right atrium",
+    "Right ventricle",
+    "Left atrium",
+    "Left ventricle",
+    "Heart",
+    "Arteries",
+    "Veins",
+    "Capillaries",
+    "RBC",
+    "WBC",
+    "Platelets",
+    "Plasma",
+    "Xylem",
+    "Phloem",
+    "Translocation",
+    "250 crore times",
+    "30 feet",
+    "1 million nephrons",
+    "Filters of the body",
+    "Excretion",
+    "Kidneys",
+    "Nephrons",
+    "Urea",
+    "Urine",
+    "Ureter",
+    "Urinary bladder",
+    "Urethra",
+    "Transpiration",
+    "Stomata",
+    "Resins",
+    "Gums",
+]
+
+
+def extract_emphasis_keywords(text: str, explicit_keywords: list[str] | None = None, limit: int = 5) -> list[str]:
+    """Return ordered unique key science terms present in `text` for natural vocal emphasis."""
+    found: list[str] = []
+    seen: set[str] = set()
+    low_text = (text or "").lower()
+    candidates = list(explicit_keywords or []) + _AUTO_EMPHASIS_TERMS
+    for raw_term in candidates:
+        term = str(raw_term or "").strip()
+        if not term:
+            continue
+        low_term = term.lower()
+        if low_term in seen:
+            continue
+        if re.search(r"(?<![a-z0-9])" + re.escape(low_term) + r"(?![a-z0-9])", low_text):
+            seen.add(low_term)
+            found.append(term)
+            if len(found) >= limit:
+                break
+    return found
+
 # Allowed native Gemini 3.8 TTS point-in-time human vocal tags
 _ALLOWED_VOCAL_TAGS_RE = re.compile(
     r"<(?!/?(?:laugh|sigh|cough|breath|short pause|gasp|throat-clearing)\b)[^>]*>",
@@ -289,10 +374,17 @@ def _infer_emotion_key(emotion: str | None, text: str = "") -> str:
     return "teaching"
 
 
-def build_tts_instructions(voice_key: str, emo_key: str, text: str = "", speed: float = 1.0) -> str:
+def build_tts_instructions(
+    voice_key: str,
+    emo_key: str,
+    text: str = "",
+    speed: float = 1.0,
+    keywords: list[str] | None = None,
+) -> str:
     """
     Build structured `speech_metadata.style` acting direction for Gemini 3.8 Flash TTS
-    with natural storytelling pace and native multilingual prosody when Indic/Arabic scripts appear.
+    with natural storytelling pace, clear vocal stress on key science terms,
+    and native multilingual prosody when Indic/Arabic scripts appear.
     """
     persona = PERSONA_CONFIG.get(voice_key, PERSONA_CONFIG["af_bella"])
     emo_cue = EMOTION_CUES.get(emo_key, EMOTION_CUES["teaching"])
@@ -302,10 +394,14 @@ def build_tts_instructions(voice_key: str, emo_key: str, text: str = "", speed: 
         pace_str = " Speak at a calm, unhurried, easy-to-follow storytelling pace with gentle natural pauses."
     elif pace == "brisk":
         pace_str = " Speak with brisk, lively energy."
+    key_terms = extract_emphasis_keywords(text, keywords, limit=5)
+    kw_str = ""
+    if key_terms:
+        kw_str = " Emphasize key words clearly with warm vocal stress: " + ", ".join(key_terms) + "."
     script_lang = detect_script_language(text)
     if script_lang:
-        return f"{persona['voice_cue']} {emo_cue}{pace_str} Speak natural native {script_lang} while pronouncing English science terms clearly."
-    return f"{persona['voice_cue']} {emo_cue}{pace_str}"
+        return f"{persona['voice_cue']} {emo_cue}{pace_str}{kw_str} Speak natural native {script_lang} while pronouncing English science terms clearly."
+    return f"{persona['voice_cue']} {emo_cue}{pace_str}{kw_str}"
 
 
 def _wrap_pcm16_as_wav(pcm_bytes: bytes, sample_rate: int = 24000) -> bytes:
@@ -376,9 +472,17 @@ def _store_in_lru(cache_key: tuple[str, str, str, str, str], audio_bytes: bytes,
         _AUDIO_LRU_CACHE.popitem(last=False)
 
 
-def _build_interactions_payload(model_name: str, text: str, voice_key: str, emo_key: str, speed: float, stream: bool) -> dict:
+def _build_interactions_payload(
+    model_name: str,
+    text: str,
+    voice_key: str,
+    emo_key: str,
+    speed: float,
+    stream: bool,
+    keywords: list[str] | None = None,
+) -> dict:
     persona = PERSONA_CONFIG.get(voice_key, PERSONA_CONFIG["af_bella"])
-    style_instructions = build_tts_instructions(voice_key, emo_key, text, speed)
+    style_instructions = build_tts_instructions(voice_key, emo_key, text, speed, keywords=keywords)
     payload: dict = {
         "model": model_name,
         "input": [
@@ -411,7 +515,13 @@ def _build_interactions_payload(model_name: str, text: str, voice_key: str, emo_
     return payload
 
 
-async def _stream_gemini_pcm_chunks(text: str, voice_key: str, emo_key: str, speed: float = 1.0):
+async def _stream_gemini_pcm_chunks(
+    text: str,
+    voice_key: str,
+    emo_key: str,
+    speed: float = 1.0,
+    keywords: list[str] | None = None,
+):
     """
     Streams raw 24kHz 16-bit signed little-endian mono PCM (`audio/l16`) chunks directly from
     Google Gemini 3.8 Flash TTS (`gemini-3.8-flash-tts`) via the Interactions API SSE stream,
@@ -432,7 +542,7 @@ async def _stream_gemini_pcm_chunks(text: str, voice_key: str, emo_key: str, spe
     models_to_try = (GEMINI_TTS_MODEL, GEMINI_TTS_FALLBACK_MODEL)
 
     for idx, model_name in enumerate(models_to_try):
-        payload = _build_interactions_payload(model_name, text, voice_key, emo_key, speed, stream=True)
+        payload = _build_interactions_payload(model_name, text, voice_key, emo_key, speed, stream=True, keywords=keywords)
         yielded_any = False
         carry_byte = b""
         try:
@@ -625,6 +735,7 @@ class TTSRequest(BaseModel):
     speed: float = 1.0
     engine: str | None = None
     emotion: str | None = None
+    keywords: list[str] | None = None
 
 
 @router.post("/prepare")
@@ -735,7 +846,7 @@ async def pcm_stream_tts(req: TTSRequest, request: Request):
             },
         )
 
-    stream_iter = _stream_gemini_pcm_chunks(cleaned, voice_key, emo_key, speed)
+    stream_iter = _stream_gemini_pcm_chunks(cleaned, voice_key, emo_key, speed, keywords=req.keywords)
     try:
         first_chunk, actual_model = await stream_iter.__anext__()
     except StopAsyncIteration:

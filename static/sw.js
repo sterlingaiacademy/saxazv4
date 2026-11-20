@@ -2,10 +2,10 @@
 const CACHE_NAME = 'saxaz-v4-studio-v541';
 const PRECACHE_ASSETS = [
   '/static/css/app.css?v=250',
-  '/static/css/v2-studio.css?v=540',
-  '/static/css/saxaz-fun.css?v=540',
-  '/static/css/sx3.css?v=540',
-  '/static/css/saxaz-ext.css?v=540',
+  '/static/css/v2-studio.css?v=541',
+  '/static/css/saxaz-fun.css?v=541',
+  '/static/css/sx3.css?v=541',
+  '/static/css/saxaz-ext.css?v=541',
   '/static/css/saxaz-match.css?v=2',
   '/static/js/saxaz-player.js?v=515',
   '/static/images/pwa-icon-192.png?v=2',

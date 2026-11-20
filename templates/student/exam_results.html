@@ -576,9 +576,9 @@
                   <div style="font-size:0.88rem;line-height:1.55;color:var(--sx-ink);white-space:pre-line;">{{ ans.model_answer }}</div>
                   {% if ans.answer_media_url %}
                   <div class="sx-living-illus" data-sx-pop-illus="excretory" style="margin:10px 0 0;max-width:260px;">
-                    <img class="sx-illus-img" src="{{ ans.answer_media_url }}?v=540" alt="Model Answer Diagram" style="max-height:240px;">
+                    <img class="sx-illus-img" src="{{ ans.answer_media_url }}?v=541" alt="Model Answer Diagram" style="max-height:240px;">
                     {% if ans.answer_media_url.endswith('.webp') %}
-                    <canvas class="sx-illus-canvas" width="350" height="360" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="{{ ans.answer_media_url | replace('.webp', '_sheet.webp') }}?v=540" style="max-height:240px;"></canvas>
+                    <canvas class="sx-illus-canvas" width="350" height="360" data-sx-cols="6" data-sx-frames="36" data-sx-sheet="{{ ans.answer_media_url | replace('.webp', '_sheet.webp') }}?v=541" style="max-height:240px;"></canvas>
                     {% endif %}
                   </div>
                   {% endif %}

@@ -17,7 +17,7 @@
 {% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="/static/css/saxaz-pages.css?v=4">
+<link rel="stylesheet" href="/static/css/saxaz-pages.css?v=5">
 {% set bal = wallet.coin_balance if wallet and wallet.coin_balance is defined else (user.coin_balance or 0) %}
 {% set inr_val = wallet.inr_value if wallet and wallet.inr_value is defined else 0 %}
 {% set claimed = wallet.claimed_keys if wallet and wallet.claimed_keys is defined else [] %}
@@ -153,7 +153,7 @@
       {% for book in ebook_items %}
       <button type="button" class="sxp-tile" @click="openItemByCode({{ book.code | tojson | forceescape }})">
         <span class="sxp-tile-art">
-          <img src="{{ book.image }}?v=540" alt="{{ book.title }}" loading="lazy">
+          <img src="{{ book.image }}?v=541" alt="{{ book.title }}" loading="lazy">
           <span class="sxp-tile-price {{ 'is-ready' if bal >= book.cost_coins else '' }}">{{ book.cost_coins }} Coins</span>
         </span>
         <span class="sxp-tile-name">{{ book.title }}</span>
@@ -172,7 +172,7 @@
       {% for item in store_items %}
       <button type="button" class="sxp-tile is-wide" @click="openItemByCode({{ item.code | tojson | forceescape }})">
         <span class="sxp-tile-art">
-          <img src="{{ item.image }}?v=540" alt="{{ item.title }}" loading="lazy">
+          <img src="{{ item.image }}?v=541" alt="{{ item.title }}" loading="lazy">
           <span class="sxp-tile-price {{ 'is-ready' if bal >= item.cost_coins else '' }}">{{ item.cost_coins }} Coins</span>
         </span>
         <span class="sxp-tile-name">{{ item.title }}</span>
@@ -247,7 +247,7 @@
           <!-- Left Cover / Product Artwork & Quick Play Store Stats -->
           <div>
             <div class="sx-play-modal-art">
-              <img :src="selectedItem.image + '?v=540'" :alt="selectedItem.title">
+              <img :src="selectedItem.image + '?v=541'" :alt="selectedItem.title">
             </div>
 
             <div class="sx-play-modal-stats">

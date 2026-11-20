@@ -1806,10 +1806,53 @@
           let startOffsetSec = 0;
           let pausedFrac = 0;
           let estimatedDurationSec = 10;
+          let speechStartSec = 0;
+          let speechEndSec = 10;
           let pendingSeekFrac = null;
           let cbProgress = null;
           let cbEnded = null;
           let cbState = null;
+
+          const computeSpeechBounds = (floats, sr) => {
+            if (!floats || !floats.length || !sr) return { start: 0, end: 0 };
+            const dur = floats.length / sr;
+            const win = Math.max(240, Math.floor(sr * 0.02));
+            let sIdx = 0;
+            let eIdx = floats.length;
+            const thresh = 0.015;
+            for (let off = 0; off + win <= floats.length; off += win) {
+              let sumSq = 0;
+              for (let i = off; i < off + win; i += 4) { const v = floats[i]; sumSq += v * v; }
+              if (Math.sqrt(sumSq / (win / 4)) > thresh) { sIdx = Math.max(0, off - win); break; }
+            }
+            for (let off = floats.length - win; off >= 0; off -= win) {
+              let sumSq = 0;
+              for (let i = off; i < off + win; i += 4) { const v = floats[i]; sumSq += v * v; }
+              if (Math.sqrt(sumSq / (win / 4)) > thresh) { eIdx = Math.min(floats.length, off + win * 2); break; }
+            }
+            let sSec = sIdx / sr;
+            let eSec = eIdx / sr;
+            if (sSec > dur * 0.28) sSec = 0;
+            if (eSec < dur * 0.65 || eSec <= sSec + 0.12) eSec = dur;
+            return { start: sSec, end: eSec };
+          };
+
+          const timeToSpeechFrac = (cur, dur) => {
+            if (audioBuffer) {
+              const span = Math.max(0.12, speechEndSec - speechStartSec);
+              return Math.min(1, Math.max(0, (cur - speechStartSec) / span));
+            }
+            return dur > 0 ? Math.min(1, Math.max(0, cur / dur)) : 0;
+          };
+
+          const speechFracToTime = (frac) => {
+            const c = Math.min(0.995, Math.max(0, Number(frac) || 0));
+            if (audioBuffer) {
+              const span = Math.max(0.12, speechEndSec - speechStartSec);
+              return Math.min(Math.max(0, audioBuffer.duration - 0.05), speechStartSec + c * span);
+            }
+            return c * getDuration();
+          };
 
           const stopRaf = () => {
             if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
@@ -1881,7 +1924,7 @@
               if (myRun !== runId || !isPlaying) return;
               const dur = getDuration();
               const cur = getCurrentTime();
-              const frac = dur > 0 ? Math.min(1, Math.max(0, cur / dur)) : 0;
+              const frac = timeToSpeechFrac(cur, dur);
               const rms = isBuffering ? 0 : computeRmsAt(cur);
               if (typeof cbProgress === 'function') {
                 cbProgress({ currentTime: cur, duration: dur, frac, rms, buffering: isBuffering });
@@ -1909,7 +1952,7 @@
             if (!ctx || !audioBuffer) return false;
             stopSources();
             const clampedFrac = Math.min(0.995, Math.max(0, Number(frac) || 0));
-            const offsetSec = clampedFrac * audioBuffer.duration;
+            const offsetSec = speechFracToTime(clampedFrac);
             const src = ctx.createBufferSource();
             src.buffer = audioBuffer;
             src.connect(ctx.destination);
@@ -1957,9 +2000,13 @@
             const voice = opts.voice || window.__saxazUserTtsVoice || 'af_bella';
             const emotion = opts.emotion || 'teaching';
             const speed = Math.min(1.5, Math.max(0.7, Number(opts.speed) || 1.0));
+            const keywords = Array.isArray(opts.keywords) ? opts.keywords.filter(Boolean).slice(0, 6) : [];
+            const kwKey = keywords.join(',');
             const initFrac = Math.min(0.98, Math.max(0, Number(opts.startFrac) || 0));
             const wordCount = clean.split(/\s+/).filter(Boolean).length;
-            estimatedDurationSec = Math.max(2.2, (wordCount / 2.62) / speed);
+            estimatedDurationSec = Math.max(1.8, (wordCount / 2.48) / speed);
+            speechStartSec = 0;
+            speechEndSec = estimatedDurationSec;
             audioBuffer = null;
             fullFloats = null;
             liveChunks = [];
@@ -1973,7 +2020,7 @@
             if (ctx.state === 'suspended') { try { await ctx.resume(); } catch (e) {} }
             if (myRun !== runId) return false;
 
-            const pcmCacheKey = `${voice}|gemini|${emotion}|${speed.toFixed(2)}|${clean}`;
+            const pcmCacheKey = `${voice}|gemini|${emotion}|${speed.toFixed(2)}|${kwKey}|${clean}`;
             if (window.__saxazPcmCache.has(pcmCacheKey)) {
               const cached = window.__saxazPcmCache.get(pcmCacheKey);
               if (cached && cached.bytes && cached.bytes.byteLength >= 4) {
@@ -1982,6 +2029,9 @@
                 if (built) {
                   audioBuffer = built.buf;
                   fullFloats = built.floats;
+                  const bounds = computeSpeechBounds(fullFloats, sampleRate);
+                  speechStartSec = bounds.start;
+                  speechEndSec = bounds.end;
                   streamFinished = true;
                   pendingSeekFrac = null;
                   return playFromBufferOffset(initFrac);
@@ -1999,7 +2049,7 @@
               const res = await fetch('/api/tts/pcm-stream', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: clean, voice, engine: 'gemini', emotion, speed }),
+                body: JSON.stringify({ text: clean, voice, engine: 'gemini', emotion, speed, keywords: keywords.length ? keywords : undefined }),
                 signal: abortCtrl.signal
               });
               if (myRun !== runId) return false;
@@ -2060,6 +2110,9 @@
                   src.connect(ctx.destination);
                   activeSources.push(src);
                   const startAt = Math.max(ctx.currentTime + 0.02, scheduledEnd);
+                  if (startedDirectStream && startAt > scheduledEnd + 0.003) {
+                    startCtxTime += (startAt - scheduledEnd);
+                  }
                   src.start(startAt);
                   scheduledEnd = startAt + chunkBuf.duration;
                   if (!startedDirectStream) {
@@ -2078,7 +2131,7 @@
                 const fullBytes = new Uint8Array(rawTotalBytes);
                 let off = 0;
                 for (const s of rawSlices) { fullBytes.set(s, off); off += s.byteLength; }
-                if (window.__saxazPcmCache.size >= 80) {
+                if (window.__saxazPcmCache.size >= 120) {
                   const oldest = window.__saxazPcmCache.keys().next().value;
                   if (oldest !== undefined) window.__saxazPcmCache.delete(oldest);
                 }
@@ -2091,6 +2144,9 @@
                 const fullBuf = ctx.createBuffer(1, liveSampleCount, sampleRate);
                 fullBuf.getChannelData(0).set(mergedFloats);
                 audioBuffer = fullBuf;
+                const bounds = computeSpeechBounds(fullFloats, sampleRate);
+                speechStartSec = bounds.start;
+                speechEndSec = bounds.end;
                 streamFinished = true;
                 emitState();
 
@@ -2136,7 +2192,7 @@
             if (!isPlaying) return;
             const dur = getDuration();
             const cur = getCurrentTime();
-            pausedFrac = dur > 0 ? Math.min(0.995, Math.max(0, cur / dur)) : 0;
+            pausedFrac = timeToSpeechFrac(cur, dur);
             isPlaying = false;
             isPaused = true;
             isBuffering = false;
@@ -2146,6 +2202,39 @@
               cbProgress({ currentTime: cur, duration: dur, frac: pausedFrac, rms: 0, buffering: false });
             }
             emitState();
+          };
+
+          const prefetch = (text, opts = {}) => {
+            const clean = String(text || '').trim().slice(0, 1200);
+            if (!clean) return;
+            const voice = opts.voice || window.__saxazUserTtsVoice || 'af_bella';
+            const emotion = opts.emotion || 'teaching';
+            const speed = Math.min(1.5, Math.max(0.7, Number(opts.speed) || 1.0));
+            const keywords = Array.isArray(opts.keywords) ? opts.keywords.filter(Boolean).slice(0, 6) : [];
+            const kwKey = keywords.join(',');
+            const pcmCacheKey = `${voice}|gemini|${emotion}|${speed.toFixed(2)}|${kwKey}|${clean}`;
+            if (window.__saxazPcmCache.has(pcmCacheKey)) return;
+            window.__saxazPrefetchInflight = window.__saxazPrefetchInflight || new Set();
+            if (window.__saxazPrefetchInflight.has(pcmCacheKey)) return;
+            window.__saxazPrefetchInflight.add(pcmCacheKey);
+            fetch('/api/tts/pcm-stream', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text: clean, voice, engine: 'gemini', emotion, speed, keywords: keywords.length ? keywords : undefined })
+            }).then(async (res) => {
+              if (!res.ok) return;
+              const sr = parseInt(res.headers.get('X-Sample-Rate') || '24000', 10) || 24000;
+              const ab = await res.arrayBuffer();
+              if (ab && ab.byteLength >= 4) {
+                if (window.__saxazPcmCache.size >= 120) {
+                  const oldest = window.__saxazPcmCache.keys().next().value;
+                  if (oldest !== undefined) window.__saxazPcmCache.delete(oldest);
+                }
+                window.__saxazPcmCache.set(pcmCacheKey, { bytes: new Uint8Array(ab), sampleRate: sr });
+              }
+            }).catch(() => {}).finally(() => {
+              window.__saxazPrefetchInflight.delete(pcmCacheKey);
+            });
           };
 
           const resume = () => {
@@ -2171,6 +2260,7 @@
 
           return {
             loadAndPlay,
+            prefetch,
             seekToFrac,
             pause,
             resume,
@@ -2372,7 +2462,7 @@
       if ('caches' in window) {
         caches.keys().then(keys => {
           keys.forEach(k => {
-            if (k !== 'saxaz-v4-studio-v540') caches.delete(k);
+            if (k !== 'saxaz-v4-studio-v541') caches.delete(k);
           });
         });
       }
@@ -2383,13 +2473,13 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   {% block extra_head %}{% endblock %}
   <!-- Exact SAXAZ.com Replica & 1:1 Extension Stylesheets -->
-  <link rel="stylesheet" href="/static/css/v2-studio.css?v=540">
-  <link rel="stylesheet" href="/static/css/saxaz-fun.css?v=540">
-  <link rel="stylesheet" href="/static/css/sx3.css?v=540">
-  <link rel="stylesheet" href="/static/css/saxaz-ext.css?v=540">
+  <link rel="stylesheet" href="/static/css/v2-studio.css?v=541">
+  <link rel="stylesheet" href="/static/css/saxaz-fun.css?v=541">
+  <link rel="stylesheet" href="/static/css/sx3.css?v=541">
+  <link rel="stylesheet" href="/static/css/saxaz-ext.css?v=541">
   <link rel="stylesheet" href="/static/css/saxaz-match.css?v=5">
   <link rel="stylesheet" href="/static/css/saxaz-cursor.css?v=5">
-  <script src="/static/js/fun.js?v=540" defer></script>
+  <script src="/static/js/fun.js?v=541" defer></script>
   <script>
     document.documentElement.setAttribute('data-theme', 'light');
     document.documentElement.classList.remove('dark');

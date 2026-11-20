@@ -255,20 +255,20 @@ label.sxp-filter { display: inline-flex; align-items: center; }
 .sxc .sx-summary-vid-play { border: 0 !important; background: #231f20; color: #f7b317; width: 32px; height: 32px; }
 .sxc .sx-summary-vid-play.is-watched { background: #ffffff; color: #231f20; }
 
-/* Tests: standalone 3D animated emblem buttons with zero card background */
+/* Tests: large standalone 3D animated emblem buttons with zero card background */
 .sxc #chapter-exams .sx-issue-badges-row {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: flex-start;
-  gap: 36px;
+  gap: 52px;
   max-width: none;
-  margin: 0;
+  margin: 8px 0 0;
 }
 .sxc #chapter-exams .sx-issue-badge-card,
 .sxc #chapter-exams .sx-issue-badge-card:nth-child(2) {
   width: auto;
-  max-width: 280px;
+  max-width: 390px;
   padding: 0 !important;
   border: 0 !important;
   border-radius: 0 !important;
@@ -277,7 +277,7 @@ label.sxp-filter { display: inline-flex; align-items: center; }
   transition: transform .2s cubic-bezier(.34, 1.56, .64, 1);
 }
 .sxc #chapter-exams .sx-issue-badge-card:hover {
-  transform: translateY(-6px) scale(1.04);
+  transform: translateY(-7px) scale(1.04);
   background: transparent !important;
   box-shadow: none !important;
 }
@@ -286,10 +286,15 @@ label.sxp-filter { display: inline-flex; align-items: center; }
 }
 .sxc #chapter-exams .sx-badge-stage {
   position: relative;
-  width: 260px;
+  width: clamp(290px, 31vw, 370px);
   max-width: 100%;
-  margin: -18px 0 -22px;
+  margin: -28px 0 -32px;
   background: transparent !important;
+}
+.sxc #chapter-exams .sx-subject-pct-pill {
+  padding: 7px 18px;
+  font-size: 0.9rem;
+  font-weight: 800;
 }
 
 @media (max-width: 640px) {
@@ -298,11 +303,15 @@ label.sxp-filter { display: inline-flex; align-items: center; }
     display: grid;
     grid-template-columns: 1fr 1fr;
     justify-items: center;
-    gap: 16px;
+    gap: 14px;
   }
   .sxc #chapter-exams .sx-badge-stage {
     width: 100%;
-    max-width: 200px;
-    margin: -10px 0 -14px;
+    max-width: 230px;
+    margin: -14px 0 -18px;
+  }
+  .sxc #chapter-exams .sx-subject-pct-pill {
+    padding: 5px 12px;
+    font-size: 0.8rem;
   }
 }

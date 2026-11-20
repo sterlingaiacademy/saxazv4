@@ -1622,11 +1622,30 @@ main.sx-ext-canvas {
   box-shadow: 0 8px 0 #231f20;
 }
 
-/* Top Solid SAXAZ Yellow Poster Stage (Contracted Hero) */
+/* Top Solid SAXAZ Yellow Poster Stage (Contracted Hero — Entire Card Clickable to Launch Fullscreen Summary) */
 .sx-nutshell-hero-band {
   background: #f7b317;
   padding: 30px 36px 0;
   position: relative;
+  cursor: pointer;
+  transition: filter 0.18s ease;
+}
+
+.sx-nutshell-hero-band:hover {
+  filter: brightness(1.015);
+}
+
+.sx-nutshell-hero-band:hover .sx-fun-btn-dark {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 #231f20;
+}
+
+.sx-nutshell-hero-band:hover .sx-tutor-speech-bubble {
+  transform: translateY(-4px) scale(1.03);
+}
+
+.sx-nutshell-hero-band:hover .sx-tutor-pop-avatar {
+  transform: scale(1.045);
 }
 
 .sx-nutshell-grid {
@@ -2098,6 +2117,208 @@ main.sx-ext-canvas {
   color: #231f20 !important;
   font-weight: 700;
   box-shadow: 0 0 0 2px #f7b317;
+}
+
+/* Important Biology Key Words (Subtle Crisp Emphasis + Live Speaking Pop) */
+.sx-sync-word.is-key-term {
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-color: rgba(247, 179, 23, 0.85);
+  text-decoration-thickness: 2.5px;
+  text-underline-offset: 3px;
+}
+
+.sx-sync-word.is-key-term.is-current {
+  background: #231f20 !important;
+  color: #f7b317 !important;
+  box-shadow: 0 0 0 3px #231f20;
+  text-decoration: none;
+}
+
+/* Smart Sentence-Synced Looping 3D Popup Stage + Interactive Controls */
+@keyframes sxSmartPopIn {
+  0% { opacity: 0; transform: translateY(18px) scale(0.86); }
+  65% { opacity: 1; transform: translateY(-4px) scale(1.03); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes sxInteractBurst {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.08) translateY(-6px); }
+  70% { transform: scale(0.97) translateY(1px); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+@keyframes sxTutorReactPop {
+  0% { transform: scale(0.94) translateY(5px); }
+  55% { transform: scale(1.06) translateY(-4px); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+.sx-sync-tutor-figure.is-reacting {
+  animation: sxTutorReactPop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sx-tutor-react-callout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: #231f20;
+  color: #f7b317;
+  border: 2px solid #f7b317;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 4px;
+  animation: sxSmartPopIn 0.34s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sx-smart-stage {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.sx-smart-canvas-btn {
+  appearance: none;
+  position: relative;
+  width: 100%;
+  max-width: 390px;
+  aspect-ratio: 4 / 3;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sx-smart-canvas-btn:hover {
+  transform: translateY(-4px) scale(1.025);
+}
+
+.sx-smart-canvas-btn.is-popping-in {
+  animation: sxSmartPopIn 0.46s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sx-smart-canvas-btn.is-burst {
+  animation: sxInteractBurst 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sx-smart-canvas-btn canvas,
+.sx-smart-canvas-btn img {
+  grid-area: 1 / 1;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}
+
+.sx-smart-canvas-btn canvas {
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.sx-smart-canvas-btn.is-sheet-ready canvas {
+  opacity: 1;
+}
+
+.sx-smart-canvas-btn.is-sheet-ready img {
+  opacity: 0;
+}
+
+.sx-smart-fact-badge {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #231f20;
+  color: #f7b317;
+  border: 2px solid #ffffff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 8px 20px rgba(35, 31, 32, 0.22);
+  animation: sxSmartPopIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sx-smart-interact-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.sx-smart-tap-pill {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: #fffbeb;
+  color: #231f20;
+  border: 1.5px solid #231f20;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #231f20;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, background-color 0.15s ease;
+}
+
+.sx-smart-tap-pill:hover {
+  background: #f7b317;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 0 #231f20;
+}
+
+.sx-smart-tap-pill:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 #231f20;
+}
+
+.sx-smart-cue-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sx-smart-cue-dot {
+  appearance: none;
+  padding: 4px 11px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(35, 31, 32, 0.2);
+  background: #ffffff;
+  color: rgba(35, 31, 32, 0.72);
+  font-family: var(--font-body);
+  font-size: 0.73rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 0.14s ease, color 0.14s ease, border-color 0.14s ease;
+}
+
+.sx-smart-cue-dot.is-active {
+  background: #231f20;
+  color: #f7b317;
+  border-color: #231f20;
 }
 
 @media (max-width: 860px) {
