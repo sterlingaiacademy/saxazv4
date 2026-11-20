@@ -740,8 +740,9 @@
         window.visualViewport.addEventListener('resize', this._onWindowResize);
         window.visualViewport.addEventListener('scroll', this._onWindowResize);
       }
-      document.addEventListener('fullscreenchange', () => this.onNativeFullscreenChange());
-      document.addEventListener('webkitfullscreenchange', () => this.onNativeFullscreenChange());
+      this._onNativeFs = () => this.onNativeFullscreenChange();
+      document.addEventListener('fullscreenchange', this._onNativeFs);
+      document.addEventListener('webkitfullscreenchange', this._onNativeFs);
 
       if (initialToken) {
         this.loadToken(initialToken);
@@ -1012,6 +1013,7 @@
           e.preventDefault();
           e.stopPropagation();
         }
+        if (this.isFullscreen) this.exitFullscreen();
         if (this.contentId) {
           try {
             fetch(`/student/content/${this.contentId}/complete`, { method: 'POST' }).catch(() => {});
@@ -1788,6 +1790,30 @@
         this.enterFullscreen();
       }
     }
+
+    destroy() {
+      if (this._destroyed) return;
+      this._destroyed = true;
+      try { if (this.isFullscreen) this.exitFullscreen(); } catch (e) {}
+      if (this.pollTimer) { clearInterval(this.pollTimer); this.pollTimer = null; }
+      [this.wakeTimer, this.toastTimer].forEach((tm) => { if (tm) clearTimeout(tm); });
+      if (this.ytPlayer) {
+        try { if (typeof this.ytPlayer.destroy === 'function') this.ytPlayer.destroy(); } catch (e) {}
+        this.ytPlayer = null;
+      }
+      window.removeEventListener('resize', this._onWindowResize);
+      window.removeEventListener('orientationchange', this._onWindowResize);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', this._onWindowResize);
+        window.visualViewport.removeEventListener('scroll', this._onWindowResize);
+      }
+      document.removeEventListener('fullscreenchange', this._onNativeFs);
+      document.removeEventListener('webkitfullscreenchange', this._onNativeFs);
+      document.documentElement.classList.remove('sx-video-fs-lock');
+      document.body.classList.remove('sx-video-fs-lock');
+      activePlayers.delete(this);
+      instances.delete(this.hostEl);
+    }
   }
 
   function upgradeElement(el) {
@@ -1810,7 +1836,23 @@
     scope.querySelectorAll('[data-saxaz-video]').forEach(upgradeElement);
   }
 
+  let sweepQueued = false;
+  const sweepDetachedPlayers = () => {
+    sweepQueued = false;
+    activePlayers.forEach((pl) => {
+      if (pl.hostEl && !pl.hostEl.isConnected) pl.destroy();
+    });
+  };
   const observer = new MutationObserver((mutations) => {
+    if (!sweepQueued && activePlayers.size) {
+      for (const m of mutations) {
+        if (m.type === 'childList' && m.removedNodes.length) {
+          sweepQueued = true;
+          requestAnimationFrame(sweepDetachedPlayers);
+          break;
+        }
+      }
+    }
     for (const m of mutations) {
       if (m.type === 'attributes' && m.attributeName === 'data-saxaz-video') {
         upgradeElement(m.target);

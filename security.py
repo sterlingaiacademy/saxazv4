@@ -297,6 +297,7 @@ def _apply_prefs_cookie(request: Request, conn, user: dict) -> dict:
         "cursor_mode",
         "cursor_effect",
         "subject_intro_mode",
+        "game_prompt_mode",
     )
     changed = False
     for k in pref_keys:
@@ -309,7 +310,8 @@ def _apply_prefs_cookie(request: Request, conn, user: dict) -> dict:
                 """
                 UPDATE users
                 SET tts_voice = ?, tts_engine = ?, tts_mode = ?, tutor_lang = ?,
-                    sfx_mode = ?, sfx_custom = ?, cursor_mode = ?, cursor_effect = ?, subject_intro_mode = ?
+                    sfx_mode = ?, sfx_custom = ?, cursor_mode = ?, cursor_effect = ?, subject_intro_mode = ?,
+                    game_prompt_mode = ?
                 WHERE id = ?
                 """,
                 (
@@ -322,6 +324,7 @@ def _apply_prefs_cookie(request: Request, conn, user: dict) -> dict:
                     int(user.get("cursor_mode") if user.get("cursor_mode") is not None else 1),
                     user.get("cursor_effect") or "none",
                     int(user.get("subject_intro_mode") or 0),
+                    (user.get("game_prompt_mode") or "always"),
                     user["id"],
                 ),
             )

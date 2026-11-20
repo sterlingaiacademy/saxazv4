@@ -22,12 +22,12 @@
 {% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="/static/css/saxaz-pages.css?v=6">
+<link rel="stylesheet" href="/static/css/saxaz-pages.css?v=9">
 {% from "student/partials/summary_games.html" import molecule_defs, game_leaf, game_food, game_breathe, game_blood, game_pump, game_kidney, game_team %}
 {{ molecule_defs() }}
 <link rel="stylesheet" href="/static/css/summary-games.css?v=25">
-<script src="/static/js/summary-games.js?v=22"></script>
-<script src="/static/js/summary-storyboard.js?v=542"></script>
+<script src="/static/js/summary-games.js?v=23"></script>
+<script src="/static/js/summary-storyboard.js?v=543"></script>
 {% set content_list = chapter.content if chapter and chapter.content is defined and chapter.content is iterable and chapter.content is not string else (modules if modules is defined else []) %}
 {% set exam_list = available_exams if available_exams is defined else (exams if exams is defined else []) %}
 {% set done_ids = completed_content_ids if completed_content_ids is defined else [] %}
@@ -118,6 +118,9 @@
       tutorReactPose: '',
       tutorReacting: false,
       tutorReactTimer: null,
+      voiceGap: true,
+      lastVoiceAt: 0,
+      _eqTs: 0,
       smartCanvasLoop: null,
 
       // Mini-games shown in spacious Full-Screen Overlay after Tutor invitation
@@ -132,6 +135,8 @@
       inviteSpeaking: false,
       promptDismissedSlide: -1,
       wasVoiceReading: false,
+      gamePromptMode: {{ ((user.game_prompt_mode if user is defined and user.game_prompt_mode else 'always'))|tojson }},
+      voiceError: false,
       summaryFs: false,
       slidesMeta: {{ (
         [
@@ -205,7 +210,7 @@
         // Preload all 8 Tutor poses (base + lip-sync + reactive pointing/amazed/cheer) for 0ms swap latency
         ['base', 'talking', 'laughing', 'thinking', 'serious', 'pointing', 'amazed', 'cheer'].forEach((pose) => {
           const im = new Image();
-          im.src = `/static/images/avatars/${this.tutorName}_${pose}.png?v=542`;
+          im.src = `/static/images/avatars/${this.tutorName}_${pose}.webp?v=543`;
         });
         this.smartCanvasLoop = window.saxazCreateSmartCanvasLoop ? window.saxazCreateSmartCanvasLoop() : null;
         // Playful living idle animation cycle so Tutor smiles & gestures naturally even before clicking Play
@@ -223,7 +228,9 @@
         document.addEventListener('fullscreenchange', () => {
           if (!document.fullscreenElement && this.summaryFs) {
             this.summaryFs = false;
-            document.documentElement.classList.remove('sx-fs-lock');
+            if (!this.activeGameModal && !this.gamePromptActive) {
+              document.documentElement.classList.remove('sx-fs-lock');
+            }
           }
         });
         const h = window.location.hash || '';
@@ -268,6 +275,36 @@
         return '/static/images/saxaz_web/games/' + (map[id] || 'mascot_nutrition_cheer') + '.webp?v=22';
       },
 
+      // Stop any short extra voice line (game invite, "well done" cheer, heart game coach) so two voices never overlap
+      cancelSideVoices() {
+        ['__gameInvitePcm', '__gameCheerPcm', '__heartPcm'].forEach((k) => {
+          const h = window[k];
+          if (h && h.cancel) { try { h.cancel(); } catch (e) {} }
+          window[k] = null;
+        });
+        this.inviteSpeaking = false;
+      },
+
+      // Game invite preference from Profile: 'always' | 'once' | 'never'
+      gameAskedKey(game) {
+        return 'sx_game_asked_' + chId + '_' + game;
+      },
+      shouldAskGame(sIdx) {
+        const sm = this.slidesMeta[sIdx];
+        if (!sm || !sm.game) return false;
+        const mode = String(this.gamePromptMode || 'always');
+        if (mode === 'never') return false;
+        if (mode === 'once') {
+          if (this.gamePassed.includes(sm.game) || this.hasClaimed(this.gameKey(sm.game))) return false;
+          try { if (localStorage.getItem(this.gameAskedKey(sm.game))) return false; } catch (e) {}
+        }
+        return true;
+      },
+      markGameAsked(game) {
+        if (!game) return;
+        try { localStorage.setItem(this.gameAskedKey(game), '1'); } catch (e) {}
+      },
+
       triggerTutorGamePrompt(sIdx, fromVoice = true) {
         const sm = this.slidesMeta[sIdx];
         if (!sm || !sm.game) return;
@@ -281,10 +318,12 @@
         this.gamePromptId = sm.game;
         this.gamePromptTitle = sm.gameTitle || 'Interactive 3D Mini-Game';
         this.gamePromptActive = true;
+        this.markGameAsked(sm.game);
+        if (window.sxWarmGameAssets) window.sxWarmGameAssets();
         this.wasVoiceReading = Boolean(fromVoice);
         document.documentElement.classList.add('sx-fs-lock');
         if (!['0', 'off'].includes(String(window.__saxazUserTtsMode || '').toLowerCase())) {
-          if (window.__gameInvitePcm && window.__gameInvitePcm.cancel) window.__gameInvitePcm.cancel();
+          this.cancelSideVoices();
           const line = 'Hey {{ first_name }}! Do you want to play a fun game, or go to the next summary?';
           const s = window.saxazStreamPcm ? window.saxazStreamPcm(line, {
             emotion: 'friendly_greeting',
@@ -311,7 +350,8 @@
 
       handlePartNextClick(sIdx) {
         const sm = this.slidesMeta[sIdx];
-        if (sm && sm.game && this.promptDismissedSlide !== sIdx && !this.gamePassed.includes(sm.game)) {
+        if (sm && sm.game && this.promptDismissedSlide !== sIdx && this.shouldAskGame(sIdx)
+            && (this.gamePromptMode === 'always' || !this.gamePassed.includes(sm.game))) {
           this.triggerTutorGamePrompt(sIdx, Boolean(this.nutshellLit && !this.nutshellPaused));
           return;
         }
@@ -320,8 +360,8 @@
 
       openFullscreenGame(id) {
         if (!id) return;
-        if (window.__gameInvitePcm && window.__gameInvitePcm.cancel) window.__gameInvitePcm.cancel();
-        this.inviteSpeaking = false;
+        this.cancelSideVoices();
+        if (window.sxWarmGameAssets) window.sxWarmGameAssets();
         if (this.nutshellLit) this.wasVoiceReading = true;
         if (this.syncPlayer) this.syncPlayer.stop();
         this.nutshellRunToken += 1;
@@ -344,7 +384,7 @@
       },
 
       proceedToNextSummaryPart() {
-        if (window.__gameInvitePcm && window.__gameInvitePcm.cancel) window.__gameInvitePcm.cancel();
+        this.cancelSideVoices();
         const resumeVoice = Boolean(this.wasVoiceReading || (this.nutshellLit && !this.nutshellPaused));
         this.inviteSpeaking = false;
         this.gamePromptActive = false;
@@ -373,8 +413,10 @@
           if (window.saxazClaimMilestone) window.saxazClaimMilestone(k);
         }
         if (cheer && !this.nutshellLit && !['0', 'off'].includes(String(window.__saxazUserTtsMode || '').toLowerCase())) {
+          if (window.__gameCheerPcm && window.__gameCheerPcm.cancel) window.__gameCheerPcm.cancel();
           const s = window.saxazStreamPcm ? window.saxazStreamPcm(cheer, { emotion: 'celebrating', speed: 0.95 }) : null;
-          if (!s && window.saxazSpeak) window.saxazSpeak(cheer, { emotion: 'celebrating', interrupt: true });
+          if (s) window.__gameCheerPcm = s;
+          else if (window.saxazSpeak) window.saxazSpeak(cheer, { emotion: 'celebrating', interrupt: true });
         }
       },
 
@@ -406,7 +448,7 @@
           this.wakeActiveSlideIllustration();
         }
         this.summaryFs = want;
-        document.documentElement.classList.toggle('sx-fs-lock', want);
+        document.documentElement.classList.toggle('sx-fs-lock', want || Boolean(this.activeGameModal) || this.gamePromptActive);
         if (want) {
           if (card && card.requestFullscreen && !document.fullscreenElement) {
             card.requestFullscreen().catch(() => {});
@@ -432,14 +474,19 @@
       },
 
       currentTutorImgSrc() {
-        const pose = this.tutorReactPose
-          ? this.tutorReactPose
-          : ((this.nutshellLit && !this.nutshellPaused) ? this.nutshellEmotion : this.idlePose);
-        return `/static/images/avatars/${this.tutorName}_${pose}.png?v=542`;
+        const speaking = this.nutshellLit && !this.nutshellPaused && !this.nutshellBuffering;
+        let pose;
+        if (speaking) {
+          pose = (this.tutorReactPose && this.voiceGap) ? this.tutorReactPose : this.nutshellEmotion;
+        } else {
+          pose = this.tutorReactPose || ((this.nutshellLit && !this.nutshellPaused) ? this.nutshellEmotion : this.idlePose);
+        }
+        return `/static/images/avatars/${this.tutorName}_${pose}.webp?v=543`;
       },
 
       triggerTutorReaction(pose, ms = 1900) {
         if (!pose) return;
+        ms = Number(ms) > 0 ? Number(ms) : 1900;
         this.tutorReactPose = pose;
         this.tutorReacting = false;
         this.$nextTick(() => { this.tutorReacting = true; });
@@ -753,7 +800,7 @@
           } else if (localActive.isKey && !this.tutorReactPose) {
             // Subtle tutor reaction pulse whenever a key science word is emphasized!
             const cue = this.currentCue();
-            this.triggerTutorReaction((cue && cue.tutorPose) ? cue.tutorPose : 'pointing', '', 1100);
+            this.triggerTutorReaction((cue && cue.tutorPose) ? cue.tutorPose : 'pointing', 1100);
           }
         }
         return localActive.mood || 'teaching';
@@ -761,6 +808,7 @@
 
       updateTutorLipSync(rms, mood) {
         if (!this.nutshellLit || this.nutshellPaused || this.nutshellBuffering) {
+          this.voiceGap = true;
           this.nutshellEmotion = mood === 'question' ? 'thinking' : 'base';
           this.tutorScale = 1;
           this.eqBars = [4, 6, 4, 6, 4];
@@ -768,6 +816,10 @@
         }
         this.smoothRms = this.smoothRms * 0.76 + rms * 0.24;
         const isSilence = rms < 0.013;
+        const nowTs = performance.now();
+        if (!isSilence) this.lastVoiceAt = nowTs;
+        const gap = (nowTs - this.lastVoiceAt) > 260;
+        if (gap !== this.voiceGap) this.voiceGap = gap;
         const isSyllableClosure = rms < Math.max(0.022, this.smoothRms * 0.68);
 
         if (isSilence) {
@@ -780,12 +832,17 @@
           this.nutshellEmotion = 'talking';
         }
 
-        this.tutorScale = 1 + Math.min(0.042, rms * 0.22);
-        const energy = Math.min(1, rms * 8.5);
-        const t = performance.now() / 90;
-        this.eqBars = [0, 1, 2, 3, 4].map((i) =>
-          Math.round(3 + energy * (6 + 5 * Math.abs(Math.sin(t + i * 1.1))))
-        );
+        // Mouth pose follows every frame; the gentle scale pulse and sound-bars update ~20x a second
+        // (looks identical, but avoids re-styling every slide's teacher 60 times a second).
+        if (nowTs - (this._eqTs || 0) >= 50) {
+          this._eqTs = nowTs;
+          this.tutorScale = 1 + Math.min(0.042, rms * 0.22);
+          const energy = Math.min(1, rms * 8.5);
+          const t = nowTs / 90;
+          this.eqBars = [0, 1, 2, 3, 4].map((i) =>
+            Math.round(3 + energy * (6 + 5 * Math.abs(Math.sin(t + i * 1.1))))
+          );
+        }
       },
 
       wakeActiveSlideIllustration() {
@@ -807,7 +864,7 @@
       },
 
       goToSlide(sIdx, autoPlay = null) {
-        if (window.__gameInvitePcm && window.__gameInvitePcm.cancel) window.__gameInvitePcm.cancel();
+        this.cancelSideVoices();
         const maxIdx = this.slidesMeta.length - 1;
         const target = Math.max(0, Math.min(maxIdx, sIdx));
         const shouldPlay = autoPlay !== null ? autoPlay : (this.nutshellLit && !this.nutshellPaused);
@@ -898,7 +955,7 @@
       },
 
       stopNutshellVoice() {
-        if (window.__gameInvitePcm && window.__gameInvitePcm.cancel) window.__gameInvitePcm.cancel();
+        this.cancelSideVoices();
         this.gameCall = null;
         this.inviteSpeaking = false;
         this.gamePromptActive = false;
@@ -924,7 +981,8 @@
       },
 
       async playSlideBeat(sIdx, beatIdx = 0, beatStartFrac = 0) {
-        if (window.__gameInvitePcm && window.__gameInvitePcm.cancel) window.__gameInvitePcm.cancel();
+        this.cancelSideVoices();
+        this.voiceError = false;
         this.ensureSlideWordsInitialized();
         if (!this.syncPlayer && window.saxazCreateSyncedSpeechPlayer) {
           this.syncPlayer = window.saxazCreateSyncedSpeechPlayer();
@@ -1000,7 +1058,7 @@
                 if (rw && !this.claimedKeys.includes(rKey)) this.claimedKeys.push(rKey);
               });
             }
-            if (meta.game) {
+            if (meta.game && this.shouldAskGame(sIdx)) {
               this.triggerTutorGamePrompt(sIdx);
               return;
             }
@@ -1020,9 +1078,10 @@
           }
         });
 
-        if (!ok && myToken === this.nutshellRunToken) {
+        if (!ok && myToken === this.nutshellRunToken && !this.nutshellPaused) {
           this.nutshellLit = false;
           this.nutshellBuffering = false;
+          this.voiceError = true;
           this.updateTutorLipSync(0, 'teaching');
         }
       },
@@ -1239,7 +1298,7 @@
   };
 </script>
 
-<div class="sx-issue-wrap sxc" x-data="saxazChapterPage()" @keydown.escape.window="if (activeGameModal) { closeFullscreenGame(false); } else if (gamePromptActive) { dismissGamePrompt(); } else if (activeVideo) { activeVideo = null; } else { stopNutshellVoice(); if (summaryFs) toggleSummaryFullscreen(false); }">
+<div class="sx-issue-wrap sxc" x-data="saxazChapterPage()" x-effect="smartCanvasLoop && smartCanvasLoop.setPaused(Boolean(activeGameModal || gamePromptActive || !nutshellExpanded))" @keydown.escape.window="if (activeGameModal) { closeFullscreenGame(false); } else if (gamePromptActive) { dismissGamePrompt(); } else if (activeVideo) { activeVideo = null; } else { stopNutshellVoice(); if (summaryFs) toggleSummaryFullscreen(false); }">
 
   <!-- Back bar (same as saxaz.com lesson pages) -->
   <div class="sx-ext-back-bar sxc-back">
@@ -1322,7 +1381,7 @@
               Hey {{ first_name }}! Tap anywhere for a fun 2-min tour!
             </div>
             <div class="sx-tutor-pop-avatar">
-              <img :src="'/static/images/avatars/' + tutorName + '_' + (nutshellHover ? 'cheer' : idlePose) + '.png?v=542'"
+              <img :src="'/static/images/avatars/' + tutorName + '_' + (nutshellHover ? 'cheer' : idlePose) + '.webp?v=543'"
                    :alt="tutorDisplay">
             </div>
           </div>
@@ -1376,7 +1435,7 @@
                   <template x-for="(h, ei) in eqBars" :key="'{{ eq_id }}-' + ei"><span class="sx-eq-bar" :style="'height:' + h + 'px'"></span></template>
                 </span>
                 <span class="material-symbols-outlined" style="font-size:16px;" x-show="!nutshellBuffering" x-text="(nutshellLit && !nutshellPaused) ? 'pause' : 'play_arrow'"></span>
-                <span x-text="nutshellBuffering ? 'Loading Voice...' : ((nutshellLit && !nutshellPaused) ? ('Pause ' + tutorDisplay) : (nutshellPaused ? ('Resume ' + tutorDisplay) : ('Tap ' + tutorDisplay + ' or Any Word')))"></span>
+                <span x-text="nutshellBuffering ? 'Loading Voice...' : ((nutshellLit && !nutshellPaused) ? ('Pause ' + tutorDisplay) : (nutshellPaused ? ('Resume ' + tutorDisplay) : (voiceError ? 'Voice did not load. Tap again' : ('Tap ' + tutorDisplay + ' or Any Word'))))"></span>
               </span>
             </div>
         {% endmacro %}
@@ -1419,7 +1478,7 @@
         <!-- PART 1 of 12: Intro -->
         <div class="sx-sync-stage" data-sx-slide="0" x-show="activeSlide === 0">
           <div>
-            <div style="font-size:0.76rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#231f20;margin-bottom:8px;">CHAPTER IN A NUT SHELL</div>
+            <div style="font-size:0.76rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#231f20;margin-bottom:8px;">CHAPTER IN A NUTSHELL</div>
             <p data-sx-sync-prose style="margin:0;font-size:1.04rem;line-height:1.78;color:#231f20;font-weight:500;">
               Hey {{ first_name }}! Do you know why we are alive? Inside our body, four very important jobs are happening all the time, even when we are sleeping, sitting, or playing. We call them Life Processes. If even one of them stops, we cannot survive. Let us understand each one in detail.
             </p>
@@ -1587,11 +1646,11 @@
             <div class="sx-sync-visual-stack">
               <div class="sx-sync-tutor-card" @click="toggleNutshellLightbulb()" style="cursor:pointer;">
                 <div class="sx-sync-tutor-figure" :class="(nutshellLit && !nutshellPaused) && 'is-speaking'">
-                  <img :src="'/static/images/avatars/' + tutorName + '_' + ((nutshellLit && !nutshellPaused) ? nutshellEmotion : idlePose) + '.png'" :alt="tutorDisplay" :style="tutorMotionStyle()">
+                  <img :src="'/static/images/avatars/' + tutorName + '_' + ((nutshellLit && !nutshellPaused) ? nutshellEmotion : idlePose) + '.webp?v=543'" :alt="tutorDisplay" :style="tutorMotionStyle()">
                 </div>
                 <span class="sx-tutor-voice-pill" :class="[(nutshellLit && !nutshellPaused) && 'is-live', nutshellPaused && 'is-paused']">
                   <span class="material-symbols-outlined" style="font-size:16px;" x-show="!nutshellBuffering" x-text="(nutshellLit && !nutshellPaused) ? 'pause' : 'play_arrow'"></span>
-                  <span x-text="nutshellBuffering ? 'Loading Voice...' : ((nutshellLit && !nutshellPaused) ? ('Pause ' + tutorDisplay) : (nutshellPaused ? ('Resume ' + tutorDisplay) : ('Tap ' + tutorDisplay + ' or Any Word')))"></span>
+                  <span x-text="nutshellBuffering ? 'Loading Voice...' : ((nutshellLit && !nutshellPaused) ? ('Pause ' + tutorDisplay) : (nutshellPaused ? ('Resume ' + tutorDisplay) : (voiceError ? 'Voice did not load. Tap again' : ('Tap ' + tutorDisplay + ' or Any Word'))))"></span>
                 </span>
               </div>
             </div>
@@ -1615,7 +1674,7 @@
           <div class="sx-fsi-poster">
             <div class="sx-fsi-speech">Game Time, {{ first_name }}!</div>
             <div class="sx-fsi-tutor-wrap">
-              <img :src="'/static/images/avatars/' + tutorName + '_' + (inviteSpeaking ? 'talking' : 'laughing') + '.png'"
+              <img :src="'/static/images/avatars/' + tutorName + '_' + (inviteSpeaking ? 'talking' : 'laughing') + '.webp?v=543'"
                    :alt="tutorDisplay">
             </div>
             <div class="sx-fsi-mascot-pill">

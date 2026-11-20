@@ -694,3 +694,14 @@ body .sx-issue-acc-bar.has-soon { grid-template-columns: 58px minmax(0, 1fr) aut
   max-width: calc(100vw - 32px);
 }
 @keyframes sx-toast-in { from { opacity: 0; transform: translate(-50%, 16px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* Kids/parents who turn on "Reduce motion" on their device get a calm page:
+   looping and decorative animations stop, content stays the same. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

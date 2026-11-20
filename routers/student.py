@@ -1476,6 +1476,7 @@ async def save_settings(
   cursor_mode: int = Form(default=0),
   cursor_effect: str = Form(default="magic"),
   subject_intro_mode: int = Form(default=0),
+  game_prompt_mode: Optional[str] = Form(default=None),
   redirect_to: str = Form(default="")
 ):
   from security import set_prefs_cookie
@@ -1484,9 +1485,13 @@ async def save_settings(
   conn = get_db_connection()
   try:
     user = require_student(request, conn)
+    # Game invite preference: always / once / never (keep the current value when the form does not send it)
+    gp_mode = (game_prompt_mode or user.get('game_prompt_mode') or 'always').strip().lower()
+    if gp_mode not in ('always', 'once', 'never'):
+      gp_mode = 'always'
     conn.execute(
-      'UPDATE users SET tts_voice = ?, tts_engine = ?, tts_mode = ?, tutor_lang = ?, sfx_mode = ?, sfx_custom = ?, cursor_mode = ?, cursor_effect = ?, subject_intro_mode = ? WHERE id = ?', 
-      (tts_voice, tts_engine, tts_mode, clean_lang, sfx_mode, sfx_custom, cursor_mode, cursor_effect, subject_intro_mode, user['id'])
+      'UPDATE users SET tts_voice = ?, tts_engine = ?, tts_mode = ?, tutor_lang = ?, sfx_mode = ?, sfx_custom = ?, cursor_mode = ?, cursor_effect = ?, subject_intro_mode = ?, game_prompt_mode = ? WHERE id = ?', 
+      (tts_voice, tts_engine, tts_mode, clean_lang, sfx_mode, sfx_custom, cursor_mode, cursor_effect, subject_intro_mode, gp_mode, user['id'])
     )
     conn.commit()
     target_url = '/student/profile?success=voice_updated#voice-settings'
@@ -1501,6 +1506,7 @@ async def save_settings(
       'cursor_mode': cursor_mode,
       'cursor_effect': cursor_effect,
       'subject_intro_mode': subject_intro_mode,
+      'game_prompt_mode': gp_mode,
     })
     return resp
   finally:

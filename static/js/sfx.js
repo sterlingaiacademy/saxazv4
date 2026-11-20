@@ -18,10 +18,25 @@ class AudioManager {
         };
         
         this.typingSource = null;
-        this.init();
+        this.scheduleLoad();
+    }
+
+    // Sounds are fetched after the page has finished loading (and not at all when sound effects are off),
+    // so they never compete with the page's own pictures and scripts.
+    scheduleLoad() {
+        const start = () => {
+            const mode = window.USER_SFX_MODE !== undefined ? window.USER_SFX_MODE : 1;
+            if (mode === 0) return;
+            if ('requestIdleCallback' in window) window.requestIdleCallback(() => this.init(), { timeout: 3000 });
+            else setTimeout(() => this.init(), 800);
+        };
+        if (document.readyState === 'complete') start();
+        else window.addEventListener('load', start, { once: true });
     }
 
     async init() {
+        if (this._loading) return;
+        this._loading = true;
         for (const [name, path] of Object.entries(this.sounds)) {
             try {
                 const response = await fetch(path);

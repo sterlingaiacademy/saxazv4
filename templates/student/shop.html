@@ -17,7 +17,7 @@
 {% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="/static/css/saxaz-pages.css?v=6">
+<link rel="stylesheet" href="/static/css/saxaz-pages.css?v=9">
 {% set bal = wallet.coin_balance if wallet and wallet.coin_balance is defined else (user.coin_balance or 0) %}
 {% set inr_val = wallet.inr_value if wallet and wallet.inr_value is defined else 0 %}
 {% set claimed = wallet.claimed_keys if wallet and wallet.claimed_keys is defined else [] %}

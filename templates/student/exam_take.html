@@ -181,7 +181,7 @@
         <div class="flex items-center gap-2.5 min-w-0 flex-1">
           <!-- Animated Tutor Avatar -->
           <div class="relative w-10 h-10 rounded-2xl overflow-hidden bg-[#ffffff] border-2 border-[#231f20] flex-shrink-0">
-            <img :src="`/static/images/avatars/${tutorName}_${miniTutorEmotion}.png`" 
+            <img :src="`/static/images/avatars/${tutorName}_${miniTutorEmotion}.webp?v=543`" 
                  :class="'tutor-emotion-' + miniTutorEmotion"
                  class="w-full h-full object-cover scale-110 transition-all duration-300" 
                  :alt="tutorDisplayName + ' Avatar'"
@@ -232,7 +232,7 @@
           <div class="flex items-end gap-2.5" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
             <template x-if="msg.role === 'assistant'">
               <div class="w-7 h-7 rounded-full border border-[#231f20] overflow-hidden flex-shrink-0 bg-[#ffffff]">
-                <img :src="`/static/images/avatars/${tutorName}_base.png`" class="w-full h-full object-cover scale-110" :onerror="`this.src='/static/images/avatars/${tutorName || 'bella'}_base.png'`" />
+                <img alt="" :src="`/static/images/avatars/${tutorName}_base.webp?v=543`" class="w-full h-full object-cover scale-110" :onerror="`this.src='/static/images/avatars/${tutorName || 'bella'}_base.png'`" />
               </div>
             </template>
             
@@ -251,7 +251,7 @@
         <!-- Typing Indicator -->
         <div class="flex items-end gap-2.5" x-show="miniTutorGenerating && !miniTutorCurrentAiText" x-cloak>
           <div class="w-7 h-7 rounded-full border border-[#231f20] overflow-hidden flex-shrink-0 bg-[#ffffff]">
-            <img :src="`/static/images/avatars/${tutorName}_thinking.png`" class="w-full h-full object-cover scale-110 tutor-emotion-thinking" :onerror="`this.src='/static/images/avatars/${tutorName || 'bella'}_base.png'`" />
+            <img alt="" :src="`/static/images/avatars/${tutorName}_thinking.webp?v=543`" class="w-full h-full object-cover scale-110 tutor-emotion-thinking" :onerror="`this.src='/static/images/avatars/${tutorName || 'bella'}_base.png'`" />
           </div>
           <div class="bg-[#ffffff] border border-[#231f20]/20 px-4 py-3 rounded-2xl rounded-bl-xs flex gap-1">
             <div class="w-2 h-2 bg-[#231f20]/50 rounded-full animate-bounce"></div>
@@ -263,7 +263,7 @@
         <!-- Streaming Bubble -->
         <div class="flex items-end gap-2.5" x-show="miniTutorGenerating && miniTutorCurrentAiText" x-cloak>
           <div class="w-7 h-7 rounded-full border border-[#231f20] overflow-hidden flex-shrink-0 bg-[#ffffff]">
-            <img :src="`/static/images/avatars/${tutorName}_${miniTutorEmotion}.png`" :class="'tutor-emotion-' + miniTutorEmotion" class="w-full h-full object-cover scale-110" :onerror="`this.src='/static/images/avatars/${tutorName || 'bella'}_base.png'`" />
+            <img alt="" :src="`/static/images/avatars/${tutorName}_${miniTutorEmotion}.webp?v=543`" :class="'tutor-emotion-' + miniTutorEmotion" class="w-full h-full object-cover scale-110" :onerror="`this.src='/static/images/avatars/${tutorName || 'bella'}_base.png'`" />
           </div>
           <div class="px-4 py-2.5 rounded-2xl rounded-bl-xs max-w-[85%] bg-[#ffffff] border border-[#231f20]/20 text-[#231f20] text-[13px] leading-relaxed prose prose-sm max-w-none prose-p:my-0.5 prose-pre:my-1"
                x-html="renderMiniTutorMarkdown(miniTutorCurrentAiText) + '<span class=\'inline-block w-1.5 h-3 ml-1 bg-[#f7b317] animate-pulse\'></span>'">
@@ -536,7 +536,7 @@
               <div class="sx-coach-head">
                 <div class="sx-coach-who">
                   <div class="sx-coach-avatar" :class="isSpeaking && 'is-speaking'">
-                    <img :src="`/static/images/avatars/${tutorName}_${currentEmotion}.png`"
+                    <img :src="`/static/images/avatars/${tutorName}_${currentEmotion}.webp?v=543`"
                          alt="Tutor"
                          :class="'tutor-emotion-' + currentEmotion"
                          :onerror="`this.src='/static/images/avatars/${tutorName || 'bella'}_base.png'`" />

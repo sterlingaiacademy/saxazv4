@@ -68,6 +68,30 @@
 
   /* Sprite-Sheet Cache & Atlas Frame Renderer */
   var SHEET_CACHE = {};
+  var SHEETS_WARM = false;
+  var SHEET_QUEUE = [];
+  function warmGameAssets() {
+    if (!SHEETS_WARM) {
+      SHEETS_WARM = true;
+      SHEET_QUEUE.splice(0).forEach(function (start, i) { setTimeout(start, i * 120); });
+    }
+    // Pre-load the games' pictures (they are lazy in the page) so a game opens instantly
+    document.querySelectorAll('.sx-fullscreen-game-modal img[loading="lazy"], [data-sx-game] img[loading="lazy"]').forEach(function (im, i) {
+      if (im.__sxWarm || !im.getAttribute('src')) return;
+      im.__sxWarm = true;
+      setTimeout(function () { var w = new Image(); w.decoding = 'async'; w.src = im.currentSrc || im.src; }, i * 80);
+    });
+  }
+  window.sxWarmGameAssets = warmGameAssets;
+  (function scheduleIdleWarm() {
+    var go = function () {
+      if ('requestIdleCallback' in window) window.requestIdleCallback(warmGameAssets, { timeout: 4000 });
+      else setTimeout(warmGameAssets, 1500);
+    };
+    if (document.readyState === 'complete') setTimeout(go, 1200);
+    else window.addEventListener('load', function () { setTimeout(go, 1200); }, { once: true });
+  })();
+
   function loadSheet(url, onReady) {
     if (!url) return;
     var entry = SHEET_CACHE[url];
@@ -82,7 +106,8 @@
         list.forEach(function (fn) { fn(entry.img); });
       };
       entry.img.onerror = function () { entry.failed = true; entry.cbs.length = 0; };
-      entry.img.src = url;
+      var start = function () { if (!entry.img.src) entry.img.src = url; };
+      if (SHEETS_WARM) start(); else SHEET_QUEUE.push(start);
     }
     if (entry.loaded && onReady) onReady(entry.img);
     else if (!entry.failed && onReady) entry.cbs.push(onReady);
@@ -260,14 +285,15 @@
         this.gStarted = true;
         this.boostStage(2500);
         this.say(msg || '', 'win');
-        sfx('Success');
+        var onScreen = this.gVisible !== false && !document.hidden;
+        if (onScreen) sfx('Success');
         var st = this.stageEl() || rootEl;
-        if (!reduceMotion() && window.saxazConfetti && st) {
+        if (onScreen && !reduceMotion() && window.saxazConfetti && st) {
           var r = st.getBoundingClientRect();
           window.saxazConfetti(r.left + r.width / 2, r.top + r.height / 2, 46);
         }
         this.gClaimed = true;
-        if (typeof this.onGameWon === 'function') this.onGameWon(this.gId, cheer || '');
+        if (typeof this.onGameWon === 'function') this.onGameWon(this.gId, onScreen ? (cheer || '') : '');
       },
 
       gReplay: function () {
@@ -888,7 +914,7 @@
         if (self._heroRaf || reduceMotion()) return;
         var last = performance.now();
         var step = function (ts) {
-          if (document.hidden) { self._heroRaf = 0; return; }
+          if (document.hidden || !self.gVisible) { self._heroRaf = 0; return; }
           var dt = Math.min(0.05, Math.max(0.004, (ts - last) / 1000));
           last = ts;
           if (self.gVisible && self._heroSprites) {

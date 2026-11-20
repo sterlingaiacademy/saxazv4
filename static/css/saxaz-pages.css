@@ -370,3 +370,30 @@ label.sxp-filter { display: inline-flex; align-items: center; }
   .sxc .sx-fsi-poster { border-bottom: 0; }
   .sxc .sx-fsi-title { font-size: 2.1rem; }
 }
+
+/* ---- Phones: keep the story text in view while it is read aloud ----
+   Teacher and picture sit side by side in one compact row above the text
+   instead of two tall blocks that pushed the words below the screen. */
+@media (max-width: 860px) {
+  .sxc .sx-sync-stage { gap: 12px; }
+  .sxc .sx-sync-visual-stack {
+    flex-direction: row; align-items: flex-end; justify-content: center; gap: 6px;
+  }
+  .sxc .sx-sync-visual-stack .sx-sync-tutor-card { width: auto; flex: 0 0 auto; }
+  .sxc .sx-sync-tutor-figure,
+  .sxc .sx-nutshell-card.is-fullscreen .sx-sync-tutor-figure { width: 112px; height: 124px; }
+  .sxc .sx-sync-visual-stack .sx-tutor-voice-pill { transform: scale(0.82); transform-origin: center top; margin-top: -2px; white-space: nowrap; }
+  .sxc .sx-sync-visual-stack .sx-smart-stage { flex: 1 1 0; min-width: 0; max-width: 220px; margin-top: 0; }
+  .sxc .sx-smart-canvas-wrap,
+  .sxc .sx-nutshell-card.is-fullscreen .sx-smart-canvas-wrap { max-width: 220px; max-height: 165px; }
+}
+
+/* Current spoken word: looks bold without changing the letter widths,
+   so the line never re-wraps or wobbles while the teacher reads. */
+.sxc .sx-sync-word.is-current:not(.is-key-term) {
+  font-weight: inherit;
+  text-shadow: 0.4px 0 0 currentColor, -0.4px 0 0 currentColor;
+}
+@media (max-width: 860px) {
+  .sxc .sx-nutshell-card.is-fullscreen .sx-sync-stage { margin-top: 0; align-content: start; }
+}

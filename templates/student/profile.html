@@ -17,7 +17,7 @@
 {% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="/static/css/saxaz-pages.css?v=6">
+<link rel="stylesheet" href="/static/css/saxaz-pages.css?v=9">
 {% set ok = request.query_params.get('success') %}
 {% set err = request.query_params.get('error') %}
 
@@ -95,6 +95,15 @@
           <label class="sxp-filter" :class="ttsMode === 'auto' && 'is-active'"><input type="radio" name="tts_mode" value="auto" class="sr-only" x-model="ttsMode">By itself</label>
           <label class="sxp-filter" :class="ttsMode === 'manual' && 'is-active'"><input type="radio" name="tts_mode" value="manual" class="sr-only" x-model="ttsMode">When I tap</label>
           <label class="sxp-filter" :class="ttsMode === 'off' && 'is-active'"><input type="radio" name="tts_mode" value="off" class="sr-only" x-model="ttsMode">Off</label>
+        </div>
+      </div>
+
+      <div class="sxp-optrow" x-data="{ gpm: '{{ (user.game_prompt_mode or 'always')|e }}' }">
+        <span class="sxp-optlabel">Game invites</span>
+        <div class="sxp-filters" style="margin:0;">
+          <label class="sxp-filter" :class="gpm === 'always' && 'is-active'"><input type="radio" name="game_prompt_mode" value="always" class="sr-only" x-model="gpm">Always ask</label>
+          <label class="sxp-filter" :class="gpm === 'once' && 'is-active'"><input type="radio" name="game_prompt_mode" value="once" class="sr-only" x-model="gpm">Ask once</label>
+          <label class="sxp-filter" :class="gpm === 'never' && 'is-active'"><input type="radio" name="game_prompt_mode" value="never" class="sr-only" x-model="gpm">Don't ask</label>
         </div>
       </div>
 

@@ -536,6 +536,12 @@
         for (var i = 0; i < list.length; i++) list[i](img);
       };
       img.src = url;
+      var keys = Object.keys(sheetCache);
+      if (keys.length > 10) {
+        for (var k = 0; k < keys.length - 10; k++) {
+          if (keys[k] !== url && sheetCache[keys[k]].ready) delete sheetCache[keys[k]];
+        }
+      }
     }
     if (entry.ready) cb(entry.img);
     else entry.cbs.push(cb);
@@ -550,9 +556,19 @@
     var framePos = 0;
     var lastTs = 0;
     var boostUntil = 0;
+    var drawnIdx = -1;
+    var paused = false;
+
+    function canRun() {
+      return activeCanvas && activeCue && activeImg && !document.hidden && !paused;
+    }
+    function startLoop() {
+      if (!rafId && canRun()) { lastTs = 0; rafId = requestAnimationFrame(tick); }
+    }
 
     function tick(ts) {
-      if (!activeCanvas || !activeCue || !activeImg || document.hidden) {
+      // Stops completely while the summary is closed, covered by a game, or the tab is in the background
+      if (!canRun()) {
         rafId = 0;
         lastTs = 0;
         return;
@@ -569,12 +585,16 @@
 
       framePos = (framePos + dt * fps) % total;
       var fIdx = Math.floor(framePos);
-      var col = fIdx % cols;
-      var row = Math.floor(fIdx / cols);
-      var ctx = activeCanvas.getContext('2d');
-      if (ctx) {
-        ctx.clearRect(0, 0, cw, ch);
-        ctx.drawImage(activeImg, col * cw, row * ch, cw, ch, 0, 0, cw, ch);
+      if (fIdx !== drawnIdx) {
+        // Only redraw when the picture actually changes (~16 times a second, not 60)
+        drawnIdx = fIdx;
+        var col = fIdx % cols;
+        var row = Math.floor(fIdx / cols);
+        var ctx = activeCanvas.getContext('2d');
+        if (ctx) {
+          ctx.clearRect(0, 0, cw, ch);
+          ctx.drawImage(activeImg, col * cw, row * ch, cw, ch, 0, 0, cw, ch);
+        }
       }
       rafId = requestAnimationFrame(tick);
     }
@@ -587,6 +607,7 @@
       activeImg = null;
       framePos = 0;
       lastTs = 0;
+      drawnIdx = -1;
       var cw = cue.w || 360;
       var ch = cue.h || 270;
       if (canvasEl.width !== cw) canvasEl.width = cw;
@@ -597,7 +618,7 @@
         if (activeCue !== cue) return;
         activeImg = img;
         if (btnEl) btnEl.classList.add('is-sheet-ready');
-        if (!rafId) rafId = requestAnimationFrame(tick);
+        startLoop();
       });
     }
 
@@ -610,9 +631,7 @@
 
     function boost() {
       boostUntil = performance.now() + 950;
-      if (activeCanvas && activeCue && activeImg && !rafId) {
-        rafId = requestAnimationFrame(tick);
-      }
+      startLoop();
     }
 
     function stop() {
@@ -620,6 +639,17 @@
       lastTs = 0;
     }
 
-    return { setCue: setCue, preloadSlideCues: preloadSlideCues, boost: boost, stop: stop };
+    function setPaused(flag) {
+      paused = Boolean(flag);
+      if (paused) stop();
+      else startLoop();
+    }
+
+    // Coming back to the tab continues the animation where it was
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) startLoop();
+    });
+
+    return { setCue: setCue, preloadSlideCues: preloadSlideCues, boost: boost, stop: stop, setPaused: setPaused };
   };
 })();

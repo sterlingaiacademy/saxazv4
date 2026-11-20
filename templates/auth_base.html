@@ -8,16 +8,16 @@
   <link rel="apple-touch-icon" href="/static/images/saxaz_web/apple-touch-icon-saxaz-x-v1.png">
 
   <!-- Material Symbols Outlined -->
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;icon_names=2d,360,air,analytics,animation,arrow_back,arrow_forward,assignment_turned_in,assistant,auto_stories,award_star,badge,bolt,book,bubbles,cancel,cardiology,category,check,check_circle,cheer,chevron_left,chevron_right,circle,clear,close,close_fullscreen,co2,code,compare,cut,cycle,dashboard,delete,description,diamond,done,download,draft,draw,edit_note,email,energy,error,expand_less,expand_more,experiment,fact_check,family_restroom,favorite,feedback,filter,flag,fullscreen,function,glucose,gpp_bad,gpp_maybe,grade,graphic_eq,grid_view,headphones,height,help,history,html,http,image,info,input,iron,keep,key,label,landscape,launch,layers,lens,light,link,living,lock,lock_clock,lock_open,man,margin,memory,menu_book,message,military_tech,mode,more,notifications,nutrition,open_in_full,open_in_new,overview,padding,pages,password,pause,pending,person,pin,planet,play_arrow,play_circle,qr_code_scanner,quiz,radio,redeem,refresh,replay,reply,report,resize,restart_alt,resume,rocket,rocket_launch,save,school,score,script,search,select,send,settings,shield,shop,shopping_bag,shortcut,skeleton,smart_display,speed,sports_esports,stack,star,start,step,steps,store,stream,style,subject,swap_horiz,tab,table,target,task,task_alt,timer,title,today,tooltip,transform,transportation,travel_explore,trophy,unfold_less,unfold_more,upload,verified,verified_user,video_file,visibility,visibility_off,volcano,wallet,warning,water,width,workspace_premium&amp;display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Anek+Malayalam:wght@400..700&family=Baloo+Chettan+2:wght@500..800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Manrope:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap" rel="stylesheet">
 
   <!-- Compiled Tailwind + SAXAZ Stylesheets -->
   <link rel="stylesheet" href="/static/css/app.css?v=250">
   <link rel="stylesheet" href="/static/css/v2-studio.css?v=542">
   <link rel="stylesheet" href="/static/css/saxaz-ext.css?v=542">
-  <link rel="stylesheet" href="/static/css/saxaz-match.css?v=5">
+  <link rel="stylesheet" href="/static/css/saxaz-match.css?v=6">
   <link rel="stylesheet" href="/static/css/saxaz-cursor.css?v=5">
-  <script src="/static/js/fun.js?v=542" defer></script>
+  <script src="/static/js/fun.js?v=543" defer></script>
 
   <style>
     [x-cloak] { display: none !important; }
@@ -72,13 +72,18 @@
       return m;
     };
     window.applySaxazFontSize(window.getSaxazFontSize());
+    let __sxSmallScreen = window.innerWidth < 640;
     window.addEventListener('resize', () => {
+      // Only re-apply when switching between phone and desktop sizes (not on every scroll-bar resize on phones)
+      const small = window.innerWidth < 640;
+      if (small === __sxSmallScreen) return;
+      __sxSmallScreen = small;
       window.applySaxazFontSize(window.getSaxazFontSize());
     }, { passive: true });
   </script>
 
   <!-- Alpine.js -->
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.17.5/dist/cdn.min.js"></script>
 </head>
 <body class="scrollbars-visible sx-auth-body">
   <div class="sx-auth-main-wrap">

@@ -107,6 +107,7 @@ def auto_migrate():
         ("cursor_mode", "INTEGER DEFAULT 1"),
         ("cursor_effect", "TEXT DEFAULT 'none'"),
         ("subject_intro_mode", "INTEGER DEFAULT 0"),
+        ("game_prompt_mode", "TEXT DEFAULT 'always'"),
         ("parent_tts_voice", "TEXT DEFAULT 'af_bella'"),
         ("parent_tts_engine", "TEXT DEFAULT 'openai'"),
         ("parent_tts_mode", "TEXT DEFAULT 'manual'"),

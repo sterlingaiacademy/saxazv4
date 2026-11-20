@@ -816,7 +816,12 @@
       }
       __sxBadgeWakeFns.push(wakeSpring);
 
-      if (sheetUrl && !reducedMotion) {
+      // Locked ("coming soon") subject tiles stay as a still picture: no big sprite sheet download.
+      var staticBadge = card.classList.contains('is-soon') || card.hasAttribute('data-sx-static');
+      var sheetRequested = false;
+      function ensureSheet() {
+        if (sheetRequested || !sheetUrl || reducedMotion || staticBadge) return;
+        sheetRequested = true;
         loadSheet(sheetUrl, function (im) {
           sheetImg = im;
           drawFrame(Math.floor(state.framePos));
@@ -826,13 +831,16 @@
       }
 
       if (!reducedMotion && 'IntersectionObserver' in window) {
+        // The sprite sheet is fetched only when the badge is on (or near) the screen.
         var badgeIo = new IntersectionObserver(function (entries) {
           entries.forEach(function (ent) {
             state.inView = ent.isIntersecting;
-            if (ent.isIntersecting) wakeSpring();
+            if (ent.isIntersecting) { ensureSheet(); wakeSpring(); }
           });
         }, { rootMargin: '360px' });
         badgeIo.observe(card);
+      } else {
+        ensureSheet();
       }
 
       function startSurf() {

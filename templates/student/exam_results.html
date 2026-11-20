@@ -148,17 +148,14 @@
       </h1>
 
       <p style="margin:0;font-size:0.88rem;color:var(--sx-mute);font-weight:600;line-height:1.5;">
-        <template x-if="reviewCount > 0">
-          <span>
-            You scored full marks on <strong style="color:var(--sx-ink);" x-text="fullCount"></strong> of <strong style="color:var(--sx-ink);" x-text="totalQuestions"></strong> questions.
-            Tap any question row below (or filter by <strong>Needs Review</strong>) to inspect your feedback and model answers.
-          </span>
-        </template>
-        <template x-if="reviewCount === 0">
-          <span>
-            Spotless performance! You earned full marks on every single question in this paper. Tap any question row below to review your answers.
-          </span>
-        </template>
+        {# Rendered by the server so the page doesn't jump when the scripts start; Alpine keeps it live after a retry #}
+        <span x-show="reviewCount > 0"{% if ns.review_q == 0 %} style="display:none;"{% endif %}>
+          You scored full marks on <strong style="color:var(--sx-ink);" x-text="fullCount">{{ ns.full_q }}</strong> of <strong style="color:var(--sx-ink);" x-text="totalQuestions">{{ ns.total_q }}</strong> questions.
+          Tap any question row below (or filter by <strong>Needs Review</strong>) to inspect your feedback and model answers.
+        </span>
+        <span x-show="reviewCount === 0"{% if ns.review_q > 0 %} style="display:none;"{% endif %}>
+          Spotless performance! You earned full marks on every single question in this paper. Tap any question row below to review your answers.
+        </span>
       </p>
     </div>
 

@@ -78,7 +78,7 @@
 {% macro game_leaf() %}
 {% call game_shell('leaf', 'sxGameLeaf', 'Make Plant Food: Photosynthesis Drag & Drop', 'lfGoal', 'side', 'mascot_nutrition') %}
 <div class="gx-stage lf-stage" :class="[gDone && 'is-won']" style="aspect-ratio: 16 / 10; --ar: 1.6;">
-  <img class="gx-img" src="/static/images/saxaz_web/games/stage_leaf.webp?v=22" alt="3D cutaway cross-section of a plant leaf" draggable="false">
+  <img loading="lazy" class="gx-img" src="/static/images/saxaz_web/games/stage_leaf.webp?v=22" alt="3D cutaway cross-section of a plant leaf" draggable="false">
   <canvas class="gx-stage-canvas" width="560" height="315"
           data-gx-sheet="/static/images/saxaz_web/games/stage_leaf_sheet.webp?v=22"
           data-gx-cols="4" data-gx-frames="16" data-gx-fps="10"></canvas>
@@ -157,7 +157,7 @@
 {% macro game_food() %}
 {% call game_shell('food', 'sxGameFood', 'Food Journey: Match the 5 Digestive Organs!', 'dgGoal', 'side', 'mascot_nutrition') %}
 <div class="gx-stage dg-stage" style="aspect-ratio: 3 / 4; --ar: 0.75;">
-  <img class="gx-img" src="/static/images/saxaz_web/games/stage_digestive.webp?v=22" alt="3D human digestive system cutaway" draggable="false">
+  <img loading="lazy" class="gx-img" src="/static/images/saxaz_web/games/stage_digestive.webp?v=22" alt="3D human digestive system cutaway" draggable="false">
   <canvas class="gx-stage-canvas" width="390" height="520"
           data-gx-sheet="/static/images/saxaz_web/games/stage_digestive_sheet.webp?v=22"
           data-gx-cols="4" data-gx-frames="16" data-gx-fps="10"></canvas>
@@ -217,7 +217,7 @@
 {% macro game_breathe() %}
 {% call game_shell('breathe', 'sxGameBreathe', 'Breathing & ATP Energy: Drag & Match!', 'brGoal', 'side', 'mascot_respiration') %}
 <div class="gx-stage br-stage" :class="gDone && 'is-won'" style="aspect-ratio: 3 / 4; --ar: 0.75;">
-  <img class="gx-img" src="/static/images/saxaz_web/games/stage_breathe.webp?v=22" alt="3D lungs, trachea and diaphragm" draggable="false">
+  <img loading="lazy" class="gx-img" src="/static/images/saxaz_web/games/stage_breathe.webp?v=22" alt="3D lungs, trachea and diaphragm" draggable="false">
   <canvas class="gx-breathe-canvas" width="390" height="520"
           data-br-sheet="/static/images/saxaz_web/games/stage_breathe_sheet.webp?v=22"></canvas>
 
@@ -275,7 +275,7 @@
 {% macro game_blood() %}
 {% call game_shell('blood', 'sxGameBlood', 'Inside a Blood Vessel: Meet the Blood Crew!', 'bdGoal', 'side', 'mascot_transport') %}
 <div class="gx-stage bd-stage" :class="gDone && 'is-won'" style="aspect-ratio: 16 / 10; --ar: 1.6;">
-  <img class="gx-img" src="/static/images/saxaz_web/games/stage_blood.webp?v=22" alt="3D cutaway inside a blood vessel" draggable="false">
+  <img loading="lazy" class="gx-img" src="/static/images/saxaz_web/games/stage_blood.webp?v=22" alt="3D cutaway inside a blood vessel" draggable="false">
   <canvas class="gx-stage-canvas" width="560" height="315"
           data-gx-sheet="/static/images/saxaz_web/games/stage_blood_sheet.webp?v=22"
           data-gx-cols="4" data-gx-frames="16" data-gx-fps="11"></canvas>
@@ -332,7 +332,7 @@
 <div class="gx-stage pm-stage" style="aspect-ratio: 3 / 4; --ar: 0.75;"
      @pointerdown="pmDown($event)" @pointerup="pmUp()" @pointerleave="pmUp()" @pointercancel="pmUp()">
   <div class="pm-heart-wrap" :class="pmSqueeze && 'is-squeeze'">
-    <img class="pm-heart-fallback" src="/static/images/saxaz_web/syllabus/nutshell_p2_img2.webp?v=541" alt="3D Human Heart" draggable="false">
+    <img loading="lazy" class="pm-heart-fallback" src="/static/images/saxaz_web/syllabus/nutshell_p2_img2.webp?v=541" alt="3D Human Heart" draggable="false">
     <canvas class="pm-heart-canvas" width="262" height="360"
             data-pm-sheet="/static/images/saxaz_web/syllabus/nutshell_p2_img2_sheet.webp?v=541"></canvas>
   </div>
@@ -346,7 +346,7 @@
 </div>
 <aside class="gx-panel pm-tower-card">
   <div class="pm-diorama">
-    <img class="pm-diorama-img" src="/static/images/saxaz_web/games/stage_pump_tower.webp?v=22" alt="3-storey school building, tree and student height comparison" draggable="false">
+    <img loading="lazy" class="pm-diorama-img" src="/static/images/saxaz_web/games/stage_pump_tower.webp?v=22" alt="3-storey school building, tree and student height comparison" draggable="false">
     <div class="pm-fountain-col">
       <div class="pm-tube">
         <div class="pm-blood" :style="'height:' + pmPct().toFixed(1) + '%'">
@@ -371,7 +371,7 @@
 {% macro game_kidney() %}
 {% call game_shell('kidney', 'sxGameKidney', 'Kidney Filter Sort: Drag Waste Out & Keep Useful Items!', 'kdGoal', 'side', 'mascot_excretion') %}
 <div class="gx-stage kd-stage" :class="gDone && 'is-won'" style="aspect-ratio: 3 / 4; --ar: 0.75;">
-  <img class="gx-img" src="/static/images/saxaz_web/games/stage_kidney.webp?v=22" alt="3D kidneys, nephrons, ureters and translucent urinary bladder" draggable="false">
+  <img loading="lazy" class="gx-img" src="/static/images/saxaz_web/games/stage_kidney.webp?v=22" alt="3D kidneys, nephrons, ureters and translucent urinary bladder" draggable="false">
   <canvas class="gx-stage-canvas" width="390" height="520"
           data-gx-sheet="/static/images/saxaz_web/games/stage_kidney_sheet.webp?v=22"
           data-gx-cols="4" data-gx-frames="16" data-gx-fps="10"></canvas>
