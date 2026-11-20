@@ -213,3 +213,61 @@ label.sxp-filter { display: inline-flex; align-items: center; }
   .sxp-teacher-art { height: 130px; }
   .sxp-optlabel { min-width: 0; width: 100%; }
 }
+
+/* =============================================================================
+   Chapter page (.sxc): flat saxaz blocks, same as dashboard / shop / profile
+   ============================================================================= */
+.sxc .sxc-back { margin-bottom: 18px; }
+
+/* Step path: flat square tiles (done = amber, next = black, later = gray) */
+.sxc .sx-path { gap: 12px; margin-bottom: 22px; }
+.sxc .sx-path-step {
+  border-radius: 4px !important; border: 0 !important; min-height: 76px; padding: 14px 16px;
+  background: #e4e6e9; box-shadow: none;
+}
+.sxc .sx-path-step:hover { box-shadow: 0 10px 22px rgba(35, 31, 32, 0.14); }
+.sxc .sx-path-step.is-done { background: #f7b317; }
+.sxc .sx-path-step.is-done .sx-path-num { background: #231f20; color: #f7b317; }
+.sxc .sx-path-step.is-done small { color: rgba(35, 31, 32, 0.78); }
+.sxc .sx-path-step.is-next { background: #231f20; color: #ffffff; box-shadow: 0 12px 26px rgba(35, 31, 32, 0.28); }
+.sxc .sx-path-step.is-next .sx-path-num { background: #f7b317; color: #231f20; }
+.sxc .sx-path-step.is-next small { color: #f7b317; }
+.sxc .sx-path-step.is-todo { background: #c5c8cc; }
+.sxc .sx-path-step.is-locked { background: #eef0f3; }
+.sxc .sx-path-text strong { font-family: var(--font-heading); font-size: 1.08rem; letter-spacing: -0.01em; }
+
+/* Summary card: flat poster block */
+.sxc .sx-nutshell-card,
+.sxc .sx-nutshell-card.is-lit {
+  border-radius: 4px !important; border: 0 !important; box-shadow: none !important;
+}
+.sxc .sx-nutshell-card.is-fullscreen { border-radius: 0 !important; }
+.sxc .sx-nutshell-hero-band { border-radius: 0 !important; }
+
+/* Video strip: flat tiles */
+.sxc .sx-summary-vid-strip { border-top: 0 !important; background: #eef0f3; padding: 18px 20px 20px; }
+.sxc .sx-summary-vid-pill {
+  border-radius: 4px !important; border: 0 !important; box-shadow: none !important;
+  background: #ffffff; padding: 14px 14px; min-height: 64px;
+}
+.sxc .sx-summary-vid-pill:hover { box-shadow: 0 10px 20px rgba(35, 31, 32, 0.14) !important; }
+.sxc .sx-summary-vid-pill.is-watched { background: #f7b317 !important; box-shadow: none !important; }
+.sxc .sx-summary-vid-play { border: 0 !important; background: #231f20; color: #f7b317; width: 32px; height: 32px; }
+.sxc .sx-summary-vid-play.is-watched { background: #ffffff; color: #231f20; }
+
+/* Tests: the two badges sit on flat gray / amber blocks */
+.sxc #chapter-exams .sx-issue-badges-row { max-width: none; gap: 12px; }
+.sxc #chapter-exams .sx-issue-badge-card {
+  max-width: none; padding: 18px 12px 22px !important; border-radius: 4px !important;
+  background: #c5c8cc !important; transition: transform .18s ease, box-shadow .18s ease;
+}
+.sxc #chapter-exams .sx-issue-badge-card:nth-child(2) { background: #f7b317 !important; }
+.sxc #chapter-exams .sx-issue-badge-card:hover { transform: translateY(-4px); box-shadow: 0 14px 28px rgba(35, 31, 32, 0.16) !important; }
+.sxc #chapter-exams .sx-badge-stage { max-width: 260px; }
+.sxc #chapter-exams .sx-badge-caption.is-locked { background: #ffffff; }
+
+@media (max-width: 640px) {
+  .sxc .sx-path-step { min-height: 64px; padding: 10px 12px; }
+  .sxc #chapter-exams .sx-issue-badges-row { grid-template-columns: 1fr 1fr; }
+  .sxc #chapter-exams .sx-badge-caption { font-size: 0.78rem; padding: 7px 12px; text-align: center; }
+}

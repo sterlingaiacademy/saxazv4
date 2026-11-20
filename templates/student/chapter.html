@@ -1,7 +1,28 @@
 {% extends "base.html" %}
 {% block title %}{{ chapter.name }} | SAXAZ{% endblock %}
 
+{% block hero_banner %}
+{% set _parts = chapter.name.split(':', 1) %}
+<section class="sx-ext-hero">
+  <div class="sx-ext-hero-inner">
+    <h1 class="sx-ext-hero-title">
+      {% if _parts|length == 2 %}
+      <span class="is-dark">{{ _parts[0] }}:</span>
+      <span class="is-white">{{ _parts[1].strip() }}</span>
+      {% else %}
+      <span class="is-white">{{ chapter.name }}</span>
+      {% endif %}
+    </h1>
+    <p class="sx-ext-hero-copy">
+      {{ chapter.subject_name or 'Biology' }}. Do the steps in order.<br>
+      The black box is your next step.
+    </p>
+  </div>
+</section>
+{% endblock %}
+
 {% block content %}
+<link rel="stylesheet" href="/static/css/saxaz-pages.css?v=3">
 {% from "student/partials/summary_games.html" import molecule_defs, game_leaf, game_food, game_breathe, game_blood, game_pump, game_kidney, game_team %}
 {{ molecule_defs() }}
 <link rel="stylesheet" href="/static/css/summary-games.css?v=23">
@@ -993,16 +1014,15 @@
   };
 </script>
 
-<div class="sx-issue-wrap" x-data="saxazChapterPage()" @keydown.escape.window="if (activeGameModal) { closeFullscreenGame(false); } else if (gamePromptActive) { dismissGamePrompt(); } else if (activeVideo) { activeVideo = null; } else { stopNutshellVoice(); if (summaryFs) toggleSummaryFullscreen(false); }">
+<div class="sx-issue-wrap sxc" x-data="saxazChapterPage()" @keydown.escape.window="if (activeGameModal) { closeFullscreenGame(false); } else if (gamePromptActive) { dismissGamePrompt(); } else if (activeVideo) { activeVideo = null; } else { stopNutshellVoice(); if (summaryFs) toggleSummaryFullscreen(false); }">
 
-  <!-- Clean Clickable Breadcrumb Bar -->
-  <nav aria-label="Breadcrumb" style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:16px;font-size:0.84rem;font-weight:700;color:rgba(35,31,32,0.72);">
-    <a href="/student/dashboard" style="color:#231f20;text-decoration:none;padding:5px 12px;border-radius:999px;background:#ffffff;border:1px solid rgba(35,31,32,0.16);">Dashboard</a>
-    <span aria-hidden="true">&rarr;</span>
-    <a href="/student/exams?subject={{ chapter.subject_id }}" style="color:#231f20;text-decoration:none;padding:5px 12px;border-radius:999px;background:#ffffff;border:1px solid rgba(35,31,32,0.16);">{{ chapter.subject_name or 'Biology' }}</a>
-    <span aria-hidden="true">&rarr;</span>
-    <span style="color:#231f20;font-weight:800;padding:5px 14px;border-radius:999px;background:#f7b317;border:1.5px solid #231f20;">{{ chapter.name }}</span>
-  </nav>
+  <!-- Back bar (same as saxaz.com lesson pages) -->
+  <div class="sx-ext-back-bar sxc-back">
+    <a href="/student/exams?subject={{ chapter.subject_id }}" class="sx-ext-back-link">
+      <span class="material-symbols-outlined" style="font-size:20px;" aria-hidden="true">arrow_back</span>
+      <span>Back to {{ chapter.subject_name or 'Biology' }}</span>
+    </a>
+  </div>
 
   <!-- Learning path: 4 steps in order, the next one glows so a child always knows where to go -->
   <nav class="sx-path" aria-label="Your steps for this chapter">
@@ -1036,7 +1056,7 @@
         <div class="sx-nutshell-grid">
           <div class="sx-nutshell-hero-copy">
             <h1 class="sx-nutshell-hero-title">
-              <span class="is-dark">{{ chapter.name }}</span>
+              <span class="is-dark">The chapter</span>
               <span class="is-white">in a Nutshell!</span>
             </h1>
 
@@ -1594,6 +1614,7 @@
 
   <!-- PRACTICE MOCK TESTS & OFFICIAL REAL EXAM (Giant Standalone 3D Emblem Buttons — Zero Card Wrapper) -->
   <section id="chapter-exams" style="margin-bottom:28px;">
+    <h2 class="sxp-h2">Tests<small>Practise with mock tests. Score 80% to unlock the real exam.</small></h2>
     <div class="sx-issue-badges-row">
       <a href="{{ '/student/exams/' ~ ns.first_mock_id if ns.first_mock_id else '#chapter-exams' }}"
          aria-label="Mock Exam"
