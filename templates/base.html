@@ -2387,7 +2387,7 @@
   <link rel="stylesheet" href="/static/css/saxaz-fun.css?v=540">
   <link rel="stylesheet" href="/static/css/sx3.css?v=540">
   <link rel="stylesheet" href="/static/css/saxaz-ext.css?v=540">
-  <link rel="stylesheet" href="/static/css/saxaz-match.css?v=2">
+  <link rel="stylesheet" href="/static/css/saxaz-match.css?v=3">
   <script src="/static/js/fun.js?v=540" defer></script>
   <script>
     document.documentElement.setAttribute('data-theme', 'light');
@@ -2658,10 +2658,12 @@
             <span data-sx-coin-count>{{ user.coin_balance or 0 }}</span>
             <span>Coins</span>
           </a>
+          {% if not hide_header_back %}
           <a href="{{ ('/student/chapters/' ~ exam.chapter_id) if (exam is defined and exam and exam.chapter_id) else '/student/exams' }}" class="sx-ext-header-back" style="margin-left:0;">
             <span class="material-symbols-outlined" style="font-size: 18px;">arrow_back</span>
             <span>{{ 'CHAPTER' if (exam is defined and exam and exam.chapter_id) else 'EXAMS' }}</span>
           </a>
+          {% endif %}
         </div>
         {% endif %}
       </header>
@@ -3118,7 +3120,7 @@
 <!-- Global Image Modal -->
 <div x-data="{ showImage: false, imageUrl: '' }" @open-image-modal.window="imageUrl = $event.detail; showImage = true">
   <div x-show="showImage" x-cloak x-transition.opacity.duration.300ms class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4" @click="showImage = false">
-    <img :src="imageUrl" class="max-w-full max-h-full rounded-xl shadow-2xl" @click.stop />
+    <img :src="imageUrl || null" alt="" class="max-w-full max-h-full rounded-xl shadow-2xl" @click.stop />
   </div>
 </div>
 

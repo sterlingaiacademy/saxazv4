@@ -195,17 +195,13 @@
           <span class="material-symbols-outlined" style="font-size:15px;">auto_stories</span>
           <span>PLAY BOOKS SPOTLIGHT</span>
         </span>
-        <span class="sx-qp-pill-light">
-          <span class="material-symbols-outlined" style="font-size:15px;color:#f7b317;">workspace_premium</span>
-          <span>#1 IN CLASS 10 SCIENCE</span>
-        </span>
       </div>
 
       <h2 style="font-family:var(--font-heading);font-size:clamp(1.65rem,2.6vw,2.3rem);font-weight:900;line-height:1.06;margin:0 0 8px;color:#231f20;">
         Life Processes Comic Guide &amp; 3D Science Atlas
       </h2>
       <p style="font-size:0.94rem;font-weight:700;line-height:1.45;color:rgba(35,31,32,0.86);margin:0 0 16px;max-width:540px;">
-        Master diagrams, formulas, and board-exam checkpoints with full-color 3D cutaway visual books crafted by SAXAZ Science Press. Redeemable 100% free with your Score Coins!
+        Master diagrams, formulas, and board-exam checkpoints with full-color 3D cutaway visual books crafted by SAXAZ Science Press. Redeemable 100% free with your Coins!
       </p>
 
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
@@ -243,7 +239,7 @@
           <span class="material-symbols-outlined" style="font-size:24px;color:#f7b317;">menu_book</span>
           <span>Digital Books, Visual Comics &amp; Board Guides</span>
         </h2>
-        <p class="sx-play-sec-sub">Tap any book cover to inspect chapters, ratings, and redeem with your Score Coins.</p>
+        <p class="sx-play-sec-sub">Tap a book cover to see what is inside.</p>
       </div>
 
       <button type="button"
@@ -276,11 +272,7 @@
           <div class="sx-playbook-author">{{ book.author or 'SAXAZ Press' }} &middot; {{ book.pages_or_tag or 'E-Book' }}</div>
 
           <div class="sx-playbook-meta">
-            <span class="sx-play-rating">
-              <span>{{ book.rating or '4.9' }}</span>
-              <span class="material-symbols-outlined" aria-hidden="true">star</span>
-              <span style="font-size:0.72rem;color:rgba(35,31,32,0.58);font-weight:700;">({{ book.reviews or '1k' }})</span>
-            </span>
+            <span></span>
 
             <span class="sx-play-price-pill">
               {{ book.cost_coins }} Coins
@@ -302,7 +294,7 @@
           <span class="material-symbols-outlined" style="font-size:24px;color:#f7b317;">shopping_bag</span>
           <span>Study Gear, Science Lab Kits &amp; Store Passes</span>
         </h2>
-        <p class="sx-play-sec-sub">Redeem Score Coins for physical stationery sets, hands-on STEM kits, and subscription vouchers.</p>
+        <p class="sx-play-sec-sub">Redeem Coins for physical stationery sets, hands-on STEM kits, and subscription vouchers.</p>
       </div>
     </div>
 
@@ -322,10 +314,6 @@
           <div>
             <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px;">
               <span style="font-size:0.73rem;font-weight:800;color:rgba(35,31,32,0.65);">{{ item.author or 'SAXAZ Store' }}</span>
-              <span class="sx-play-rating">
-                <span>{{ item.rating or '4.9' }}</span>
-                <span class="material-symbols-outlined" aria-hidden="true">star</span>
-              </span>
             </div>
 
             <h3 class="sx-playstore-title" @click="openItemByCode({{ item.code | tojson | forceescape }})">
@@ -384,19 +372,19 @@
           <span class="material-symbols-outlined" style="font-size:24px;color:#f7b317;">bolt</span>
           <span>Ways to Earn Coins</span>
         </h2>
-        <p class="sx-play-sec-sub">Complete chapter summaries, interactive games, and board exams to stack Score Coins.</p>
+        <p class="sx-play-sec-sub">Learn, play and pass tests to earn coins. Each reward can be earned once.</p>
       </div>
     </div>
 
     <div class="sx-play-quests-grid">
       {% for m_key, m_title, m_pts, m_href, m_icon, custom_done in [
-        ('nutshell:ch:3', 'Chapter in a Nutshell: Listen to Summary', '+10 Coins', '/student/chapters/3#chapter-nutshell', 'headphones', ('nutshell:ch:3' in claimed)),
-        ('videos:ch:3', '4 Video Lessons: Watch Parts 1 to 4 (+5 each)', '+20 Coins', '/student/chapters/3#chapter-videos', 'smart_display', (mns.video_done >= 4)),
-        ('heart_s1:ch:3', 'Heart Lab Stage 1: Assemble the Human Heart', '+15 Coins', '/student/chapters/3#heart-activity', 'favorite', ('heart_s1:ch:3' in claimed)),
-        ('heart_s2:ch:3', 'Heart Lab Stage 2: Trace Double Circulation', '+25 Coins', '/student/chapters/3#heart-activity', 'cardiology', ('heart_s2:ch:3' in claimed)),
-        ('game:ch:3', 'Summary Mini-Games: Win all 7 Life-Process Games', '+35 Coins', '/student/chapters/3#chapter-nutshell', 'sports_esports', ('game:ch:3:leaf' in claimed and 'game:ch:3:food' in claimed and 'game:ch:3:breathe' in claimed and 'game:ch:3:blood' in claimed and 'game:ch:3:pump' in claimed and 'game:ch:3:kidney' in claimed and 'game:ch:3:team' in claimed)),
-        ('mocks:ch:3', 'Mock Tests 1, 2 & 3: Score 50%+ or 85%+ Mastery', '+40 Coins', '/student/chapters/3#chapter-exams', 'quiz', (mns.mock_done >= 6)),
-        ('real_tier1:paper:14', 'Official Proctored Real Exam Tiers (50% / 75% / 90%)', 'Up to +70 Coins', '/student/chapters/3#chapter-exams', 'workspace_premium', ('real_tier3:paper:14' in claimed))
+        ('nutshell:ch:3', 'Listen to the chapter summary', '+10 Coins', '/student/chapters/3#chapter-nutshell', 'headphones', ('nutshell:ch:3' in claimed)),
+        ('videos:ch:3', 'Watch all 4 videos (+5 each)', '+20 Coins', '/student/chapters/3#chapter-videos', 'smart_display', (mns.video_done >= 4)),
+        ('heart_s1:ch:3', 'Heart game: build the heart', '+15 Coins', '/student/chapters/3#heart-activity', 'favorite', ('heart_s1:ch:3' in claimed)),
+        ('heart_s2:ch:3', 'Heart game: pump the blood', '+25 Coins', '/student/chapters/3#heart-activity', 'cardiology', ('heart_s2:ch:3' in claimed)),
+        ('game:ch:3', 'Win the 7 summary games (+5 each)', '+35 Coins', '/student/chapters/3#chapter-nutshell', 'sports_esports', ('game:ch:3:leaf' in claimed and 'game:ch:3:food' in claimed and 'game:ch:3:breathe' in claimed and 'game:ch:3:blood' in claimed and 'game:ch:3:pump' in claimed and 'game:ch:3:kidney' in claimed and 'game:ch:3:team' in claimed)),
+        ('mocks:ch:3', 'Mock tests: +30 for 50%, +10 more for 85% (each test)', 'Up to +120 Coins', '/student/chapters/3#chapter-exams', 'quiz', (mns.mock_done >= 6)),
+        ('real_tier1:paper:14', 'Real exam: +30 for 50%, +20 for 75%, +20 for 90%', 'Up to +70 Coins', '/student/chapters/3#chapter-exams', 'workspace_premium', ('real_tier3:paper:14' in claimed))
       ] %}
       <div class="sx-play-quest-card {{ 'is-done' if custom_done else '' }}">
         <div style="display:flex;align-items:center;gap:12px;min-width:0;">
@@ -405,7 +393,7 @@
           </span>
           <div style="min-width:0;">
             <div style="font-weight:800;font-size:0.9rem;color:#231f20;line-height:1.3;">{{ m_title }}</div>
-            <div style="font-size:0.76rem;font-weight:800;color:rgba(35,31,32,0.68);margin-top:2px;">Reward Milestone &middot; {{ m_pts }}</div>
+            <div style="font-size:0.76rem;font-weight:800;color:rgba(35,31,32,0.68);margin-top:2px;">{{ m_pts }}</div>
           </div>
         </div>
 
@@ -486,7 +474,7 @@
     </div>
     {% else %}
     <p style="margin:0;font-size:0.9rem;font-weight:600;color:rgba(35,31,32,0.7);">
-      Complete lessons, mini-games, and practice exams to earn your first SAXAZ Score Coins.
+      Complete lessons, mini-games, and practice exams to earn your first SAXAZ Coins.
     </p>
     {% endif %}
   </section>
@@ -522,13 +510,6 @@
             </div>
 
             <div class="sx-play-modal-stats">
-              <div class="sx-play-modal-stat-box">
-                <div style="font-size:0.92rem;font-weight:900;display:inline-flex;align-items:center;gap:2px;">
-                  <span x-text="selectedItem.rating || '4.9'"></span>
-                  <span class="material-symbols-outlined" style="font-size:15px;color:#f7b317;font-variation-settings:'FILL' 1;">star</span>
-                </div>
-                <div style="font-size:0.66rem;font-weight:800;color:rgba(35,31,32,0.65);" x-text="(selectedItem.reviews || '1.5k') + ' reviews'"></div>
-              </div>
 
               <div class="sx-play-modal-stat-box">
                 <div style="font-size:0.92rem;font-weight:900;" x-text="'Rs ' + selectedItem.inr_value"></div>

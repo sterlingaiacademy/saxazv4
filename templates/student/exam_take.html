@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% set hide_header_back = true %}
 {% from "_icons.html" import icon %}
 
 {% block content %}
@@ -416,7 +417,7 @@
                       <span class="w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 text-xs font-black"
                             :class="isMcqSelected(opt, idx) ? 'border-[#231f20] bg-[#231f20] text-[#f7b317]' : 'border-[#231f20]/35 bg-[#ffffff] text-[#231f20]'"
                             x-text="String.fromCharCode(65 + idx)"></span>
-                      <span class="text-sm sm:text-base font-bold text-[#231f20] leading-snug" x-text="formatMcqOption(opt, idx)"></span>
+                      <span class="text-sm sm:text-base font-bold text-[#231f20] leading-snug" x-text="displayMcqOption(opt)"></span>
                     </label>
                   </template>
                 </div>
@@ -590,7 +591,7 @@
                         x-show="!feedback"
                         @click="nextQuestion()"
                         :disabled="isGrading"
-                        class="sm:hidden sx-ext-cta-soft px-4 min-h-[44px]">
+                        class="sx-only-phone sx-ext-cta-soft px-4 min-h-[44px]">
                   <span x-text="currentFlatQuestionNumber >= totalQuestions ? 'Summary' : 'Skip'"></span>
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
                 </button>
@@ -601,7 +602,7 @@
                   <button type="button"
                           @click="nextQuestion()"
                           :disabled="isGrading"
-                          class="hidden sm:inline-flex sx-ext-cta-soft px-5 min-h-[46px]">
+                          class="sx-only-desktop sx-ext-cta-soft px-5 min-h-[46px]">
                     <span x-text="currentFlatQuestionNumber >= totalQuestions ? 'Summary' : 'Skip'"></span>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
                   </button>
@@ -1158,6 +1159,10 @@ document.addEventListener('alpine:init', () => {
       const raw = String(opt ?? '').trim();
       const stripped = raw.replace(/^(?:\([A-Za-z]\)|[A-Za-z][\.\)\:])\s*/, '');
       return `${String.fromCharCode(65 + idx)}. ${stripped}`;
+    },
+
+    displayMcqOption(opt) {
+      return String(opt ?? '').trim().replace(/^(?:\([A-Za-z]\)|[A-Za-z][\.\)\:])\s*/, '');
     },
 
     isMcqSelected(opt, idx) {

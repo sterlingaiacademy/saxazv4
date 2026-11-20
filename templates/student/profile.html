@@ -11,7 +11,7 @@
   {% set err = request.query_params.get('error') %}
   {% if ok %}
   <div class="sx-ext-surface" style="padding:14px 20px;border:2px solid #231f20;background:#f7b317;color:#231f20;font-weight:700;font-size:0.9rem;">
-    {% if ok == 'password_updated' %}Password updated successfully.{% elif ok == 'voice_updated' %}AI voice &amp; language preferences saved.{% else %}Profile updated successfully.{% endif %}
+    {% if ok == 'password_updated' %}Password updated successfully.{% elif ok == 'voice_updated' %}Voice &amp; language saved.{% else %}Profile updated successfully.{% endif %}
   </div>
   {% endif %}
   {% if err == 'invalid_old_password' %}
@@ -98,10 +98,10 @@
   <!-- 2. AI TUTOR VOICE & PRIMARY LANGUAGE -->
   <section id="voice-settings" class="sx-ext-surface">
     <h2 style="font-family:var(--font-display);font-size:1.4rem;font-weight:800;margin:0 0 6px;color:#231f20;">
-      AI Tutor voice &amp; language
+      Teacher voice &amp; language
     </h2>
     <p style="margin:0 0 20px;font-size:0.88rem;color:rgba(35,31,32,0.68);font-weight:500;">
-      Choose the default language and teacher voice for Mock Exams and AI Tutor chats.
+      Pick the teacher who reads to you, and the language they use in tests and when you ask for help.
     </p>
 
     <form method="POST" action="/student/settings">
@@ -115,25 +115,25 @@
 
       <!-- Primary Tutor Response Language -->
       <div style="margin-bottom:20px;">
-        <label class="sx-ext-field-label">Primary Tutor Response Language</label>
+        <label class="sx-ext-field-label">Language</label>
         <div class="sx-seg sx-seg-wrap">
-          <label class="sx-seg-btn" :class="tutorLang === 'en' && 'is-active'" data-tip="Set English as default AI Tutor & Exam response language">
+          <label class="sx-seg-btn" :class="tutorLang === 'en' && 'is-active'" data-tip="Your teacher will use English">
             <input type="radio" name="tutor_lang" value="en" class="sr-only" x-model="tutorLang" @change="playCurrentVoicePreview()" />
             <span>English</span>
           </label>
-          <label class="sx-seg-btn" :class="tutorLang === 'ml' && 'is-active'" data-tip="Set Malayalam as default AI Tutor & Exam response language">
+          <label class="sx-seg-btn" :class="tutorLang === 'ml' && 'is-active'" data-tip="Your teacher will use Malayalam">
             <input type="radio" name="tutor_lang" value="ml" class="sr-only" x-model="tutorLang" @change="playCurrentVoicePreview()" />
             <span>Malayalam &middot; മലയാളം</span>
           </label>
-          <label class="sx-seg-btn" :class="tutorLang === 'hi' && 'is-active'" data-tip="Set Hindi as default AI Tutor & Exam response language">
+          <label class="sx-seg-btn" :class="tutorLang === 'hi' && 'is-active'" data-tip="Your teacher will use Hindi">
             <input type="radio" name="tutor_lang" value="hi" class="sr-only" x-model="tutorLang" @change="playCurrentVoicePreview()" />
             <span>Hindi &middot; हिन्दी</span>
           </label>
-          <label class="sx-seg-btn" :class="tutorLang === 'ta' && 'is-active'" data-tip="Set Tamil as default AI Tutor & Exam response language">
+          <label class="sx-seg-btn" :class="tutorLang === 'ta' && 'is-active'" data-tip="Your teacher will use Tamil">
             <input type="radio" name="tutor_lang" value="ta" class="sr-only" x-model="tutorLang" @change="playCurrentVoicePreview()" />
             <span>Tamil &middot; தமிழ்</span>
           </label>
-          <label class="sx-seg-btn" :class="tutorLang === 'ar' && 'is-active'" data-tip="Set Arabic as default AI Tutor & Exam response language">
+          <label class="sx-seg-btn" :class="tutorLang === 'ar' && 'is-active'" data-tip="Your teacher will use Arabic">
             <input type="radio" name="tutor_lang" value="ar" class="sr-only" x-model="tutorLang" @change="playCurrentVoicePreview()" />
             <span>Arabic &middot; العربية</span>
           </label>
@@ -142,7 +142,7 @@
 
       <!-- AI Teacher Persona Cards -->
       <div style="margin-bottom:20px;">
-        <label class="sx-ext-field-label">AI Teacher Voice (tap to preview)</label>
+        <label class="sx-ext-field-label">Teacher voice (tap to hear)</label>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));gap:12px;">
           {% for vid, vname, vrole, vimg in [
             ('af_bella', 'Bella', 'Biology Buddy', '/static/images/tts_af_bella.jpg'),
@@ -170,13 +170,13 @@
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
           <span style="font-size:0.86rem;font-weight:700;color:rgba(35,31,32,0.72);">Voice Narration:</span>
           <div class="sx-seg sx-seg-wrap">
-            <label class="sx-seg-btn" :class="ttsMode === 'auto' && 'is-active'" data-tip="Play AI voice automatically">
+            <label class="sx-seg-btn" :class="ttsMode === 'auto' && 'is-active'" data-tip="Teacher reads aloud automatically">
               <input type="radio" name="tts_mode" value="auto" class="sr-only" x-model="ttsMode" />Auto
             </label>
-            <label class="sx-seg-btn" :class="ttsMode === 'manual' && 'is-active'" data-tip="Play AI voice when tapped">
+            <label class="sx-seg-btn" :class="ttsMode === 'manual' && 'is-active'" data-tip="Teacher reads when you tap">
               <input type="radio" name="tts_mode" value="manual" class="sr-only" x-model="ttsMode" />Manual
             </label>
-            <label class="sx-seg-btn" :class="ttsMode === 'off' && 'is-active'" data-tip="Mute AI voice">
+            <label class="sx-seg-btn" :class="ttsMode === 'off' && 'is-active'" data-tip="Teacher stays quiet">
               <input type="radio" name="tts_mode" value="off" class="sr-only" x-model="ttsMode" />Off
             </label>
           </div>

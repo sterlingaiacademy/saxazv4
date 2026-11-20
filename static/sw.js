@@ -1,5 +1,5 @@
 // SAXAZ V4 Studio Progressive Web App Service Worker
-const CACHE_NAME = 'saxaz-v4-studio-v540';
+const CACHE_NAME = 'saxaz-v4-studio-v541';
 const PRECACHE_ASSETS = [
   '/static/css/app.css?v=250',
   '/static/css/v2-studio.css?v=540',

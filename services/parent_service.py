@@ -198,7 +198,7 @@ def get_parent_analytics(conn, student_id: int):
       ep.title,
       c.name as chapter_name,
       s.name as subject_name,
-      COALESCE(a.total_marks_awarded, SUM(ans.marks_awarded), 0) as total_marks_awarded,
+      COALESCE(SUM(ans.marks_awarded), a.total_marks_awarded, 0) as total_marks_awarded,
       COALESCE(SUM(COALESCE(q.max_marks, m.mark_value, 1)), 0) as answered_max_marks,
       COUNT(DISTINCT ans.question_id) as answered_count,
       COALESCE(
@@ -493,7 +493,7 @@ def get_chapter_milestone_summary(conn, student_id: int, class_id: int = None):
         """
         SELECT
           a.id,
-          COALESCE(a.total_marks_awarded, 0) AS marks_awarded,
+          COALESCE((SELECT SUM(ans_s.marks_awarded) FROM answers ans_s WHERE ans_s.attempt_id = a.id AND ans_s.is_latest = 1), a.total_marks_awarded, 0) AS marks_awarded,
           COALESCE(NULLIF(a.total_max_marks, 0), ?) AS max_marks,
           COALESCE(a.completed_at, a.started_at) AS ts
         FROM attempts a
@@ -631,7 +631,7 @@ def get_completed_attempts_hash(conn, student_id: int, summary_type: str = "main
     type_clause = " AND ep.type = 'real'"
   rows = conn.execute(
     f"""
-    SELECT a.id, a.exam_paper_id, ROUND(COALESCE(a.total_marks_awarded, 0), 2), ROUND(COALESCE(a.total_max_marks, 0), 2)
+    SELECT a.id, a.exam_paper_id, ROUND(COALESCE((SELECT SUM(ans_s.marks_awarded) FROM answers ans_s WHERE ans_s.attempt_id = a.id AND ans_s.is_latest = 1), a.total_marks_awarded, 0), 2), ROUND(COALESCE(a.total_max_marks, 0), 2)
     FROM attempts a
     JOIN exam_papers ep ON a.exam_paper_id = ep.id
     WHERE a.student_id = ? AND a.completed_at IS NOT NULL{type_clause}
@@ -717,10 +717,10 @@ def generate_and_cache_ai_summary(
   lang_name = VALID_PARENT_LANGS.get(lang_code, "English")
 
   att_hash = get_completed_attempts_hash(conn, student_id, summary_type)
-  hash_marker = f"<!-- attemptshash:{att_hash} lang:{lang_code} -->"
+  hash_marker = f"<!-- attemptshash:{att_hash} lang:{lang_code} v:2 -->"
 
   clean_existing = ""
-  if existing_summary:
+  if existing_summary and "v:2" in existing_summary:
     clean_existing = existing_summary.split("<!--")[0].strip()
 
   is_toxic_legacy = any(
@@ -736,12 +736,15 @@ def generate_and_cache_ai_summary(
         lang_code == "en"
         and f"attemptshash:{att_hash}" in (existing_summary or "")
         and "lang:" not in (existing_summary or "")
+        and False
       )
     )
   )
   if is_cache_hit:
     return clean_existing
 
+  _nm = (student_name or "Your child").strip()
+  student_name = _nm[:1].upper() + _nm[1:]
   fallback_text = _build_constructive_fallback_summary(student_name, analytics, summary_type)
 
   if not openai_client or not openai_client.api_key or time.monotonic() < _PARENT_OPENAI_COOLDOWN_UNTIL:
@@ -752,7 +755,9 @@ def generate_and_cache_ai_summary(
   system_msg = (
     "You are a respectful, constructive academic advisor writing a concise 2-3 sentence progress summary for a parent. "
     "Be clear, warm, objective, and encouraging. Highlight concrete progress from the numbers and suggest one practical next step for revision. "
-    f"Write the entire summary in {lang_name}. Never use emojis, bullet points, markdown headings, or harsh language."
+    f"Write the entire summary in {lang_name}. Never use emojis, bullet points, markdown headings, or harsh language. "
+    "Do not assume the child's gender: refer to the child by first name, or use 'they'. Never use he, she, his or her. "
+    "Use only the numbers given, exactly as given, and never combine two different numbers into one claim."
   )
 
   if summary_type == "mock":
@@ -760,7 +765,7 @@ def generate_and_cache_ai_summary(
       f"Student: {student_name}\n"
       f"- Practice Mock Attempts: {len(analytics.get('mock_exams', []))}\n"
       f"- Questions Retried for Mastery: {len(analytics.get('retry_history', []))}\n"
-      f"- AI Coach Discussions During Practice: {analytics.get('total_tutor_uses', 0)} across {analytics.get('questions_with_tutor_count', 0)} questions"
+      f"- Tutor Questions Asked During Practice: {analytics.get('total_tutor_uses', 0)} across {analytics.get('questions_with_tutor_count', 0)} questions"
     )
   elif summary_type == "real":
     reals = analytics.get("real_exams", [])
@@ -774,7 +779,8 @@ def generate_and_cache_ai_summary(
     data_context = (
       f"Student: {student_name}\n"
       f"- Active Syllabus Progress: {analytics.get('completion_percent', 0)}%\n"
-      f"- Study Time Recorded: {analytics.get('time_spent', '0h 0m')} ({analytics.get('streak_days', 0)} day streak)\n"
+      f"- Total Study Time Recorded: {analytics.get('time_spent', '0h 0m')}\n"
+      f"- Days In A Row With Study (current streak): {analytics.get('streak_days', 0)}\n"
       f"- Practice Mock Attempts: {len(analytics.get('mock_exams', []))}\n"
       f"- Official Real Exams Completed: {len(analytics.get('real_exams', []))}\n"
       f"- Practice Questions Retried: {len(analytics.get('retry_history', []))}"
@@ -975,9 +981,9 @@ def get_exam_report(conn, attempt_id: int, student_id: int):
   if raw_tot_max <= 0:
     raw_tot_max = sum_q_max or float(att_dict.get("target_marks") or 0)
   raw_tot_awarded = (
-    float(att_dict["total_marks_awarded"])
-    if att_dict.get("total_marks_awarded") is not None
-    else sum_q_awarded
+    sum_q_awarded
+    if answers
+    else float(att_dict.get("total_marks_awarded") or 0)
   )
 
   att_dict["total_max_marks"] = _clean_num(raw_tot_max)
@@ -1061,7 +1067,7 @@ def get_mock_exam_analytics(conn, student_id: int):
       ep.title,
       c.name AS chapter_name,
       s.name AS subject_name,
-      COALESCE(a.total_marks_awarded, SUM(ans.marks_awarded), 0) as total_marks_awarded,
+      COALESCE(SUM(ans.marks_awarded), a.total_marks_awarded, 0) as total_marks_awarded,
       COALESCE(
         NULLIF(a.total_max_marks, 0),
         (SELECT SUM(COALESCE(q.max_marks, m.mark_value, 1)) FROM questions q JOIN modules m ON q.module_id = m.id WHERE m.exam_paper_id = ep.id {q_hidden_clause}),
@@ -1241,7 +1247,7 @@ def get_real_exam_analytics(conn, student_id: int):
       ep.title,
       c.name AS chapter_name,
       s.name AS subject_name,
-      COALESCE(a.total_marks_awarded, SUM(ans.marks_awarded), 0) as total_marks_awarded,
+      COALESCE(SUM(ans.marks_awarded), a.total_marks_awarded, 0) as total_marks_awarded,
       COALESCE(
         NULLIF(a.total_max_marks, 0),
         (SELECT SUM(COALESCE(q.max_marks, m.mark_value, 1)) FROM questions q JOIN modules m ON q.module_id = m.id WHERE m.exam_paper_id = ep.id {q_hidden_clause}),

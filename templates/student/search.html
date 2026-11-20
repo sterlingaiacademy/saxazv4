@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Smart Search &amp; Navigator | SAXAZ{% endblock %}
+{% block title %}Search | SAXAZ{% endblock %}
 
 {% block content %}
 <script>
@@ -72,7 +72,7 @@
   <section class="sx-ext-surface" style="position:relative;z-index:30;overflow:visible;">
     <div style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px;">
       <div>
-        <span class="sx-ext-eyebrow">SMART SEARCH &amp; NAVIGATOR</span>
+        <span class="sx-ext-eyebrow">SEARCH</span>
         <h1 style="font-family:var(--font-display);font-size:clamp(1.75rem,2.7vw,2.25rem);font-weight:800;line-height:1.15;margin:4px 0 6px;color:#231f20;">
           {% if query %}
             Results for <span style="background:#f7b317;color:#231f20;padding:0 10px;border-radius:10px;">"{{ query }}"</span>
@@ -162,7 +162,7 @@
   <!-- 2. AI SMART NAVIGATOR SUMMARY CARD -->
   <section class="sx-ext-surface" style="border:2px solid #231f20;">
     <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;">
-      <span class="sx-ext-eyebrow" style="color:#231f20;">AI NAVIGATOR ANSWER</span>
+      <span class="sx-ext-eyebrow" style="color:#231f20;">BEST MATCH</span>
       {% if primary_destination and primary_destination.category %}
         <span style="padding:4px 12px;border-radius:999px;background:#f7b317;color:#231f20;border:1.5px solid #231f20;font-size:0.74rem;font-weight:800;">
           {{ primary_destination.category }}
@@ -208,7 +208,7 @@
   <section class="sx-ext-surface">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
       <h2 style="font-family:var(--font-display);font-size:1.35rem;font-weight:800;margin:0;color:#231f20;">
-        {% if query %}Matching Chapters, Exams &amp; Pages{% else %}Popular Platform Destinations{% endif %}
+        {% if query %}What we found{% else %}Quick links{% endif %}
       </h2>
       {% if results %}
         <span style="font-size:0.82rem;font-weight:800;color:rgba(35,31,32,0.68);">
@@ -230,9 +230,6 @@
             <span style="padding:3px 10px;border-radius:999px;background:#f7b317;color:#231f20;border:1px solid #231f20;font-size:0.7rem;font-weight:800;">
               {{ result.badge or 'Resource' }}
             </span>
-            <span style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:rgba(35,31,32,0.68);">
-              {{ dest_cat }}
-            </span>
           </div>
           <h3 style="font-family:var(--font-display);font-size:1.1rem;font-weight:800;margin:0 0 6px;line-height:1.25;color:#231f20;">
             {{ dest_title }}
@@ -244,7 +241,7 @@
           {% endif %}
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid rgba(35,31,32,0.1);font-size:0.8rem;font-weight:800;color:#231f20;">
-          <span>Open Destination</span>
+          <span>Open</span>
           <span>&rarr;</span>
         </div>
       </a>

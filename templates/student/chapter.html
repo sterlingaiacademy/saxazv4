@@ -850,6 +850,44 @@
       isDone(id) {
         return this.doneIds.includes(Number(id));
       },
+      pathSteps() {
+        const bestMock = {{ ns.best_mock | tojson }};
+        const bestReal = {{ ns.best_real | tojson }};
+        const steps = [
+          { key: 'summary', label: 'Summary', done: this.hasClaimed('nutshell:ch:' + chId),
+            hint: this.hasClaimed('nutshell:ch:' + chId) ? 'Done' : 'Listen to ' + this.tutorDisplay },
+          { key: 'videos', label: 'Videos', done: this.videos.length > 0 && this.completedVideosCount() >= this.videos.length,
+            hint: this.completedVideosCount() + ' of ' + this.videos.length + ' watched' },
+          { key: 'mock', label: 'Mock test', done: bestMock !== null && bestMock >= 80,
+            hint: bestMock === null ? 'Score 80% to pass' : ('Best ' + bestMock + '%' + (bestMock >= 80 ? '' : ' · need 80%')) },
+          { key: 'real', label: 'Real exam', done: bestReal !== null, locked: !this.realUnlocked,
+            hint: bestReal !== null ? ('Best ' + bestReal + '%') : (this.realUnlocked ? 'Unlocked' : 'Pass a mock test first') },
+        ].filter(s => s.key !== 'videos' || this.videos.length > 0)
+         .filter(s => s.key !== 'mock' || this.firstMockExamId)
+         .filter(s => s.key !== 'real' || this.firstRealExamId);
+        let nextSet = false;
+        steps.forEach(s => {
+          if (s.done) s.state = 'done';
+          else if (s.locked) s.state = 'locked';
+          else if (!nextSet) { s.state = 'next'; nextSet = true; }
+          else s.state = 'todo';
+        });
+        return steps;
+      },
+      goPathStep(st) {
+        if (st.key === 'summary') {
+          const el = document.getElementById('chapter-nutshell');
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          if (!this.nutshellLit) this.toggleNutshellLightbulb();
+        } else if (st.key === 'videos') {
+          this.openSummaryVideos();
+        } else if (st.key === 'mock') {
+          window.location.href = '/student/exams/' + this.firstMockExamId;
+        } else if (st.key === 'real') {
+          if (this.realUnlocked) window.location.href = '/student/real-exams/' + this.firstRealExamId + '/intro';
+          else this.handleRealExamClick(null);
+        }
+      },
       completedVideosCount() {
         return this.videos.filter(v => this.isDone(v.id)).length;
       },
@@ -964,6 +1002,26 @@
     <a href="/student/exams?subject={{ chapter.subject_id }}" style="color:#231f20;text-decoration:none;padding:5px 12px;border-radius:999px;background:#ffffff;border:1px solid rgba(35,31,32,0.16);">{{ chapter.subject_name or 'Biology' }}</a>
     <span aria-hidden="true">&rarr;</span>
     <span style="color:#231f20;font-weight:800;padding:5px 14px;border-radius:999px;background:#f7b317;border:1.5px solid #231f20;">{{ chapter.name }}</span>
+  </nav>
+
+  <!-- Learning path: 4 steps in order, the next one glows so a child always knows where to go -->
+  <nav class="sx-path" aria-label="Your steps for this chapter">
+    <template x-for="(st, i) in pathSteps()" :key="st.key">
+      <button type="button" class="sx-path-step"
+              :class="'is-' + st.state"
+              :aria-current="st.state === 'next' ? 'step' : null"
+              @click="goPathStep(st)">
+        <span class="sx-path-num" aria-hidden="true">
+          <span class="material-symbols-outlined" x-show="st.state === 'done'">check</span>
+          <span class="material-symbols-outlined" x-show="st.state === 'locked'">lock</span>
+          <span x-show="st.state === 'next' || st.state === 'todo'" x-text="i + 1"></span>
+        </span>
+        <span class="sx-path-text">
+          <strong x-text="st.label"></strong>
+          <small x-text="st.hint"></small>
+        </span>
+      </button>
+    </template>
   </nav>
 
   <!-- UNIFIED CHAPTER SUMMARY CARD (Notes + Voice + 4 Summary Videos in ONE Simple Card) -->
@@ -1545,6 +1603,7 @@
           <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_mock_exam_idle.webp?v=540" alt="Mock Exam">
           <canvas class="sx-badge-canvas" width="340" height="340" data-sx-sheet="/static/images/saxaz_web/badge_mock_exam_sheet.webp?v=540"></canvas>
         </span>
+        <span class="sx-badge-caption">{% if ns.best_mock is not none %}Practise again &middot; best {{ ns.best_mock }}%{% else %}Start mock test{% endif %}</span>
       </a>
 
       {% if ns.first_real_id and real_unlocked %}
@@ -1556,6 +1615,7 @@
           <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_real_exam_idle.webp?v=540" alt="Real Exam">
           <canvas class="sx-badge-canvas" width="340" height="340" data-sx-sheet="/static/images/saxaz_web/badge_real_exam_sheet.webp?v=540"></canvas>
         </span>
+        <span class="sx-badge-caption">{% if ns.best_real is not none %}Real exam &middot; best {{ ns.best_real }}%{% else %}Start real exam{% endif %}</span>
       </a>
       {% else %}
       <a href="#chapter-exams"
@@ -1567,6 +1627,7 @@
           <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_real_exam_idle.webp?v=540" alt="Real Exam">
           <canvas class="sx-badge-canvas" width="340" height="340" data-sx-sheet="/static/images/saxaz_web/badge_real_exam_sheet.webp?v=540"></canvas>
         </span>
+        <span class="sx-badge-caption is-locked"><span class="material-symbols-outlined" aria-hidden="true">lock</span>Pass a mock test (80%) to unlock</span>
       </a>
       {% endif %}
     </div>

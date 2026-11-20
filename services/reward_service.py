@@ -9,13 +9,13 @@ Anti-Farming Design:
     per-user Vercel Blob (`saxaz_wallet_{uid}.json`) and an HMAC-signed
     `saxaz_wallet` cookie so neither repeating activities/exams nor cold
     serverless restarts can ever double-award a milestone.
-  - Per-chapter hard ceiling = 200 Coins (Rs 2.00):
-      * Chapter in a Nutshell:        +10 Coins (1x per chapter)
-      * Chapter Summary Videos (4x):   +5 Coins each = +20 Coins (1x per video)
-      * Heart Activity Stage 1 & 2:   +15 + +25 = +40 Coins (1x per chapter)
-      * Let's Discuss Prompts (2x):   +10 each = +20 Coins (1x per prompt)
-      * Mock Exam Pass (>=50%) + Ace (>=85%): +30 + +10 = +40 Coins (1x per paper)
-      * Real Exam Tiers (50%/75%/90%): +30 + +20 + +20 = +70 Coins (1x per tier)
+  - Per-chapter earning (each reward counts once):
+      * Chapter summary listened:      +10 Coins
+      * Summary videos (4x):           +5 Coins each = +20 Coins
+      * Heart game stage 1 & 2:        +15 + +25 = +40 Coins
+      * Summary mini-games (7x):       +5 Coins each = +35 Coins
+      * Each mock test: pass 50% / 85%: +30 + +10 = +40 Coins per paper
+      * Real exam tiers 50% / 75% / 90%: +30 + +20 + +20 = +70 Coins
 """
 
 from __future__ import annotations
@@ -43,10 +43,7 @@ SHOP_ITEMS = [
         "kind": "ebook",
         "tab": "books",
         "author": "SAXAZ Science Press",
-        "rating": "4.9",
-        "reviews": "2.4k",
         "pages_or_tag": "128 Pages · Visual E-Book",
-        "badge": "Editor's Choice",
         "image": "/static/images/saxaz_web/store/book_science_atlas.webp",
         "highlights": [
             "60+ high-resolution 3D cutaway diagrams across Physics, Chemistry & Biology",
@@ -65,10 +62,7 @@ SHOP_ITEMS = [
         "kind": "ebook",
         "tab": "books",
         "author": "SAXAZ Visual Studio",
-        "rating": "5.0",
-        "reviews": "3.1k",
         "pages_or_tag": "96 Pages · Illustrated Comic",
-        "badge": "Top Selling",
         "image": "/static/images/saxaz_web/store/book_biology_comic.webp",
         "highlights": [
             "Step-by-step illustrated comic panels for every Class 10 Biology diagram",
@@ -87,8 +81,6 @@ SHOP_ITEMS = [
         "kind": "ebook",
         "tab": "books",
         "author": "SAXAZ Maths Lab",
-        "rating": "4.8",
-        "reviews": "1.9k",
         "pages_or_tag": "112 Pages · Formula Handbook",
         "badge": "Exam Booster",
         "image": "/static/images/saxaz_web/store/book_maths_playbook.webp",
@@ -109,8 +101,6 @@ SHOP_ITEMS = [
         "kind": "ebook",
         "tab": "books",
         "author": "SAXAZ Academic Board",
-        "rating": "4.9",
-        "reviews": "2.8k",
         "pages_or_tag": "164 Pages · Solved Bank",
         "badge": "Board Special",
         "image": "/static/images/saxaz_web/store/book_board_special.webp",
@@ -131,10 +121,7 @@ SHOP_ITEMS = [
         "kind": "store",
         "tab": "gear",
         "author": "SAXAZ Gear Studio",
-        "rating": "4.9",
-        "reviews": "1.6k",
         "pages_or_tag": "Physical Kit Voucher · Rs 50",
-        "badge": "Student Favorite",
         "image": "/static/images/saxaz_web/store/item_geometry_kit.webp",
         "highlights": [
             "Precision metal compass, divider, crystal-clear protractor & set-squares",
@@ -153,8 +140,6 @@ SHOP_ITEMS = [
         "kind": "store",
         "tab": "gear",
         "author": "SAXAZ STEM Labs",
-        "rating": "5.0",
-        "reviews": "1.2k",
         "pages_or_tag": "STEM Kit Credit · Rs 100",
         "badge": "Premium Reward",
         "image": "/static/images/saxaz_web/store/item_science_kit.webp",
@@ -175,8 +160,6 @@ SHOP_ITEMS = [
         "kind": "store",
         "tab": "passes",
         "author": "SAXAZ Membership",
-        "rating": "4.9",
-        "reviews": "4.2k",
         "pages_or_tag": "Instant Pass Credit · Rs 50",
         "badge": "VIP Pass",
         "image": "/static/images/saxaz_web/store/item_sub_pass.webp",
@@ -197,10 +180,7 @@ SHOP_ITEMS = [
         "kind": "store",
         "tab": "passes",
         "author": "SAXAZ Student Shop",
-        "rating": "4.9",
-        "reviews": "3.7k",
         "pages_or_tag": "All-Store Gift Card · Rs 50",
-        "badge": "Best Value",
         "image": "/static/images/saxaz_web/store/item_gift_voucher.webp",
         "highlights": [
             "Works across the entire SAXAZ catalog with zero category restrictions",
@@ -220,6 +200,83 @@ _CLAIM_PATTERNS: list[tuple[re.Pattern, int, str]] = [
     (re.compile(r"^discuss:ch:(\d+):q([12])$"), 10, "Completed Let's Discuss Checkpoint #{1}"),
     (re.compile(r"^game:ch:(\d+):(leaf|food|breathe|blood|pump|kidney|team)$"), 5, "Won a summary mini-game ({1})"),
 ]
+
+_GAME_NAMES = {
+    "leaf": "the leaf game",
+    "food": "the food journey game",
+    "breathe": "the breathing game",
+    "blood": "the blood cells game",
+    "pump": "the heart pump game",
+    "kidney": "the kidney game",
+    "team": "the body team game",
+}
+
+
+def friendly_reward_label(conn, reward_key: str, fallback: str = "") -> str:
+    """Plain, child-friendly wording for a ledger row, built from its key so
+    old rows (which used database ids such as 'Chapter #3') read correctly too."""
+    key = str(reward_key or "")
+
+    def chapter_name(ch_id: str) -> str:
+        try:
+            row = conn.execute("SELECT name FROM chapters WHERE id = ?", (int(ch_id),)).fetchone()
+            return str(row[0]) if row and row[0] else "this chapter"
+        except Exception:
+            return "this chapter"
+
+    def paper_name(paper_id: str) -> str:
+        try:
+            row = conn.execute(
+                "SELECT e.title, c.name FROM exam_papers e LEFT JOIN chapters c ON c.id = e.chapter_id WHERE e.id = ?",
+                (int(paper_id),),
+            ).fetchone()
+            if row:
+                title = str(row[0] or "the test")
+                ch = str(row[1] or "")
+                short = ch.split(":", 1)[-1].strip() if ch else ""
+                return f"{title} ({short})" if short and short.lower() not in title.lower() else title
+        except Exception:
+            pass
+        return "the test"
+
+    m = re.match(r"^nutshell:ch:(\d+)$", key)
+    if m:
+        return f"Finished the summary of {chapter_name(m.group(1))}"
+    m = re.match(r"^heart_s1:ch:(\d+)$", key)
+    if m:
+        return "Heart game: built the heart"
+    m = re.match(r"^heart_s2:ch:(\d+)$", key)
+    if m:
+        return "Heart game: pumped the blood"
+    m = re.match(r"^game:ch:(\d+):(\w+)$", key)
+    if m:
+        return f"Won {_GAME_NAMES.get(m.group(2), 'a summary game')}"
+    m = re.match(r"^video:item:(\d+)$", key)
+    if m:
+        try:
+            row = conn.execute("SELECT title, order_index FROM content_items WHERE id = ?", (int(m.group(1)),)).fetchone()
+            if row:
+                return f"Watched video {int(row[1] or 0) or ''}".strip()
+        except Exception:
+            pass
+        return "Watched a video"
+    m = re.match(r"^mock_pass:paper:(\d+)$", key)
+    if m:
+        return f"Passed {paper_name(m.group(1))}"
+    m = re.match(r"^mock_ace:paper:(\d+)$", key)
+    if m:
+        return f"Scored 85%+ in {paper_name(m.group(1))}"
+    m = re.match(r"^real_tier1:paper:(\d+)$", key)
+    if m:
+        return f"Passed the {paper_name(m.group(1))}"
+    m = re.match(r"^real_tier2:paper:(\d+)$", key)
+    if m:
+        return f"Scored 75%+ in the {paper_name(m.group(1))}"
+    m = re.match(r"^real_tier3:paper:(\d+)$", key)
+    if m:
+        return f"Scored 90%+ in the {paper_name(m.group(1))}"
+    return fallback or "Reward"
+
 
 _WALLET_BLOB_TTL = 12.0
 _LAST_WALLET_BLOB_READ: dict[int, float] = {}
@@ -457,7 +514,7 @@ def claim_whitelisted_milestone(
     for pat, fixed_coins, lbl_tpl in _CLAIM_PATTERNS:
         m = pat.match(clean_key)
         if m:
-            lbl = lbl_tpl.format(*m.groups())
+            lbl = friendly_reward_label(conn, clean_key, lbl_tpl.format(*m.groups()))
             return award_milestone_coins(conn, student_id, clean_key, fixed_coins, lbl, request=request, response=response)
     bal = recompute_coin_balance(conn, student_id)
     return {
@@ -508,7 +565,7 @@ def award_exam_completion_coins(
     total_added = 0
     unlocked_labels: list[str] = []
     for r_key, r_coins, r_lbl in tiers:
-        res = award_milestone_coins(conn, student_id, r_key, r_coins, r_lbl, request=request, response=None)
+        res = award_milestone_coins(conn, student_id, r_key, r_coins, friendly_reward_label(conn, r_key, r_lbl), request=request, response=None)
         if res.get("awarded"):
             total_added += int(res.get("coins_added") or 0)
             unlocked_labels.append(r_lbl)
@@ -545,7 +602,7 @@ def get_wallet_details(conn, student_id: int) -> dict:
         (student_id,),
     )
     ledger_rows = [
-        {"reward_key": r[0], "coins": int(r[1]), "label": r[2], "created_at": (r[3] or "")[:16]}
+        {"reward_key": r[0], "coins": int(r[1]), "label": friendly_reward_label(conn, r[0], r[2]), "created_at": (r[3] or "")[:16]}
         for r in c.fetchall()
     ]
 

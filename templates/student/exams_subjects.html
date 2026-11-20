@@ -13,10 +13,13 @@
 {% endfor %}
 
 {% set raw_q = (raw_subject_query or '')|lower|trim %}
-{% set init_open = '' %}
+{% set init_open = 'biology' %}
 {% if raw_q %}
   {% if ns_bio.sub and raw_q == (ns_bio.sub.id|string) %}
     {% set init_open = 'biology' %}
+  {% elif raw_q.isdigit() and subjects | selectattr('id', 'equalto', raw_q|int) | list %}
+    {% set sname = ((subjects | selectattr('id', 'equalto', raw_q|int) | first).name or '')|lower %}
+    {% set init_open = 'mathematics' if 'math' in sname else ('political' if 'political' in sname else sname.split(' ')[0]) %}
   {% elif raw_q in ['english', 'chemistry', 'physics', 'biology', 'mathematics', 'maths', 'history', 'geography', 'economics', 'political', 'malayalam', 'hindi', 'social'] %}
     {% set init_open = 'mathematics' if raw_q == 'maths' else ('history' if raw_q == 'social' else raw_q) %}
   {% endif %}
@@ -130,7 +133,8 @@
       {% for item in all_issue_subjects %}
       {% set is_yellow = (loop.index0 % 2 == 1) %}
       <div>
-        <div class="sx-issue-acc-bar {% if is_yellow %}is-yellow{% endif %}"
+        {% set row_live = (item.key == 'biology' and ns_bio.sub and (ns_bio.sub.chapters or [])|length > 0) %}
+        <div class="sx-issue-acc-bar {% if is_yellow %}is-yellow{% endif %} {% if not row_live %}has-soon{% endif %}"
              role="button"
              tabindex="0"
              :aria-expanded="openSub === '{{ item.key }}' ? 'true' : 'false'"
@@ -143,6 +147,9 @@
           <div style="flex:1;min-width:0;">
             <div class="sx-issue-acc-title">{{ item.title }}</div>
           </div>
+          {% if not row_live %}
+          <span class="sx-soon-pill">Coming soon</span>
+          {% endif %}
           <div class="sx-issue-acc-chev" :class="openSub === '{{ item.key }}' && 'is-open'">
             <span class="material-symbols-outlined" aria-hidden="true">expand_more</span>
           </div>
@@ -160,7 +167,7 @@
                  style="cursor: pointer;">
               <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;">
                 <span style="font-size:0.76rem;font-weight:800;text-transform:uppercase;color:rgba(35,31,32,0.72);">
-                  CHAPTER {{ '%02d' % loop.index }} &middot; {{ ch_pct }}%
+                  {{ item.title }} &middot; {{ ch_pct }}% done
                 </span>
                 {% if done %}
                 <span style="background:#f7b317;color:#231f20;border:1.5px solid #231f20;padding:3px 11px;border-radius:999px;font-size:0.72rem;font-weight:800;">
@@ -196,29 +203,14 @@
             </div>
             {% endfor %}
           {% else %}
-            {% for dch in item.dummy_chapters %}
-            <div class="sx-issue-ch-card" style="opacity:0.94;">
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;">
-                <span style="font-size:0.74rem;font-weight:800;text-transform:uppercase;color:rgba(35,31,32,0.62);">
-                  {{ item.title }} &middot; 0%
-                </span>
-                <span style="background:#f1f3f5;color:#231f20;border:1px solid rgba(35,31,32,0.16);padding:3px 11px;border-radius:999px;font-size:0.7rem;font-weight:800;">
-                  COMING SOON
-                </span>
+            <div class="sx-issue-ch-card sx-soon-card">
+              <span class="sx-soon-icon material-symbols-outlined" aria-hidden="true">lock_clock</span>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:1.02rem;font-weight:800;color:#231f20;line-height:1.3;">{{ item.title|title }} lessons are coming soon</div>
+                <div style="font-size:0.84rem;font-weight:600;color:rgba(35,31,32,0.68);margin-top:3px;">Biology is ready for you right now.</div>
               </div>
-              <div style="font-size:1.05rem;font-weight:800;color:#231f20;line-height:1.3;margin-bottom:10px;">
-                {{ dch }}
-              </div>
-              <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-                <span style="font-size:0.8rem;font-weight:600;color:rgba(35,31,32,0.68);">
-                  Interactive summary, mock exams &amp; AI coach unlocking soon.
-                </span>
-                <a href="{{ ns_bio.first_ch_href }}" class="sx-ext-cta-soft" style="min-height:34px;padding:5px 14px;font-size:0.78rem;">
-                  Open Biology (Live) &rarr;
-                </a>
-              </div>
+              <a href="{{ ns_bio.first_ch_href }}" class="sx-ext-cta-yellow" style="min-height:40px;padding:8px 18px;font-size:0.86rem;">Go to Biology &rarr;</a>
             </div>
-            {% endfor %}
           {% endif %}
         </div>
       </div>

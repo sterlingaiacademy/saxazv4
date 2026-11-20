@@ -53,7 +53,7 @@
         <div class="sx-qp-badge-row">
           <span class="sx-qp-pill-dark">
             <span class="material-symbols-outlined" style="font-size:16px;">emoji_events</span>
-            <span>{{ current_league }} League</span>
+            <span>{{ current_league }} tier</span>
           </span>
           <span class="sx-qp-pill-light">
             <span class="material-symbols-outlined" style="font-size:16px;color:#f7b317;">local_fire_department</span>
@@ -61,13 +61,13 @@
           </span>
           <span class="sx-qp-pill-light">
             <span class="material-symbols-outlined" style="font-size:16px;">paid</span>
-            <span>{{ coin_bal }} Score Coins</span>
+            <span>{{ coin_bal }} Coins</span>
           </span>
         </div>
 
-        <h1 class="sx-qp-hero-title">Quiz Points &amp; League Arena</h1>
+        <h1 class="sx-qp-hero-title">Quiz points</h1>
         <p class="sx-qp-hero-sub">
-          Way to go, {{ first_name }}! Every practice quiz, proctored board exam, and interactive lesson builds your XP League rank and unlocks Store Coins for Play Books &amp; kits.
+          Way to go, {{ first_name }}! Every quiz and exam you finish adds quiz points. Reach the next tier to climb higher.
         </p>
 
         <div class="sx-qp-hero-ctas">
@@ -77,7 +77,7 @@
           </a>
           <a href="/student/exams" class="sx-qp-btn-white">
             <span class="material-symbols-outlined" style="font-size:19px;">quiz</span>
-            <span>Take Practice Exam</span>
+            <span>Practise a test</span>
           </a>
           <a href="/student/dashboard" class="sx-qp-btn-white" style="padding:10px 18px;">
             <span>&larr; Dashboard</span>
@@ -91,8 +91,8 @@
              class="sx-qp-trophy-img">
         <div class="sx-qp-xp-floating-chip">
           <span class="material-symbols-outlined" style="font-size:18px;color:#f7b317;">bolt</span>
-          <strong>{{ earned_xp }} XP</strong>
-          <span style="font-size:0.78rem;opacity:0.78;">/ {{ bar_max }} XP</span>
+          <strong>{{ earned_xp }} pts</strong>
+          <span style="font-size:0.78rem;opacity:0.78;">/ {{ bar_max }} pts</span>
         </div>
       </div>
     </div>
@@ -102,13 +102,13 @@
       <div class="sx-qp-league-top">
         <span class="sx-qp-league-label">
           <span class="material-symbols-outlined" style="font-size:17px;">military_tech</span>
-          <span>MILESTONE LEAGUE TRACK</span>
+          <span>MILESTONE PROGRESS</span>
         </span>
         <span class="sx-qp-league-next">
           {% if earned_xp < 3500 %}
-            <strong style="color:#f7b317;">{{ next_xp - earned_xp }} XP</strong> needed to unlock <strong>{{ next_league }} League</strong>
+            <strong style="color:#f7b317;">{{ next_xp - earned_xp }} pts</strong> needed to reach <strong>{{ next_league }}</strong>
           {% else %}
-            <strong style="color:#f7b317;">Diamond Grandmaster Unlocked!</strong> Maximum tier achieved
+            <strong style="color:#f7b317;">Diamond reached!</strong> You are at the top tier
           {% endif %}
         </span>
       </div>
@@ -132,7 +132,7 @@
           </span>
           <div>
             <div class="sx-qp-tier-name">{{ t_name }}{% if is_curr %} &middot; Current{% endif %}</div>
-            <div class="sx-qp-tier-xp">{{ t_xp }} XP</div>
+            <div class="sx-qp-tier-xp">{{ t_xp }} pts</div>
           </div>
         </div>
         {% endfor %}
@@ -214,7 +214,7 @@
       <div class="sx-qp-stat-foot">{{ current_league }} Tier &middot; {{ streak_days }} day streak</div>
       <a href="/student/shop" class="sx-qp-stat-chip" style="text-decoration:none;">
         <span class="material-symbols-outlined" style="font-size:14px;">shopping_bag</span>
-        <span>Open Play Store &rarr;</span>
+        <span>Open shop &rarr;</span>
       </a>
     </div>
   </section>
@@ -225,7 +225,7 @@
     ('Mock Master', 'Score 80%+ on any Mock Exam', 'verified', ns.best_mock_pct >= 80),
     ('Board Topper', 'Score 85%+ on an Official Real Exam', 'workspace_premium', ns.best_real_pct >= 85),
     ('Visual Learner', 'Watch at least 2 Video Episodes', 'smart_display', vid_done >= 2),
-    ('Silver+ Champion', 'Reach 500+ Total XP in SAXAZ', 'military_tech', earned_xp >= 500)
+    ('Silver+ Champion', 'Reach 500 quiz points', 'military_tech', earned_xp >= 500)
   ] %}
   {% set m_ns = namespace(unlocked_cnt=0) %}
   {% for _, _, _, m_ok in medals %}{% if m_ok %}{% set m_ns.unlocked_cnt = m_ns.unlocked_cnt + 1 %}{% endif %}{% endfor %}
@@ -365,7 +365,7 @@
     <div style="text-align:center;padding:38px 18px;border:1.5px dashed rgba(35,31,32,0.22);border-radius:18px;background:#f8f9fa;">
       <span class="material-symbols-outlined" style="font-size:42px;color:#f7b317;">emoji_events</span>
       <p style="margin:8px 0 18px;color:rgba(35,31,32,0.75);font-weight:700;font-size:0.95rem;">
-        No exams completed yet! Start a practice Mock Exam to earn your first Quiz Points &amp; League Trophy.
+        No exams completed yet! Start a mock test to earn your first quiz points.
       </p>
       <a href="/student/exams" class="sx-qp-btn-yellow">Open Practice Exams &rarr;</a>
     </div>

@@ -320,11 +320,11 @@
     <div class="sx-p-section-head">
       <div>
         <div class="sx-p-label">CONSTRUCTIVE PRACTICE REVIEW</div>
-        <h2 class="sx-p-section-title">Practice &amp; AI Coach Log</h2>
+        <h2 class="sx-p-section-title">Practice &amp; Tutor Help</h2>
       </div>
       <div class="sx-p-hero-pills">
         <span class="sx-p-tag-neutral">{{ analytics.retry_history | length }} Retried Questions</span>
-        <span class="sx-p-tag-neutral">{{ analytics.questions_with_tutor_count or 0 }} AI Coach Discussions</span>
+        <span class="sx-p-tag-neutral">{{ analytics.questions_with_tutor_count or 0 }} times the tutor helped</span>
       </div>
     </div>
 
@@ -335,7 +335,7 @@
         <div class="sx-p-coach-head">
           <div style="flex: 1 1 260px; min-width: 0;">
             <div class="sx-p-hero-pills">
-              <span class="sx-p-tag-yellow">AI Coach Guidance</span>
+              <span class="sx-p-tag-yellow">Tutor help</span>
               <span class="sx-p-tag-neutral">{{ q_log.exam_title }}</span>
               <span class="sx-p-muted">Discussed {{ q_log.usage_count }}x during practice</span>
             </div>
@@ -355,7 +355,7 @@
             </div>
             <div style="font-weight: 800; color: #231f20;">Student asked: "{{ p.user_message }}"</div>
             {% if p.ai_response %}
-            <div style="margin-top: 6px; color: rgba(35,31,32,0.85); white-space: pre-line;">AI Coach: {{ p.ai_response }}</div>
+            <div style="margin-top: 6px; color: rgba(35,31,32,0.85); white-space: pre-line;">Tutor: {{ p.ai_response }}</div>
             {% endif %}
           </div>
           {% endfor %}
@@ -400,7 +400,7 @@
     </div>
     {% else %}
     <div class="sx-p-empty">
-      No retried practice questions or AI Coach discussions recorded yet.
+      No retried practice questions or tutor help recorded yet.
     </div>
     {% endif %}
   </section>

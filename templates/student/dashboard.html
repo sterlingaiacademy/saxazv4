@@ -10,8 +10,8 @@
       <span class="is-white">{{ (user.name or 'Student').split(' ')[0] | capitalize }}</span>
     </h1>
     <p class="sx-ext-hero-copy">
-      Pick up right where you left off, or tap any 3D subject below.<br>
-      Class 10 interactive lessons, mock tests, and AI coaching ready to go.
+      Pick up right where you left off.<br>
+      Your next lesson is one tap away.
     </p>
   </div>
 </section>
@@ -141,14 +141,14 @@
         </a>
         {% else %}
         <a href="/student/exams?subject={{ item.key }}"
-           aria-label="{{ item.label }} ({{ m.pct }}% complete)"
+           aria-label="{{ item.label }} (coming soon)"
            data-sx-surf-badge
-           class="sx-issue-badge-card is-subject-badge">
+           class="sx-issue-badge-card is-subject-badge is-soon">
           <span class="sx-badge-stage is-subject-stage">
             <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_sub_{{ item.key }}_idle.webp?v=540" alt="{{ item.label }}">
             <canvas class="sx-badge-canvas" width="380" height="380" data-sx-cols="8" data-sx-frames="48" data-sx-sheet="/static/images/saxaz_web/badge_sub_{{ item.key }}_sheet.webp?v=540"></canvas>
           </span>
-          <span class="sx-subject-pct-pill">{{ m.pct }}% complete</span>
+          <span class="sx-subject-pct-pill is-soon">Coming soon</span>
         </a>
         {% endif %}
       {% endfor %}

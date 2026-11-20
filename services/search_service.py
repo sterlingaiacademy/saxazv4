@@ -48,20 +48,20 @@ def build_search_catalog(conn, user: dict) -> dict:
   core_pages = [
     {
       "id": "page:dashboard",
-      "title": "Student Dashboard (Home)",
+      "title": "Dashboard",
       "category": "Website Page",
       "badge": "Home",
       "url": "/student/dashboard",
-      "description": "Main student dashboard to resume your current lesson, track overall progress, and open your unlocked subjects.",
+      "description": "Carry on with your next lesson and see your progress.",
       "keywords": "home dashboard main page start overview resume lesson progress subjects"
     },
     {
       "id": "page:exams_hub",
-      "title": "Subjects & Exams Hub",
+      "title": "Subjects & Exams",
       "category": "Website Page",
       "badge": "Exams & Subjects",
       "url": "/student/exams",
-      "description": "Browse all Class 10 subjects, chapters, practice mock exams, and proctored real exams.",
+      "description": "All your subjects, chapters, mock tests and real exams.",
       "keywords": "exams subjects courses curriculum syllabus test hub practice mock exam real exam chapters"
     },
     {
@@ -70,34 +70,34 @@ def build_search_catalog(conn, user: dict) -> dict:
       "category": "Website Page",
       "badge": "Rewards & Shop",
       "url": "/student/shop",
-      "description": "View your SAXAZ Coin balance, check Ways to Earn Coins, and redeem coins for student store vouchers (5,000 Coins = Rs 50).",
+      "description": "See your coins, how to earn more, and what you can get with them.",
       "keywords": "shop rewards coins wallet redeem voucher coupon store discount balance earn coins"
     },
     {
       "id": "page:attempts",
-      "title": "Quiz Points & Exam History",
+      "title": "Quiz Points & Results",
       "category": "Website Page",
       "badge": "Results & History",
       "url": "/student/attempts",
-      "description": "View your XP tier progress, completed Mock Exam and Real Exam scores, and question-by-question AI evaluation reports.",
+      "description": "Your quiz points, test scores, and feedback on every answer.",
       "keywords": "quiz points exam history past attempts results scores grades report card previous exams marks review performance xp tier bronze silver gold diamond"
     },
     {
       "id": "page:profile",
-      "title": "My Profile, Avatar & Password",
+      "title": "My Profile",
       "category": "Account Settings",
       "badge": "Profile",
       "url": "/student/profile",
-      "description": "Update your student name, email address, upload or change your profile avatar picture, and change your account password.",
+      "description": "Change your name, photo or password.",
       "keywords": "profile account user name email avatar photo picture password change password reset password security parent portal"
     },
     {
       "id": "page:settings",
-      "title": "AI Tutor Voice & Language Settings",
+      "title": "Teacher Voice & Language",
       "category": "Account Settings",
       "badge": "Voice Settings",
       "url": "/student/profile#voice-settings",
-      "description": "Choose your AI Tutor voice persona (Bella, Sarah, Adam, Michael), response language (English, Malayalam, Hindi, Tamil, Arabic), and Auto/Manual/Off narration mode.",
+      "description": "Pick your teacher (Bella, Sarah, Adam or Michael) and the language they speak.",
       "keywords": "settings preferences configuration voice audio tts speech language malayalam hindi tamil arabic bella sarah adam michael mute change tutor"
     },
   ]
@@ -112,7 +112,7 @@ def build_search_catalog(conn, user: dict) -> dict:
     subjects = [dict(r) for r in cursor.fetchall()]
     for sub in subjects:
       s_name = _clean_text(sub["name"])
-      s_desc = _clean_text(sub.get("description") or f"Explore {s_name} chapters, video lessons, study notes, practice mock exams, and real exams.")
+      s_desc = _clean_text(sub.get("description") or f"{s_name} chapters, videos and tests.")
       synonyms = ""
       if s_name.lower() in ("maths", "mathematics", "math"):
         synonyms = "math maths mathematics algebra geometry trigonometry arithmetic quadratic equation equations calculus"
@@ -124,7 +124,7 @@ def build_search_catalog(conn, user: dict) -> dict:
         synonyms = "biology science life processes control coordination plants animals human body heart kidneys nutrition respiration transportation excretion"
       nav_items.append({
         "id": f"subj:{sub['id']}",
-        "title": f"{s_name} - Subject Hub",
+        "title": s_name,
         "category": "Curriculum Subject",
         "badge": s_name,
         "url": f"/student/exams?subject={sub['id']}",
@@ -237,7 +237,7 @@ def build_search_catalog(conn, user: dict) -> dict:
         url = f"/student/exams/{ep['id']}"
         cat = f"{s_name} · Practice Mock Exam"
         badge = "Mock Exam"
-        desc = f"Interactive Practice Mock Exam '{e_title}' for {c_name} ({s_name}) with instant AI grading and AI Tutor support."
+        desc = f"Practice test for {c_name} ({s_name})."
       nav_items.append({
         "id": f"exam:{ep['id']}",
         "title": f"{e_title} - {c_name}",
@@ -273,7 +273,7 @@ def build_search_catalog(conn, user: dict) -> dict:
           "category": "Past Exam Result",
           "badge": "Exam Report",
           "url": f"/student/attempts/{att['id']}",
-          "description": f"View your graded answers, score breakdown, and AI feedback for {e_title} ({c_name}).",
+          "description": f"Your answers, marks and feedback for {e_title} ({c_name}).",
           "keywords": f"attempt result report score feedback {e_title} {c_name} {s_name}"
         })
   except Exception as e:
@@ -303,7 +303,7 @@ def build_search_catalog(conn, user: dict) -> dict:
         "category": f"{s_name} · {e_title} ({c_name})",
         "badge": "Exam Question",
         "url": f"/student/exams/{eq['exam_id']}?question_id={eq['id']}",
-        "description": f"Practice Question in {e_title} ({c_name} · {s_name}). Open Mock Exam to solve with AI Tutor guidance.",
+        "description": f"Question from {e_title} ({c_name}).",
         "keywords": f"{q_text} {e_title} {c_name} {s_name} mock exam question"
       })
   except Exception as e:
