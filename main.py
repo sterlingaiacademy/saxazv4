@@ -255,4 +255,4 @@ async def root(request: Request):
                 return RedirectResponse(url="/student/dashboard")
     finally:
         conn.close()
-    return RedirectResponse(url="/login", status_code=302)
+    return templates.TemplateResponse(request=request, name="landing.html", context={"request": request, "user": None})
