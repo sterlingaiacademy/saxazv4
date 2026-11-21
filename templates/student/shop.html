@@ -145,41 +145,45 @@
     </div>
   </section>
 
-  <!-- 3. Books -->
-  {% if ebook_items %}
-  <section class="sxp-sec">
-    <h2 class="sxp-h2">Books<small>Tap a cover to see what is inside.</small></h2>
-    <div class="sxp-tiles">
-      {% for book in ebook_items %}
-      <button type="button" class="sxp-tile" @click="openItemByCode({{ book.code | tojson | forceescape }})">
-        <span class="sxp-tile-art">
-          <img src="{{ book.image }}?v=541" alt="{{ book.title }}" loading="lazy">
-          <span class="sxp-tile-price {{ 'is-ready' if bal >= book.cost_coins else '' }}">{{ book.cost_coins }} Coins</span>
-        </span>
-        <span class="sxp-tile-name">{{ book.title }}</span>
-        <span class="sxp-tile-meta">{{ book.pages_or_tag or 'E-Book' }}</span>
+  <!-- 3. Store (laid out like the Labour India store: tabs, heading rule, centred cover grid) -->
+  {% if ebook_items or store_items %}
+  <section class="sxp-sec sx-store" x-data="{ tab: '{{ 'books' if ebook_items else 'kits' }}' }">
+    <div class="sx-store-tabs" role="tablist">
+      <span class="sx-store-tabs-label">Store :</span>
+      {% if ebook_items %}<button type="button" role="tab" class="sx-store-tab" :class="tab === 'books' && 'is-active'" :aria-selected="tab === 'books'" @click="tab = 'books'">Books</button>{% endif %}
+      {% if store_items %}<button type="button" role="tab" class="sx-store-tab" :class="tab === 'kits' && 'is-active'" :aria-selected="tab === 'kits'" @click="tab = 'kits'">Kits &amp; Vouchers</button>{% endif %}
+    </div>
+    <h2 class="sx-store-title">Spend your coins here. Tap an item to see what is inside.</h2>
+    {% if ebook_items %}
+    <div class="sx-store-grid" x-show="tab === 'books'">
+      {% for it in ebook_items %}
+      <button type="button" class="sx-store-item" @click="openItemByCode({{ it.code | tojson | forceescape }})">
+        <span class="sx-store-cover is-book"><img src="{{ it.image }}?v=541" alt="{{ it.title }}" loading="lazy"></span>
+        <span class="sx-store-name">{{ it.title }}</span>
+        <span class="sx-store-line">{{ it.author }}</span>
+        <span class="sx-store-line">{{ it.pages_or_tag }}</span>
+        <span class="sx-store-line">Worth Rs {{ it.inr_value }}</span>
+        <span class="sx-store-price"><span class="sx-store-coin" aria-hidden="true">C</span>{{ it.cost_coins }} Coins</span>
+        {% if bal >= it.cost_coins %}<span class="sx-store-ready">You can get this</span>{% endif %}
       </button>
       {% endfor %}
     </div>
-  </section>
-  {% endif %}
-
-  <!-- 4. Kits & vouchers -->
-  {% if store_items %}
-  <section class="sxp-sec">
-    <h2 class="sxp-h2">Kits &amp; vouchers<small>Stationery, science kits and store vouchers.</small></h2>
-    <div class="sxp-tiles">
-      {% for item in store_items %}
-      <button type="button" class="sxp-tile is-wide" @click="openItemByCode({{ item.code | tojson | forceescape }})">
-        <span class="sxp-tile-art">
-          <img src="{{ item.image }}?v=541" alt="{{ item.title }}" loading="lazy">
-          <span class="sxp-tile-price {{ 'is-ready' if bal >= item.cost_coins else '' }}">{{ item.cost_coins }} Coins</span>
-        </span>
-        <span class="sxp-tile-name">{{ item.title }}</span>
-        <span class="sxp-tile-meta">Worth Rs {{ item.inr_value }}</span>
+    {% endif %}
+    {% if store_items %}
+    <div class="sx-store-grid" x-show="tab === 'kits'"{% if ebook_items %} x-cloak{% endif %}>
+      {% for it in store_items %}
+      <button type="button" class="sx-store-item" @click="openItemByCode({{ it.code | tojson | forceescape }})">
+        <span class="sx-store-cover is-kit"><img src="{{ it.image }}?v=541" alt="{{ it.title }}" loading="lazy"></span>
+        <span class="sx-store-name">{{ it.title }}</span>
+        <span class="sx-store-line">{{ it.author }}</span>
+        <span class="sx-store-line">{{ it.pages_or_tag }}</span>
+        <span class="sx-store-line">Worth Rs {{ it.inr_value }}</span>
+        <span class="sx-store-price"><span class="sx-store-coin" aria-hidden="true">C</span>{{ it.cost_coins }} Coins</span>
+        {% if bal >= it.cost_coins %}<span class="sx-store-ready">You can get this</span>{% endif %}
       </button>
       {% endfor %}
     </div>
+    {% endif %}
   </section>
   {% endif %}
 

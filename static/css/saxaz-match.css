@@ -982,3 +982,69 @@ body .sx-exam-hub.is-compact .sx-mock-tab.is-active { box-shadow: none !importan
   .sx-rx-stat-value { font-size: 1.25rem; }
   .sx-rx-rules li { font-size: 0.9rem; }
 }
+
+/* ==========================================================================
+   Store: laid out like the Labour India store (tabs, heading rule, centred cover grid)
+   ========================================================================== */
+.sx-store-tabs { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 6px; margin-bottom: 26px; }
+.sx-store-tabs-label { align-self: center; margin-right: 12px; font-size: 0.95rem; font-weight: 800; color: #231f20; }
+.sx-store-tab {
+  position: relative; height: 46px; padding: 0 22px; border: 0; border-radius: 0; background: #f1f1f2; color: #231f20;
+  font: inherit; font-size: 0.92rem; font-weight: 700; cursor: pointer; transition: background-color .15s ease;
+}
+.sx-store-tab:hover { background: #fff3cf; }
+.sx-store-tab.is-active { background: #231f20; color: #f7b317; }
+.sx-store-tab.is-active::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -10px; height: 10px; background: #231f20;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+.sx-store-title { margin: 0 0 30px; padding-bottom: 14px; border-bottom: 1px solid rgba(35, 31, 32, 0.15);
+  font-size: 1.25rem; font-weight: 700; color: #231f20; }
+.sx-store-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 44px 24px; }
+.sx-store-item {
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding: 0; border: 0; background: transparent;
+  font: inherit; color: #231f20; cursor: pointer;
+}
+.sx-store-cover { display: block; width: 180px; max-width: 100%; margin-bottom: 14px; overflow: hidden; background: #ffffff; transition: transform .18s ease, box-shadow .18s ease; }
+.sx-store-cover.is-book { aspect-ratio: 180 / 256; box-shadow: 0 6px 16px rgba(35, 31, 32, 0.12); }
+.sx-store-cover.is-kit { aspect-ratio: 1 / 1; }
+.sx-store-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sx-store-cover.is-kit img { object-fit: contain; }
+.sx-store-item:hover .sx-store-cover { transform: translateY(-3px); }
+.sx-store-item:hover .sx-store-cover.is-book { box-shadow: 0 12px 24px rgba(35, 31, 32, 0.16); }
+.sx-store-name { font-size: 0.98rem; font-weight: 800; line-height: 1.35; color: #b07800; margin-bottom: 2px; }
+.sx-store-item:hover .sx-store-name { text-decoration: underline; }
+.sx-store-line { font-size: 0.88rem; font-weight: 500; line-height: 1.45; color: rgba(35, 31, 32, 0.78); }
+.sx-store-price { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 1.25rem; font-weight: 900; color: #231f20; }
+.sx-store-coin { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  background: #f7b317; border: 2px solid #231f20; font-size: 0.7rem; font-weight: 900; color: #231f20; }
+.sx-store-ready { margin-top: 4px; padding: 2px 10px; border-radius: 999px; background: #e7f6ec; color: #15803d; font-size: 0.75rem; font-weight: 800; }
+@media (max-width: 1100px) { .sx-store-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 760px) {
+  .sx-store-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 14px; }
+  .sx-store-tab { height: 40px; padding: 0 14px; font-size: 0.85rem; }
+  .sx-store-tabs-label { width: 100%; margin: 0 0 4px; }
+  .sx-store-title { font-size: 1.05rem; margin-bottom: 22px; }
+  .sx-store-cover { width: 140px; }
+}
+
+/* Dashboard: a little more room above My Subjects */
+.sx-dash-subjects { margin-top: 56px !important; }
+@media (max-width: 760px) { .sx-dash-subjects { margin-top: 32px !important; } }
+
+/* Full-screen summary: scale the whole slide up so it fills big screens (desktop only) */
+@media (min-width: 1280px) and (min-height: 760px) {
+  .sxc .sx-nutshell-card.is-fullscreen .sx-sync-stage { zoom: 1.15; }
+}
+@media (min-width: 1500px) and (min-height: 860px) {
+  .sxc .sx-nutshell-card.is-fullscreen .sx-sync-stage { zoom: 1.28; }
+}
+@media (min-width: 1800px) and (min-height: 980px) {
+  .sxc .sx-nutshell-card.is-fullscreen .sx-sync-stage { zoom: 1.4; }
+}
+@media (min-width: 2300px) and (min-height: 1250px) {
+  .sxc .sx-nutshell-card.is-fullscreen .sx-sync-stage { zoom: 1.7; }
+}
+@media (min-width: 3000px) and (min-height: 1600px) {
+  .sxc .sx-nutshell-card.is-fullscreen .sx-sync-stage { zoom: 2.1; }
+}
