@@ -950,3 +950,35 @@ body .sx-exam-hub.is-compact .sx-mock-tab.is-active { box-shadow: none !importan
 }
 .sx-tutor-send .material-symbols-outlined { font-size: 20px; }
 .sx-tutor-send:disabled { background: #f1f1f2; color: rgba(35, 31, 32, 0.35); cursor: default; }
+
+/* ==========================================================================
+   Real exam intro page (same card language as the quiz screen)
+   ========================================================================== */
+.sx-rx-intro { margin-top: 14px; }
+.sx-rx-badge { display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 12px; border-radius: 999px; background: #fff3cf; color: #231f20; font-size: 0.78rem; font-weight: 800; }
+.sx-rx-badge .material-symbols-outlined { font-size: 17px; }
+.sx-rx-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 20px 0 22px; }
+.sx-rx-stat { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: 16px; background: #fff8e6; }
+.sx-rx-stat-label { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(35, 31, 32, 0.6); }
+.sx-rx-stat-value { font-size: 1.5rem; font-weight: 900; color: #231f20; line-height: 1.1; }
+.sx-rx-stat-value small { font-size: 0.85rem; font-weight: 700; color: rgba(35, 31, 32, 0.6); }
+.sx-rx-label { font-size: 0.78rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #231f20; margin-bottom: 10px; }
+.sx-rx-rules { list-style: none; margin: 0 0 22px; padding: 0; display: grid; gap: 10px; }
+.sx-rx-rules li { display: flex; align-items: flex-start; gap: 12px; font-size: 0.95rem; font-weight: 600; line-height: 1.5; color: #231f20; }
+.sx-rx-ico { flex: none; width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #f1f1f2; color: #231f20; font-size: 18px !important; margin-top: -3px; }
+.sx-rx-ico.is-dark { background: #231f20; color: #f7b317; }
+.sx-rx-locked { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 16px; background: #fff8e6; margin-bottom: 14px; }
+.sx-rx-locked-title { font-weight: 800; color: #231f20; }
+.sx-rx-locked-sub { font-size: 0.85rem; font-weight: 600; color: rgba(35, 31, 32, 0.6); margin-top: 2px; }
+.sx-rx-start {
+  width: 100%; min-height: 52px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 999px;
+  background: #f7b317; color: #231f20 !important; font: inherit; font-size: 1rem; font-weight: 800; text-decoration: none !important; cursor: pointer;
+  transition: filter .15s ease, transform .12s ease;
+}
+.sx-rx-start:hover { filter: brightness(0.97); transform: translateY(-1px); }
+@media (max-width: 640px) {
+  .sx-rx-stats { gap: 8px; margin: 16px 0 18px; }
+  .sx-rx-stat { padding: 12px; border-radius: 14px; }
+  .sx-rx-stat-value { font-size: 1.25rem; }
+  .sx-rx-rules li { font-size: 0.9rem; }
+}

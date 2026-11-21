@@ -10,9 +10,6 @@
       <span class="material-symbols-outlined" style="font-size: 20px;">arrow_back</span>
       <span>Back to Chapter</span>
     </a>
-    <span style="padding:5px 12px;border-radius:999px;background:#f7b317;color:#231f20;font-size:0.72rem;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;">
-      Official Proctored Exam
-    </span>
   </div>
 
   <!-- 2. Breadcrumb Pill -->
@@ -24,60 +21,46 @@
     <span>Real Exam</span>
   </div>
 
-  <!-- 3. Single Clean Surface Card -->
-  <div class="sx-ext-surface">
-    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:16px;padding-bottom:18px;border-bottom:1.5px solid rgba(35,31,32,0.12);">
+  <!-- 3. One simple card (same look as the quiz screen) -->
+  <div class="sx-quiz-shell sx-rx-intro">
+    <div class="sx-quiz-head">
+      <div class="sx-quiz-titleblock">
+        <h1 class="sx-quiz-title">{{ paper.title }}</h1>
+        <p class="sx-quiz-sub">{{ paper.chapter_name or 'Chapter' }}</p>
+      </div>
+      <span class="sx-rx-badge"><span class="material-symbols-outlined" aria-hidden="true">shield</span>Proctored</span>
+    </div>
+
+    <div class="sx-rx-stats">
+      <div class="sx-rx-stat"><span class="sx-rx-stat-label">Time</span><span class="sx-rx-stat-value">{{ total_minutes }} <small>min</small></span></div>
+      <div class="sx-rx-stat"><span class="sx-rx-stat-label">Marks</span><span class="sx-rx-stat-value">{{ paper.target_marks or 25 }}</span></div>
+      <div class="sx-rx-stat"><span class="sx-rx-stat-label">Questions</span><span class="sx-rx-stat-value">{{ total_questions }}</span></div>
+    </div>
+
+    <div class="sx-rx-label">Before you start</div>
+    <ul class="sx-rx-rules">
+      <li><span class="sx-rx-ico material-symbols-outlined" aria-hidden="true">task_alt</span><span>Answer all {{ total_questions }} questions.</span></li>
+      <li><span class="sx-rx-ico material-symbols-outlined" aria-hidden="true">save</span><span>Your answers and diagrams save on their own. Everything is marked when you submit.</span></li>
+      <li><span class="sx-rx-ico material-symbols-outlined" aria-hidden="true">visibility_off</span><span>Stay on this window. Switching tabs or windows, or taking a screenshot, hides the exam and gives a warning.</span></li>
+      <li><span class="sx-rx-ico material-symbols-outlined" aria-hidden="true">gpp_maybe</span><span>You can get 3 warnings. The 4th one ends the exam.</span></li>
+    </ul>
+
+    {% if is_locked %}
+    <div class="sx-rx-locked">
+      <span class="sx-rx-ico is-dark material-symbols-outlined" aria-hidden="true">lock</span>
       <div>
-        <h1 style="font-family:var(--font-display);font-size:clamp(1.5rem,2.4vw,1.95rem);font-weight:800;margin:0 0 6px;color:#231f20;">
-          {{ paper.title }}
-        </h1>
-        <p style="margin:0;font-size:0.92rem;color:rgba(35,31,32,0.8);font-weight:800;">
-          Time: {{ total_minutes }} Mins &middot; Max. Marks: {{ paper.target_marks or 25 }} &middot; {{ total_questions }} Compulsory Questions
-        </p>
+        <div class="sx-rx-locked-title">Score {{ required_mock_pct or 80 }}% in a mock test to unlock this exam</div>
+        <div class="sx-rx-locked-sub">Your best so far: {{ best_mock_pct or 0 }}%</div>
       </div>
     </div>
-
-    <div style="padding-top:20px;">
-      <div style="font-size:1.02rem;font-weight:800;margin-bottom:12px;color:#231f20;">
-        General Instructions:
-      </div>
-
-      <ol style="margin:0 0 24px;padding-left:20px;display:grid;gap:8px;font-size:0.92rem;color:#231f20;font-weight:600;line-height:1.55;">
-        <li>All questions are compulsory.</li>
-        <li>Your typed answers and attached diagrams are saved automatically as you move between questions, and the entire paper is graded together upon submission.</li>
-        <li><strong>Proctoring Rule (3 Warnings):</strong> Stay on this exam window until you submit. Leaving or switching tabs records a proctoring warning (up to 3 warnings allowed; a 4th tab switch closes and voids the attempt).</li>
-      </ol>
-
-      {% if is_locked %}
-      <div style="padding:20px;border-radius:18px;background:#ffffff;border:2px solid #231f20;display:flex;flex-direction:column;gap:14px;">
-        <div style="display:flex;align-items:flex-start;gap:12px;">
-          <div style="width:42px;height:42px;border-radius:12px;background:#231f20;color:#f7b317;display:grid;place-items:center;flex-shrink:0;">
-            <span class="material-symbols-outlined" style="font-size:22px;">lock</span>
-          </div>
-          <div>
-            <div style="font-size:1rem;font-weight:900;color:#231f20;line-height:1.35;">
-              Unlock Requirement: Score {{ required_mock_pct or 80 }}% in any Mock Test (Current Best: {{ best_mock_pct or 0 }}%)
-            </div>
-            <p style="margin:4px 0 0;font-size:0.86rem;color:rgba(35,31,32,0.75);font-weight:600;line-height:1.5;">
-              Score {{ required_mock_pct or 80 }}% in any Mock Test first to unlock this Official Real Exam. Practice with instant AI feedback and Socratic hints to build mastery!
-            </p>
-          </div>
-        </div>
-
-        <a href="{{ '/student/exams/' ~ first_mock_id if first_mock_id else ('/student/chapters/' ~ paper.chapter_id) }}"
-           class="sx-ext-cta-yellow"
-           style="width:100%;min-height:52px;font-size:1rem;text-decoration:none;">
-          <span>Practice Mock Test &rarr;</span>
-        </a>
-      </div>
-      {% else %}
-      <form method="POST" action="/student/real-exams/{{ paper.id }}/start">
-        <button type="submit" class="sx-ext-cta-yellow" style="width:100%;min-height:52px;font-size:1rem;">
-          Start Exam
-        </button>
-      </form>
-      {% endif %}
-    </div>
+    <a href="{{ '/student/exams/' ~ first_mock_id if first_mock_id else ('/student/chapters/' ~ paper.chapter_id) }}" class="sx-rx-start">
+      Practice a mock test &rarr;
+    </a>
+    {% else %}
+    <form method="POST" action="/student/real-exams/{{ paper.id }}/start">
+      <button type="submit" class="sx-rx-start">Start Exam</button>
+    </form>
+    {% endif %}
   </div>
 
 </div>
