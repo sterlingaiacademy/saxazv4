@@ -66,9 +66,12 @@
     </div>
 
     <!-- Unified Combined Top Exam Hub Card (Title + Mock Test Switcher + Timer/Finish + Progress + 1..N Question Numbers) -->
-    <div class="sx-exam-hub">
-      {% if sibling_mocks is defined and sibling_mocks|length > 1 %}
-      <div class="sx-mock-tabs" style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid rgba(35,31,32,0.1);display:flex;flex-wrap:wrap;align-items:center;gap:6px;">
+    <div class="sx-exam-hub is-compact">
+      <!-- Row 1: which mock test + timer / restart / finish -->
+      <div class="sx-hub-row">
+        {% if sibling_mocks is defined and sibling_mocks|length > 1 %}
+        <h1 class="sr-only">{{ paper.title }}</h1>
+        <nav class="sx-mock-tabs no-scrollbar" aria-label="Mock tests">
         {% for sm in sibling_mocks %}
           <a href="/student/exams/{{ sm.id }}"
              {% if sm.id != paper.id %}
@@ -77,22 +80,16 @@
              data-confirm-btn="Switch Mock Test"
              {% endif %}
              class="sx-mock-tab {% if sm.id == paper.id %}is-active{% endif %}">
-            <span>{{ sm.title }}</span>
+            {% if sm.title.startswith('Mock ') %}<span><span class="sx-hide-phone">Mock </span>{{ sm.title[5:] }}</span>{% else %}<span>{{ sm.title }}</span>{% endif %}
             {% if sm.best_pct is not none %}
             <span style="margin-left:5px;padding:1px 6px;border-radius:999px;font-size:0.68rem;font-weight:900;background:{{ '#231f20' if sm.id == paper.id else '#f7b317' }};color:{{ '#f7b317' if sm.id == paper.id else '#231f20' }};border:1px solid #231f20;">{{ sm.best_pct }}%</span>
             {% endif %}
           </a>
         {% endfor %}
-        <span style="margin-left:auto;font-size:0.78rem;font-weight:800;color:#231f20;">Total mark : {{ paper.target_marks or 30 }}</span>
-      </div>
-      {% endif %}
-
-      <div class="sx-exam-hub-top">
-        <div class="sx-exam-hub-title-group">
-          <h1 class="sx-exam-hub-title">{{ paper.title }}</h1>
-          <span class="sx-exam-hub-count" x-text="`${totalAnswered}/${totalQuestions} Done`"></span>
-        </div>
-
+        </nav>
+        {% else %}
+        <h1 class="sx-exam-hub-title">{{ paper.title }}</h1>
+        {% endif %}
         <div class="sx-exam-hub-actions">
           <!-- Clickable Stopwatch Pill (Click to Pause / Resume) -->
           <button type="button"
@@ -130,13 +127,13 @@
         </div>
       </div>
 
-      <!-- Thin Yellow Progress Line -->
       <div class="sx-exam-hub-progress">
         <div class="sx-exam-hub-progress-bar" :style="'width: ' + Math.round(progressPercentage) + '%;'"></div>
       </div>
 
-      <!-- Single Clean Question Numbers Strip (1..N) -->
-      <div class="sx-exam-hub-qrow no-scrollbar" x-ref="qstripContainer">
+      <!-- Row 2: question numbers + how many are done -->
+      <div class="sx-hub-row sx-hub-row-q">
+        <div class="sx-exam-hub-qrow no-scrollbar" x-ref="qstripContainer">
         <template x-for="fq in flatQuestions" :key="fq.id">
           <button type="button"
                   @click="goToQuestion(fq.moduleIdx, fq.questionIdx)"
@@ -151,6 +148,8 @@
                   x-text="fq.displayNum">
           </button>
         </template>
+      </div>
+        <span class="sx-hub-meta"><strong x-text="totalAnswered"></strong>/<span x-text="totalQuestions"></span> done<span x-show="!paper.is_digi_library" class="sx-hide-phone"> &middot; {{ paper.target_marks or 30 }} marks</span></span>
       </div>
     </div>
 
