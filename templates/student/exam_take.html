@@ -662,7 +662,7 @@
               <template x-if="feedback">
                 <div class="flex flex-col sm:flex-row gap-2.5 w-full sm:w-auto sm:justify-end">
                   <button id="exam-try-again-btn"
-                      x-show="feedback?.marks < feedback?.max_marks && !isObjectiveQuestion"
+                      x-show="feedback?.marks < feedback?.max_marks"
                       type="button"
                       class="sx-ext-cta-yellow w-full sm:w-auto min-h-[46px] px-6"
                       @click="tryAgain()">
@@ -930,6 +930,17 @@ document.addEventListener('alpine:init', () => {
       }
       const first = String(f.ideal_answer || '').split('\n').map(s => s.trim()).filter(Boolean)[0] || '';
       return first.replace(/^\(([a-eA-E])\)\s*/, (m, l) => l.toUpperCase() + '. ');
+    },
+
+    // Short spoken line after a multiple-choice answer ("Why?" gives the fuller explanation)
+    async speakMcqResult(data) {
+      if (!data || this.isTtsMuted(false)) return;
+      this.narrationAborted = false;
+      const right = Number(data.marks || 0) >= Number(data.max_marks || 1);
+      const ans = this.mcqCorrectLabel().replace(/^([A-E])\.\s*/, '$1, ');
+      const line = right ? `Correct! The answer is ${ans}.` : `Not quite. The answer is ${ans}.`;
+      await this.speakAndWait(line, '', '', '', right ? 'celebrating' : 'empathetic_buddy', null, right ? 'laughing' : 'thinking', false);
+      if (!this.narrationAborted) this.narrationStepLabel = '';
     },
 
     async toggleMcqWhy() {
@@ -1899,7 +1910,8 @@ document.addEventListener('alpine:init', () => {
             window.SFX?.playError();
           }
           
-          if (!this.isObjectiveQuestion) this.runGuidedTeacherWalkthrough(data, false);
+          if (this.isObjectiveQuestion) this.speakMcqResult(data);
+          else this.runGuidedTeacherWalkthrough(data, false);
         } else {
           const errMsg = (data && (data.error || (typeof data.detail === 'string' ? data.detail : ''))) || 'Error grading answer.';
           alert(errMsg);
