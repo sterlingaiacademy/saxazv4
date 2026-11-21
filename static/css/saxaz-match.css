@@ -893,3 +893,60 @@ body .sx-exam-hub.is-compact .sx-mock-tab.is-active { box-shadow: none !importan
   .sx-quiz-qbar .sx-exam-timer-btn { height: 32px; padding: 0 9px; font-size: 0.74rem; gap: 5px; }
   .sx-quiz-tool { min-height: 32px !important; padding: 0 10px !important; font-size: 0.74rem !important; white-space: nowrap; }
 }
+
+/* ==========================================================================
+   Ask Tutor panel: flat saxaz look
+   ========================================================================== */
+.sx-tutor-head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: #ffffff; border-bottom: 1px solid rgba(35, 31, 32, 0.08); flex-shrink: 0; }
+.sx-tutor-avatar { width: 44px; height: 44px; border-radius: 50%; overflow: hidden; background: #f7b317; flex: none; }
+.sx-tutor-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: top; transform: scale(1.1); }
+.sx-tutor-titles { min-width: 0; flex: 1 1 auto; }
+.sx-tutor-name { margin: 0; font-size: 1rem; font-weight: 800; color: #231f20; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sx-tutor-role { margin: 2px 0 0; font-size: 0.78rem; font-weight: 600; color: rgba(35, 31, 32, 0.55); }
+.sx-tutor-iconbtn {
+  width: 38px; height: 38px; flex: none; border-radius: 50%; border: 0; display: inline-flex; align-items: center; justify-content: center;
+  background: #f1f1f2; color: #231f20; cursor: pointer; transition: background-color .15s ease;
+}
+.sx-tutor-iconbtn:hover { background: #e6e6e8; }
+.sx-tutor-iconbtn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; display: block; }
+.sx-tutor-iconbtn svg polygon { fill: none; }
+.sx-tutor-iconbtn .material-symbols-outlined { font-size: 20px; color: currentColor; }
+.sx-tutor-iconbtn.is-on { background: #fff3cf; color: #231f20; }
+.sx-tutor-iconbtn.is-field { width: 42px; height: 42px; }
+.sx-tutor-iconbtn.is-listening { background: #231f20; color: #f7b317; animation: sx-tutor-pulse 1.2s ease-in-out infinite; }
+@keyframes sx-tutor-pulse { 50% { box-shadow: 0 0 0 6px rgba(247, 179, 23, 0.3); } }
+
+.sx-tutor-ctx { display: flex; align-items: center; gap: 8px; padding: 9px 16px; background: #fff8e6; flex-shrink: 0; font-size: 0.78rem; }
+.sx-tutor-ctx-badge { flex: none; padding: 2px 8px; border-radius: 999px; background: #f7b317; color: #231f20; font-weight: 900; font-size: 0.7rem; }
+.sx-tutor-ctx-text { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; color: rgba(35, 31, 32, 0.8); }
+.sx-tutor-ctx-marks { flex: none; font-weight: 800; color: rgba(35, 31, 32, 0.7); }
+
+.sx-tutor-chat { padding: 16px; background: #ffffff; }
+.sx-tutor-mini-av { width: 28px; height: 28px; border-radius: 50%; overflow: hidden; flex: none; background: #f7b317; }
+.sx-tutor-mini-av img { width: 100%; height: 100%; object-fit: cover; object-position: top; transform: scale(1.1); }
+.sx-tutor-bubble { padding: 10px 14px; border-radius: 16px; max-width: 85%; font-size: 13.5px; line-height: 1.55; font-weight: 500; }
+.sx-tutor-bubble.is-ai { background: #f3f3f4; color: #231f20; border-bottom-left-radius: 4px; }
+.sx-tutor-bubble.is-user { background: #231f20; color: #ffffff; border-bottom-right-radius: 4px; }
+.sx-tutor-bubble.is-user * { color: #ffffff; }
+
+.sx-tutor-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px 4px; background: #ffffff; border-top: 1px solid rgba(35, 31, 32, 0.08); }
+.sx-tutor-chip {
+  min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(35, 31, 32, 0.16); background: #ffffff; color: #231f20;
+  font: inherit; font-size: 0.76rem; font-weight: 700; cursor: pointer; transition: background-color .15s ease, border-color .15s ease;
+}
+.sx-tutor-chip:hover:not(:disabled) { background: #f7b317; border-color: #f7b317; }
+.sx-tutor-chip:disabled { opacity: 0.45; cursor: default; }
+
+.sx-tutor-inputbar { padding: 10px 14px max(12px, env(safe-area-inset-bottom)); background: #ffffff; }
+.sx-tutor-input {
+  flex: 1 1 auto; min-width: 0; height: 42px; padding: 0 16px; border-radius: 999px; border: 1px solid transparent; background: #f3f3f4;
+  font: inherit; font-size: 0.86rem; font-weight: 500; color: #231f20; outline: none;
+}
+.sx-tutor-input::placeholder { color: rgba(35, 31, 32, 0.45); }
+.sx-tutor-input:focus { background: #ffffff; border-color: #f7b317; }
+.sx-tutor-send {
+  width: 42px; height: 42px; flex: none; border-radius: 50%; border: 0; background: #f7b317; color: #231f20;
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.sx-tutor-send .material-symbols-outlined { font-size: 20px; }
+.sx-tutor-send:disabled { background: #f1f1f2; color: rgba(35, 31, 32, 0.35); cursor: default; }

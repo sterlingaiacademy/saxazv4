@@ -1810,7 +1810,7 @@ async def tutor_chat_stream(req: TutorChatRequest, request: Request):
             if collected and log_id:
                 import re
                 full_reply = "".join(collected)
-                clean_reply = re.sub(r'\[\s*(?:emotion|draw|quiz|video|topic|exams|history|scroll|retry|question|navigate)\s*:[^\]]*\]', '', full_reply, flags=re.IGNORECASE).strip()
+                clean_reply = re.sub(r'\[\s*(?:e*mot+ions?|draw|quiz|video|topic|exams|history|scroll|retry|question|navigate)\s*:[^\]]*\]', '', full_reply, flags=re.IGNORECASE).strip()
                 try:
                     c2 = get_db_connection()
                     try:

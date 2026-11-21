@@ -140,7 +140,7 @@
             <svg x-show="timerPaused" x-cloak width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5.2v13.6L19 12 7 5.2z"/></svg>
           </button>
                   <button x-show="!isSpeaking"
-                          @click="speak(currentQuestion.question_text)"
+                          @click="speak(listenText())"
                           type="button"
                           class="sx-quiz-tool bg-[#ffffff] hover:bg-[#f7b317] text-[#231f20] border border-[#231f20]/25 hover:border-[#231f20] transition-colors flex items-center justify-center gap-1.5 text-xs font-extrabold cursor-pointer"
                           title="Read Question Aloud">
@@ -188,68 +188,49 @@
            x-transition:leave-start="opacity-100 translate-x-0"
            x-transition:leave-end="opacity-0 translate-x-full">
       
-      <!-- Drawer Header -->
-      <div class="px-4 sm:px-5 py-3.5 bg-[#f7b317] border-b-2 border-[#231f20] flex items-center justify-between gap-2 shrink-0">
-        <div class="flex items-center gap-2.5 min-w-0 flex-1">
-          <!-- Animated Tutor Avatar -->
-          <div class="relative w-10 h-10 rounded-2xl overflow-hidden bg-[#ffffff] border-2 border-[#231f20] flex-shrink-0">
-            <img :src="`/static/images/avatars/${tutorName}_${miniTutorEmotion}.webp?v=543`" 
-                 :class="'tutor-emotion-' + miniTutorEmotion"
-                 class="w-full h-full object-cover scale-110 transition-all duration-300" 
-                 :alt="tutorDisplayName + ' Avatar'"
-                 :onerror="`this.src='/static/images/avatars/${tutorName || 'bella'}_base.png'`" />
-          </div>
-          <!-- Lub-Dub Discussion Companion Mascot -->
-          <div class="sx-heart-char flex-shrink-0" style="width:38px;height:38px;border-radius:50%;overflow:hidden;background:#ffffff;border:1.5px solid #231f20;" title="Lub-Dub Discussion Companion">
-            <img src="/static/images/saxaz_web/heart_mascot.jpg" alt="Lub-Dub Discussion Companion" style="width:100%;height:100%;object-fit:cover;display:block;" />
-          </div>
-          <div class="min-w-0 flex-1">
-            <h3 class="text-sm font-extrabold text-[#231f20] leading-tight truncate" x-text="tutorDisplayName"></h3>
-            <p class="text-[11px] text-[#231f20]/75 font-bold">Socratic Question Hints</p>
-          </div>
+      <!-- Drawer Header (flat saxaz look) -->
+      <div class="sx-tutor-head">
+        <div class="sx-tutor-avatar">
+          <img :src="`/static/images/avatars/${tutorName}_${miniTutorEmotion}.webp?v=543`"
+               :class="'tutor-emotion-' + miniTutorEmotion"
+               :alt="tutorDisplayName"
+               :onerror="`this.src='/static/images/avatars/${tutorName || 'bella'}_base.png'`" />
         </div>
-        
-        <div class="flex items-center gap-1.5">
-          <!-- Voice Output Toggle -->
-          <button type="button" @click="miniTutorVoiceEnabled = !miniTutorVoiceEnabled" 
-                  class="w-8 h-8 rounded-full flex items-center justify-center transition-colors cursor-pointer" 
-                  :class="miniTutorVoiceEnabled ? 'bg-[#231f20] text-[#f7b317]' : 'bg-[#ffffff] text-[#231f20] border border-[#231f20]/30'"
-                  :title="miniTutorVoiceEnabled ? 'Voice Output ON' : 'Voice Output OFF'">
-            <svg x-show="miniTutorVoiceEnabled" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
-            <svg x-show="!miniTutorVoiceEnabled" x-cloak xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
-          </button>
-          
-          <!-- Close Button -->
-          <button type="button"
-                  @click="closeMiniTutor()" 
-                  class="w-8 h-8 rounded-full bg-[#231f20] text-[#ffffff] hover:text-[#f7b317] flex items-center justify-center cursor-pointer"
-                  title="Close Ask Tutor">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-          </button>
+        <div class="sx-tutor-titles">
+          <h3 class="sx-tutor-name" x-text="tutorDisplayName"></h3>
+          <p class="sx-tutor-role">Ask me for a hint</p>
         </div>
+        <button type="button" @click="miniTutorVoiceEnabled = !miniTutorVoiceEnabled"
+                class="sx-tutor-iconbtn" :class="miniTutorVoiceEnabled && 'is-on'"
+                :aria-label="miniTutorVoiceEnabled ? 'Tutor voice on - tap to mute' : 'Tutor voice off - tap to turn on'"
+                :title="miniTutorVoiceEnabled ? 'Voice on' : 'Voice off'">
+          <span x-show="miniTutorVoiceEnabled"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></span>
+          <span x-show="!miniTutorVoiceEnabled" x-cloak><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg></span>
+        </button>
+        <button type="button" @click="closeMiniTutor()" class="sx-tutor-iconbtn" aria-label="Close tutor" title="Close">
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
       </div>
 
-      <!-- Question Context Bar -->
-      <div class="px-4 py-2.5 bg-[#ffffff] border-b border-[#231f20]/15 flex items-center justify-between gap-3 shrink-0">
-        <div class="flex items-center gap-2 overflow-hidden text-xs">
-          <span class="px-2 py-0.5 rounded-md bg-[#231f20] text-[#f7b317] text-[10px] font-black uppercase tracking-wider shrink-0" x-text="currentQuestion.short_badge || `Q${currentFlatQuestionNumber}`"></span>
-          <span class="font-semibold text-[#231f20]/80 truncate text-[11px]" x-text="currentQuestion.question_text"></span>
-        </div>
-        <span x-show="!paper.is_digi_library" class="text-[10px] font-extrabold text-[#231f20] shrink-0 uppercase tracking-wider" x-text="`${currentQuestion.max_marks}M`"></span>
+      <!-- Which question we are talking about -->
+      <div class="sx-tutor-ctx">
+        <span class="sx-tutor-ctx-badge" x-text="currentQuestion.short_badge || `Q${currentFlatQuestionNumber}`"></span>
+        <span class="sx-tutor-ctx-text" x-text="currentQuestion.question_text"></span>
+        <span x-show="!paper.is_digi_library" class="sx-tutor-ctx-marks" x-text="`${currentQuestion.max_marks} mark${currentQuestion.max_marks == 1 ? '' : 's'}`"></span>
       </div>
 
       <!-- Messages Scroll Area -->
-      <div class="flex-1 p-4 overflow-y-auto space-y-3.5 text-sm bg-[#ffffff]" id="mini-tutor-chat-container">
+      <div class="sx-tutor-chat flex-1 overflow-y-auto space-y-3 text-sm" id="mini-tutor-chat-container">
         <template x-for="(msg, index) in miniTutorMessages" :key="index">
           <div class="flex items-end gap-2.5" :class="msg.role === 'user' ? 'justify-end' : 'justify-start'">
             <template x-if="msg.role === 'assistant'">
-              <div class="w-7 h-7 rounded-full border border-[#231f20] overflow-hidden flex-shrink-0 bg-[#ffffff]">
+              <div class="sx-tutor-mini-av">
                 <img alt="" :src="`/static/images/avatars/${tutorName}_base.webp?v=543`" class="w-full h-full object-cover scale-110" :onerror="`this.src='/static/images/avatars/${tutorName || 'bella'}_base.png'`" />
               </div>
             </template>
             
             <div class="px-4 py-2.5 rounded-2xl max-w-[85%] leading-relaxed prose prose-sm max-w-none prose-p:my-0.5 prose-pre:my-1 text-[13px]"
-                 :class="msg.role === 'user' ? 'bg-[#231f20] text-[#ffffff] rounded-br-xs font-medium' : 'bg-[#ffffff] text-[#231f20] border border-[#231f20]/20 rounded-bl-xs font-medium'">
+                 :class="msg.role === 'user' ? 'sx-tutor-bubble is-user' : 'sx-tutor-bubble is-ai'">
               <template x-if="msg.image">
                 <div class="mb-2 rounded-xl overflow-hidden border border-[#231f20]/20 bg-[#ffffff] not-prose">
                   <img :src="msg.image" alt="Scratchpad Sketch" class="max-h-36 w-auto object-contain mx-auto" />
@@ -262,10 +243,10 @@
 
         <!-- Typing Indicator -->
         <div class="flex items-end gap-2.5" x-show="miniTutorGenerating && !miniTutorCurrentAiText" x-cloak>
-          <div class="w-7 h-7 rounded-full border border-[#231f20] overflow-hidden flex-shrink-0 bg-[#ffffff]">
+          <div class="sx-tutor-mini-av">
             <img alt="" :src="`/static/images/avatars/${tutorName}_thinking.webp?v=543`" class="w-full h-full object-cover scale-110 tutor-emotion-thinking" :onerror="`this.src='/static/images/avatars/${tutorName || 'bella'}_base.png'`" />
           </div>
-          <div class="bg-[#ffffff] border border-[#231f20]/20 px-4 py-3 rounded-2xl rounded-bl-xs flex gap-1">
+          <div class="sx-tutor-bubble is-ai flex gap-1" style="padding:12px 14px;">
             <div class="w-2 h-2 bg-[#231f20]/50 rounded-full animate-bounce"></div>
             <div class="w-2 h-2 bg-[#231f20]/50 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
             <div class="w-2 h-2 bg-[#231f20]/50 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
@@ -274,20 +255,20 @@
 
         <!-- Streaming Bubble -->
         <div class="flex items-end gap-2.5" x-show="miniTutorGenerating && miniTutorCurrentAiText" x-cloak>
-          <div class="w-7 h-7 rounded-full border border-[#231f20] overflow-hidden flex-shrink-0 bg-[#ffffff]">
+          <div class="sx-tutor-mini-av">
             <img alt="" :src="`/static/images/avatars/${tutorName}_${miniTutorEmotion}.webp?v=543`" :class="'tutor-emotion-' + miniTutorEmotion" class="w-full h-full object-cover scale-110" :onerror="`this.src='/static/images/avatars/${tutorName || 'bella'}_base.png'`" />
           </div>
-          <div class="px-4 py-2.5 rounded-2xl rounded-bl-xs max-w-[85%] bg-[#ffffff] border border-[#231f20]/20 text-[#231f20] text-[13px] leading-relaxed prose prose-sm max-w-none prose-p:my-0.5 prose-pre:my-1"
+          <div class="sx-tutor-bubble is-ai px-4 py-2.5 max-w-[85%] text-[13px] leading-relaxed prose prose-sm max-w-none prose-p:my-0.5 prose-pre:my-1"
                x-html="renderMiniTutorMarkdown(miniTutorCurrentAiText) + '<span class=\'inline-block w-1.5 h-3 ml-1 bg-[#f7b317] animate-pulse\'></span>'">
           </div>
         </div>
       </div>
 
       <!-- On-Task Socratic Quick Chips -->
-      <div class="px-3.5 py-2 bg-[#ffffff] border-t border-[#231f20]/15 flex items-center gap-1.5 overflow-x-auto overflow-y-hidden no-scrollbar shrink-0">
+      <div class="sx-tutor-chips shrink-0">
         <template x-for="q in miniTutorQuickQuestions" :key="q">
           <button type="button" @click="askMiniTutorQuick(q)" 
-                  class="px-3 py-1.5 rounded-full bg-[#ffffff] hover:bg-[#f7b317] text-[#231f20] border border-[#231f20]/25 hover:border-[#231f20] text-[11px] whitespace-nowrap font-bold transition-colors min-h-[30px] cursor-pointer disabled:opacity-40"
+                  class="sx-tutor-chip"
                   :disabled="miniTutorGenerating"
                   x-text="q">
           </button>
@@ -295,7 +276,7 @@
       </div>
 
       <!-- Input Area -->
-      <div class="p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-[#ffffff] border-t border-[#231f20]/15 shrink-0">
+      <div class="sx-tutor-inputbar shrink-0">
         <div x-show="miniTutorPendingImage" x-cloak class="mb-2 flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl bg-[#f7b317]/20 border border-[#231f20] text-xs">
           <div class="flex items-center gap-2 min-w-0">
             <img :src="miniTutorPendingImage" class="w-8 h-6 object-contain rounded bg-[#ffffff] border border-[#231f20]/30 shrink-0" alt="Scratchpad preview" />
@@ -307,8 +288,9 @@
         <form @submit.prevent="sendMiniTutorMessage" class="flex items-center gap-2">
           <!-- Voice Input Button (STT) — Styled strictly in #231f20 / #f7b317 -->
           <button type="button" @click="toggleMiniTutorListening" 
-                  class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-200 cursor-pointer"
-                  :class="miniTutorListening ? 'bg-[#231f20] text-[#f7b317] border-2 border-[#f7b317] animate-pulse' : 'bg-[#ffffff] text-[#231f20] border border-[#231f20]/30 hover:border-[#231f20]'"
+                  class="sx-tutor-iconbtn is-field"
+                  :class="miniTutorListening && 'is-listening'"
+                  :aria-label="miniTutorListening ? 'Listening - tap to stop' : 'Speak your question'"
                   :title="miniTutorListening ? 'Listening... click to stop' : 'Click to speak'">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
           </button>
@@ -316,14 +298,13 @@
           <!-- Text Input -->
           <input type="text" x-model="miniTutorInput" 
                  placeholder="Ask your tutor for a clue..." 
-                 class="flex-1 min-w-0 px-3.5 py-2 rounded-full text-xs font-semibold bg-[#ffffff] text-[#231f20] placeholder-[#231f20]/45 border border-[#231f20]/30 focus:outline-none focus:border-[#231f20]" 
+                 class="sx-tutor-input" aria-label="Ask your tutor" 
                  :disabled="miniTutorGenerating" />
 
           <!-- Send Button -->
-          <button type="submit" 
-                  class="w-9 h-9 rounded-full bg-[#f7b317] text-[#231f20] border border-[#231f20] flex items-center justify-center flex-shrink-0 cursor-pointer disabled:opacity-40" 
+          <button type="submit" class="sx-tutor-send" aria-label="Send"
                   :disabled="(!miniTutorInput.trim() && !miniTutorPendingImage) || miniTutorGenerating">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 transform rotate-90 translate-y-[1px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+            <span class="material-symbols-outlined" aria-hidden="true">send</span>
           </button>
         </form>
       </div>
@@ -914,6 +895,18 @@ document.addEventListener('alpine:init', () => {
       }
       const first = String(f.ideal_answer || '').split('\n').map(s => s.trim()).filter(Boolean)[0] || '';
       return first.replace(/^\(([a-eA-E])\)\s*/, (m, l) => l.toUpperCase() + '. ');
+    },
+
+    // What "Listen" reads: the question, and for multiple choice every option too
+    listenText() {
+      const q = this.currentQuestion;
+      if (!q) return '';
+      let txt = String(q.question_text || '').trim();
+      if (this.isObjectiveQuestion && this.parsedOptions.length) {
+        const opts = this.parsedOptions.map((o, i) => `Option ${String.fromCharCode(65 + i)}: ${String(this.displayMcqOption(o)).trim().replace(/[.]+$/, '')}.`);
+        txt += (/[.?!:]$/.test(txt) ? ' ' : '. ') + opts.join(' ');
+      }
+      return txt;
     },
 
     // Short spoken line after a multiple-choice answer ("Why?" gives the fuller explanation)
@@ -2436,7 +2429,7 @@ document.addEventListener('alpine:init', () => {
         let rawAi = '';
 
         const stripAllControlTags = (str) => (str || '')
-          .replace(/\[\s*emotion\s*:\s*[a-zA-Z_]+\s*\]/gi, '')
+          .replace(/\[\s*e*mot+ions?\s*:\s*[a-zA-Z_]+\s*\]/gi, '')
           .replace(/\[\s*draw\s*:\s*[^\]]+\]/gi, '')
           .replace(/\[\s*(?:scroll|retry|question|navigate|quiz|video|topic|exams|history)\s*:\s*[^\]]+\]/gi, '');
 
@@ -2447,7 +2440,7 @@ document.addEventListener('alpine:init', () => {
             const chunk = decoder.decode(value, { stream: true });
             rawAi += chunk;
 
-            const emotionRegex = /\[\s*emotion\s*:\s*([a-zA-Z_]+)\s*\]/gi;
+            const emotionRegex = /\[\s*e*mot+ions?\s*:\s*([a-zA-Z_]+)\s*\]/gi;
             let match;
             let lastEmo = null;
             while ((match = emotionRegex.exec(rawAi)) !== null) {
@@ -2691,8 +2684,8 @@ document.addEventListener('alpine:init', () => {
   width: 416px;
   max-width: calc(100vw - 2rem);
   border-radius: 1.5rem !important;
-  border: 2px solid #231f20 !important;
-  box-shadow: 0 22px 54px rgba(35, 31, 32, 0.22) !important;
+  border: 1px solid rgba(35, 31, 32, 0.12) !important;
+  box-shadow: 0 24px 60px rgba(35, 31, 32, 0.18) !important;
 }
 @media (max-width: 768px) {
   .mini-tutor-drawer {
