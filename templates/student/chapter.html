@@ -22,12 +22,12 @@
 {% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="/static/css/saxaz-pages.css?v=10">
+<link rel="stylesheet" href="/static/css/saxaz-pages.css?v=11">
 {% from "student/partials/summary_games.html" import molecule_defs, game_leaf, game_food, game_breathe, game_blood, game_pump, game_kidney, game_team %}
 {{ molecule_defs() }}
-<link rel="stylesheet" href="/static/css/summary-games.css?v=26">
+<link rel="stylesheet" href="/static/css/summary-games.css?v=27">
 <script src="/static/js/summary-games.js?v=23"></script>
-<script src="/static/js/summary-storyboard.js?v=543"></script>
+<script src="/static/js/summary-storyboard.js?v=545"></script>
 {% set content_list = chapter.content if chapter and chapter.content is defined and chapter.content is iterable and chapter.content is not string else (modules if modules is defined else []) %}
 {% set exam_list = available_exams if available_exams is defined else (exams if exams is defined else []) %}
 {% set done_ids = completed_content_ids if completed_content_ids is defined else [] %}
@@ -122,6 +122,8 @@
       lastVoiceAt: 0,
       _eqTs: 0,
       smartCanvasLoop: null,
+      ambientLoop: null,
+      lastAmbientSlide: -1,
 
       // Mini-games shown in spacious Full-Screen Overlay after Tutor invitation
       gameMap: {{ ({1: ['leaf'], 2: ['food'], 3: ['breathe'], 6: ['heart'], 7: ['blood'], 8: ['pump'], 9: ['kidney'], 11: ['team']} if chapter.id == 3 else {}) | tojson | safe }},
@@ -213,6 +215,7 @@
           im.src = `/static/images/avatars/${this.tutorName}_${pose}.webp?v=543`;
         });
         this.smartCanvasLoop = window.saxazCreateSmartCanvasLoop ? window.saxazCreateSmartCanvasLoop() : null;
+        this.ambientLoop = window.saxazCreateAmbientLoop ? window.saxazCreateAmbientLoop() : null;
         // Playful living idle animation cycle so Tutor smiles & gestures naturally even before clicking Play
         const idleCycle = ['base', 'laughing', 'base', 'pointing', 'base', 'thinking', 'base', 'cheer'];
         let idleIdx = 0;
@@ -498,9 +501,24 @@
         }, ms);
       },
 
+      slideAmbientCfg() {
+        return (window.SAXAZ_SLIDE_AMBIENT && window.SAXAZ_SLIDE_AMBIENT[this.activeSlide]) || {};
+      },
+
+      mountAmbientLayer(force = false) {
+        if (!this.ambientLoop) return;
+        if (!force && this.lastAmbientSlide === this.activeSlide) return;
+        this.lastAmbientSlide = this.activeSlide;
+        this.$nextTick(() => {
+          const sheet = document.getElementById('chapter-nutshell-sheet');
+          if (sheet) this.ambientLoop.mount(sheet, this.activeSlide);
+        });
+      },
+
       mountActiveCueCanvas() {
         const cue = this.currentCue();
         if (!cue || !this.smartCanvasLoop) return;
+        this.mountAmbientLayer(false);
         this.$nextTick(() => {
           const slideEl = document.querySelector(`[data-sx-slide="${this.activeSlide}"]`);
           if (!slideEl) return;
@@ -1302,7 +1320,7 @@
   };
 </script>
 
-<div class="sx-issue-wrap sxc" x-data="saxazChapterPage()" x-effect="smartCanvasLoop && smartCanvasLoop.setPaused(Boolean(activeGameModal || gamePromptActive || !nutshellExpanded))" @keydown.escape.window="if (activeGameModal) { closeFullscreenGame(false); } else if (gamePromptActive) { dismissGamePrompt(); } else if (activeVideo) { activeVideo = null; } else { stopNutshellVoice(); if (summaryFs) toggleSummaryFullscreen(false); }">
+<div class="sx-issue-wrap sxc" x-data="saxazChapterPage()" x-effect="const _p = Boolean(activeGameModal || gamePromptActive || !nutshellExpanded); smartCanvasLoop && smartCanvasLoop.setPaused(_p); ambientLoop && ambientLoop.setPaused(_p);" @keydown.escape.window="if (activeGameModal) { closeFullscreenGame(false); } else if (gamePromptActive) { dismissGamePrompt(); } else if (activeVideo) { activeVideo = null; } else { stopNutshellVoice(); if (summaryFs) toggleSummaryFullscreen(false); }">
 
   <!-- Back bar (same as saxaz.com lesson pages) -->
   <div class="sx-ext-back-bar sxc-back">
@@ -1476,19 +1494,43 @@
               </button>
             </div>
           </div>
+          <div class="sx-story-reel" x-show="getSlideCues({{ s_idx }}).length > 1" aria-hidden="true">
+            <template x-for="(cItem, cIdx) in getSlideCues({{ s_idx }})" :key="'reel-{{ s_idx }}-' + cIdx">
+              <div class="sx-story-reel-item" :class="[activeSlide === {{ s_idx }} && activeCueIdx === cIdx && 'is-active', activeSlide === {{ s_idx }} && activeCueIdx > cIdx && 'is-done']">
+                <img :src="cItem.idle" alt="" loading="lazy" decoding="async">
+              </div>
+            </template>
+          </div>
         {% endmacro %}
 
         {% if chapter.id == 3 %}
+        <!-- Calm, well-directed ambient visual elements (strictly outside text, auto-paused when closed) -->
+        <div class="sx-ambient-layer" aria-hidden="true">
+          <div class="sx-ambient-corner-tl" x-show="Boolean(slideAmbientCfg().corner)" x-cloak>
+            <canvas class="sx-amb-corner-canvas" width="220" height="220"></canvas>
+          </div>
+          <div class="sx-ambient-lane sx-ambient-lane-top" x-show="Boolean(slideAmbientCfg().topFly)" x-cloak>
+            <div class="sx-ambient-glider is-top">
+              <canvas class="sx-amb-top-canvas" width="200" height="160"></canvas>
+            </div>
+          </div>
+          <div class="sx-ambient-lane sx-ambient-lane-bottom" x-show="Boolean(slideAmbientCfg().botFly)" x-cloak>
+            <div class="sx-ambient-glider is-bottom">
+              <canvas class="sx-amb-bot-canvas" width="200" height="160"></canvas>
+            </div>
+          </div>
+        </div>
+
         <!-- PART 1 of 12: Intro -->
         <div class="sx-sync-stage" data-sx-slide="0" x-show="activeSlide === 0">
           <div>
             <div style="font-size:0.76rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#231f20;margin-bottom:8px;">CHAPTER IN A NUTSHELL</div>
             <p data-sx-sync-prose style="margin:0;font-size:1.04rem;line-height:1.78;color:#231f20;font-weight:500;">
-              Hey buddy! Do you know why we are alive? Inside our body, four very important jobs are happening all the time, even when we are sleeping, sitting, or playing. We call them Life Processes. If even one of them stops, we cannot survive. Let us understand each one in detail.
+              Hey buddy! Do you know why we are alive? Inside our body, <mark class="sx-value-point">four very important jobs are happening all the time,</mark> even when we are sleeping, sitting, or playing. <mark class="sx-value-point">We call them Life Processes.</mark> <mark class="sx-value-point">If even one of them stops, we cannot survive.</mark> Let us understand each one in detail.
             </p>
             {{ render_part_footer(0) }}
           </div>
-          {{ render_smart_stage(0, 'eq0', '/static/images/saxaz_web/summary_sprites/anim_body_alive.webp?v=541') }}
+          {{ render_smart_stage(0, 'eq0', '/static/images/saxaz_web/summary_sprites/friend_alive.webp?v=545') }}
         </div>
 
         <!-- PART 2 of 12: 1. Photosynthesis (Autotrophic Nutrition) -->
@@ -1496,7 +1538,7 @@
           <div>
             <h3 data-sx-sync-prose style="font-family:var(--font-display);font-size:1.26rem;font-weight:800;margin:0 0 10px;color:#231f20;">1. Nutrition - Food For Energy And Growth</h3>
             <p data-sx-sync-prose style="margin:0;font-size:0.99rem;line-height:1.74;color:#231f20;">
-              Nutrition means taking in food and using it for energy, growth, and repair of the body. There are two types. In plants, it is called Autotrophic Nutrition. Plants make their own food by a process called Photosynthesis. They take sunlight, water from roots, and carbon dioxide from air, and in the leaves, with the help of chlorophyll, they make glucose and release oxygen. The equation is:
+              Nutrition means <mark class="sx-value-point">taking in food and using it for energy, growth, and repair of the body.</mark> There are two types. <mark class="sx-value-point">In plants, it is called Autotrophic Nutrition.</mark> <mark class="sx-value-point">Plants make their own food by a process called Photosynthesis.</mark> They take sunlight, water from roots, and carbon dioxide from air, and <mark class="sx-value-point">in the leaves, with the help of chlorophyll, they make glucose and release oxygen.</mark> The equation is:
             </p>
             <div class="sx-nutshell-eq" data-sx-sync-prose>
               <div>Carbon dioxide + Water + Sunlight <span data-sx-atomic-word data-sx-speak="gives">&rarr;</span> Glucose + Oxygen.</div>
@@ -1504,21 +1546,21 @@
             </div>
             {{ render_part_footer(1, 'leaf', 'Make Plant Food: Photosynthesis Drag & Drop') }}
           </div>
-          {{ render_smart_stage(1, 'eq1', '/static/images/saxaz_web/summary_sprites/anim_nutrition_fuel.webp?v=541') }}
+          {{ render_smart_stage(1, 'eq1', '/static/images/saxaz_web/summary_sprites/anim_nutrition_fuel.webp?v=545') }}
         </div>
 
         <!-- PART 3 of 12: Human Digestion (Heterotrophic Nutrition) -->
         <div class="sx-sync-stage" data-sx-slide="2" x-show="activeSlide === 2" x-cloak>
           <div>
             <p data-sx-sync-prose style="margin:0 0 12px;font-size:0.99rem;line-height:1.74;color:#231f20;">
-              In humans and animals, it is called Heterotrophic Nutrition, because we cannot make our own food, we depend on plants and animals. In humans, digestion starts in the mouth, where teeth chew food and saliva breaks down starch. Then food goes to the stomach, where acid and enzymes break down proteins. Then it goes to the small intestine, where most digestion and absorption happens. The digested food goes into the blood, and undigested waste goes to the large intestine and is removed. So nutrition gives us the fuel to live.
+              In humans and animals, <mark class="sx-value-point">it is called Heterotrophic Nutrition, because we cannot make our own food,</mark> we depend on plants and animals. In humans, <mark class="sx-value-point">digestion starts in the mouth, where teeth chew food and saliva breaks down starch.</mark> Then food goes to the stomach, where <mark class="sx-value-point">acid and enzymes break down proteins.</mark> Then it goes to the small intestine, where <mark class="sx-value-point">most digestion and absorption happens.</mark> <mark class="sx-value-point">The digested food goes into the blood,</mark> and undigested waste goes to the large intestine and is removed. So nutrition gives us the fuel to live.
             </p>
             <div data-sx-sync-prose style="padding:10px 14px;border-radius:12px;background:#ffffff;border:1.5px solid rgba(35,31,32,0.14);font-size:0.92rem;color:#231f20;">
-              <strong>Mouth:</strong> The human digestive system starts from the mouth. The mouth is the first major part.
+              <strong>Mouth:</strong> <mark class="sx-value-point">The human digestive system starts from the mouth.</mark> The mouth is the first major part.
             </div>
             {{ render_part_footer(2, 'food', 'Food Journey: Match the 5 Digestive Organs') }}
           </div>
-          {{ render_smart_stage(2, 'eq2', '/static/images/saxaz_web/syllabus/nutshell_p1_img0.webp?v=541') }}
+          {{ render_smart_stage(2, 'eq2', '/static/images/saxaz_web/summary_sprites/friend_eating.webp?v=545') }}
         </div>
 
         <!-- PART 4 of 12: 2. Respiration & ATP Energy -->
@@ -1526,25 +1568,25 @@
           <div>
             <h3 data-sx-sync-prose style="font-family:var(--font-display);font-size:1.26rem;font-weight:800;margin:0 0 10px;color:#231f20;">Respiration- Breathing to get Energy</h3>
             <p data-sx-sync-prose style="margin:0;font-size:0.99rem;line-height:1.74;color:#231f20;">
-              Respiration is not just breathing. Breathing is only taking in oxygen and giving out carbon dioxide. Real respiration happens inside every cell. The food we eat, mainly glucose, is broken down with the help of oxygen to release energy. This energy is stored in a molecule called ATP, which is called the energy currency of the cell. The equation is:
+              <mark class="sx-value-point">Respiration is not just breathing.</mark> Breathing is only taking in oxygen and giving out carbon dioxide. <mark class="sx-value-point">Real respiration happens inside every cell.</mark> The food we eat, mainly <mark class="sx-value-point">glucose, is broken down with the help of oxygen to release energy.</mark> This energy is <mark class="sx-value-point">stored in a molecule called ATP, which is called the energy currency of the cell.</mark> The equation is:
             </p>
             <div class="sx-nutshell-eq" data-sx-sync-prose>
               Glucose + Oxygen <span data-sx-atomic-word data-sx-speak="gives">&rarr;</span> Carbon dioxide + Water + Energy (ATP).
             </div>
             {{ render_part_footer(3, 'breathe', 'Breathing & ATP Energy: Drag & Match') }}
           </div>
-          {{ render_smart_stage(3, 'eq3', '/static/images/saxaz_web/summary_sprites/anim_lungs_breathe.webp?v=541') }}
+          {{ render_smart_stage(3, 'eq3', '/static/images/saxaz_web/summary_sprites/anim_lungs_breathe.webp?v=545') }}
         </div>
 
         <!-- PART 5 of 12: Human Breathing & Muscle Exercise -->
         <div class="sx-sync-stage" data-sx-slide="4" x-show="activeSlide === 4" x-cloak>
           <div>
             <p data-sx-sync-prose style="margin:0;font-size:1.02rem;line-height:1.78;color:#231f20;">
-              In humans, air enters through the nose, goes to the trachea, then to the lungs, where oxygen goes into the blood and carbon dioxide comes out. The blood carries oxygen to all cells. If we do heavy exercise, sometimes we get less oxygen, then anaerobic respiration happens in muscles and produces lactic acid, which is why we feel muscle pain. Without respiration, we will not get energy, even if we eat a lot of food.
+              In humans, <mark class="sx-value-point">air enters through the nose, goes to the trachea, then to the lungs,</mark> where oxygen goes into the blood and carbon dioxide comes out. <mark class="sx-value-point">The blood carries oxygen to all cells.</mark> If we do heavy exercise, sometimes we get less oxygen, then <mark class="sx-value-point">anaerobic respiration happens in muscles and produces lactic acid, which is why we feel muscle pain.</mark> Without respiration, we will not get energy, even if we eat a lot of food.
             </p>
             {{ render_part_footer(4) }}
           </div>
-          {{ render_smart_stage(4, 'eq4', '/static/images/saxaz_web/summary_sprites/anim_lungs_breathe.webp?v=541') }}
+          {{ render_smart_stage(4, 'eq4', '/static/images/saxaz_web/summary_sprites/anim_lungs_breathe.webp?v=545') }}
         </div>
 
         <!-- PART 6 of 12: Brain Control -->
@@ -1552,11 +1594,11 @@
           <div>
             <h4 data-sx-sync-prose style="font-family:var(--font-display);font-size:1.22rem;font-weight:800;margin:0 0 10px;color:#231f20;">How is Breathing Controlled?</h4>
             <p data-sx-sync-prose style="margin:0;font-size:1.03rem;line-height:1.78;color:#231f20;">
-              Breathing is controlled by the brain. There are special centres in the brain that control breathing. There are two centres in the Pons and two centres in the Medulla that control breathing.
+              <mark class="sx-value-point">Breathing is controlled by the brain.</mark> There are special centres in the brain that control breathing. <mark class="sx-value-point">There are two centres in the Pons and two centres in the Medulla that control breathing.</mark>
             </p>
             {{ render_part_footer(5) }}
           </div>
-          {{ render_smart_stage(5, 'eq5', '/static/images/saxaz_web/summary_sprites/anim_pons_medulla.webp?v=541') }}
+          {{ render_smart_stage(5, 'eq5', '/static/images/saxaz_web/summary_sprites/anim_pons_medulla.webp?v=545') }}
         </div>
 
         <!-- PART 7 of 12: 3. Transportation (Heart & Blood Vessels) -->
@@ -1564,28 +1606,28 @@
           <div>
             <h3 data-sx-sync-prose style="font-family:var(--font-display);font-size:1.26rem;font-weight:800;margin:0 0 10px;color:#231f20;">3. Transportation - Delivery System Of The Body</h3>
             <p data-sx-sync-prose style="margin:0;font-size:0.99rem;line-height:1.74;color:#231f20;">
-              Transportation means carrying useful substances to every part of the body and taking waste away. In humans, the main organ is the Heart. It is like a pump with 4 chambers - right atrium, right ventricle, left atrium, left ventricle. The heart pumps blood through three types of blood vessels. Arteries carry oxygen-rich blood from heart to body, Veins carry carbon dioxide-rich blood from body to heart, and Capillaries are very thin vessels where exchange of oxygen, food, and waste happens between blood and cells.
+              Transportation means carrying useful substances to every part of the body and taking waste away. In humans, the main organ is the <mark class="sx-value-point">Heart. It is like a pump with 4 chambers - right atrium, right ventricle, left atrium, left ventricle.</mark> The heart pumps blood through three types of blood vessels. <mark class="sx-value-point">Arteries carry oxygen-rich blood from heart to body,</mark> <mark class="sx-value-point">Veins carry carbon dioxide-rich blood from body to heart,</mark> and <mark class="sx-value-point">Capillaries are very thin vessels where exchange of oxygen, food, and waste happens</mark> between blood and cells.
             </p>
             {{ render_part_footer(6, 'heart', 'Build & Pump the Human Heart') }}
           </div>
-          {{ render_smart_stage(6, 'eq6', '/static/images/saxaz_web/syllabus/nutshell_p2_img2.webp?v=541') }}
+          {{ render_smart_stage(6, 'eq6', '/static/images/saxaz_web/syllabus/nutshell_p2_img2.webp?v=545') }}
         </div>
 
         <!-- PART 8 of 12: Blood Crew & Plant Transport -->
         <div class="sx-sync-stage" data-sx-slide="7" x-show="activeSlide === 7" x-cloak>
           <div>
             <p data-sx-sync-prose style="margin:0 0 10px;font-size:0.99rem;line-height:1.72;color:#231f20;">
-              Blood has RBC which carries oxygen, WBC which fights disease, Platelets which help in clotting, and Plasma which carries food, hormones, and waste.
+              Blood has <mark class="sx-value-point">RBC which carries oxygen,</mark> <mark class="sx-value-point">WBC which fights disease,</mark> <mark class="sx-value-point">Platelets which help in clotting,</mark> and <mark class="sx-value-point">Plasma which carries food, hormones, and waste.</mark>
             </p>
             <p data-sx-sync-prose style="margin:0 0 10px;font-size:0.99rem;line-height:1.72;color:#231f20;">
-              In plants, transportation happens through two tissues. Xylem carries water and minerals from roots to leaves, upwards. Phloem carries food made in leaves to all other parts of the plant, both upwards and downwards. This is called translocation.
+              In plants, transportation happens through two tissues. <mark class="sx-value-point">Xylem carries water and minerals from roots to leaves, upwards.</mark> <mark class="sx-value-point">Phloem carries food made in leaves to all other parts of the plant, both upwards and downwards. This is called translocation.</mark>
             </p>
             <p data-sx-sync-prose style="margin:0;font-size:0.99rem;line-height:1.72;color:#231f20;">
               Without transportation, food and oxygen will stay in one place and other parts will die.
             </p>
             {{ render_part_footer(7, 'blood', 'Inside a Blood Vessel: Meet the Blood Crew') }}
           </div>
-          {{ render_smart_stage(7, 'eq7', '/static/images/saxaz_web/summary_sprites/anim_blood_crew.webp?v=541') }}
+          {{ render_smart_stage(7, 'eq7', '/static/images/saxaz_web/summary_sprites/anim_blood_crew.webp?v=545') }}
         </div>
 
         <!-- PART 9 of 12: Oh my Heart -->
@@ -1593,11 +1635,11 @@
           <div>
             <h4 data-sx-sync-prose style="font-family:var(--font-display);font-size:1.22rem;font-weight:800;margin:0 0 10px;color:#231f20;">Oh my Heart...</h4>
             <p data-sx-sync-prose style="margin:0;font-size:1.04rem;line-height:1.78;color:#231f20;">
-              A human heart beats about 250 crore times in a lifetime. The pressure created by the heart is so great that it can pump blood up to a height of 30 feet!
+              <mark class="sx-value-point">A human heart beats about 250 crore times in a lifetime.</mark> The pressure created by the heart is so great that <mark class="sx-value-point">it can pump blood up to a height of 30 feet!</mark>
             </p>
             {{ render_part_footer(8, 'pump', 'Heart Super-Pump: Shoot Blood 30 Feet High') }}
           </div>
-          {{ render_smart_stage(8, 'eq8', '/static/images/saxaz_web/syllabus/nutshell_p3_img2.webp?v=541') }}
+          {{ render_smart_stage(8, 'eq8', '/static/images/saxaz_web/syllabus/nutshell_p3_img2.webp?v=545') }}
         </div>
 
         <!-- PART 10 of 12: 4. Excretion (Kidneys & Nephrons) -->
@@ -1605,26 +1647,26 @@
           <div>
             <h3 data-sx-sync-prose style="font-family:var(--font-display);font-size:1.26rem;font-weight:800;margin:0 0 10px;color:#231f20;">4. Excretion - Cleaning The Body</h3>
             <p data-sx-sync-prose style="margin:0;font-size:0.99rem;line-height:1.74;color:#231f20;">
-              Excretion means removing harmful waste products from the body. When our body uses food and energy, it produces waste like urea, extra water, salts, and carbon dioxide. If these stay inside, they will poison us. In humans, the main excretory organs are the Kidneys. We have two kidneys. Blood comes to the kidney, and inside the kidney there are small filtering units called Nephrons. Each kidney has about 1 million nephrons. Nephrons filter the blood, remove urea and extra water, and form urine.
+              <mark class="sx-value-point">Excretion means removing harmful waste products from the body.</mark> When our body uses food and energy, it produces waste like urea, extra water, salts, and carbon dioxide. If these stay inside, they will poison us. In humans, <mark class="sx-value-point">the main excretory organs are the Kidneys.</mark> We have two kidneys. Blood comes to the kidney, and inside the kidney there are <mark class="sx-value-point">small filtering units called Nephrons.</mark> <mark class="sx-value-point">Each kidney has about 1 million nephrons.</mark> <mark class="sx-value-point">Nephrons filter the blood, remove urea and extra water, and form urine.</mark>
             </p>
             {{ render_part_footer(9, 'kidney', 'Kidney Filter Sort: Drag Waste Out') }}
           </div>
-          {{ render_smart_stage(9, 'eq9', '/static/images/saxaz_web/syllabus/nutshell_p3_img0.webp?v=541') }}
+          {{ render_smart_stage(9, 'eq9', '/static/images/saxaz_web/syllabus/nutshell_p3_img0.webp?v=545') }}
         </div>
 
         <!-- PART 11 of 12: Urinary Path, Plant Excretion & Body Filters -->
         <div class="sx-sync-stage" data-sx-slide="10" x-show="activeSlide === 10" x-cloak>
           <div>
             <p data-sx-sync-prose style="margin:0 0 12px;font-size:0.98rem;line-height:1.72;color:#231f20;">
-              Urine goes from kidney through ureter to urinary bladder, and then out through urethra. Other ways of excretion are lungs removing carbon dioxide, skin removing sweat, and liver removing extra bile pigments. In plants, there is no special excretory system. Plants remove waste through transpiration from stomata, by storing waste in old leaves which fall off, and as resins and gums in bark. So excretion keeps our body clean from inside.
+              <mark class="sx-value-point">Urine goes from kidney through ureter to urinary bladder, and then out through urethra.</mark> Other ways of excretion are <mark class="sx-value-point">lungs removing carbon dioxide, skin removing sweat, and liver removing extra bile pigments.</mark> In plants, there is no special excretory system. <mark class="sx-value-point">Plants remove waste through transpiration from stomata, by storing waste in old leaves which fall off, and as resins and gums in bark.</mark> So excretion keeps our body clean from inside.
             </p>
             <h4 data-sx-sync-prose style="font-family:var(--font-display);font-size:1.15rem;font-weight:800;margin:0 0 6px;color:#231f20;">We are the Filters of the Body</h4>
             <p data-sx-sync-prose style="margin:0;font-size:0.98rem;line-height:1.72;color:#231f20;">
-              Kidneys are called the filters of the body because they clean our blood. They remove waste, extra salt, and dirty things from the blood and send them out as urine, while keeping the good and useful things inside the body.
+              <mark class="sx-value-point">Kidneys are called the filters of the body because they clean our blood.</mark> They remove waste, extra salt, and dirty things from the blood and send them out as urine, while keeping the good and useful things inside the body.
             </p>
             {{ render_part_footer(10) }}
           </div>
-          {{ render_smart_stage(10, 'eq10', '/static/images/saxaz_web/summary_sprites/anim_body_excretors.webp?v=541') }}
+          {{ render_smart_stage(10, 'eq10', '/static/images/saxaz_web/summary_sprites/anim_body_excretors.webp?v=545') }}
         </div>
 
         <!-- PART 12 of 12: Conclusion -->
@@ -1633,12 +1675,12 @@
             <div data-sx-sync-prose style="padding:16px 18px;border-radius:16px;background:#ffffff;border:1.5px solid rgba(35,31,32,0.14);border-left:4px solid #f7b317;">
               <strong style="display:block;margin-bottom:6px;font-size:1.05rem;color:#231f20;">Conclusion:</strong>
               <span style="font-size:1.01rem;line-height:1.76;color:#231f20;">
-                So, Nutrition gives us food, Respiration gives us energy from that food, Transportation delivers food and oxygen to every cell, and Excretion removes the waste. All four work together like a team. If one team member fails, the whole team fails. That is why they are called Life Processes.
+                So, <mark class="sx-value-point">Nutrition gives us food,</mark> <mark class="sx-value-point">Respiration gives us energy from that food,</mark> <mark class="sx-value-point">Transportation delivers food and oxygen to every cell,</mark> and <mark class="sx-value-point">Excretion removes the waste.</mark> <mark class="sx-value-point">All four work together like a team.</mark> If one team member fails, the whole team fails. <mark class="sx-value-point">That is why they are called Life Processes.</mark>
               </span>
             </div>
             {{ render_part_footer(11, 'team', 'The 4 Life-Process Heroes: Team Match') }}
           </div>
-          {{ render_smart_stage(11, 'eq11', '/static/images/saxaz_web/syllabus/nutshell_p1_img1.webp?v=541') }}
+          {{ render_smart_stage(11, 'eq11', '/static/images/saxaz_web/syllabus/nutshell_p1_img1.webp?v=545') }}
         </div>
         {% else %}
         <template x-for="(b, bIdx) in nutshellBeats" :key="'gen-slide-' + bIdx">

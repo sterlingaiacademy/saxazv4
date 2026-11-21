@@ -395,5 +395,14 @@ label.sxp-filter { display: inline-flex; align-items: center; }
   text-shadow: 0.4px 0 0 currentColor, -0.4px 0 0 currentColor;
 }
 @media (max-width: 860px) {
-  .sxc .sx-nutshell-card.is-fullscreen .sx-sync-stage { margin-top: 0; align-content: start; }
+  .sxc .sx-nutshell-card.is-fullscreen .sx-sync-stage { margin-top: 0; align-content: start; padding-top: 18px; }
+  .sxc .sx-ambient-lane { display: none !important; }
+  .sxc .sx-ambient-corner-tl { display: none; }
+  .sxc .sx-nutshell-card.is-fullscreen .sx-ambient-corner-tl {
+    display: block; top: 62px; left: 10px; width: 42px; height: 42px; opacity: 0.82;
+  }
+  .sxc .sx-story-reel {
+    gap: 10px; margin-top: 12px; justify-content: center; flex-wrap: nowrap;
+  }
+  .sxc .sx-story-reel-item { width: 44px; height: 40px; }
 }

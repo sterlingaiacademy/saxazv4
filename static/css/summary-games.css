@@ -849,12 +849,13 @@
   display: flex; flex-direction: column;
 }
 .sx-nutshell-card.is-fullscreen #chapter-nutshell-sheet {
-  flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column;
+  flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; position: relative; overflow: hidden;
 }
 .sx-nutshell-card.is-fullscreen .sx-sync-topbar { position: sticky; top: 0; z-index: 50; }
 .sx-nutshell-card.is-fullscreen .sx-sync-stage {
+  position: relative; z-index: 3; background: transparent;
   flex: 1 1 auto; min-height: 0; max-width: 1120px; width: 100%; margin: auto;
-  padding: clamp(12px, 2vh, 24px) 36px clamp(14px, 2.2vh, 26px); align-items: center; box-sizing: border-box;
+  padding: clamp(28px, 4.5vh, 52px) 36px clamp(26px, 4vh, 46px); align-items: center; box-sizing: border-box;
 }
 .sx-nutshell-card.is-fullscreen .sx-sync-tutor-figure {
   width: clamp(148px, 23vh, 206px);
@@ -897,5 +898,5 @@ html.sx-fs-lock, html.sx-fs-lock body { overflow: hidden !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sx-game *, .sx-game { animation: none !important; transition: none !important; }
+  .sx-game *, .sx-game, .sx-ambient-glider, .sx-ambient-corner-tl { animation: none !important; transition: none !important; }
 }

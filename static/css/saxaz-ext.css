@@ -2023,7 +2023,9 @@ main.sx-ext-canvas {
 }
 
 .sx-sync-stage {
-  background: #ffffff;
+  position: relative;
+  z-index: 3;
+  background: transparent;
   border: 0;
   border-radius: 0;
   padding: 28px 32px 28px;
@@ -2119,13 +2121,26 @@ main.sx-ext-canvas {
   box-shadow: 0 0 0 2px #f7b317;
 }
 
-/* Important Biology Key Words (Subtle Crisp Emphasis + Live Speaking Pop) */
+/* Exam Value Points: Realistic Soft Pastel Marker-Pen Highlighter (Zero Gradients) */
+mark.sx-value-point {
+  background: rgba(254, 240, 138, 0.68);
+  color: inherit;
+  padding: 2px 5px 2px;
+  border-radius: 6px 3px 7px 4px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  box-shadow: inset 0 -2px 0 rgba(247, 179, 23, 0.44);
+  font-weight: 600;
+}
+
+.sx-nutshell-sheet.is-sync-active mark.sx-value-point {
+  background: rgba(254, 240, 138, 0.56);
+}
+
+/* Important Biology Key Words (Clean Crisp Bold — No Choppy Single-Word Underline) */
 .sx-sync-word.is-key-term {
-  font-weight: 800;
-  text-decoration: underline;
-  text-decoration-color: rgba(247, 179, 23, 0.85);
-  text-decoration-thickness: 2.5px;
-  text-underline-offset: 3px;
+  font-weight: 700;
+  text-decoration: none;
 }
 
 .sx-sync-word.is-key-term.is-current {
@@ -2133,6 +2148,159 @@ main.sx-ext-canvas {
   color: #f7b317 !important;
   box-shadow: 0 0 0 3px #231f20;
   text-decoration: none;
+}
+
+/* Bottom-Left Visual Story Progression Strip (Clean Borderless Synced Mini-Sprites) */
+.sx-story-reel {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 6px 2px 2px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.sx-story-reel-item {
+  position: relative;
+  width: 60px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.34;
+  transform: scale(0.9);
+  transition: opacity 0.28s ease, transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sx-story-reel-item.is-done {
+  opacity: 0.62;
+  transform: scale(0.96);
+}
+
+.sx-story-reel-item.is-active {
+  opacity: 1;
+  transform: translateY(-4px) scale(1.12);
+}
+
+.sx-story-reel-item.is-active::after {
+  content: "";
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  bottom: -6px;
+  height: 3.5px;
+  border-radius: 999px;
+  background: #f7b317;
+}
+
+.sx-story-reel-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Calm, Well-Directed Ambient Backdrop Layer (Strictly Outside Text, Zero Clutter) */
+#chapter-nutshell-sheet {
+  position: relative;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.sx-ambient-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+@keyframes sxAmbientBob {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -6px, 0); }
+}
+
+@keyframes sxAmbientGlideLTR {
+  0% { transform: translate3d(-110px, 0, 0); opacity: 0; }
+  8% { opacity: 0.88; }
+  50% { transform: translate3d(52vw, -7px, 0); opacity: 0.88; }
+  92% { opacity: 0.88; }
+  100% { transform: translate3d(106vw, 2px, 0); opacity: 0; }
+}
+
+.sx-ambient-corner-tl {
+  display: none;
+  position: absolute;
+  top: 74px;
+  left: 26px;
+  width: 78px;
+  height: 78px;
+  opacity: 0.94;
+  animation: sxAmbientBob 4.6s ease-in-out infinite;
+}
+
+.sx-ambient-corner-tl canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Corner Anchor + Perimeter Left->Right Gliding Lanes appear cleanly in Fullscreen open margins only */
+.sx-ambient-lane {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 54px;
+  overflow: visible;
+}
+
+.sx-nutshell-card.is-fullscreen .sx-ambient-corner-tl {
+  display: block;
+}
+
+.sx-nutshell-card.is-fullscreen .sx-ambient-lane {
+  display: block;
+}
+
+.sx-ambient-lane-top {
+  top: 84px;
+}
+
+.sx-ambient-lane-bottom {
+  bottom: 20px;
+}
+
+.sx-ambient-glider {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 56px;
+  height: 46px;
+  will-change: transform, opacity;
+  animation: sxAmbientGlideLTR 22s linear infinite;
+}
+
+.sx-ambient-glider.is-bottom {
+  width: 52px;
+  height: 44px;
+  animation-duration: 27s;
+  animation-delay: -11s;
+}
+
+.sx-ambient-glider canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+@media (max-height: 670px) {
+  .sx-ambient-lane {
+    display: none !important;
+  }
 }
 
 /* Smart Sentence-Synced Looping 3D Popup Stage + Interactive Controls */

@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var V = '?v=541';
+  var V = '?v=545';
   var SP = '/static/images/saxaz_web/summary_sprites/';
   var SY = '/static/images/saxaz_web/syllabus/';
 
@@ -69,23 +69,44 @@
     return Math.max(1.0, matches ? matches.length : 1.0);
   };
 
-  // Full 12-part Chapter 5 Smart Popup Storyboard (every sentence covered with looping 36-frame 3D sprites!)
+  // Full 12-part Chapter 5 Smart Popup Storyboard (every sentence covered with multi-frame looping 3D sprites!)
   window.SAXAZ_SUMMARY_CUES = {
     0: [
       {
+        id: 'friend_alive',
+        label: 'We Are Alive',
+        idle: SP + 'friend_alive.webp' + V,
+        sheet: SP + 'friend_alive_sheet.webp' + V,
+        w: 300, h: 300, cols: 6, frames: 24, fps: 13.5,
+        triggers: ['hey', 'buddy', 'alive'],
+        tutorPose: 'cheer'
+      },
+      {
         id: 'body_alive',
-        label: '4 Jobs Alive',
+        label: '4 Jobs Inside',
         idle: SP + 'anim_body_alive.webp' + V,
         sheet: SP + 'anim_body_alive_sheet.webp' + V,
         w: 360, h: 270, cols: 6, frames: 36,
-        triggers: ['hey', 'alive', 'four', 'sleeping', 'sitting', 'playing'],
-        tutorPose: 'amazed',
-        tutorCallout: '4 organs work 24/7!',
-        tapLabel: 'Tap to Check Vitals',
-        tapFacts: [
-          'Heart, Lungs, Stomach & Kidneys never sleep!',
-          'All 4 Life Processes run even while you dream!'
-        ]
+        triggers: ['inside our body', 'four very important', 'all the time'],
+        tutorPose: 'amazed'
+      },
+      {
+        id: 'friend_sleeping',
+        label: 'Sleeping',
+        idle: SP + 'friend_sleeping.webp' + V,
+        sheet: SP + 'friend_sleeping_sheet.webp' + V,
+        w: 320, h: 260, cols: 6, frames: 24, fps: 11.5,
+        triggers: ['sleeping', 'sitting'],
+        tutorPose: 'pointing'
+      },
+      {
+        id: 'friend_playing',
+        label: 'Playing',
+        idle: SP + 'friend_playing.webp' + V,
+        sheet: SP + 'friend_playing_sheet.webp' + V,
+        w: 300, h: 300, cols: 6, frames: 24, fps: 14.5,
+        triggers: ['playing'],
+        tutorPose: 'cheer'
       },
       {
         id: 'team_intro',
@@ -94,13 +115,7 @@
         sheet: SY + 'nutshell_p1_img1_sheet.webp' + V,
         w: 408, h: 272, cols: 6, frames: 36,
         triggers: ['life processes', 'survive', 'detail'],
-        tutorPose: 'cheer',
-        tutorCallout: 'Meet the 4 Life Processes!',
-        tapLabel: 'Tap to Meet All 4 Heroes',
-        tapFacts: [
-          'Nutrition + Respiration + Transport + Excretion!',
-          'If even 1 stops, the body cannot survive!'
-        ]
+        tutorPose: 'cheer'
       }
     ],
     1: [
@@ -111,76 +126,81 @@
         sheet: SP + 'anim_nutrition_fuel_sheet.webp' + V,
         w: 360, h: 270, cols: 6, frames: 36,
         triggers: ['nutrition', 'energy', 'growth', 'repair', 'two types'],
-        tutorPose: 'pointing',
-        tutorCallout: 'Food powers growth & repair!',
-        tapLabel: 'Tap to Boost Vitality',
-        tapFacts: [
-          'Nutrition = Food for Energy, Growth & Repair!',
-          'Two types: Autotrophic (Plants) & Heterotrophic (Animals)!'
-        ]
+        tutorPose: 'pointing'
+      },
+      {
+        id: 'roots_water',
+        label: 'Roots Take Water',
+        idle: SP + 'friend_roots_water.webp' + V,
+        sheet: SP + 'friend_roots_water_sheet.webp' + V,
+        w: 320, h: 270, cols: 6, frames: 24, fps: 13.0,
+        triggers: ['autotrophic', 'photosynthesis', 'sunlight', 'water from roots', 'roots'],
+        tutorPose: 'pointing'
+      },
+      {
+        id: 'leaf_sun',
+        label: 'Leaf Makes O2',
+        idle: SP + 'friend_leaf_sun.webp' + V,
+        sheet: SP + 'friend_leaf_sun_sheet.webp' + V,
+        w: 320, h: 270, cols: 6, frames: 24, fps: 13.0,
+        triggers: ['carbon dioxide', 'leaves', 'chlorophyll', 'glucose', 'release oxygen'],
+        tutorPose: 'amazed'
       },
       {
         id: 'photosynthesis',
-        label: 'Photosynthesis',
+        label: 'Photosynthesis Equation',
         idle: SP + 'anim_photosynthesis_plant.webp' + V,
         sheet: SP + 'anim_photosynthesis_plant_sheet.webp' + V,
         w: 360, h: 270, cols: 6, frames: 36,
-        triggers: ['autotrophic', 'photosynthesis', 'sunlight', 'roots', 'chlorophyll', 'glucose', 'oxygen', 'equation', '6co2'],
-        tutorPose: 'amazed',
-        tutorCallout: 'Leaves make Glucose + O2!',
-        tapLabel: 'Tap to Shine Sunlight',
-        tapFacts: [
-          'Sunlight + Water + CO2 -> Glucose + Oxygen!',
-          'Chlorophyll inside leaves traps golden sunlight!',
-          'Equation: 6CO2 + 12H2O -> C6H12O6 + 6O2 + 6H2O'
-        ]
+        triggers: ['equation', '6co2', '12h2o'],
+        tutorPose: 'cheer'
       }
     ],
     2: [
       {
-        id: 'mouth_chew',
-        label: '1. Mouth & Saliva',
-        idle: SY + 'nutshell_p1_img0.webp' + V,
-        sheet: SY + 'nutshell_p1_img0_sheet.webp' + V,
-        w: 360, h: 240, cols: 6, frames: 36,
-        triggers: ['heterotrophic', 'depend', 'mouth', 'teeth', 'saliva', 'starch'],
-        tutorPose: 'pointing',
-        tutorCallout: 'Digestion starts in the Mouth!',
-        tapLabel: 'Tap to Mix Saliva',
-        tapFacts: [
-          'Teeth chew food & Saliva breaks down starch!',
-          'Exam Tip: Mouth is the 1st major digestive organ!'
-        ]
+        id: 'eating_food',
+        label: 'We Eat Food',
+        idle: SP + 'friend_eating.webp' + V,
+        sheet: SP + 'friend_eating_sheet.webp' + V,
+        w: 300, h: 300, cols: 6, frames: 24, fps: 13.5,
+        triggers: ['heterotrophic', 'depend', 'plants and animals'],
+        tutorPose: 'pointing'
+      },
+      {
+        id: 'chewing_mouth',
+        label: 'Mouth & Saliva',
+        idle: SP + 'friend_chewing.webp' + V,
+        sheet: SP + 'friend_chewing_sheet.webp' + V,
+        w: 320, h: 260, cols: 6, frames: 24, fps: 13.5,
+        triggers: ['digestion starts', 'mouth', 'teeth', 'chew', 'saliva', 'starch'],
+        tutorPose: 'pointing'
       },
       {
         id: 'stomach_acid',
-        label: '2. Stomach Acid',
+        label: 'Stomach Acid',
         idle: SP + 'anim_stomach_acid.webp' + V,
         sheet: SP + 'anim_stomach_acid_sheet.webp' + V,
         w: 360, h: 270, cols: 6, frames: 36,
         triggers: ['stomach', 'acid', 'enzymes', 'proteins'],
-        tutorPose: 'amazed',
-        tutorCallout: 'Acid + Enzymes break Proteins!',
-        tapLabel: 'Tap to Churn Stomach',
-        tapFacts: [
-          'Stomach acid & enzymes break down proteins!',
-          'Acid softens food and protects against germs!'
-        ]
+        tutorPose: 'amazed'
       },
       {
         id: 'intestine_absorb',
-        label: '3. Small Intestine',
+        label: 'Small Intestine',
         idle: SP + 'anim_intestine_absorb.webp' + V,
         sheet: SP + 'anim_intestine_absorb_sheet.webp' + V,
         w: 360, h: 270, cols: 6, frames: 36,
-        triggers: ['small intestine', 'absorption', 'blood', 'large intestine', 'removed', 'fuel'],
-        tutorPose: 'cheer',
-        tutorCallout: 'Nutrients absorbed into Blood!',
-        tapLabel: 'Tap to Absorb Nutrients',
-        tapFacts: [
-          'Most digestion & absorption happens in Small Intestine!',
-          'Digested food enters blood; waste leaves via Large Intestine!'
-        ]
+        triggers: ['small intestine', 'absorption'],
+        tutorPose: 'pointing'
+      },
+      {
+        id: 'blood_nutrients',
+        label: 'Nutrients to Blood',
+        idle: SP + 'friend_blood_nutrients.webp' + V,
+        sheet: SP + 'friend_blood_nutrients_sheet.webp' + V,
+        w: 300, h: 300, cols: 6, frames: 24, fps: 13.5,
+        triggers: ['into the blood', 'blood', 'large intestine', 'removed', 'fuel', 'first major'],
+        tutorPose: 'cheer'
       }
     ],
     3: [
@@ -577,7 +597,8 @@
       var dt = Math.min(0.04, Math.max(0.004, (ts - lastTs) / 1000));
       lastTs = ts;
 
-      var fps = (ts < boostUntil) ? 26.0 : 16.5;
+      var baseFps = activeCue.fps || 16.5;
+      var fps = (ts < boostUntil) ? Math.min(26.0, baseFps * 1.45) : baseFps;
       var total = activeCue.frames || 36;
       var cols = activeCue.cols || 6;
       var cw = activeCue.w || 360;
@@ -651,5 +672,144 @@
     });
 
     return { setCue: setCue, preloadSlideCues: preloadSlideCues, boost: boost, stop: stop, setPaused: setPaused };
+  };
+
+  // Well-directed calm ambient scenery props (zero clutter, strictly perimeter-guided)
+  var AMBIENT_PROPS = {
+    sun: {
+      idle: SP + 'ambient_sun.webp' + V,
+      sheet: SP + 'ambient_sun_sheet.webp' + V,
+      w: 220, h: 220, cols: 4, frames: 16, fps: 10
+    },
+    o2: {
+      idle: SP + 'ambient_o2_molecule.webp' + V,
+      sheet: SP + 'ambient_o2_molecule_sheet.webp' + V,
+      w: 200, h: 160, cols: 4, frames: 16, fps: 10
+    },
+    rbc: {
+      idle: SP + 'ambient_rbc.webp' + V,
+      sheet: SP + 'ambient_rbc_sheet.webp' + V,
+      w: 200, h: 160, cols: 4, frames: 16, fps: 10
+    },
+    water: {
+      idle: SP + 'ambient_water_atp.webp' + V,
+      sheet: SP + 'ambient_water_atp_sheet.webp' + V,
+      w: 180, h: 200, cols: 4, frames: 16, fps: 10
+    },
+    nutrient: {
+      idle: SP + 'friend_blood_nutrients.webp' + V,
+      sheet: SP + 'friend_blood_nutrients_sheet.webp' + V,
+      w: 300, h: 300, cols: 6, frames: 24, fps: 11
+    }
+  };
+
+  // Exact directed ambient choreography per slide (1 corner anchor + 1-2 gentle left->right perimeter gliders)
+  window.SAXAZ_SLIDE_AMBIENT = {
+    0:  { corner: 'sun',   topFly: 'o2',       botFly: null },
+    1:  { corner: 'sun',   topFly: 'o2',       botFly: 'water' },
+    2:  { corner: null,    topFly: null,       botFly: 'nutrient' },
+    3:  { corner: null,    topFly: 'o2',       botFly: 'o2' },
+    4:  { corner: null,    topFly: 'o2',       botFly: 'o2' },
+    5:  { corner: null,    topFly: 'o2',       botFly: null },
+    6:  { corner: null,    topFly: 'rbc',      botFly: 'rbc' },
+    7:  { corner: 'water', topFly: 'rbc',      botFly: 'o2' },
+    8:  { corner: null,    topFly: 'rbc',      botFly: 'rbc' },
+    9:  { corner: 'water', topFly: null,       botFly: 'water' },
+    10: { corner: 'water', topFly: 'o2',       botFly: 'water' },
+    11: { corner: 'sun',   topFly: 'o2',       botFly: 'rbc' }
+  };
+
+  window.SAXAZ_AMBIENT_PROPS = AMBIENT_PROPS;
+
+  // Lightweight 10fps multi-slot ambient sprite player (pauses completely when hidden/closed)
+  window.saxazCreateAmbientLoop = function () {
+    var slots = []; // [{ el, spec, img, framePos, drawnIdx }]
+    var rafId = 0;
+    var lastTs = 0;
+    var paused = false;
+
+    function canRun() {
+      return !paused && !document.hidden && slots.length > 0;
+    }
+
+    function startLoop() {
+      if (!rafId && canRun()) {
+        lastTs = 0;
+        rafId = requestAnimationFrame(tick);
+      }
+    }
+
+    function tick(ts) {
+      if (!canRun()) {
+        rafId = 0;
+        lastTs = 0;
+        return;
+      }
+      if (!lastTs) lastTs = ts;
+      var dt = Math.min(0.05, Math.max(0.008, (ts - lastTs) / 1000));
+      lastTs = ts;
+
+      for (var i = 0; i < slots.length; i++) {
+        var s = slots[i];
+        if (!s.img || !s.el) continue;
+        var sp = s.spec;
+        s.framePos = (s.framePos + dt * (sp.fps || 10)) % sp.frames;
+        var fIdx = Math.floor(s.framePos);
+        if (fIdx !== s.drawnIdx) {
+          s.drawnIdx = fIdx;
+          var col = fIdx % sp.cols;
+          var row = Math.floor(fIdx / sp.cols);
+          var ctx = s.el.getContext('2d');
+          if (ctx) {
+            ctx.clearRect(0, 0, sp.w, sp.h);
+            ctx.drawImage(s.img, col * sp.w, row * sp.h, sp.w, sp.h, 0, 0, sp.w, sp.h);
+          }
+        }
+      }
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function mount(rootEl, slideIdx) {
+      slots = [];
+      if (!rootEl) return;
+      var cfg = window.SAXAZ_SLIDE_AMBIENT[slideIdx] || {};
+      var mapping = [
+        { sel: '.sx-amb-corner-canvas', key: cfg.corner },
+        { sel: '.sx-amb-top-canvas',    key: cfg.topFly },
+        { sel: '.sx-amb-bot-canvas',    key: cfg.botFly }
+      ];
+      mapping.forEach(function (m, idx) {
+        var cvs = rootEl.querySelector(m.sel);
+        if (!cvs || !m.key || !AMBIENT_PROPS[m.key]) return;
+        var sp = AMBIENT_PROPS[m.key];
+        if (cvs.width !== sp.w) cvs.width = sp.w;
+        if (cvs.height !== sp.h) cvs.height = sp.h;
+        var slot = { el: cvs, spec: sp, img: null, framePos: idx * 3, drawnIdx: -1 };
+        slots.push(slot);
+        getSheet(sp.sheet, function (img) {
+          if (slots.indexOf(slot) === -1) return;
+          slot.img = img;
+          startLoop();
+        });
+      });
+      startLoop();
+    }
+
+    function stop() {
+      if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+      lastTs = 0;
+    }
+
+    function setPaused(flag) {
+      paused = Boolean(flag);
+      if (paused) stop();
+      else startLoop();
+    }
+
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) startLoop();
+    });
+
+    return { mount: mount, stop: stop, setPaused: setPaused };
   };
 })();
