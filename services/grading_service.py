@@ -378,6 +378,74 @@ def _fallback_grade_written(question_text: str, max_marks: int, model_answer: st
   }
 
 
+# Expected written-answer length by marks (CBSE board-style guidance)
+_EXPECTED_WORDS = {2: (30, 50), 3: (50, 80), 4: (70, 100), 5: (80, 120)}
+
+
+def expected_answer_words(max_marks) -> tuple[int, int] | None:
+  try:
+    m = int(round(float(max_marks or 0)))
+  except (TypeError, ValueError):
+    return None
+  if m < 2:
+    return None
+  return _EXPECTED_WORDS.get(m, (80, 120) if m > 5 else None)
+
+
+def answer_length_note(student_answer: str, max_marks) -> str:
+  """Friendly note when a written answer is clearly too short for its marks (empty string otherwise)."""
+  exp = expected_answer_words(max_marks)
+  if not exp:
+    return ""
+  words = len(re.findall(r"[A-Za-z0-9\u0D00-\u0D7F\u0900-\u097F\u0B80-\u0BFF\u0600-\u06FF]+", student_answer or ""))
+  if words == 0 or words >= int(exp[0] * 0.6):
+    return ""
+  m = int(round(float(max_marks)))
+  return f"Too short for {m} marks: you wrote {words} words. Aim for about {exp[0]}-{exp[1]} words."
+
+
+_MCQ_WHY_CACHE: dict[tuple, str] = {}
+
+
+def explain_mcq_answer(question_text: str, options: list, model_answer: str, chosen: str = "", lang: str = "en") -> str:
+  """A very short, kid-friendly reason why the correct option is right (cached per question + choice)."""
+  lang_code = normalize_tutor_lang(lang)
+  ans_parts = [ln.strip() for ln in (model_answer or "").splitlines() if ln.strip()]
+  short_ans = ans_parts[0] if ans_parts else (model_answer or "").strip()
+  chosen_clean = re.sub(r'^[A-Ea-e][\.\)\s:-]+', '', (chosen or "").strip()).strip()
+  picked_right = bool(chosen) and _match_mcq_option(chosen, model_answer) is True
+  key = (question_text.strip()[:200], short_ans.lower(), "" if picked_right else chosen_clean.lower(), lang_code)
+  if key in _MCQ_WHY_CACHE:
+    return _MCQ_WHY_CACHE[key]
+  why = ""
+  if client:
+    try:
+      sys_msg = (
+        "You are a friendly Class 10 science tutor. In at most 2 short sentences (under 40 words total), "
+        "explain simply why the correct option is right. If the student picked a different option, "
+        "add a few words on why that one does not fit. Plain words a 15-year-old understands. No emojis. "
+        "Return JSON: {'why': '...'}" + _lang_directive_for_grader(lang_code)
+      )
+      opts_txt = " | ".join(f"{chr(65 + i)}. {str(o).strip()}" for i, o in enumerate(options or []))
+      usr = f"Question: {question_text}\nOptions: {opts_txt}\nCorrect: {short_ans}\n"
+      if chosen_clean and not picked_right:
+        usr += f"Student picked: {chosen_clean}\n"
+      r = _chat_json_completion(
+        messages=[{"role": "system", "content": sys_msg}, {"role": "user", "content": usr}],
+        temperature=0.3,
+        max_tokens=120,
+      )
+      raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", (r.choices[0].message.content or "{}").strip())
+      why = _strip_emojis(str(json.loads(raw).get("why") or "")).strip()
+    except Exception as e:
+      print(f"MCQ why notice: {e}")
+  if not why:
+    extra = " ".join(ans_parts[1:]).strip()
+    why = extra or f"The correct answer is {short_ans}."
+  _MCQ_WHY_CACHE[key] = why
+  return why
+
+
 def grade_answer(
   question_text: str,
   max_marks: int,
@@ -469,57 +537,20 @@ def grade_answer(
         "explanation_html": "",
       }
     elif is_match is False:
-      stu_clean = re.sub(r'^[A-Da-d][\.\)\s:-]+', '', s_raw).strip() or s_raw
-      cache_k = (question_text.strip()[:140], stu_clean.lower(), lang_code)
-      mem_msg = _build_deterministic_memory_note(student_answer, model_answer, history_list, 0.0, max_marks)
-      cached_hint = _WRONG_MCQ_HINT_CACHE.get(cache_k)
-      if not cached_hint and client:
-        try:
-          mcq_sys = (
-            "Concise science tutor. Student picked a WRONG MCQ option. "
-            "NEVER reveal the correct option letter/word! "
-            "Return JSON: {'why_wrong': '<max 18 words: what student option actually does vs question>', "
-            "'key_points': ['<5-9 word clue 1>', '<5-9 word clue 2>'], "
-            "'spoken_short': '<12-16 word warm non-spoiler spoken hint>'}. No emojis."
-            + _lang_directive_for_grader(lang_code)
-          )
-          mcq_usr = f"Q: {question_text}\nWrong choice: {student_answer}\nRight (DO NOT REVEAL): {model_answer}"
-          r_mcq = _chat_json_completion(
-            messages=[{"role": "system", "content": mcq_sys}, {"role": "user", "content": mcq_usr}],
-            temperature=0.3,
-            max_tokens=150,
-          )
-          raw_m = re.sub(r"^```(?:json)?\s*|\s*```$", "", (r_mcq.choices[0].message.content or "{}").strip())
-          pm = json.loads(raw_m)
-          w_txt = _strip_emojis(pm.get("why_wrong") or "").strip()
-          k_lst = [_strip_emojis(str(x)).strip(" •-*") for x in (pm.get("key_points") or []) if str(x).strip()][:2]
-          sp_txt = _strip_emojis(pm.get("spoken_short") or w_txt).strip()
-          if w_txt and k_lst:
-            cached_hint = {"why_wrong": w_txt, "key_points": k_lst, "spoken_short": sp_txt}
-            _WRONG_MCQ_HINT_CACHE[cache_k] = cached_hint
-        except Exception as e:
-          print(f"MCQ hint cache fallback notice: {e}")
-
-      if not cached_hint:
-        why_msg = f"'{stu_clean}' describes a different process than the specific function asked in this question."
-        stem_clean = re.split(r'\([A-Da-d]\)|\b[A-D]\.', question_text)[0].strip().rstrip(':?- ')
-        clues = [
-          f"Focus on the exact organ or mechanism mentioned: {stem_clean[:95]}",
-          "Match that biological function to the system responsible for carrying it out",
-        ]
-        cached_hint = {"why_wrong": why_msg, "key_points": clues, "spoken_short": why_msg}
-
+      ans_parts = [ln.strip() for ln in (model_answer or "").splitlines() if ln.strip()]
+      short_ans = ans_parts[0] if ans_parts else (model_answer or "").strip()
+      plain = f"The correct answer is {short_ans}."
       return {
         "marks_awarded": 0,
-        "ai_feedback": cached_hint["why_wrong"],
-        "why_wrong": cached_hint["why_wrong"],
-        "key_points": cached_hint["key_points"],
-        "memory_note": mem_msg,
-        "spoken_short": cached_hint["spoken_short"],
+        "ai_feedback": plain,
+        "why_wrong": plain,
+        "key_points": [],
+        "memory_note": "",
+        "spoken_short": plain,
         "ideal_answer": model_answer,
         "easy_way_text": "",
-        "key_concept_text": "; ".join(cached_hint["key_points"]),
-        "spoken_1": cached_hint["spoken_short"],
+        "key_concept_text": "",
+        "spoken_1": plain,
         "spoken_2": "",
         "spoken_3": "",
         "explanation_html": "",
@@ -559,6 +590,13 @@ def grade_answer(
     f"Model: {model_answer}\n"
     f"Student: {student_answer}\n"
   )
+  exp_len = expected_answer_words(max_marks)
+  if exp_len and not has_drawing:
+    n_words = len(re.findall(r"[A-Za-z0-9\u0D00-\u0D7F\u0900-\u097F\u0B80-\u0BFF\u0600-\u06FF]+", student_answer or ""))
+    user_prompt += (
+      f"Length: a {max_marks}-mark answer should be about {exp_len[0]}-{exp_len[1]} words; the student wrote {n_words}. "
+      "An answer far shorter than expected usually misses scoring points: do not give full marks unless it still covers every point.\n"
+    )
   if history_list:
     hist_lines = [f"Try#{i+1}({float(h.get('marks') or 0):g}/{max_marks}): {str(h.get('answer') or '')[:90]}" for i, h in enumerate(history_list[-2:])]
     user_prompt += "Past: " + " | ".join(hist_lines) + "\n"

@@ -718,6 +718,27 @@ async def grade_single_question(request: Request, attempt_id: str, question_id: 
 
     marks_awarded = float(result['marks_awarded'] or 0)
     max_m = float(max_marks or 1)
+
+    # Multiple choice: tell the page which option is correct so it can colour it green
+    correct_option_index = None
+    is_objective = str(q_type or '').upper() in ('MCQ', 'ASSERTION_REASON')
+    if is_objective:
+      try:
+        opt_row = cursor.execute("SELECT options FROM questions WHERE id = ?", (question_id,)).fetchone()
+        opts = json.loads(_re.sub(r',\s*([\]}])', r'\1', opt_row[0])) if (opt_row and opt_row[0]) else []
+        for oi, ov in enumerate(opts if isinstance(opts, list) else []):
+          opt_body = _re.sub(r'^(?:[A-Ea-e][.):]|\([A-Ea-e]\))\s*', '', str(ov).strip())
+          cand = f"{chr(65 + oi)}. {opt_body}"
+          if grading_service._match_mcq_option(cand, model_answer) is True:
+            correct_option_index = oi
+            break
+      except Exception as opt_err:
+        print(f"correct option lookup notice: {opt_err}")
+    # Written answers: friendly note when the answer is clearly too short for its marks
+    length_note = ""
+    if not is_objective and not drawing and marks_awarded < max_m:
+      length_note = grading_service.answer_length_note(cleaned_answer, max_marks)
+
     improvement_delta = round(marks_awarded - previous_marks, 2) if previous_marks is not None else 0.0
     improvement_pct = round(((marks_awarded - previous_marks) / max_m) * 100.0, 1) if (previous_marks is not None and max_m > 0) else 0.0
 
@@ -739,6 +760,8 @@ async def grade_single_question(request: Request, attempt_id: str, question_id: 
       "spoken_2": "",
       "spoken_3": "",
       "is_correct": marks_awarded >= (max_m * 0.5),
+      "correct_option_index": correct_option_index,
+      "length_note": length_note,
       "is_retry": is_retry or bool(past_attempts),
       "retry_count": retry_count or len(past_attempts),
       "previous_marks": previous_marks,
@@ -762,6 +785,33 @@ async def grade_single_question(request: Request, attempt_id: str, question_id: 
     return JSONResponse({"success": False, "error": f"Unable to grade right now ({e}). Please try again."}, status_code=200)
   finally:
     conn.close()
+
+@router.post("/questions/{question_id}/why")
+async def explain_question_answer(request: Request, question_id: int, chosen: str = Form("")):
+  conn = get_db_connection()
+  try:
+    user = require_student(request, conn)
+    row = conn.execute(
+      """SELECT q.question_text, q.model_answer, q.options, COALESCE(q.question_type, m.question_type), ep.type
+         FROM questions q JOIN modules m ON q.module_id = m.id JOIN exam_papers ep ON m.exam_paper_id = ep.id
+         WHERE q.id = ?""", (question_id,)
+    ).fetchone()
+    if not row:
+      return JSONResponse({"success": False, "error": "Question not found"}, status_code=404)
+    q_text, model_answer, options_raw, q_type, paper_type = row
+    if str(paper_type or '').lower() == 'real' or str(q_type or '').upper() not in ('MCQ', 'ASSERTION_REASON'):
+      return JSONResponse({"success": False, "error": "Not available for this question"}, status_code=400)
+    try:
+      opts = json.loads(_re.sub(r',\s*([\]}])', r'\1', options_raw)) if options_raw else []
+    except Exception:
+      opts = []
+    import asyncio
+    lang = user.get("tutor_lang") or "en"
+    why = await asyncio.to_thread(grading_service.explain_mcq_answer, q_text, opts, model_answer, chosen, lang)
+    return JSONResponse({"success": True, "why": why})
+  finally:
+    conn.close()
+
 
 @router.post("/attempts/{attempt_id}/finish")
 async def finish_interactive_exam(request: Request, attempt_id: str):

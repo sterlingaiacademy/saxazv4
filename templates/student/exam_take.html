@@ -404,22 +404,25 @@
               <template x-if="isObjectiveQuestion">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-3.5 relative z-10">
                   <template x-for="(opt, idx) in parsedOptions" :key="idx">
-                    <label class="flex items-center gap-3 p-3.5 sm:p-4 rounded-2xl border-2 transition-all"
+                    <label class="sx-mcq-opt flex items-center gap-3 p-3.5 sm:p-4 rounded-2xl border-2 transition-all"
                            :class="[
                              (feedback !== null || isGrading) ? 'cursor-default' : 'cursor-pointer',
-                             isMcqSelected(opt, idx) ? 'border-[#231f20] bg-[#f7b317]/25 text-[#231f20]' : 'border-[#231f20]/20 bg-[#ffffff] hover:border-[#231f20] text-[#231f20]'
+                             mcqOptionState(opt, idx) ? ('is-' + mcqOptionState(opt, idx)) : (isMcqSelected(opt, idx) ? 'border-[#231f20] bg-[#f7b317]/25 text-[#231f20]' : 'border-[#231f20]/20 bg-[#ffffff] hover:border-[#231f20] text-[#231f20]')
                            ]">
                       <input type="radio"
                              name="mcq_answer"
                              :value="formatMcqOption(opt, idx)"
                              x-model="answerText"
-                             @change="saveCurrentDraft()"
+                             @change="answerText = formatMcqOption(opt, idx); saveCurrentDraft(); if (feedback === null && !isGrading) submitAnswer();"
                              class="sr-only"
                              :disabled="feedback !== null || isGrading">
-                      <span class="w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 text-xs font-black"
-                            :class="isMcqSelected(opt, idx) ? 'border-[#231f20] bg-[#231f20] text-[#f7b317]' : 'border-[#231f20]/35 bg-[#ffffff] text-[#231f20]'"
-                            x-text="String.fromCharCode(65 + idx)"></span>
-                      <span class="text-sm sm:text-base font-bold text-[#231f20] leading-snug" x-text="displayMcqOption(opt)"></span>
+                      <span class="sx-mcq-letter w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 text-xs font-black"
+                            :class="isMcqSelected(opt, idx) ? 'border-[#231f20] bg-[#231f20] text-[#f7b317]' : 'border-[#231f20]/35 bg-[#ffffff] text-[#231f20]'">
+                        <span x-show="mcqOptionState(opt, idx) !== 'right' && mcqOptionState(opt, idx) !== 'wrong'" x-text="String.fromCharCode(65 + idx)"></span>
+                        <span x-show="mcqOptionState(opt, idx) === 'right'" class="material-symbols-outlined" style="font-size:16px;">check</span>
+                        <span x-show="mcqOptionState(opt, idx) === 'wrong'" class="material-symbols-outlined" style="font-size:16px;">close</span>
+                      </span>
+                      <span class="sx-mcq-text text-sm sm:text-base font-bold text-[#231f20] leading-snug" x-text="displayMcqOption(opt)"></span>
                     </label>
                   </template>
                 </div>
@@ -465,6 +468,15 @@
                        class="w-full h-36 text-sm sm:text-base font-medium bg-[#ffffff] border-2 border-[#231f20]/25 focus:border-[#231f20] focus:outline-none rounded-2xl p-4 sm:p-5 transition-all placeholder-[#231f20]/45 resize-y relative z-10 text-[#231f20] leading-relaxed disabled:opacity-75 disabled:cursor-not-allowed" 
                        :placeholder="isDiagramQuestion ? 'Optional: Type your labels or explanation points here...' : 'Start typing your answer here...'"></textarea>
                   
+                  <!-- Length guide: how long an answer of this many marks should be -->
+                  <template x-if="!isDiagramQuestion && !feedback && expectedWords">
+                    <div class="sx-len-guide" :class="'is-' + lengthState">
+                      <span class="material-symbols-outlined" aria-hidden="true" x-text="lengthState === 'good' ? 'check_circle' : 'edit_note'"></span>
+                      <span><strong x-text="answerWordCount"></strong> <span x-text="answerWordCount === 1 ? 'word' : 'words'"></span>
+                        &middot; aim for <span x-text="expectedWords[0] + '-' + expectedWords[1]"></span> words for <span x-text="currentMarks"></span> marks</span>
+                    </div>
+                  </template>
+
                   <!-- Subtle Contextual Helpers on Non-Diagram Written Questions -->
                   <template x-if="!isDiagramQuestion && !feedback">
                     <div class="flex items-center justify-between gap-2.5 flex-wrap relative z-10 px-0.5">
@@ -522,8 +534,29 @@
             </template>
 
             <!-- Minimal Spacious Feedback Coach Card (Click Card to Toggle Tutor Voice ON/OFF) -->
+            <!-- Multiple choice result: the answer + a small "Why?" (tutor explains on tap) -->
+            <template x-if="feedback && isObjectiveQuestion">
+            <div class="sx-mcq-result">
+              <div class="sx-mcq-result-row">
+                <span class="sx-mcq-verdict" :class="(feedback?.marks >= feedback?.max_marks) ? 'is-right' : 'is-wrong'">
+                  <span class="material-symbols-outlined" aria-hidden="true" x-text="(feedback?.marks >= feedback?.max_marks) ? 'check_circle' : 'cancel'"></span>
+                  <span x-text="(feedback?.marks >= feedback?.max_marks) ? 'Correct!' : 'Not quite'"></span>
+                </span>
+                <span class="sx-mcq-answer">Answer: <strong x-text="mcqCorrectLabel()"></strong></span>
+                <button type="button" class="sx-mcq-why-btn" @click="toggleMcqWhy()" :aria-expanded="feedback && feedback._whyOpen ? 'true' : 'false'">
+                  <span class="material-symbols-outlined" aria-hidden="true">help</span>
+                  <span>Why?</span>
+                </button>
+              </div>
+              <div class="sx-mcq-why" x-show="feedback && feedback._whyOpen">
+                <img :src="`/static/images/avatars/${tutorName}_${(feedback && feedback._whyLoading) ? 'thinking' : 'talking'}.webp?v=543`" alt="" class="sx-mcq-why-avatar">
+                <p x-text="(feedback && feedback._whyLoading) ? 'Let me explain...' : (feedback && feedback._whyText) || ''"></p>
+              </div>
+            </div>
+            </template>
+
             <div id="exam-feedback-card"
-                 x-show="feedback"
+                 x-show="feedback && !isObjectiveQuestion"
                  :data-tutor-speaking="(isSpeaking || miniTutorPlayingAudio) ? 'true' : 'false'"
                  @click="isSpeaking ? stopTutorNarration() : replayGuidedExplanation()"
                  :title="isSpeaking ? 'Click card to stop tutor voice' : 'Click card to hear tutor'"
@@ -556,6 +589,14 @@
               <!-- 1 Crisp Sentence Explaining Why -->
               <p class="sx-coach-why"
                  x-text="(feedback?.marks >= feedback?.max_marks) ? feedback?.feedback : (feedback?.why_wrong || feedback?.feedback)"></p>
+
+              <!-- Answer too short for its marks -->
+              <template x-if="feedback?.length_note">
+                <div class="sx-len-note">
+                  <span class="material-symbols-outlined" aria-hidden="true">edit_note</span>
+                  <span x-text="feedback.length_note"></span>
+                </div>
+              </template>
 
               <!-- Open Minimal Key Scoring Points -->
               <template x-if="(feedback?.marks < feedback?.max_marks) && feedback?.key_points && feedback.key_points.length > 0">
@@ -621,7 +662,7 @@
               <template x-if="feedback">
                 <div class="flex flex-col sm:flex-row gap-2.5 w-full sm:w-auto sm:justify-end">
                   <button id="exam-try-again-btn"
-                      x-show="feedback?.marks < feedback?.max_marks"
+                      x-show="feedback?.marks < feedback?.max_marks && !isObjectiveQuestion"
                       type="button"
                       class="sx-ext-cta-yellow w-full sm:w-auto min-h-[46px] px-6"
                       @click="tryAgain()">
@@ -839,6 +880,77 @@ document.addEventListener('alpine:init', () => {
       const sub = String(this.paper?.subject_name || '').toLowerCase();
       if (sub.includes('bio')) return false;
       return /\b(math|physics|chem)/i.test(sub);
+    },
+
+    get currentMarks() {
+      return Number(this.currentQuestion?.max_marks || this.currentModule?.mark_value || 1);
+    },
+
+    get expectedWords() {
+      if (this.isObjectiveQuestion) return null;
+      const m = Math.round(this.currentMarks);
+      const map = { 2: [30, 50], 3: [50, 80], 4: [70, 100], 5: [80, 120] };
+      if (m < 2) return null;
+      return map[m] || [80, 120];
+    },
+
+    get answerWordCount() {
+      const words = String(this.answerText || '').match(/[A-Za-z0-9\u0D00-\u0D7F\u0900-\u097F\u0B80-\u0BFF\u0600-\u06FF]+/g);
+      return words ? words.length : 0;
+    },
+
+    get lengthState() {
+      const exp = this.expectedWords;
+      if (!exp) return 'none';
+      const n = this.answerWordCount;
+      if (n === 0) return 'empty';
+      if (n < exp[0] * 0.6) return 'short';
+      return 'good';
+    },
+
+    // 'right' | 'wrong' | 'dim' | 'checking' | '' (normal)
+    mcqOptionState(opt, idx) {
+      const sel = this.isMcqSelected(opt, idx);
+      if (this.isGrading && sel) return 'checking';
+      const f = this.feedback;
+      if (!f) return '';
+      const gotIt = Number(f.marks || 0) >= Number(f.max_marks || 1);
+      const ci = (f.correct_option_index === 0 || f.correct_option_index) ? Number(f.correct_option_index) : null;
+      if (ci !== null ? idx === ci : (sel && gotIt)) return 'right';
+      if (sel) return 'wrong';
+      return 'dim';
+    },
+
+    mcqCorrectLabel() {
+      const f = this.feedback;
+      if (!f) return '';
+      const ci = (f.correct_option_index === 0 || f.correct_option_index) ? Number(f.correct_option_index) : null;
+      if (ci !== null && this.parsedOptions[ci] !== undefined) {
+        return String.fromCharCode(65 + ci) + '. ' + this.displayMcqOption(this.parsedOptions[ci]);
+      }
+      const first = String(f.ideal_answer || '').split('\n').map(s => s.trim()).filter(Boolean)[0] || '';
+      return first.replace(/^\(([a-eA-E])\)\s*/, (m, l) => l.toUpperCase() + '. ');
+    },
+
+    async toggleMcqWhy() {
+      const f = this.feedback;
+      if (!f || !this.currentQuestion) return;
+      if (f._whyOpen) { f._whyOpen = false; this.stopTutorNarration(); return; }
+      f._whyOpen = true;
+      if (!f._whyText) {
+        f._whyLoading = true;
+        let why = '';
+        try {
+          const fd = new FormData();
+          fd.append('chosen', this.answerText || f._savedAnswerText || '');
+          const res = await fetch(`/student/questions/${this.currentQuestion.id}/why`, { method: 'POST', body: fd });
+          const data = await res.json();
+          if (data && data.success && data.why) why = data.why;
+        } catch (e) {}
+        f._whyText = why || ('The correct answer is ' + this.mcqCorrectLabel() + '.');
+        f._whyLoading = false;
+      }
+      if (f._whyOpen && f._whyText) this.speak(f._whyText);
     },
 
     get canSubmitCurrentAnswer() {
@@ -1787,7 +1899,7 @@ document.addEventListener('alpine:init', () => {
             window.SFX?.playError();
           }
           
-          this.runGuidedTeacherWalkthrough(data, false);
+          if (!this.isObjectiveQuestion) this.runGuidedTeacherWalkthrough(data, false);
         } else {
           const errMsg = (data && (data.error || (typeof data.detail === 'string' ? data.detail : ''))) || 'Error grading answer.';
           alert(errMsg);
