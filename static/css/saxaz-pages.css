@@ -385,7 +385,7 @@ label.sxp-filter { display: inline-flex; align-items: center; }
   .sxc .sx-sync-visual-stack .sx-tutor-voice-pill { transform: scale(0.82); transform-origin: center top; margin-top: -2px; white-space: nowrap; }
   .sxc .sx-sync-visual-stack .sx-smart-stage { flex: 1 1 0; min-width: 0; max-width: 220px; margin-top: 0; }
   .sxc .sx-smart-canvas-wrap,
-  .sxc .sx-nutshell-card.is-fullscreen .sx-smart-canvas-wrap { max-width: 220px; max-height: 165px; }
+  .sxc .sx-nutshell-card.is-fullscreen .sx-smart-canvas-wrap { max-width: 220px; height: 155px; max-height: 155px; }
 }
 
 /* Current spoken word: looks bold without changing the letter widths,

@@ -1,12 +1,12 @@
 // SAXAZ V4 Studio Progressive Web App Service Worker
-const CACHE_NAME = 'saxaz-v4-studio-v543';
+const CACHE_NAME = 'saxaz-v4-studio-v544';
 // Keep these in step with the ?v= numbers used in templates/base.html
 const PRECACHE_ASSETS = [
   '/static/css/app.css?v=250',
   '/static/css/v2-studio.css?v=542',
   '/static/css/saxaz-fun.css?v=542',
   '/static/css/sx3.css?v=542',
-  '/static/css/saxaz-ext.css?v=542',
+  '/static/css/saxaz-ext.css?v=543',
   '/static/css/saxaz-match.css?v=6',
   '/static/css/saxaz-cursor.css?v=5',
   '/static/js/saxaz-player.js?v=516',

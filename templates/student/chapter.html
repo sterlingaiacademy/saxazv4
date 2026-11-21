@@ -22,10 +22,10 @@
 {% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="/static/css/saxaz-pages.css?v=9">
+<link rel="stylesheet" href="/static/css/saxaz-pages.css?v=10">
 {% from "student/partials/summary_games.html" import molecule_defs, game_leaf, game_food, game_breathe, game_blood, game_pump, game_kidney, game_team %}
 {{ molecule_defs() }}
-<link rel="stylesheet" href="/static/css/summary-games.css?v=25">
+<link rel="stylesheet" href="/static/css/summary-games.css?v=26">
 <script src="/static/js/summary-games.js?v=23"></script>
 <script src="/static/js/summary-storyboard.js?v=543"></script>
 {% set content_list = chapter.content if chapter and chapter.content is defined and chapter.content is iterable and chapter.content is not string else (modules if modules is defined else []) %}
