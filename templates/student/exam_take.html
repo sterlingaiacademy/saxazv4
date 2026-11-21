@@ -65,78 +65,52 @@
       {% endif %}
     </div>
 
-    <!-- Unified Combined Top Exam Hub Card (Title + Mock Test Switcher + Timer/Finish + Progress + 1..N Question Numbers) -->
-    <div class="sx-exam-hub is-compact">
-      <!-- Row 1: which mock test + timer / restart / finish -->
-      <div class="sx-hub-row">
-        {% if sibling_mocks is defined and sibling_mocks|length > 1 %}
-        <h1 class="sr-only">{{ paper.title }}</h1>
-        <nav class="sx-mock-tabs no-scrollbar" aria-label="Mock tests">
-        {% for sm in sibling_mocks %}
-          <a href="/student/exams/{{ sm.id }}"
-             {% if sm.id != paper.id %}
-             data-confirm="Switch to {{ sm.title }}? Your submitted answers and drafts in {{ paper.title }} stay saved."
-             data-confirm-title="Switch to {{ sm.title }}?"
-             data-confirm-btn="Switch Mock Test"
-             {% endif %}
-             class="sx-mock-tab {% if sm.id == paper.id %}is-active{% endif %}">
-            {% if sm.title.startswith('Mock ') %}<span><span class="sx-hide-phone">Mock </span>{{ sm.title[5:] }}</span>{% else %}<span>{{ sm.title }}</span>{% endif %}
-            {% if sm.best_pct is not none %}
-            <span style="margin-left:5px;padding:1px 6px;border-radius:999px;font-size:0.68rem;font-weight:900;background:{{ '#231f20' if sm.id == paper.id else '#f7b317' }};color:{{ '#f7b317' if sm.id == paper.id else '#231f20' }};border:1px solid #231f20;">{{ sm.best_pct }}%</span>
-            {% endif %}
-          </a>
-        {% endfor %}
-        </nav>
-        {% else %}
-        <h1 class="sx-exam-hub-title">{{ paper.title }}</h1>
-        {% endif %}
-        <div class="sx-exam-hub-actions">
-          <!-- Clickable Stopwatch Pill (Click to Pause / Resume) -->
-          <button type="button"
-                  x-show="!paper.is_digi_library"
-                  @click="toggleMockTimerPause()"
-                  class="sx-exam-timer-btn"
-                  :class="timerPaused && 'is-paused'"
-                  :title="timerPaused ? 'Timer paused - click to resume' : 'Click to pause timer'">
-            <span class="sx-exam-timer-dot"></span>
-            <span x-text="formattedElapsed">00:00</span>
-            <svg x-show="!timerPaused" width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.2"/><rect x="14" y="5" width="4" height="14" rx="1.2"/></svg>
-            <svg x-show="timerPaused" x-cloak width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5.2v13.6L19 12 7 5.2z"/></svg>
-          </button>
-
-          <!-- Restart Button -->
-          <button type="button"
-                  x-show="!paper.is_digi_library"
-                  @click="startFreshTimedRun()"
-                  class="sx-exam-ghost-btn"
-                  title="Restart from 00:00">
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-            <span>Restart</span>
-          </button>
-
-          <!-- Primary Yellow Finish Button -->
-          <button type="button"
-                  x-show="totalAnswered > 0"
-                  x-cloak
-                  @click="finishExam()"
-                  :disabled="isFinishing"
-                  class="sx-exam-finish-btn">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 4.5 4.5L19 7"/></svg>
-            <span x-text="isFinishing ? 'Saving...' : 'Finish'"></span>
-          </button>
+    <!-- One simple quiz card (saxaz.com quiz layout): title, progress, question bar, question box -->
+    <div class="sx-quiz-shell">
+      <div class="sx-quiz-head">
+        <div class="sx-quiz-titleblock">
+          <h1 class="sx-quiz-title">{{ paper.title }}</h1>
+          <p class="sx-quiz-sub"><span x-text="totalQuestions"></span> questions<span x-show="!paper.is_digi_library"> &middot; {{ paper.target_marks or 30 }} marks</span> &middot; <span x-text="totalAnswered"></span> done</p>
         </div>
+        {% if sibling_mocks is defined and sibling_mocks|length > 1 %}
+        <div class="sx-quiz-switch-wrap">
+          <span class="sx-quiz-switch-label">Mock test</span>
+          <nav class="sx-quiz-switch" aria-label="Mock tests">
+            {% for sm in sibling_mocks %}
+            <a href="/student/exams/{{ sm.id }}"
+               {% if sm.id != paper.id %}
+               data-confirm="Switch to {{ sm.title }}? Your submitted answers and drafts in {{ paper.title }} stay saved."
+               data-confirm-title="Switch to {{ sm.title }}?"
+               data-confirm-btn="Switch Mock Test"
+               {% endif %}
+               {% if sm.best_pct is not none %}title="Best score {{ sm.best_pct }}%"{% endif %}
+               class="sx-quiz-switch-btn {% if sm.id == paper.id %}is-active{% endif %}"
+               {% if sm.id == paper.id %}aria-current="page"{% endif %}>
+              {% if sm.title.startswith('Mock ') %}{{ sm.title[5:] }}{% else %}{{ sm.title }}{% endif %}{% if sm.best_pct is not none %}<small>{{ sm.best_pct }}%</small>{% endif %}
+            </a>
+            {% endfor %}
+          </nav>
+        </div>
+        {% endif %}
       </div>
 
-      <div class="sx-exam-hub-progress">
-        <div class="sx-exam-hub-progress-bar" :style="'width: ' + Math.round(progressPercentage) + '%;'"></div>
-      </div>
+      <div class="sx-quiz-progress"><div :style="'width: ' + Math.round(progressPercentage) + '%;'"></div></div>
 
-      <!-- Row 2: question numbers + how many are done -->
-      <div class="sx-hub-row sx-hub-row-q">
-        <div class="sx-exam-hub-qrow no-scrollbar" x-ref="qstripContainer">
+      <div class="sx-quiz-qbar" x-show="!isModuleComplete">
+        <div class="sx-quiz-qbar-left">
+          <span class="sx-quiz-qlabel">
+            <span x-text="`Question ${currentFlatQuestionNumber} of ${totalQuestions}`"></span><span x-show="!paper.is_digi_library && currentQuestion" x-text="` \u00b7 ${currentQuestion?.max_marks} mark${currentQuestion?.max_marks == 1 ? '' : 's'}`"></span>
+          </span>
+          <div class="sx-qnav" @click.outside="qnavOpen = false" @keydown.escape.window="qnavOpen = false">
+            <button type="button" class="sx-qnav-btn" @click="qnavOpen = !qnavOpen" :aria-expanded="qnavOpen ? 'true' : 'false'">
+              <span>All questions</span>
+              <span class="material-symbols-outlined" aria-hidden="true" x-text="qnavOpen ? 'expand_less' : 'expand_more'"></span>
+            </button>
+            <div class="sx-qnav-pop" x-show="qnavOpen" x-cloak x-transition.opacity.duration.150ms>
+              <div class="sx-qnav-grid" x-ref="qstripContainer">
         <template x-for="fq in flatQuestions" :key="fq.id">
           <button type="button"
-                  @click="goToQuestion(fq.moduleIdx, fq.questionIdx)"
+                  @click="goToQuestion(fq.moduleIdx, fq.questionIdx); qnavOpen = false"
                   :data-qpill-id="fq.id"
                   :title="'Question ' + fq.displayNum + (fq.maxMarks ? ' (' + fq.maxMarks + (fq.maxMarks == 1 ? ' Mark)' : ' Marks)') : '')"
                   class="sx-exam-qnum"
@@ -148,10 +122,49 @@
                   x-text="fq.displayNum">
           </button>
         </template>
+              </div>
+              <p class="sx-qnav-key"><i class="is-ok"></i> right <i class="is-bad"></i> needs work <i class="is-now"></i> you are here</p>
+            </div>
+          </div>
+        </div>
+        <div class="sx-quiz-qbar-right">
+          <button type="button"
+                  x-show="!paper.is_digi_library"
+                  @click="toggleMockTimerPause()"
+                  class="sx-exam-timer-btn"
+                  :class="timerPaused && 'is-paused'"
+                  :title="timerPaused ? 'Timer paused - click to resume' : 'Click to pause timer'">
+            <span class="sx-exam-timer-dot"></span>
+            <span x-text="formattedElapsed">00:00</span>
+            <svg x-show="!timerPaused" width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.2"/><rect x="14" y="5" width="4" height="14" rx="1.2"/></svg>
+            <svg x-show="timerPaused" x-cloak width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5.2v13.6L19 12 7 5.2z"/></svg>
+          </button>
+                  <button x-show="!isSpeaking"
+                          @click="speak(currentQuestion.question_text)"
+                          type="button"
+                          class="sx-quiz-tool bg-[#ffffff] hover:bg-[#f7b317] text-[#231f20] border border-[#231f20]/25 hover:border-[#231f20] transition-colors flex items-center justify-center gap-1.5 text-xs font-extrabold cursor-pointer"
+                          title="Read Question Aloud">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clip-rule="evenodd" /></svg>
+                    <span>Listen</span>
+                  </button>
+                  <button x-show="isSpeaking" x-cloak
+                          @click="stopTutorNarration()"
+                          type="button"
+                          class="sx-quiz-tool bg-[#231f20] text-[#f7b317] border border-[#231f20] transition-colors flex items-center justify-center gap-1.5 text-xs font-extrabold cursor-pointer"
+                          title="Stop Tutor Narration">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+                    <span>Stop</span>
+                  </button>
+
+                  <button @click="openMiniTutor()"
+                          type="button"
+                          class="sx-quiz-tool bg-[#f7b317] text-[#231f20] border border-[#231f20] transition-colors flex items-center justify-center gap-1.5 text-xs font-extrabold cursor-pointer"
+                          title="Ask Tutor for a Socratic hint">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-[#231f20] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    <span>Ask Tutor</span>
+                  </button>
+        </div>
       </div>
-        <span class="sx-hub-meta"><strong x-text="totalAnswered"></strong>/<span x-text="totalQuestions"></span> done<span x-show="!paper.is_digi_library" class="sx-hide-phone"> &middot; {{ paper.target_marks or 30 }} marks</span></span>
-      </div>
-    </div>
 
     <!-- Mobile Backdrop for Mini AI Tutor -->
     <div x-show="showMiniTutor" x-cloak
@@ -319,55 +332,13 @@
 
     <!-- Question View -->
     <div x-show="!isModuleComplete" x-transition.opacity.duration.250ms>
-      <div id="exam-question-card" class="relative w-full mt-3 transition-all duration-300">
-        <div class="bg-[#ffffff] rounded-[22px] border border-[#231f20]/20 overflow-visible relative z-10">
-          <div class="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6">
+      <div id="exam-question-card" class="relative w-full transition-all duration-300">
+        <div class="overflow-visible relative z-10">
+          <div class="sx-quiz-body space-y-4 sm:space-y-5">
             
-            <!-- Question Header (Distraction-Free: Listen/Stop + Ask Tutor ONLY) -->
-            <div class="space-y-3 sm:space-y-3.5 relative z-10">
-              <div class="flex flex-wrap items-center justify-between gap-2.5">
-                <div class="flex items-center gap-2.5 min-w-0">
-                  <div class="min-w-9 h-9 sm:min-w-10 sm:h-10 px-2 rounded-xl bg-[#231f20] flex items-center justify-center font-black text-sm sm:text-base flex-shrink-0">
-                    <span class="text-[#f7b317]" x-text="currentFlatQuestionNumber"></span>
-                  </div>
-                  <div class="flex items-center gap-2 flex-wrap min-w-0">
-                    <span class="text-xs font-extrabold uppercase tracking-wider text-[#231f20]/65"
-                          x-text="`Question ${currentFlatQuestionNumber} of ${totalQuestions}`"></span>
-                    <span x-show="!paper.is_digi_library"
-                          class="px-2.5 py-1 rounded-xl bg-[#ffffff] border border-[#231f20]/25 font-extrabold text-xs text-[#231f20] whitespace-nowrap"
-                          x-text="`${currentQuestion.max_marks} Mark${currentQuestion.max_marks == 1 ? '' : 's'}`"></span>
-                  </div>
-                </div>
-
-                <!-- Clean 2-Button Header Toolbar: Listen/Stop + Ask Tutor -->
-                <div class="flex items-center gap-2">
-                  <button x-show="!isSpeaking"
-                          @click="speak(currentQuestion.question_text)"
-                          type="button"
-                          class="px-3 py-1.5 min-h-[36px] rounded-xl bg-[#ffffff] hover:bg-[#f7b317] text-[#231f20] border border-[#231f20]/25 hover:border-[#231f20] transition-colors flex items-center justify-center gap-1.5 text-xs font-extrabold cursor-pointer"
-                          title="Read Question Aloud">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clip-rule="evenodd" /></svg>
-                    <span>Listen</span>
-                  </button>
-                  <button x-show="isSpeaking" x-cloak
-                          @click="stopTutorNarration()"
-                          type="button"
-                          class="px-3 py-1.5 min-h-[36px] rounded-xl bg-[#231f20] text-[#f7b317] border border-[#231f20] transition-colors flex items-center justify-center gap-1.5 text-xs font-extrabold cursor-pointer"
-                          title="Stop Tutor Narration">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
-                    <span>Stop</span>
-                  </button>
-
-                  <button @click="openMiniTutor()"
-                          type="button"
-                          class="px-3 py-1.5 min-h-[36px] rounded-xl bg-[#f7b317] text-[#231f20] border border-[#231f20] transition-colors flex items-center justify-center gap-1.5 text-xs font-extrabold cursor-pointer"
-                          title="Ask Tutor for a Socratic hint">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-[#231f20] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                    <span>Ask Tutor</span>
-                  </button>
-                </div>
-              </div>
-
+            <!-- Question box: question on the left, answers on the right (multiple choice, desktop) -->
+            <div class="sx-quiz-box" :class="isObjectiveQuestion && 'is-split'">
+            <div class="sx-quiz-qcol space-y-3">
               <!-- Question Text (Formatted Assertion / Reason Blocks when applicable) -->
               <template x-if="currentQuestionParts.isAR">
                 <div class="space-y-2.5 pt-1">
@@ -385,9 +356,8 @@
                 </div>
               </template>
               <template x-if="!currentQuestionParts.isAR">
-                <h3 class="text-base sm:text-xl font-bold leading-relaxed text-[#231f20] pt-0.5 whitespace-pre-line" x-text="currentQuestion.question_text"></h3>
+                <h3 class="sx-quiz-qtext whitespace-pre-line" x-text="currentQuestion.question_text"></h3>
               </template>
-            </div>
 
             <!-- Question Media (if any) -->
             <template x-if="currentQuestion.media_url">
@@ -395,13 +365,14 @@
                 <img :src="currentQuestion.media_url" class="max-h-64 mx-auto object-contain rounded-xl" alt="Question image">
               </div>
             </template>
+            </div>
 
             <!-- Answer Input Area -->
             <div id="exam-answer-input" class="relative">
               
               <!-- Clean #ffffff / #231f20 / #f7b317 MCQ Cards (Zero Contextual Tool Clutter) -->
               <template x-if="isObjectiveQuestion">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 sm:gap-3.5 relative z-10">
+                <div class="grid grid-cols-1 gap-2.5 sm:gap-3 relative z-10">
                   <template x-for="(opt, idx) in parsedOptions" :key="idx">
                     <label class="sx-mcq-opt flex items-center gap-3 p-3.5 sm:p-4 rounded-2xl border-2 transition-all"
                            :class="[
@@ -508,6 +479,8 @@
                   </template>
                 </div>
               </template>
+            </div>
+
             </div>
 
             <!-- Attached Drawing Preview (Written / Diagram Questions Only) -->
@@ -676,6 +649,16 @@
                 </div>
               </template>
             </div>
+
+            <!-- Finish / Restart: small and out of the way -->
+            <div class="sx-quiz-foot" x-show="(!paper.is_digi_library) || totalAnswered > 0">
+              <button type="button" x-show="!paper.is_digi_library" @click="startFreshTimedRun()" class="sx-quiz-link" title="Start this test again from 00:00">
+                <span class="material-symbols-outlined" aria-hidden="true">refresh</span><span>Restart test</span>
+              </button>
+              <button type="button" x-show="totalAnswered > 0" x-cloak @click="finishExam()" :disabled="isFinishing" class="sx-quiz-finish">
+                <span class="material-symbols-outlined" aria-hidden="true">flag</span><span x-text="isFinishing ? 'Saving...' : 'Finish test'"></span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -683,7 +666,7 @@
 
     <!-- Exam Complete Summary Screen (Lists Answered vs Unanswered Questions Before Finish & View Score) -->
     <div x-show="isModuleComplete" x-cloak x-transition.opacity.duration.300ms>
-      <div class="bg-[#ffffff] border-2 border-[#231f20] py-8 sm:py-10 px-4 sm:px-7 rounded-[24px]">
+      <div class="pt-6 pb-2">
         <div class="max-w-xl mx-auto space-y-6">
           <div class="text-center space-y-3">
             <div class="w-16 h-16 mx-auto bg-[#f7b317] border-2 border-[#231f20] rounded-full flex items-center justify-center text-[#231f20]">
@@ -762,6 +745,7 @@
         </div>
       </div>
     </div>
+    </div><!-- /sx-quiz-shell -->
 
   </div>
 
@@ -815,6 +799,7 @@ document.addEventListener('alpine:init', () => {
     ttsBlobCache: {},
     deepDiveData: null,
     feedback: null,
+    qnavOpen: false,
     isModuleComplete: false,
     isReady: false,
     isFinishing: false,
