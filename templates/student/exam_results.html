@@ -512,7 +512,17 @@
               <div style="display:flex;align-items:flex-start;gap:12px;min-width:0;flex:1;">
                 <span class="sx-qnum-badge" :class="statusClass">{{ ans.display_label or loop.index }}</span>
                 <div style="min-width:0;flex:1;">
-                  <div style="font-size:0.93rem;font-weight:700;line-height:1.45;color:var(--sx-ink);white-space:pre-line;">{{ ans.clean_question_text or ans.question_text }}</div>
+                  {% set _qt = ans.clean_question_text or ans.question_text or '' %}
+                  {% if 'Assertion (A):' in _qt and 'Reason (R):' in _qt %}
+                  {% set _p1 = _qt.split('Assertion (A):', 1) %}{% set _p2 = _p1[1].split('Reason (R):', 1) %}
+                  <div style="line-height:1.45;color:var(--sx-ink);">
+                    {% if _p1[0].strip() %}<div style="font-size:0.8rem;font-weight:500;color:rgba(35,31,32,0.6);margin-bottom:6px;">{{ _p1[0].strip() }}</div>{% endif %}
+                    <div style="font-size:0.93rem;font-weight:700;"><span style="display:inline-block;padding:1px 7px;margin-right:6px;border-radius:6px;background:#f7b317;font-size:0.72rem;font-weight:900;">A</span>{{ _p2[0].strip() }}</div>
+                    <div style="font-size:0.93rem;font-weight:700;margin-top:4px;"><span style="display:inline-block;padding:1px 7px;margin-right:6px;border-radius:6px;background:#231f20;color:#f7b317;font-size:0.72rem;font-weight:900;">R</span>{{ _p2[1].strip() }}</div>
+                  </div>
+                  {% else %}
+                  <div style="font-size:0.93rem;font-weight:700;line-height:1.45;color:var(--sx-ink);white-space:pre-line;">{{ _qt }}</div>
+                  {% endif %}
                   {% if ans.media_url %}
                   <div style="margin-top:8px;">
                     <img src="{{ ans.media_url }}" alt="Question diagram" style="max-height:140px;border-radius:12px;border:1px solid var(--sx-line);background:var(--sx-bg-2);padding:4px;object-fit:contain;">

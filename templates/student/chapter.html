@@ -215,7 +215,8 @@
           im.src = `/static/images/avatars/${this.tutorName}_${pose}.webp?v=543`;
         });
         this.smartCanvasLoop = window.saxazCreateSmartCanvasLoop ? window.saxazCreateSmartCanvasLoop() : null;
-        this.ambientLoop = window.saxazCreateAmbientLoop ? window.saxazCreateAmbientLoop() : null;
+        // Floating scenery (sun / molecules / lanes) switched off on request: it distracted from the summary
+        this.ambientLoop = null;
         // Playful living idle animation cycle so Tutor smiles & gestures naturally even before clicking Play
         const idleCycle = ['base', 'laughing', 'base', 'pointing', 'base', 'thinking', 'base', 'cheer'];
         let idleIdx = 0;
@@ -1504,23 +1505,6 @@
         {% endmacro %}
 
         {% if chapter.id == 3 %}
-        <!-- Calm, well-directed ambient visual elements (strictly outside text, auto-paused when closed) -->
-        <div class="sx-ambient-layer" aria-hidden="true">
-          <div class="sx-ambient-corner-tl" x-show="Boolean(slideAmbientCfg().corner)" x-cloak>
-            <canvas class="sx-amb-corner-canvas" width="220" height="220"></canvas>
-          </div>
-          <div class="sx-ambient-lane sx-ambient-lane-top" x-show="Boolean(slideAmbientCfg().topFly)" x-cloak>
-            <div class="sx-ambient-glider is-top">
-              <canvas class="sx-amb-top-canvas" width="200" height="160"></canvas>
-            </div>
-          </div>
-          <div class="sx-ambient-lane sx-ambient-lane-bottom" x-show="Boolean(slideAmbientCfg().botFly)" x-cloak>
-            <div class="sx-ambient-glider is-bottom">
-              <canvas class="sx-amb-bot-canvas" width="200" height="160"></canvas>
-            </div>
-          </div>
-        </div>
-
         <!-- PART 1 of 12: Intro -->
         <div class="sx-sync-stage" data-sx-slide="0" x-show="activeSlide === 0">
           <div>

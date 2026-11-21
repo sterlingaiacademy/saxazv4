@@ -950,7 +950,7 @@ document.addEventListener('alpine:init', () => {
 
     get currentQuestionParts() {
       const txt = String(this.currentQuestion?.question_text || '');
-      const m = txt.match(/^(.*?)Assertion\s*\(A\)\s*:\s*([\s\S]*?)\s*Reason\s*\(R\)\s*:\s*([\s\S]*)$/i);
+      const m = txt.match(/^([\s\S]*?)Assertion\s*\(A\)\s*:\s*([\s\S]*?)\s*Reason\s*\(R\)\s*:\s*([\s\S]*)$/i);
       if (!m) return { isAR: false, intro: '', assertion: '', reason: '', raw: txt };
       return {
         isAR: true,

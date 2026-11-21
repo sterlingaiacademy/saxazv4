@@ -4,6 +4,32 @@
 
 {% block content %}
 <style>
+  /* Grading overlay */
+  .sx-grading-overlay { position: fixed; inset: 0; z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 16px;
+    background: rgba(255, 255, 255, 0.97); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  .sx-grading-card { text-align: center; max-width: 420px; }
+  .sx-grading-card h2 { margin: 22px 0 8px; font-size: 1.5rem; font-weight: 900; color: #231f20; }
+  .sx-grading-card p { margin: 0; font-size: 0.95rem; font-weight: 600; color: rgba(35, 31, 32, 0.68); line-height: 1.5; }
+  .sx-grading-spin { position: relative; width: 92px; height: 92px; margin: 0 auto; display: flex; align-items: center; justify-content: center; }
+  .sx-grading-spin::before { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 5px solid rgba(35, 31, 32, 0.12); border-top-color: #f7b317; animation: sx-grading-rot 0.9s linear infinite; }
+  .sx-grading-spin .material-symbols-outlined { font-size: 40px; color: #231f20; }
+  @keyframes sx-grading-rot { to { transform: rotate(360deg); } }
+
+  /* Protection: cover, watermark, no selecting / printing */
+  .sx-exam-cover { position: fixed; inset: 0; z-index: 2900; display: flex; align-items: center; justify-content: center; padding: 16px; background: #ffffff; }
+  .sx-exam-cover-card { text-align: center; max-width: 380px; }
+  .sx-exam-cover-card .material-symbols-outlined { font-size: 44px; color: #231f20; }
+  .sx-exam-cover-card h2 { margin: 10px 0 6px; font-size: 1.4rem; font-weight: 900; color: #231f20; }
+  .sx-exam-cover-card p { margin: 0; font-weight: 600; color: rgba(35, 31, 32, 0.65); }
+  .sx-exam-watermark { position: fixed; inset: -20vh -20vw; z-index: 1300; pointer-events: none; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 70px 90px;
+    transform: rotate(-24deg); opacity: 0.055; font-size: 15px; font-weight: 800; color: #231f20; white-space: nowrap; user-select: none; overflow: hidden; }
+  .sx-real-protected, .sx-real-protected * { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .sx-real-protected textarea, .sx-real-protected input { -webkit-user-select: text; user-select: text; }
+  .sx-real-protected img { -webkit-user-drag: none; pointer-events: auto; }
+  @media print {
+    body * { visibility: hidden !important; }
+    body::after { content: "Printing is disabled during the Real Exam."; visibility: visible; position: fixed; top: 40%; left: 0; right: 0; text-align: center; font: 700 20px sans-serif; }
+  }
   #scratchpad-dock-wrap,
   #math-tools-dock-wrap {
     display: none !important;
@@ -41,7 +67,7 @@
   }
 </style>
 
-<div class="w-full max-w-4xl mx-auto px-3 sm:px-6 pb-24 pt-2 sm:pt-3 space-y-3.5 relative" x-data="realExamApp()" x-cloak>
+<div class="sx-real-protected w-full max-w-4xl mx-auto px-3 sm:px-6 pb-24 pt-2 sm:pt-3 space-y-3.5 relative" x-data="realExamApp()" x-cloak>
 
   <!-- 1. Dark Back & Proctoring Bar -->
   <div class="sx-ext-back-bar">
@@ -122,13 +148,27 @@
     </div>
   </div>
 
+  <!-- Exam cover: shown whenever the exam window is not in focus or a screenshot key is pressed -->
+  <div x-show="examCovered && !isSubmitting" x-cloak class="sx-exam-cover" aria-hidden="true">
+    <div class="sx-exam-cover-card">
+      <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
+      <h2>Exam hidden</h2>
+      <p>Screenshots and leaving the exam are not allowed. Click here to continue.</p>
+    </div>
+  </div>
+
+  <!-- Faint name watermark so any photo of the exam can be traced -->
+  <div class="sx-exam-watermark" aria-hidden="true">
+    {% for _ in range(36) %}<span>{{ (user.name if user and user.name else 'Student') }} &middot; #{{ attempt.id }}</span>{% endfor %}
+  </div>
+
   <!-- Tab Warning Banner (if student switched tabs 1..3 times) -->
   <div x-show="warnings > 0" x-cloak
        class="p-3.5 rounded-2xl bg-[#231f20] border-2 border-[#f7b317] text-[#ffffff] flex items-center justify-between gap-3">
     <div class="flex items-center gap-2.5">
       <span class="material-symbols-outlined text-[#f7b317]">warning</span>
       <div class="text-xs sm:text-sm font-extrabold">
-        Proctoring Warning (<span class="text-[#f7b317]" x-text="warnings"></span>/3): Stay on this exam tab. Exceeding 3 tab switches will close and void your exam attempt!
+        Proctoring Warning (<span class="text-[#f7b317]" x-text="warnings"></span>/3): <span x-text="lastWarningReason || 'Stay on this exam.'"></span> More than 3 warnings will close and void your exam attempt!
       </div>
     </div>
   </div>
@@ -392,7 +432,8 @@
             <button type="button"
                     @click="goToQuestion(idx)"
                     class="p-3 rounded-2xl border-2 text-left transition-all flex items-center justify-between gap-2 cursor-pointer"
-                    :class="isQuestionAnswered(item.q.id) ? 'bg-[#231f20] border-[#231f20] text-[#ffffff]' : 'bg-[#ffffff] border-[#231f20]/35 hover:border-[#231f20] text-[#231f20]'">
+                    :class="isQuestionAnswered(item.q.id) ? 'bg-[#231f20] border-[#231f20] text-[#ffffff]' : 'bg-[#ffffff] border-[#231f20]/35 hover:border-[#231f20] text-[#231f20]'"
+                    :style="isQuestionAnswered(item.q.id) ? 'background:#231f20;border-color:#231f20;color:#ffffff;' : 'background:#ffffff;color:#231f20;'">
               <div class="min-w-0">
                 <div class="text-xs font-black flex items-center gap-1">
                   <span x-text="'Q' + (idx + 1)"></span>
@@ -430,16 +471,16 @@
   </form>
 
   <!-- Grading Overlay -->
-  <div x-show="isSubmitting" x-cloak class="fixed inset-0 z-[100] bg-[#ffffff]/95 flex flex-col items-center justify-center p-4">
-    <div class="w-24 h-24 relative flex items-center justify-center">
-      <div class="absolute inset-0 border-4 border-[#231f20]/20 border-t-[#f7b317] rounded-full animate-spin"></div>
-      <span class="material-symbols-outlined text-[#231f20]" style="font-size:40px;">workspace_premium</span>
+  <div x-show="isSubmitting" x-cloak class="sx-grading-overlay" role="status" aria-live="polite">
+    <div class="sx-grading-card">
+      <div class="sx-grading-spin">
+        <span class="material-symbols-outlined" aria-hidden="true">workspace_premium</span>
+      </div>
+      <h2>Grading your Real Exam...</h2>
+      <p>Checking all <span x-text="flatQuestions.length"></span> answers and preparing your score report. Please keep this page open.</p>
     </div>
-    <h2 class="text-2xl font-black text-[#231f20] mt-6 mb-2">Grading Your Real Exam...</h2>
-    <p class="text-[#231f20]/70 font-semibold text-center max-w-md text-sm">
-      Evaluating all <span x-text="flatQuestions.length"></span> answers and preparing your Official Real Exam Score Report...
-    </p>
   </div>
+</div>
 
 </div>
 
@@ -456,6 +497,10 @@ function realExamApp() {
     initialTotalSeconds: {{ total_seconds }},
     timeLeft: {{ total_seconds }},
     warnings: 0,
+    examCovered: false,
+    lastWarningReason: '',
+    _awayAt: 0,
+    _pickingFile: false,
     cheatedQuestions: [],
     activeQuestion: null,
     photoTargetQId: null,
@@ -528,7 +573,7 @@ function realExamApp() {
 
     get currentQuestionParts() {
       const txt = String(this.currentItem?.q?.question_text || '');
-      const m = txt.match(/^(.*?)Assertion\s*\(A\)\s*:\s*([\s\S]*?)\s*Reason\s*\(R\)\s*:\s*([\s\S]*)$/i);
+      const m = txt.match(/^([\s\S]*?)Assertion\s*\(A\)\s*:\s*([\s\S]*?)\s*Reason\s*\(R\)\s*:\s*([\s\S]*)$/i);
       if (!m) return { isAR: false, intro: '', assertion: '', reason: '', raw: txt };
       return {
         isAR: true,
@@ -675,6 +720,7 @@ function realExamApp() {
     },
 
     triggerPhotoPicker(qId) {
+      this._pickingFile = true;
       this.photoTargetQId = qId;
       this.activeQuestion = qId;
       if (this.$refs.realPhotoInput) {
@@ -841,14 +887,81 @@ function realExamApp() {
         }
       }, 1000);
 
-      document.addEventListener("visibilitychange", () => {
-        if (document.hidden && !this.isSubmitting) {
-          this.warnings++;
-          if (this.warnings > 3) {
-            this.handleCheating();
-          }
+      this.setupExamProtection();
+    },
+
+    // ---- Real exam protection ----
+    // A web page cannot fully block system screenshots or a phone camera. This hides the exam
+    // whenever the window loses focus or a screenshot key is pressed, wipes the clipboard after
+    // Print Screen, blocks copy / right-click / print / dev-tools keys, and counts warnings.
+    addWarning(reason) {
+      if (this.isSubmitting) return;
+      this.warnings++;
+      this.lastWarningReason = reason;
+      try { window.SFX?.playError?.(); } catch (e) {}
+      if (this.warnings > 3) this.handleCheating();
+    },
+
+    setupExamProtection() {
+      const cover = () => { if (!this.isSubmitting) this.examCovered = true; };
+      const uncover = () => { this.examCovered = false; };
+      const isTyping = (el) => el && (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && !['button', 'submit', 'checkbox', 'radio', 'file'].includes(el.type)));
+
+      // Leaving the tab / window
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          cover();
+          if (!this._pickingFile) this.addWarning('You left the exam tab.');
         }
       });
+      window.addEventListener('blur', () => {
+        cover();
+        this._awayAt = Date.now();
+      });
+      window.addEventListener('focus', () => {
+        const away = this._awayAt ? Date.now() - this._awayAt : 0;
+        this._awayAt = 0;
+        if (this._pickingFile) { this._pickingFile = false; uncover(); return; }
+        if (away > 2000 && !document.hidden) this.addWarning('You switched to another window.');
+        setTimeout(uncover, 150);
+      });
+
+      // Screenshot keys
+      const screenshotKey = (e) => {
+        const k = (e.key || '').toLowerCase();
+        if (k === 'printscreen' || e.keyCode === 44) return true;
+        if ((e.metaKey || e.getModifierState?.('OS')) && e.shiftKey && ['3', '4', '5', 's'].includes(k)) return true;
+        return false;
+      };
+      const wipeClipboard = () => {
+        try { navigator.clipboard?.writeText?.('Screenshots are not allowed during the SAXAZ Real Exam.'); } catch (e) {}
+      };
+      document.addEventListener('keydown', (e) => {
+        if (screenshotKey(e)) { cover(); wipeClipboard(); e.preventDefault(); return; }
+        const k = (e.key || '').toLowerCase();
+        const mod = e.ctrlKey || e.metaKey;
+        if (e.key === 'F12' || (mod && e.shiftKey && ['i', 'j', 'c'].includes(k)) || (mod && ['p', 's', 'u'].includes(k))) {
+          e.preventDefault(); e.stopPropagation(); return;
+        }
+        if (mod && ['c', 'x', 'a'].includes(k) && !isTyping(e.target)) { e.preventDefault(); }
+      }, true);
+      document.addEventListener('keyup', (e) => {
+        if (screenshotKey(e)) {
+          wipeClipboard();
+          this.addWarning('Screenshots are not allowed.');
+          setTimeout(() => { if (document.hasFocus()) uncover(); }, 1200);
+        }
+      }, true);
+
+      // Copy, right-click, drag, print
+      ['copy', 'cut'].forEach(ev => document.addEventListener(ev, (e) => { if (!isTyping(e.target)) e.preventDefault(); }, true));
+      document.addEventListener('contextmenu', (e) => e.preventDefault(), true);
+      document.addEventListener('dragstart', (e) => { if (e.target && e.target.tagName === 'IMG') e.preventDefault(); }, true);
+      window.addEventListener('beforeprint', () => { cover(); this.addWarning('Printing is not allowed.'); });
+      window.addEventListener('afterprint', () => setTimeout(uncover, 300));
+
+      // Tap / click the cover to continue (only once the window is focused again)
+      document.addEventListener('pointerdown', () => { if (this.examCovered && document.hasFocus()) uncover(); }, true);
     },
 
     formatTime(seconds) {
