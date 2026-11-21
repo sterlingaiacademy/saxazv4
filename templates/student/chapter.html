@@ -1495,13 +1495,6 @@
               </button>
             </div>
           </div>
-          <div class="sx-story-reel" x-show="getSlideCues({{ s_idx }}).length > 1" aria-hidden="true">
-            <template x-for="(cItem, cIdx) in getSlideCues({{ s_idx }})" :key="'reel-{{ s_idx }}-' + cIdx">
-              <div class="sx-story-reel-item" :class="[activeSlide === {{ s_idx }} && activeCueIdx === cIdx && 'is-active', activeSlide === {{ s_idx }} && activeCueIdx > cIdx && 'is-done']">
-                <img :src="cItem.idle" alt="" loading="lazy" decoding="async">
-              </div>
-            </template>
-          </div>
         {% endmacro %}
 
         {% if chapter.id == 3 %}
