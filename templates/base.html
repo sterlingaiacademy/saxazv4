@@ -1,7 +1,34 @@
 <!DOCTYPE html>
+{% from "partials/mode_toggle.html" import mode_toggle %}
+{% set sx_server_mode = (user.theme_preference if (user is defined and user and user.theme_preference in ['light', 'dark', 'reading']) else '') %}
 <html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
+  <!-- Display mode (light / dark / reading): saved per account, remembered per device -->
+  <script>
+    (function () {
+      var ok = { light: 1, dark: 1, reading: 1 };
+      var server = "{{ sx_server_mode }}";
+      var local = null;
+      try { local = localStorage.getItem('sxMode'); } catch (e) {}
+      var mode = ok[server] ? server : (ok[local] ? local : 'light');
+      document.documentElement.setAttribute('data-sx-mode', mode);
+      try { localStorage.setItem('sxMode', mode); } catch (e) {}
+      window.sxGetMode = function () { return document.documentElement.getAttribute('data-sx-mode') || 'light'; };
+      window.sxSetMode = function (m) {
+        if (!ok[m]) return;
+        document.documentElement.setAttribute('data-sx-mode', m);
+        try { localStorage.setItem('sxMode', m); } catch (e) {}
+        window.dispatchEvent(new CustomEvent('sx-mode-change', { detail: { mode: m } }));
+        try {
+          var fd = new FormData(); fd.append('theme', m);
+          fetch('/set-theme', { method: 'POST', body: fd, credentials: 'same-origin' });
+        } catch (e) {}
+      };
+    })();
+  </script>
+  <link rel="stylesheet" href="/static/css/saxaz-modes.css?v=5">
+  <script defer src="/static/js/sx-modes.js?v=4"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
   <meta name="theme-color" content="#151515">
   <meta name="mobile-web-app-capable" content="yes">
@@ -374,13 +401,8 @@
   <script>
     const getCookie = (name) => document.cookie.split('; ').find(row => row.startsWith(name + '='))?.split('=')[1];
     
-    window.getSaxazTheme = () => {
-      const saved = localStorage.getItem('themeMode');
-      if (saved === 'dark' || saved === 'dracula') return 'dark';
-      if (saved === 'light' || saved === 'winter') return 'light';
-      const cookieTheme = getCookie('theme');
-      return (cookieTheme === 'dark') ? 'dark' : 'light';
-    };
+    // The old data-theme="dark" styles are retired; display modes now use data-sx-mode (see saxaz-modes.css)
+    window.getSaxazTheme = () => 'light';
     window.applySaxazTheme = (mode) => {
       const clean = (mode === 'dark') ? 'dark' : 'light';
       localStorage.setItem('themeMode', clean);
@@ -2550,7 +2572,7 @@
   <link rel="stylesheet" href="/static/css/saxaz-fun.css?v=542">
   <link rel="stylesheet" href="/static/css/sx3.css?v=542">
   <link rel="stylesheet" href="/static/css/saxaz-ext.css?v=544">
-  <link rel="stylesheet" href="/static/css/saxaz-match.css?v=12">
+  <link rel="stylesheet" href="/static/css/saxaz-match.css?v=13">
   <link rel="stylesheet" href="/static/css/saxaz-cursor.css?v=5">
   <script src="/static/js/fun.js?v=543" defer></script>
   <script>
@@ -2815,8 +2837,9 @@
            {% endif %}>
           <img src="/static/images/saxaz_web/logo.png" alt="SAXAZ" class="sx-ext-logo-img">
         </a>
-        {% if not is_proctored_real_exam %}
         <div class="sx-header-right">
+          {{ mode_toggle() }}
+          {% if not is_proctored_real_exam %}
           <a href="/student/shop" class="sx-coin-pill" title="Rewards & Shop">
             <span class="sx-coin-disc">C</span>
             <span data-sx-coin-count>{{ user.coin_balance or 0 }}</span>
@@ -2828,8 +2851,8 @@
             <span>{{ 'CHAPTER' if (exam is defined and exam and exam.chapter_id) else 'EXAMS' }}</span>
           </a>
           {% endif %}
+          {% endif %}
         </div>
-        {% endif %}
       </header>
 
       <main class="flex-1 w-full bg-white max-w-[1280px] mx-auto px-3 sm:px-6 py-4">
@@ -2844,6 +2867,7 @@
         </a>
 
         <div class="sx-header-right">
+          {{ mode_toggle() }}
           {% if is_student %}
             <a href="/student/shop" class="sx-coin-pill" title="Rewards & Shop">
               <span class="sx-coin-disc">C</span>

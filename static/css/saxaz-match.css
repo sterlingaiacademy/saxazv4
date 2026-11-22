@@ -1048,3 +1048,10 @@ body .sx-exam-hub.is-compact .sx-mock-tab.is-active { box-shadow: none !importan
 @media (min-width: 3000px) and (min-height: 1600px) {
   .sxc .sx-nutshell-card.is-fullscreen .sx-sync-stage { zoom: 2.1; }
 }
+
+
+/* Login / sign-up: on desktop the yellow quote panel stays in place while the form scrolls */
+@media (min-width: 981px) {
+  #stitch-tailwind-root .saxaz-login-shell { align-items: start; }
+  #stitch-tailwind-root .saxaz-login-story { position: sticky; top: 0; height: 100vh; height: 100dvh; }
+}

@@ -1,4 +1,6 @@
 {% extends "auth_base.html" %}
+{% from "partials/mode_toggle.html" import mode_toggle %}
+{% block mode_switch %}{% endblock %}
 {% block title %}SAXAZ | Learn, Enjoy &amp; Discover{% endblock %}
 
 {% block content %}
@@ -107,6 +109,7 @@
   <header class="ld-top">
     <a href="/" aria-label="SAXAZ home"><img src="/static/images/saxaz_web/logo.png" alt="SAXAZ"></a>
     <div class="ld-top-actions">
+      {{ mode_toggle('is-on-light') }}
       <a href="/login?role=parent" class="ld-pill is-ghost">Parents</a>
       <a href="/login" class="ld-pill is-amber">Login</a>
     </div>

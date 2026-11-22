@@ -11,7 +11,7 @@
        x-transition:leave="transition duration-150 ease-in"
        x-transition:leave-start="opacity-100 scale-100 translate-y-0"
        x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
-       class="scratchpad-panel fixed rounded-3xl overflow-hidden pointer-events-auto flex flex-col select-none"
+       data-sx-paper class="scratchpad-panel fixed rounded-3xl overflow-hidden pointer-events-auto flex flex-col select-none"
        :style="{ position: 'fixed', zIndex: panelZ, display: isOpen ? 'flex' : 'none', top: pos.y + 'px', left: pos.x + 'px', width: boxSize.width + 'px', height: boxSize.height + 'px' }"
        @click.stop>
     

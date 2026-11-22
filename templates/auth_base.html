@@ -1,7 +1,33 @@
 <!DOCTYPE html>
+{% from "partials/mode_toggle.html" import mode_toggle %}
 <html lang="en" class="scrollbars-visible" data-theme="light" style="font-size: 17.5px;">
 <head>
   <meta charset="UTF-8">
+  <!-- Display mode (light / dark / reading): saved per account, remembered per device -->
+  <script>
+    (function () {
+      var ok = { light: 1, dark: 1, reading: 1 };
+      var server = "";
+      var local = null;
+      try { local = localStorage.getItem('sxMode'); } catch (e) {}
+      var mode = ok[server] ? server : (ok[local] ? local : 'light');
+      document.documentElement.setAttribute('data-sx-mode', mode);
+      try { localStorage.setItem('sxMode', mode); } catch (e) {}
+      window.sxGetMode = function () { return document.documentElement.getAttribute('data-sx-mode') || 'light'; };
+      window.sxSetMode = function (m) {
+        if (!ok[m]) return;
+        document.documentElement.setAttribute('data-sx-mode', m);
+        try { localStorage.setItem('sxMode', m); } catch (e) {}
+        window.dispatchEvent(new CustomEvent('sx-mode-change', { detail: { mode: m } }));
+        try {
+          var fd = new FormData(); fd.append('theme', m);
+          fetch('/set-theme', { method: 'POST', body: fd, credentials: 'same-origin' });
+        } catch (e) {}
+      };
+    })();
+  </script>
+  <link rel="stylesheet" href="/static/css/saxaz-modes.css?v=5">
+  <script defer src="/static/js/sx-modes.js?v=4"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
   <title>{% block title %}SAXAZ{% endblock %}</title>
   <link rel="icon" href="/static/images/saxaz_web/favicon-saxaz-x-v1.png" type="image/png" sizes="64x64">
@@ -15,7 +41,7 @@
   <link rel="stylesheet" href="/static/css/app.css?v=250">
   <link rel="stylesheet" href="/static/css/v2-studio.css?v=542">
   <link rel="stylesheet" href="/static/css/saxaz-ext.css?v=544">
-  <link rel="stylesheet" href="/static/css/saxaz-match.css?v=12">
+  <link rel="stylesheet" href="/static/css/saxaz-match.css?v=13">
   <link rel="stylesheet" href="/static/css/saxaz-cursor.css?v=5">
   <script src="/static/js/fun.js?v=543" defer></script>
 
@@ -87,6 +113,7 @@
 </head>
 <body class="scrollbars-visible sx-auth-body">
   <div class="sx-auth-main-wrap">
+    {% block mode_switch %}<div class="sx-mode-float">{{ mode_toggle('is-on-light') }}</div>{% endblock %}
     {% block content %}{% endblock %}
   </div>
   {% include "footer.html" %}
