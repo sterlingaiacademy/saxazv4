@@ -1,6 +1,9 @@
 .env
+.vercel/
+tts_cache/
 *.mp4
 *.db
+!edusafari.db
 scratch/
 chemistry/
 screenshot/

@@ -4,6 +4,8 @@ venv/
 .venv/
 node_modules/
 .env
+.vercel/
+tts_cache/
 .git/
 .github/
 scratch/

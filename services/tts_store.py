@@ -24,9 +24,16 @@ import httpx
 CACHE_VERSION = "v1"
 
 _ON_VERCEL = bool(os.environ.get("VERCEL"))
+_ON_CLOUD_RUN = bool(os.environ.get("K_SERVICE"))
 _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOCAL_DIR = os.environ.get("TTS_CACHE_DIR") or (
-    os.path.join(tempfile.gettempdir(), "saxaz_tts_cache") if _ON_VERCEL else os.path.join(_PROJECT_ROOT, "tts_cache")
+    "/data/tts_cache"
+    if (_ON_CLOUD_RUN and os.path.isdir("/data"))
+    else (
+        os.path.join(tempfile.gettempdir(), "saxaz_tts_cache")
+        if _ON_VERCEL
+        else os.path.join(_PROJECT_ROOT, "tts_cache")
+    )
 )
 _BLOB_PREFIX = "tts_cache"
 

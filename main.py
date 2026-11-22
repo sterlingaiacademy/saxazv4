@@ -13,12 +13,14 @@ import shutil
 import time
 
 _db_sync_lock = threading.Lock()
+PERSISTENT_DB_PATH = os.environ.get("PERSISTENT_DB_PATH") or "/data/edusafari_v4.db"
 
-def _sync_tmp_db_to_gcs(target_path="/data/edusafari.db"):
+def _sync_tmp_db_to_gcs(target_path=None):
     """Safely snapshots /tmp/edusafari.db to a local staging file in /tmp with DELETE journal mode,
     then writes it sequentially to GCSFuse (/data) so GCSFuse never encounters random-offset .db-shm writes.
     """
     import sqlite3, shutil
+    target_path = target_path or PERSISTENT_DB_PATH
     with _db_sync_lock:
         stage_path = "/tmp/edusafari_stage.db"
         src = sqlite3.connect("/tmp/edusafari.db", timeout=10.0)
@@ -46,18 +48,18 @@ def db_sync_worker():
         time.sleep(10)
         try:
             if os.path.exists("/tmp/edusafari.db"):
-                _sync_tmp_db_to_gcs("/data/edusafari.db")
+                _sync_tmp_db_to_gcs(PERSISTENT_DB_PATH)
                 
                 # Hourly snapshots (retain latest 48 hourly backups)
                 now = datetime.datetime.now()
                 backup_dir = "/data/backups"
                 os.makedirs(backup_dir, exist_ok=True)
-                hourly_backup = os.path.join(backup_dir, f"edusafari_{now.strftime('%Y%m%d_%H')}.db")
+                hourly_backup = os.path.join(backup_dir, f"edusafari_v4_{now.strftime('%Y%m%d_%H')}.db")
                 if not os.path.exists(hourly_backup) and os.path.exists("/tmp/edusafari_stage.db"):
                     shutil.copyfile("/tmp/edusafari_stage.db", hourly_backup)
                     try:
                         backups = sorted(
-                            [os.path.join(backup_dir, f) for f in os.listdir(backup_dir) if f.startswith("edusafari_") and f.endswith(".db")]
+                            [os.path.join(backup_dir, f) for f in os.listdir(backup_dir) if f.startswith("edusafari_v4_") and f.endswith(".db")]
                         )
                         for old_bak in backups[:-48]:
                             os.remove(old_bak)
@@ -73,7 +75,7 @@ async def lifespan(app: FastAPI):
     if os.environ.get("K_SERVICE"):
         # Clean up any stale WAL/SHM files on GCSFuse mount that cause OutOfOrderError
         for stale_ext in ("-shm", "-wal"):
-            stale_file = f"/data/edusafari.db{stale_ext}"
+            stale_file = f"{PERSISTENT_DB_PATH}{stale_ext}"
             if os.path.exists(stale_file):
                 try:
                     os.remove(stale_file)
@@ -82,11 +84,11 @@ async def lifespan(app: FastAPI):
 
         # Load the DB from Cloud Storage into ultra-fast Memory (/tmp) first before opening with SQLite
         needs_seed = False
-        if not os.path.exists("/data/edusafari.db"):
+        if not os.path.exists(PERSISTENT_DB_PATH):
             needs_seed = True
         else:
             try:
-                shutil.copyfile("/data/edusafari.db", "/tmp/edusafari.db")
+                shutil.copyfile(PERSISTENT_DB_PATH, "/tmp/edusafari.db")
                 import sqlite3
                 conn = sqlite3.connect("/tmp/edusafari.db")
                 try:
@@ -103,8 +105,8 @@ async def lifespan(app: FastAPI):
         if needs_seed:
             if os.path.exists("edusafari.db"):
                 shutil.copyfile("edusafari.db", "/tmp/edusafari.db")
-                _sync_tmp_db_to_gcs("/data/edusafari.db")
-                print("Seeded persistent volume with bundled edusafari.db")
+                _sync_tmp_db_to_gcs(PERSISTENT_DB_PATH)
+                print(f"Seeded persistent volume ({PERSISTENT_DB_PATH}) with bundled edusafari.db")
             else:
                 print("No bundled DB found. Bootstrapping schema from SQL migrations...")
                 import sqlite3, glob
@@ -122,7 +124,7 @@ async def lifespan(app: FastAPI):
                         print(f"Migration error ({os.path.basename(sql_file)}): {e}")
                 conn.commit()
                 conn.close()
-                _sync_tmp_db_to_gcs("/data/edusafari.db")
+                _sync_tmp_db_to_gcs(PERSISTENT_DB_PATH)
                 print("Schema bootstrapped successfully from migrations.")
 
         if os.path.exists("media"):
@@ -151,7 +153,7 @@ async def lifespan(app: FastAPI):
     if os.environ.get("K_SERVICE"):
         try:
             if os.path.exists("/tmp/edusafari.db"):
-                _sync_tmp_db_to_gcs("/data/edusafari.db")
+                _sync_tmp_db_to_gcs(PERSISTENT_DB_PATH)
                 print("Final DB sync complete on shutdown.")
         except Exception as e:
             print(f"Error on final sync: {e}")
