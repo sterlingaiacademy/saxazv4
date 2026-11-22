@@ -39,7 +39,7 @@ def _is_secure_cookie() -> bool:
     return bool(_os.environ.get("K_SERVICE") or _os.environ.get("VERCEL"))
 
 
-def _issue_parent_preauth_redirect(uid: int) -> RedirectResponse:
+def _issue_parent_preauth_redirect(uid: int, preserve_session: bool = False) -> RedirectResponse:
     now_ts = _time.time()
     preauth_token = (
         make_signed_token("p", uid, 0, 600)
@@ -55,14 +55,26 @@ def _issue_parent_preauth_redirect(uid: int) -> RedirectResponse:
         url=f"/login/parent-pin?uid={uid}",
         status_code=status.HTTP_302_FOUND,
     )
+    secure_flag = bool(_os.environ.get("K_SERVICE") or _os.environ.get("VERCEL"))
     redirect.set_cookie(
         key="parent_preauth",
         value=preauth_token,
         httponly=True,
         max_age=600,
         samesite="lax",
-        secure=bool(_os.environ.get("K_SERVICE") or _os.environ.get("VERCEL")),
+        secure=secure_flag,
+        path="/",
     )
+    if not preserve_session:
+        redirect.set_cookie(
+            key="__session",
+            value=preauth_token,
+            httponly=True,
+            max_age=600,
+            samesite="lax",
+            secure=secure_flag,
+            path="/",
+        )
     return redirect
 
 
@@ -217,7 +229,7 @@ async def switch_to_parent_portal(request: Request):
             return RedirectResponse(url="/parent/dashboard", status_code=status.HTTP_302_FOUND)
         if user.get("role") == "student":
             if user.get("parent_locked") == 1 and user.get("parent_pin"):
-                return _issue_parent_preauth_redirect(int(user["id"]))
+                return _issue_parent_preauth_redirect(int(user["id"]), preserve_session=True)
             session_id = create_session(conn, int(user["id"]), is_parent=1)
             redirect = RedirectResponse(url="/parent/dashboard", status_code=status.HTTP_302_FOUND)
             set_auth_cookie(redirect, session_id)
@@ -229,12 +241,13 @@ async def switch_to_parent_portal(request: Request):
 
 @router.get("/login/parent-pin", response_class=HTMLResponse)
 async def parent_pin_page(request: Request, uid: int):
-    preauth = request.cookies.get("parent_preauth")
-    if not _preauth_valid(preauth, uid):
-        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+    preauth = request.cookies.get("parent_preauth") or request.cookies.get("__session")
     conn = get_db_connection()
     try:
         curr_user = security.get_current_user(request, conn)
+        same_student = bool(curr_user and curr_user.get("role") == "student" and int(curr_user["id"]) == int(uid))
+        if not _preauth_valid(preauth, uid) and not same_student:
+            return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
         has_student_session = bool(curr_user and curr_user.get("role") == "student")
         back_href = "/student/dashboard" if has_student_session and not curr_user.get("is_parent") else "/login"
         return templates.TemplateResponse(
@@ -249,13 +262,14 @@ async def parent_pin_page(request: Request, uid: int):
 @router.post("/login/parent-pin")
 async def parent_pin_submit(request: Request, uid: int = Form(...), pin: str = Form(...)):
     now = _time.time()
-    preauth = request.cookies.get("parent_preauth")
-    if not _preauth_valid(preauth, uid):
-        return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+    preauth = request.cookies.get("parent_preauth") or request.cookies.get("__session")
 
     conn = get_db_connection()
     try:
         curr_user = security.get_current_user(request, conn)
+        same_student = bool(curr_user and curr_user.get("role") == "student" and int(curr_user["id"]) == int(uid))
+        if not _preauth_valid(preauth, uid) and not same_student:
+            return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
         has_student_session = bool(curr_user and curr_user.get("role") == "student" and not curr_user.get("is_parent"))
         back_href = "/student/dashboard" if has_student_session else "/login"
 
@@ -437,7 +451,7 @@ async def register(
 @router.post("/logout")
 async def logout(request: Request, response: Response):
     conn = get_db_connection()
-    session_id = request.cookies.get("session_id")
+    session_id = request.cookies.get("session_id") or request.cookies.get("__session")
     if session_id:
         try:
             conn.execute("DELETE FROM sessions WHERE id = ?", (session_id,))
@@ -451,13 +465,13 @@ async def logout(request: Request, response: Response):
 
     redirect = RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
     remove_auth_cookie(redirect)
-    redirect.delete_cookie("parent_preauth")
+    redirect.delete_cookie("parent_preauth", path="/")
     return redirect
 
 
 @router.post("/set-theme")
 async def set_theme(request: Request, theme: str = Form(...)):
-    session_id = request.cookies.get("session_id")
+    session_id = request.cookies.get("session_id") or request.cookies.get("__session")
     if session_id and theme in ("light", "dark"):
         conn = get_db_connection()
         try:

@@ -350,7 +350,7 @@ def set_prefs_cookie(response: Response, uid: int, prefs: dict) -> str:
 
 
 def get_current_user(request: Request, conn):
-    session_id = request.cookies.get("session_id")
+    session_id = request.cookies.get("session_id") or request.cookies.get("__session")
     if not session_id:
         return None
 
@@ -445,14 +445,17 @@ def require_auth(request: Request, conn):
 def set_auth_cookie(response: Response, session_id: str, expires_days: int = 7):
     import os
     is_production = os.environ.get("K_SERVICE") is not None or bool(os.environ.get("VERCEL"))  # Cloud Run / Vercel (HTTPS)
-    response.set_cookie(
-        key="session_id",
-        value=session_id,
-        httponly=True,
-        max_age=expires_days * 24 * 60 * 60,
-        samesite="lax",
-        secure=is_production
-    )
+    # Set both `session_id` and `__session` (Firebase Hosting forwards only `__session` to Cloud Run)
+    for cookie_name in ("session_id", "__session"):
+        response.set_cookie(
+            key=cookie_name,
+            value=session_id,
+            httponly=True,
+            max_age=expires_days * 24 * 60 * 60,
+            samesite="lax",
+            secure=is_production,
+            path="/",
+        )
 
 def set_vault_cookie(response: Response, accounts: list[dict]):
     import os
@@ -470,4 +473,5 @@ def set_vault_cookie(response: Response, accounts: list[dict]):
     return tok
 
 def remove_auth_cookie(response: Response):
-    response.delete_cookie("session_id")
+    response.delete_cookie("session_id", path="/")
+    response.delete_cookie("__session", path="/")
