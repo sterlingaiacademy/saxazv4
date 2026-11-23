@@ -5,6 +5,7 @@ import hashlib
 import time
 from openai import OpenAI
 from dotenv import load_dotenv
+from services import ai_brain
 
 load_dotenv(override=True)
 
@@ -21,26 +22,8 @@ _ASK_WHY_CACHE: dict[tuple, dict] = {}
 
 
 def _chat_json_completion(messages: list, temperature: float = 0.4, max_tokens: int = 220, has_image: bool = False):
-  """Single-key OpenAI JSON completion: uses `gpt-4o` strictly for image/diagram grading and `gpt-4o-mini` for all text tasks."""
-  global _OPENAI_COOLDOWN_UNTIL
-  if not openai_client:
-    raise RuntimeError("OPENAI_API_KEY not configured")
-  if time.monotonic() < _OPENAI_COOLDOWN_UNTIL:
-    raise RuntimeError("OpenAI quota cooldown active")
-  oa_model = "gpt-4o" if has_image else "gpt-4o-mini"
-  try:
-    return openai_client.chat.completions.create(
-      model=oa_model,
-      messages=messages,
-      response_format={"type": "json_object"},
-      temperature=temperature,
-      max_tokens=max_tokens,
-    )
-  except Exception as oa_err:
-    low = str(oa_err).lower()
-    if "insufficient_quota" in low or "credit_balance_exhausted" in low or "no credits" in low:
-      _OPENAI_COOLDOWN_UNTIL = time.monotonic() + 30.0
-    raise
+  """Grading brain (JSON): Gemini (text and drawings). See services/ai_brain.py."""
+  return ai_brain.chat(messages, temperature=temperature, max_tokens=max_tokens, json_mode=True)
 
 _EMOJI_STRIP_RE = re.compile(
   r"[\U0001F300-\U0001FAFF\u2600-\u27BF\uFE0F]"
@@ -451,7 +434,7 @@ def explain_mcq_answer(question_text: str, options: list, model_answer: str, cho
   if key in _MCQ_WHY_CACHE:
     return (_MCQ_WHY_CACHE[key], True) if with_source else _MCQ_WHY_CACHE[key]
   why = ""
-  if client:
+  if ai_brain.available():
     try:
       sys_msg = (
         "You are a friendly Class 10 science tutor. In at most 2 short sentences (under 40 words total), "
@@ -591,7 +574,7 @@ def grade_answer(
         "explanation_html": "",
       }
 
-  if not client:
+  if not ai_brain.available():
     return _fallback_grade_written(question_text, max_marks, model_answer, student_answer, lang=lang_code, past_attempts=history_list)
 
   prev_sig = "|".join(f"{str(h.get('answer') or '').strip().lower()[:80]}:{float(h.get('marks') or 0):g}" for h in history_list[-2:])
@@ -774,7 +757,7 @@ def grade_digi_answer(question_text: str, model_answer: str, student_answer: str
         "ideal_answer": model_answer
       }
 
-  if not client:
+  if not ai_brain.available():
     return {
       "is_correct": False,
       "marks_awarded": 0,
@@ -860,7 +843,7 @@ def explain_answer_structured(
   if ask_cache_k in _ASK_WHY_CACHE:
     return dict(_ASK_WHY_CACHE[ask_cache_k])
 
-  if not client:
+  if not ai_brain.available():
     easy_fb = pack["fb_easy"].format(ans=correct_answer)
     key_fb = pack["fb_key"].format(ans=correct_answer)
     return {

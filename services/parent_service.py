@@ -6,6 +6,7 @@ import time
 from datetime import datetime
 from dotenv import load_dotenv
 from openai import OpenAI
+from services import ai_brain
 
 load_dotenv(override=True)
 
@@ -747,7 +748,7 @@ def generate_and_cache_ai_summary(
   student_name = _nm[:1].upper() + _nm[1:]
   fallback_text = _build_constructive_fallback_summary(student_name, analytics, summary_type)
 
-  if not openai_client or not openai_client.api_key or time.monotonic() < _PARENT_OPENAI_COOLDOWN_UNTIL:
+  if not ai_brain.available():
     if clean_existing and not is_toxic_legacy and (lang_code == "en" or f"lang:{lang_code}" in (existing_summary or "")):
       return clean_existing
     return fallback_text
@@ -793,9 +794,8 @@ def generate_and_cache_ai_summary(
   )
 
   try:
-    response = openai_client.chat.completions.create(
-      model="gpt-4o-mini",
-      messages=[
+    response = ai_brain.chat(
+      [
         {"role": "system", "content": system_msg},
         {"role": "user", "content": user_prompt},
       ],

@@ -2,6 +2,7 @@ import os
 import re
 import json
 from openai import OpenAI
+from services import ai_brain
 from dotenv import load_dotenv
 from database import get_db_connection
 
@@ -490,8 +491,8 @@ def ai_smart_search(conn, user: dict, query: str, prebuilt_catalog: dict = None)
   fallback_matches = [item for sc, item in all_scored if sc > 0]
   fallback_primary = fallback_matches[0] if fallback_matches else by_id.get("page:exams_hub")
 
-  # Fast 0-token deterministic path whenever local catalog has a clear match (or OpenAI client unavailable)
-  if top_score >= 38.0 or not client:
+  # Fast 0-token deterministic path whenever local catalog has a clear match (or no AI key)
+  if top_score >= 38.0 or not ai_brain.available():
     top_nav_score = scored_nav[0][0] if scored_nav else 0.0
     is_direct_nav = (_has_explicit_nav_phrase(q_clean) and bool(fallback_matches)) or top_nav_score >= 95.0
     return {
@@ -551,13 +552,12 @@ def ai_smart_search(conn, user: dict, query: str, prebuilt_catalog: dict = None)
   )
 
   try:
-    response = openai_client.chat.completions.create(
-      model="gpt-4o-mini",
-      response_format={"type": "json_object"},
-      messages=[
+    response = ai_brain.chat(
+      [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt}
       ],
+      json_mode=True,
       temperature=0.15,
       max_tokens=240
     )

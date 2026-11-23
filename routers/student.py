@@ -2164,7 +2164,7 @@ async def chapter_lets_discuss(chapter_id: int, req: ChapterDiscussRequest, requ
       if cache_k in _DISCUSS_REPLY_CACHE:
         return dict(_DISCUSS_REPLY_CACHE[cache_k])
 
-      if grading_service.client:
+      if grading_service.ai_brain.available():
         try:
           sys_p = (
             f"You are a warm, playful science tutor chatting one-on-one with {first_name} alongside 'Lub-Dub', a friendly living animated Heart character! "

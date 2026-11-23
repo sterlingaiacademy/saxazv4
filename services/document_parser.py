@@ -8,6 +8,7 @@ from pypdf import PdfReader
 from docx import Document
 from openpyxl import load_workbook
 from openai import OpenAI
+from services import ai_brain
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -169,26 +170,24 @@ def parse_questions_with_ai(text: str, question_type: str = 'LONG_ANSWER') -> li
     )
 
   try:
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-      logger.error("OpenAI API key not found.")
+    if not ai_brain.available():
+      logger.error("Gemini API key not found.")
       return []
 
-    client = OpenAI(api_key=api_key)
     chunks = _chunk_text_by_lines(text.strip(), max_chars=12000)
     all_questions = []
     last_error = None
 
     for chunk in chunks[:8]:
-      response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
+      response = ai_brain.chat(
+        [
           {"role": "system", "content": system_prompt},
           {"role": "user", "content": f"Extract all questions, answers, images, and YouTube links in exact sequential order from this text:\n\n{chunk}"}
         ],
-        response_format={"type": "json_object"},
+        json_mode=True,
         temperature=0.1,
-        max_tokens=12000
+        max_tokens=12000,
+        timeout=180.0,
       )
       result_str = response.choices[0].message.content
       data = json.loads(result_str)
@@ -204,6 +203,6 @@ def parse_questions_with_ai(text: str, question_type: str = 'LONG_ANSWER') -> li
     return all_questions
 
   except Exception as e:
-    logger.error(f"OpenAI extraction failed: {e}")
+    logger.error(f"Gemini extraction failed: {e}")
     raise e
 

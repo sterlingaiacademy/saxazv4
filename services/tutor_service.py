@@ -5,6 +5,7 @@ import time
 from openai import OpenAI
 from dotenv import load_dotenv
 from services.video_vault import create_vault_token
+from services import ai_brain
 
 import base64
 import httpx
@@ -18,28 +19,8 @@ _OPENAI_COOLDOWN_UNTIL = 0.0
 
 
 def _tutor_completion(messages: list, stream: bool = False, temperature: float = 0.55, max_tokens: int = 220, has_image: bool = False, json_mode: bool = False):
-  """Single-key OpenAI completion (`gpt-4o-mini` for text, `gpt-4o` strictly when evaluating drawings)."""
-  global _OPENAI_COOLDOWN_UNTIL
-  if not openai_client:
-    raise RuntimeError("OPENAI_API_KEY not configured")
-  if time.monotonic() < _OPENAI_COOLDOWN_UNTIL:
-    raise RuntimeError("OpenAI quota cooldown active")
-  kwargs_extra = {"response_format": {"type": "json_object"}} if json_mode else {}
-  oa_model = "gpt-4o" if has_image else "gpt-4o-mini"
-  try:
-    return openai_client.chat.completions.create(
-      model=oa_model,
-      messages=messages,
-      stream=stream,
-      temperature=temperature,
-      max_tokens=max_tokens,
-      **kwargs_extra,
-    )
-  except Exception as oa_err:
-    low = str(oa_err).lower()
-    if "insufficient_quota" in low or "credit_balance_exhausted" in low or "no credits" in low:
-      _OPENAI_COOLDOWN_UNTIL = time.monotonic() + 30.0
-    raise
+  """Tutor brain: Gemini (text and drawings). See services/ai_brain.py."""
+  return ai_brain.chat(messages, stream=stream, temperature=temperature, max_tokens=max_tokens, json_mode=json_mode)
 
 _CONTEXT_CACHE: dict[int, tuple[float, str]] = {}
 _CONTEXT_TTL_SECONDS = 45.0
@@ -560,11 +541,11 @@ async def stream_tutor_response(messages: list, context_str: str, tutor_id: str 
   explicit_lang_override = _detect_explicit_language_override(last_user_text)
   is_idk_turn = _is_idk_message(last_user_text)
 
-  if not client:
+  if not ai_brain.available():
     if is_in_exam:
       yield get_in_exam_socratic_hint(exam_context, last_user_text, lang=lang)
     else:
-      yield "[emotion:serious] Tutor unavailable. Please set the OPENAI_API_KEY."
+      yield "[emotion:serious] Tutor unavailable. Please set the GEMINI_API_KEY."
     return
 
   norm_id = (tutor_id or 'bella').replace('af_', '').replace('am_', '').strip().lower()
@@ -929,7 +910,7 @@ def generate_drawing_steps(prompt: str) -> dict:
   if cache_key in _AI_DRAWING_CACHE:
     return _AI_DRAWING_CACHE[cache_key]
 
-  if not client:
+  if not ai_brain.available():
     return _build_fallback_concept_steps(prompt)
 
   system_prompt = (
@@ -1002,31 +983,11 @@ _WHISPER_HALLUCINATIONS = {
 
 
 def transcribe_student_audio(audio_bytes: bytes, filename: str = "speech.webm", mime_type: str = "audio/webm") -> str:
-  """
-  Transcribes student microphone audio exclusively via OpenAI Whisper (`OPENAI_API_KEY`).
-  """
-  global _OPENAI_COOLDOWN_UNTIL
-  if not audio_bytes or len(audio_bytes) < 400 or not openai_client:
+  """Transcribes student microphone audio with Gemini (services/ai_brain.py)."""
+  if not audio_bytes or len(audio_bytes) < 400:
     return ""
-  if time.monotonic() < _OPENAI_COOLDOWN_UNTIL:
+  text = ai_brain.transcribe(audio_bytes, mime_type)
+  norm = re.sub(r"[^a-z0-9ഀ-ൿऀ-ॿ஀-௿؀-ۿ\s]", "", (text or "").lower()).strip()
+  if not norm or norm in _WHISPER_HALLUCINATIONS:
     return ""
-
-  clean_mime = (mime_type or "audio/webm").split(";")[0].strip() or "audio/webm"
-  try:
-    res = openai_client.audio.transcriptions.create(
-      model="whisper-1",
-      file=(filename, audio_bytes, clean_mime),
-    )
-    text = (getattr(res, "text", "") or "").strip()
-    if not text:
-      return ""
-    norm = re.sub(r"[^a-z0-9\u0D00-\u0D7F\u0900-\u097F\u0B80-\u0BFF\u0600-\u06FF\s]", "", text.lower()).strip()
-    if not norm or norm in _WHISPER_HALLUCINATIONS:
-      return ""
-    return text
-  except Exception as e:
-    low = str(e).lower()
-    if "insufficient_quota" in low or "credit_balance_exhausted" in low or "no credits" in low:
-      _OPENAI_COOLDOWN_UNTIL = time.monotonic() + 30.0
-    print(f"Audio transcription error: {e}")
-    return ""
+  return text
