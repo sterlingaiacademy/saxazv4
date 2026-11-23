@@ -90,10 +90,10 @@
     </div>
   </section>
 
-  <!-- 2. MY SUBJECTS — STANDALONE BORDERLESS 3D ANIMATED SUBJECT EMBLEMS -->
+  <!-- 2. MY SUBJECTS — CLEAN SAXAZ.COM EDITORIAL MAGAZINE COVER CARDS -->
   <section class="sx-ext-dash-section sx-dash-subjects" style="margin-bottom: 18px;">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-      <h2 class="sx-ext-section-h2" style="margin-bottom: 6px;">My Subjects</h2>
+      <h2 class="sx-ext-section-h2" style="margin-bottom: 14px;">My Subjects</h2>
       <div x-show="soonSubject"
            x-cloak
            class="sx-subject-soon-pill"
@@ -106,15 +106,15 @@
     </div>
 
     {% set showcase_subjects = [
-      {'key': 'biology',   'label': 'Biology',        'match': 'bio'},
-      {'key': 'physics',   'label': 'Physics',        'match': 'phys'},
-      {'key': 'chemistry', 'label': 'Chemistry',      'match': 'chem'},
-      {'key': 'maths',     'label': 'Maths',          'match': 'math'},
-      {'key': 'social',    'label': 'Social Science', 'match': 'social'},
-      {'key': 'english',   'label': 'English',        'match': 'eng'}
+      {'key': 'biology',   'label': 'Biology',        'short': 'BIOLOGY',   'match': 'bio'},
+      {'key': 'physics',   'label': 'Physics',        'short': 'PHYSICS',   'match': 'phys'},
+      {'key': 'chemistry', 'label': 'Chemistry',      'short': 'CHEMISTRY', 'match': 'chem'},
+      {'key': 'maths',     'label': 'Maths',          'short': 'MATHS',     'match': 'math'},
+      {'key': 'social',    'label': 'Social Science', 'short': 'SOCIAL',    'match': 'social'},
+      {'key': 'english',   'label': 'English',        'short': 'ENGLISH',   'match': 'eng'}
     ] %}
 
-    <div class="sx-subject-badges-grid">
+    <div class="sx-mag-grid" id="my-subjects">
       {% for item in showcase_subjects %}
         {% set m = namespace(live=false, href='#my-subjects', pct=0) %}
         {% for s in subjects %}
@@ -130,27 +130,34 @@
 
         {% if m.live %}
         <a href="{{ m.href }}"
+           data-sx-keep
            aria-label="{{ item.label }} ({{ m.pct }}% complete)"
-           data-sx-surf-badge
-           class="sx-issue-badge-card is-subject-badge">
-          <span class="sx-badge-stage is-subject-stage">
-            <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_sub_{{ item.key }}_idle.webp?v=541" alt="{{ item.label }}">
-            <canvas class="sx-badge-canvas" width="380" height="380" data-sx-cols="8" data-sx-frames="48" data-sx-sheet="/static/images/saxaz_web/badge_sub_{{ item.key }}_sheet.webp?v=541"></canvas>
-          </span>
-          <span class="sx-subject-pct-pill">{{ m.pct }}% complete</span>
+           class="sx-mag-card">
+          <img class="sx-mag-photo" src="/static/images/saxaz_web/cover_sub_{{ item.key }}.webp?v=546" alt="{{ item.label }}" loading="eager" decoding="async">
+          <div class="sx-mag-masthead">
+            <div class="sx-mag-class">
+              <strong>CLASS 10</strong>
+              <span>CBSE</span>
+            </div>
+            <strong class="sx-mag-subject">{{ item.short }}</strong>
+          </div>
+          <span class="sx-mag-pill">{{ m.pct }}% complete</span>
         </a>
         {% else %}
         <a href="#my-subjects"
+           data-sx-keep
            @click.prevent="notifySubjectSoon({{ item.label | tojson | forceescape }})"
-           aria-label="{{ item.label }} is locked. Coming soon"
-           data-sx-surf-badge
-           class="sx-issue-badge-card is-subject-badge is-soon">
-          <span class="sx-badge-stage is-subject-stage">
-            <span class="sx-subject-lock" aria-hidden="true"><span class="material-symbols-outlined">lock</span></span>
-            <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_sub_{{ item.key }}_idle.webp?v=541" alt="{{ item.label }}">
-            <canvas class="sx-badge-canvas" width="380" height="380" data-sx-cols="8" data-sx-frames="48" data-sx-sheet="/static/images/saxaz_web/badge_sub_{{ item.key }}_sheet.webp?v=541"></canvas>
-          </span>
-          <span class="sx-subject-pct-pill is-soon"><span class="material-symbols-outlined" aria-hidden="true">lock</span>Coming soon</span>
+           aria-label="{{ item.label }} — Coming soon"
+           class="sx-mag-card is-soon">
+          <img class="sx-mag-photo" src="/static/images/saxaz_web/cover_sub_{{ item.key }}.webp?v=546" alt="{{ item.label }}" loading="lazy" decoding="async">
+          <div class="sx-mag-masthead">
+            <div class="sx-mag-class">
+              <strong>CLASS 10</strong>
+              <span>CBSE</span>
+            </div>
+            <strong class="sx-mag-subject">{{ item.short }}</strong>
+          </div>
+          <span class="sx-mag-pill is-soon"><span class="material-symbols-outlined" aria-hidden="true">lock</span>Coming soon</span>
         </a>
         {% endif %}
       {% endfor %}

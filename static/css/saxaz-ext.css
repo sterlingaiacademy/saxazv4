@@ -560,6 +560,166 @@ main.sx-ext-canvas {
   transform-origin: center center;
 }
 
+/* Clean saxaz.com-Style Editorial Square Magazine Cover Cards (My Subjects) */
+.sx-mag-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+  width: 100%;
+  max-width: 1060px;
+  margin-top: 2px;
+}
+
+.sx-mag-card {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 2px;
+  border: 1px solid rgba(35, 31, 32, 0.12);
+  overflow: hidden;
+  background: #ffffff;
+  text-decoration: none !important;
+  color: #18181b !important;
+  box-shadow: 0 2px 10px rgba(35, 31, 32, 0.06);
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.sx-mag-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(35, 31, 32, 0.34);
+  box-shadow: 0 14px 28px rgba(35, 31, 32, 0.14);
+}
+
+.sx-mag-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center bottom;
+  display: block;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sx-mag-card:hover .sx-mag-photo {
+  transform: scale(1.03);
+}
+
+.sx-mag-card.is-soon .sx-mag-photo {
+  opacity: 0.86;
+  filter: saturate(0.72);
+}
+
+.sx-mag-card.is-soon:hover .sx-mag-photo {
+  opacity: 0.94;
+  filter: saturate(0.88);
+}
+
+.sx-mag-masthead {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 13px 14px 8px;
+  color: #141414;
+}
+
+.sx-mag-class {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+}
+
+.sx-mag-class strong {
+  font-family: var(--font-heading);
+  font-size: clamp(0.92rem, 1.25vw, 1.12rem);
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  color: #141414;
+}
+
+.sx-mag-class span {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #231f20;
+  margin-top: 2px;
+}
+
+.sx-mag-subject {
+  font-family: var(--font-heading);
+  font-size: clamp(0.88rem, 1.2vw, 1.08rem);
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+  color: #141414;
+  text-align: right;
+  text-transform: uppercase;
+}
+
+.sx-mag-pill {
+  position: absolute;
+  left: 13px;
+  bottom: 13px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #231f20;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.2;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+}
+
+.sx-mag-pill.is-soon {
+  background: rgba(255, 255, 255, 0.94);
+  color: rgba(35, 31, 32, 0.78);
+}
+
+.sx-mag-pill .material-symbols-outlined {
+  font-size: 14px;
+  line-height: 1;
+}
+
+@media (max-width: 980px) {
+  .sx-mag-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .sx-mag-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .sx-mag-masthead {
+    padding: 10px 10px 6px;
+  }
+  .sx-mag-class strong,
+  .sx-mag-subject {
+    font-size: 0.84rem;
+  }
+  .sx-mag-class span {
+    font-size: 0.64rem;
+  }
+  .sx-mag-pill {
+    left: 10px;
+    bottom: 10px;
+    padding: 5px 11px;
+    font-size: 0.74rem;
+  }
+}
+
 /* Compact Single-Row Side-by-Side 3D Animated Subject Emblems (Never Wraps Down) */
 .sx-subject-badges-grid {
   display: grid;
