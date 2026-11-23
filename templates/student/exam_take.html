@@ -1741,7 +1741,8 @@ document.addEventListener('alpine:init', () => {
       const fbText = (data?.feedback || '').trim();
 
       if (scoreRatio >= 1) {
-        const praiseText = (data?.spoken_1 || fbText || "Spot on! You covered every single point on this question.").trim();
+        // Read exactly what the card shows
+        const praiseText = (fbText || data?.spoken_1 || "Spot on! You covered every single point on this question.").trim();
         await this.speakAndWait(
           praiseText,
           'Full Marks!',
@@ -1759,7 +1760,11 @@ document.addEventListener('alpine:init', () => {
         return;
       }
 
-      const coachSpoken = (data?.spoken_short || data?.spoken_1 || data?.why_wrong || fbText).trim();
+      // Read the whole card, top to bottom: the tutor's line (+ length note), the key points, the memory note.
+      // The tutor's line changes with the answer, so it is generated each time; the key points are the
+      // model answer (same every time), so they are recorded once and replayed with no Gemini tokens.
+      const coachSpoken = [String(data?.why_wrong || fbText || data?.spoken_short || '').trim(), String(data?.length_note || '').trim()]
+        .filter(Boolean).join(' ');
       const coachEmotion = scoreRatio <= 0 ? 'empathetic_buddy' : 'excited_progress';
       if (coachSpoken && !this.narrationAborted) {
         await this.speakAndWait(
@@ -1772,6 +1777,25 @@ document.addEventListener('alpine:init', () => {
           scoreRatio <= 0 ? 'thinking' : 'talking',
           manualReplay
         );
+      }
+      const keyPts = Array.isArray(data?.key_points) ? data.key_points.map(k => String(k || '').trim()).filter(Boolean) : [];
+      if (keyPts.length && !this.narrationAborted) {
+        // split into parts that fit one voice request (about 900 characters), always the same way
+        const parts = [];
+        let cur = 'Here are the key points.';
+        keyPts.forEach(k => {
+          if ((cur + ' ' + k).length > 900 && cur) { parts.push(cur); cur = k; }
+          else cur = cur ? cur + ' ' + k : k;
+        });
+        if (cur) parts.push(cur);
+        for (const part of parts) {
+          if (this.narrationAborted) break;
+          await this.speakAndWait(part, '', 'exam-feedback-card', 'feedback', 'teaching', null, 'talking', manualReplay, true);
+        }
+      }
+      const memNote = String(data?.memory_note || '').trim();
+      if (memNote && !this.narrationAborted) {
+        await this.speakAndWait(memNote, '', 'exam-feedback-card', 'feedback', 'teaching', null, 'talking', manualReplay);
       }
       if (!this.narrationAborted) {
         this.activeGuidedSection = 'try_again';

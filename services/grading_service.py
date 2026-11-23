@@ -278,20 +278,40 @@ def _lang_directive_for_grader(lang_code: str) -> str:
 
 
 def _extract_key_scoring_points(model_answer: str, max_marks: int = 2) -> list[str]:
-  """Extract 2-3 short, actionable mark-scoring key points from `model_answer` without dumping a wall of text."""
-  raw = re.sub(r"\s+", " ", (model_answer or "").strip())
-  if not raw:
-    return ["Include the main scientific term and its function."]
-  parts = [p.strip(" .;-•") for p in re.split(r"(?<=[.;])\s+|\n+", raw) if p.strip(" .;-•")]
-  if len(parts) == 1 and "," in parts[0] and len(parts[0]) > 75:
-    parts = [p.strip(" .;-•") for p in parts[0].split(",") if len(p.strip()) > 10]
-  target_n = 2 if float(max_marks or 1) <= 2 else 3
+  """The key points ARE the model answer: every sentence / line of it, in full, as its own bullet.
+  Nothing is shortened or cut off, so the student sees the whole answer that scores the marks."""
+  text = (model_answer or "").replace("\r", "")
+  if not text.strip():
+    return []
   bullets: list[str] = []
-  for seg in parts[:target_n]:
-    words = seg.split()
-    short = " ".join(words[:14]) + ("..." if len(words) > 14 else "")
-    bullets.append(short[0].upper() + short[1:] if short else seg)
-  return bullets or [raw[:90]]
+  for line in text.split("\n"):
+    line = re.sub(r"\s+", " ", line).strip()
+    # drop list markers like "1.", "(a)", "a)", "-", "•"
+    line = re.sub(r"^(?:\(?[0-9ivxIVX]{1,4}[.)]|\(?[a-hA-H]\)|[-•*])\s+", "", line).strip()
+    if not line:
+      continue
+    # split into sentences (never after "Dr.", "e.g.", single letters like "A." or inside decimals)
+    start = 0
+    for m in re.finditer(r"[.!?]\s+(?=[A-Z(])", line):
+      prev_word = re.findall(r"[A-Za-z.]+$", line[start:m.start()])
+      pw = prev_word[0].lower() if prev_word else ""
+      if pw in _NO_SPLIT_ABBR or len(pw) == 1:
+        continue
+      bullets.append(line[start:m.start() + 1].strip())
+      start = m.end()
+    bullets.append(line[start:].strip())
+  out = []
+  for seg in bullets:
+    if len(seg) < 2:
+      continue
+    # capitalise ordinary words only (keep variables / symbols like "u = -10 cm" as written)
+    if re.match(r"[a-z]{2,}\b", seg):
+      seg = seg[0].upper() + seg[1:]
+    out.append(seg)
+  return out
+
+
+_NO_SPLIT_ABBR = {"dr", "mr", "mrs", "ms", "st", "sr", "jr", "no", "vs", "etc", "e.g", "i.e", "fig", "approx", "viz", "prof", "govt", "ltd"}
 
 
 def _build_deterministic_memory_note(student_answer: str, model_answer: str, past_attempts: list[dict] | None, marks: float, max_marks: float = 1.0) -> str:
@@ -368,7 +388,7 @@ def _fallback_grade_written(question_text: str, max_marks: int, model_answer: st
     "why_wrong": "" if marks >= float(max_marks) else fb,
     "key_points": [] if marks >= float(max_marks) else key_pts,
     "memory_note": mem_note,
-    "spoken_short": fb if marks >= float(max_marks) else f"{fb} Focus on: {key_pts[0]}",
+    "spoken_short": fb,
     "ideal_answer": model_answer,
     "easy_way_text": easy,
     "key_concept_text": key,
@@ -672,8 +692,8 @@ def grade_answer(
     else:
       if not why_wrong:
         why_wrong = ai_fb
-      if not key_points:
-        key_points = _extract_key_scoring_points(model_answer, max_marks)
+      # Key points always come straight from the model answer (the AI's short paraphrases were not helpful)
+      key_points = _extract_key_scoring_points(model_answer, max_marks) or key_points
       if not spoken_short:
         spoken_short = why_wrong
 
