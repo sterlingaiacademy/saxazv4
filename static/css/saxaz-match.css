@@ -1055,4 +1055,7 @@ body .sx-exam-hub.is-compact .sx-mock-tab.is-active { box-shadow: none !importan
 @media (min-width: 981px) {
   #stitch-tailwind-root .saxaz-login-shell { align-items: start; }
   #stitch-tailwind-root .saxaz-login-story { position: sticky; top: 0; height: 100vh; height: 100dvh; }
+  /* the form side fills the screen height so a short form (login) sits in the middle;
+     a long form (sign-up) simply grows and scrolls */
+  #stitch-tailwind-root .saxaz-login-panel { min-height: 100vh; min-height: 100dvh; }
 }
