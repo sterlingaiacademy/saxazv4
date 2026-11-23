@@ -817,7 +817,8 @@ function realExamApp() {
         const handle = window.saxazStreamPcm(cleanText, {
           voice: '{{ user.tts_voice or "af_bella" }}',
           engine: 'gemini',
-          emotion: 'teaching'
+          emotion: 'teaching',
+          persist: true
         });
         if (handle) {
           this.currentStreamHandle = handle;

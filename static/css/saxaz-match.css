@@ -735,6 +735,7 @@ body .sx-issue-acc-bar.has-soon { grid-template-columns: 58px minmax(0, 1fr) aut
 .sx-mcq-why-btn {
   display: inline-flex; align-items: center; gap: 4px; min-height: 34px; padding: 4px 12px 4px 9px;
   border-radius: 999px; border: 0; background: #231f20; color: #ffffff; font: inherit; font-weight: 800; font-size: 0.85rem; cursor: pointer;
+  margin-left: auto;
 }
 .sx-mcq-why-btn .material-symbols-outlined { font-size: 18px; color: #f7b317; }
 .sx-mcq-why {

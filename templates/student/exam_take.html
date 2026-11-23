@@ -140,7 +140,7 @@
             <svg x-show="timerPaused" x-cloak width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5.2v13.6L19 12 7 5.2z"/></svg>
           </button>
                   <button x-show="!isSpeaking"
-                          @click="speak(listenText())"
+                          @click="speak(listenText(), true)"
                           type="button"
                           class="sx-quiz-tool bg-[#ffffff] hover:bg-[#f7b317] text-[#231f20] border border-[#231f20]/25 hover:border-[#231f20] transition-colors flex items-center justify-center gap-1.5 text-xs font-extrabold cursor-pointer"
                           title="Read Question Aloud">
@@ -495,7 +495,7 @@
                   <span class="material-symbols-outlined" aria-hidden="true" x-text="(feedback?.marks >= feedback?.max_marks) ? 'check_circle' : 'cancel'"></span>
                   <span x-text="(feedback?.marks >= feedback?.max_marks) ? 'Correct!' : 'Not quite'"></span>
                 </span>
-                <span class="sx-mcq-answer">Answer: <strong x-text="mcqCorrectLabel()"></strong></span>
+                <span class="sx-mcq-answer" x-show="!(feedback?.marks >= feedback?.max_marks)">Answer: <strong x-text="mcqCorrectLabel()"></strong></span>
                 <button type="button" class="sx-mcq-why-btn" @click="toggleMcqWhy()" :aria-expanded="feedback && feedback._whyOpen ? 'true' : 'false'">
                   <span class="material-symbols-outlined" aria-hidden="true">help</span>
                   <span>Why?</span>
@@ -915,8 +915,9 @@ document.addEventListener('alpine:init', () => {
       this.narrationAborted = false;
       const right = Number(data.marks || 0) >= Number(data.max_marks || 1);
       const ans = this.mcqCorrectLabel().replace(/^([A-E])\.\s*/, '$1, ');
-      const line = right ? `Correct! The answer is ${ans}.` : `Not quite. The answer is ${ans}.`;
-      await this.speakAndWait(line, '', '', '', right ? 'celebrating' : 'empathetic_buddy', null, right ? 'laughing' : 'thinking', false);
+      // Same words every time for this question, so the audio is recorded once and replayed (no Gemini tokens)
+      const line = right ? 'Correct!' : `Not quite. The answer is ${ans}.`;
+      await this.speakAndWait(line, '', '', '', right ? 'celebrating' : 'empathetic_buddy', null, right ? 'laughing' : 'thinking', false, true);
       if (!this.narrationAborted) this.narrationStepLabel = '';
     },
 
@@ -938,7 +939,8 @@ document.addEventListener('alpine:init', () => {
         f._whyText = why || ('The correct answer is ' + this.mcqCorrectLabel() + '.');
         f._whyLoading = false;
       }
-      if (f._whyOpen && f._whyText) this.speak(f._whyText);
+      // The explanation is saved per question + choice, so its audio is recorded once too
+      if (f._whyOpen && f._whyText) this.speak(f._whyText, true);
     },
 
     get canSubmitCurrentAnswer() {
@@ -1616,7 +1618,7 @@ document.addEventListener('alpine:init', () => {
       });
     },
 
-    speakAndWait(text, stepLabel = '', scrollTargetId = '', highlightKey = '', emotion = 'teaching', preloadedBlobPromise = null, avatarMode = 'talking', manualTrigger = false) {
+    speakAndWait(text, stepLabel = '', scrollTargetId = '', highlightKey = '', emotion = 'teaching', preloadedBlobPromise = null, avatarMode = 'talking', manualTrigger = false, persist = false) {
       const cleanText = (text || '').replace(/\s+/g, ' ').trim();
       if (!cleanText || this.narrationAborted || this.isTtsMuted(manualTrigger)) {
         return Promise.resolve(false);
@@ -1675,6 +1677,7 @@ document.addEventListener('alpine:init', () => {
               voice: '{{ user.tts_voice or "af_bella" }}',
               engine: 'gemini',
               emotion: emotion,
+              persist: persist,
               onPlay: startAvatarLoop
             });
             if (handle) {
@@ -1903,10 +1906,11 @@ document.addEventListener('alpine:init', () => {
       }
     },
     
-    async speak(text) {
+    // persist: the text never changes (question, options, saved explanation), so record it once
+    async speak(text, persist = false) {
       this.stopTutorNarration();
       this.narrationAborted = false;
-      await this.speakAndWait(text, 'Reading aloud...', '', '', 'teaching', null, 'talking', true);
+      await this.speakAndWait(text, 'Reading aloud...', '', '', 'teaching', null, 'talking', true, persist);
       this.narrationStepLabel = '';
     },
     

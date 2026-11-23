@@ -807,7 +807,24 @@ async def explain_question_answer(request: Request, question_id: int, chosen: st
       opts = []
     import asyncio
     lang = user.get("tutor_lang") or "en"
-    why = await asyncio.to_thread(grading_service.explain_mcq_answer, q_text, opts, model_answer, chosen, lang)
+    # Saved explanation first: OpenAI writes each one only once, and the same words mean its audio is reused too
+    why_key = grading_service.mcq_why_key(q_text, model_answer, chosen, lang)
+    try:
+      saved = conn.execute("SELECT why FROM mcq_why_cache WHERE cache_key = ?", (why_key,)).fetchone()
+    except Exception:
+      saved = None
+    if saved and saved[0]:
+      return JSONResponse({"success": True, "why": saved[0]})
+    why, from_ai = await asyncio.to_thread(grading_service.explain_mcq_answer, q_text, opts, model_answer, chosen, lang, True)
+    if from_ai:
+      try:
+        conn.execute(
+          "INSERT OR IGNORE INTO mcq_why_cache (cache_key, question_id, why) VALUES (?, ?, ?)",
+          (why_key, question_id, why),
+        )
+        conn.commit()
+      except Exception as e:
+        print(f"MCQ why save notice: {e}")
     return JSONResponse({"success": True, "why": why})
   finally:
     conn.close()

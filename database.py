@@ -396,6 +396,16 @@ def auto_migrate():
         )
     """)
 
+    # MCQ "Why?" explanations: written once per question + choice, then reused (and their audio is saved once)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS mcq_why_cache (
+            cache_key TEXT PRIMARY KEY,
+            question_id INTEGER,
+            why TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
     # Drop retired standalone tutor chat history tables if present
     c.execute("DROP TABLE IF EXISTS tutor_messages")
     c.execute("DROP TABLE IF EXISTS tutor_conversations")

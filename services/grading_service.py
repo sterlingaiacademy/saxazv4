@@ -1,6 +1,7 @@
 import os
 import json
 import re
+import hashlib
 import time
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -407,8 +408,20 @@ def answer_length_note(student_answer: str, max_marks) -> str:
 _MCQ_WHY_CACHE: dict[tuple, str] = {}
 
 
-def explain_mcq_answer(question_text: str, options: list, model_answer: str, chosen: str = "", lang: str = "en") -> str:
-  """A very short, kid-friendly reason why the correct option is right (cached per question + choice)."""
+def mcq_why_key(question_text: str, model_answer: str, chosen: str = "", lang: str = "en") -> str:
+  """Stable id for one explanation: question + correct answer + (wrong) choice + language."""
+  lang_code = normalize_tutor_lang(lang)
+  ans_parts = [ln.strip() for ln in (model_answer or "").splitlines() if ln.strip()]
+  short_ans = ans_parts[0] if ans_parts else (model_answer or "").strip()
+  chosen_clean = re.sub(r'^[A-Ea-e][\.\)\s:-]+', '', (chosen or "").strip()).strip()
+  picked_right = bool(chosen) and _match_mcq_option(chosen, model_answer) is True
+  raw = "|".join([(question_text or "").strip()[:200], short_ans.lower(), "" if picked_right else chosen_clean.lower(), lang_code])
+  return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def explain_mcq_answer(question_text: str, options: list, model_answer: str, chosen: str = "", lang: str = "en", with_source: bool = False):
+  """A very short, kid-friendly reason why the correct option is right (cached per question + choice).
+  with_source=True returns (why, came_from_ai)."""
   lang_code = normalize_tutor_lang(lang)
   ans_parts = [ln.strip() for ln in (model_answer or "").splitlines() if ln.strip()]
   short_ans = ans_parts[0] if ans_parts else (model_answer or "").strip()
@@ -416,7 +429,7 @@ def explain_mcq_answer(question_text: str, options: list, model_answer: str, cho
   picked_right = bool(chosen) and _match_mcq_option(chosen, model_answer) is True
   key = (question_text.strip()[:200], short_ans.lower(), "" if picked_right else chosen_clean.lower(), lang_code)
   if key in _MCQ_WHY_CACHE:
-    return _MCQ_WHY_CACHE[key]
+    return (_MCQ_WHY_CACHE[key], True) if with_source else _MCQ_WHY_CACHE[key]
   why = ""
   if client:
     try:
@@ -439,11 +452,13 @@ def explain_mcq_answer(question_text: str, options: list, model_answer: str, cho
       why = _strip_emojis(str(json.loads(raw).get("why") or "")).strip()
     except Exception as e:
       print(f"MCQ why notice: {e}")
+  from_ai = bool(why)
   if not why:
     extra = " ".join(ans_parts[1:]).strip()
     why = extra or f"The correct answer is {short_ans}."
-  _MCQ_WHY_CACHE[key] = why
-  return why
+  if from_ai:
+    _MCQ_WHY_CACHE[key] = why
+  return (why, from_ai) if with_source else why
 
 
 def grade_answer(
