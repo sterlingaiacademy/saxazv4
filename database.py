@@ -403,9 +403,22 @@ def auto_migrate():
             chapter_id INTEGER NOT NULL,
             started_at TEXT,
             intro_done_at TEXT,
+            mock_done_at TEXT,
             PRIMARY KEY (student_id, chapter_id)
         )
     """)
+    try:
+        if "mock_done_at" not in {r[1] for r in c.execute("PRAGMA table_info(chapter_path)").fetchall()}:
+            c.execute("ALTER TABLE chapter_path ADD COLUMN mock_done_at TEXT")
+    except Exception as e:
+        print(f"chapter_path migration notice: {e}")
+
+    # "Mock" exams are called "Practice Exam" for students (titles only; nothing else changes)
+    try:
+        c.execute("UPDATE exam_papers SET title = REPLACE(title, 'Mock Exam', 'Practice Exam') WHERE title LIKE '%Mock Exam%'")
+        c.execute("UPDATE exam_papers SET title = REPLACE(title, 'Mock Test', 'Practice Exam') WHERE title LIKE '%Mock Test%'")
+    except Exception as e:
+        print(f"exam title rename notice: {e}")
 
     # MCQ "Why?" explanations: written once per question + choice, then reused (and their audio is saved once)
     c.execute("""
@@ -461,8 +474,9 @@ def auto_migrate():
 
     # One-time data fix: standardize exam paper titles & Chapter 5 strict syllabus metadata
     try:
-        c.execute("UPDATE exam_papers SET title = 'Mock Exam' WHERE title IN ('Mock Exam - 1', 'Practice Exam') AND chapter_id != 3")
-        c.execute("UPDATE exam_papers SET title = REPLACE(title, 'Practice Exam — ', 'Mock Exam — ') WHERE title LIKE 'Practice Exam — %' AND chapter_id != 3")
+        # students see "Practice Exam" (not "Mock") everywhere
+        c.execute("UPDATE exam_papers SET title = 'Practice Exam' WHERE title IN ('Mock Exam - 1', 'Mock Exam') AND chapter_id != 3")
+        c.execute("UPDATE exam_papers SET title = REPLACE(title, 'Mock Exam — ', 'Practice Exam — ') WHERE title LIKE 'Mock Exam — %' AND chapter_id != 3")
         c.execute("UPDATE exam_papers SET title = REPLACE(title, 'Main Exam — ', 'Real Exam — ') WHERE title LIKE 'Main Exam — %' AND chapter_id != 3")
     except Exception:
         pass
@@ -549,10 +563,10 @@ def _ensure_data_migrations(conn):
 
     ch5_papers = [
         # (id, chapter_id, type, title, unlock_pct, req_mock_pct, time_mins, status, max_attempts, use_mock_qs, target_marks)
-        (13, 3, "mock", "Mock Test 1", 80.0, None, None, "published", None, 0, 30),
-        (45, 3, "mock", "Mock Test 2", 80.0, None, None, "published", None, 0, 30),
-        (46, 3, "mock", "Mock Test 3", 80.0, None, None, "published", None, 0, 30),
-        (14, 3, "real", "Real Exam", None, 80.0, 40, "published", 100, 0, 25),
+        (13, 3, "mock", "Practice Exam 1", 100.0, None, None, "published", None, 0, 30),
+        (45, 3, "mock", "Practice Exam 2", 100.0, None, None, "published", None, 0, 30),
+        (46, 3, "mock", "Practice Exam 3", 100.0, None, None, "published", None, 0, 30),
+        (14, 3, "real", "Real Exam", None, 100.0, 40, "published", 100, 0, 25),
     ]
     for ep_id, ch_id, ep_type, ep_title, unl_pct, req_mock_pct, t_mins, ep_st, max_att, use_mq, tgt_m in ch5_papers:
         c.execute("SELECT id FROM exam_papers WHERE id = ?", (ep_id,))

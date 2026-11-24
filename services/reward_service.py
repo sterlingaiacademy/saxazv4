@@ -165,7 +165,7 @@ SHOP_ITEMS = [
         "image": "/static/images/saxaz_web/store/item_sub_pass.webp",
         "highlights": [
             "Instant Rs 50 discount code valid on monthly issues or annual renewals",
-            "Unlocks uninterrupted access to AI Voice Tutors, Mock Exams & Real Exams",
+            "Unlocks uninterrupted access to AI Voice Tutors, Practice Exams & Real Exams",
             "Share directly with your parent to apply at saxaz.com checkout",
         ],
     },
@@ -558,7 +558,7 @@ def award_exam_completion_coins(
             tiers.append((f"real_tier3:paper:{exam_paper_id}", 20, f"Distinction Tier (90%+) — {clean_title}"))
     else:
         if pct_score >= 50.0:
-            tiers.append((f"mock_pass:paper:{exam_paper_id}", 30, f"Passed Mock Exam (50%+) — {clean_title}"))
+            tiers.append((f"mock_pass:paper:{exam_paper_id}", 30, f"Passed Practice Exam (50%+) — {clean_title}"))
         if pct_score >= 85.0:
             tiers.append((f"mock_ace:paper:{exam_paper_id}", 10, f"85%+ Mastery Bonus — {clean_title}"))
 

@@ -84,7 +84,7 @@
           {% if query %}
             Found {{ results|length }} matching destination{% if results|length != 1 %}s{% endif %} across subjects, chapters, video lessons, exams, and shop rewards.
           {% else %}
-            Search any subject, chapter, video lesson, mock exam, real exam, or student setting.
+            Search any subject, chapter, video lesson, practice exam, real exam, or student setting.
           {% endif %}
         </p>
       </div>
@@ -119,7 +119,7 @@
                @keydown.down.prevent="moveSelection(1)"
                @keydown.up.prevent="moveSelection(-1)"
                @keydown.escape="closeDropdown()"
-               placeholder="Search a chapter, video lesson, mock test, voice settings, or shop..."
+               placeholder="Search a chapter, video lesson, practice exam, voice settings, or shop..."
                required
                style="flex:1 1 220px;min-width:0;border:0;outline:none;background:transparent;color:#231f20;font-family:inherit;font-size:0.96rem;font-weight:600;padding:8px 4px;">
         <button type="submit"

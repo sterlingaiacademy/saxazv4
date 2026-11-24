@@ -1,0 +1,143 @@
+{#
+  The chapter path popup (same look as the game popup). One component for every step of the strict order:
+  introduction done -> practice exam unlocked, practice exam 100% -> real exam unlocked, real exam 100% -> chapter
+  complete, and the "not yet 100%, try again" messages.
+
+  Open it from any page with:
+    window.dispatchEvent(new CustomEvent('sx-stage-popup', { detail: { kind: 'go-practice', chapterId, url } }))
+  kinds: go-practice | go-real | practice-retry | real-retry | chapter-done
+  Each spoken line is the same every time, so it is recorded once and replayed (no repeat Gemini tokens).
+#}
+{% macro stage_popup(first_name='Friend', tutor='bella') %}
+<link rel="stylesheet" href="/static/css/summary-games.css?v=27">
+<link rel="stylesheet" href="/static/css/saxaz-pages.css?v=12">
+<div class="sxc">
+<div class="sx-fullscreen-invite-modal sx-stage-popup"
+     x-data='sxStagePopup({{ first_name|tojson }}, {{ tutor|tojson }})'
+     @sx-stage-popup.window="show($event.detail)"
+     x-show="open" x-cloak
+     @click.self="close()" @keydown.escape.window="open && close()">
+  <div class="sx-fsi-dialog sx-game-invite-card" role="dialog" aria-modal="true" :aria-label="c.title1 + ' ' + c.title2">
+    <button type="button" class="sx-fsi-close" @click="close()" aria-label="Close">
+      <span class="material-symbols-outlined" aria-hidden="true">close</span>
+    </button>
+    <div class="sx-fsi-poster">
+      <div class="sx-fsi-speech" x-text="c.bubble"></div>
+      <div class="sx-fsi-tutor-wrap">
+        <img :src="'/static/images/avatars/' + tutor + '_' + (speaking ? 'talking' : 'laughing') + '.webp?v=543'" alt="">
+      </div>
+      <div class="sx-fsi-mascot-pill">
+        <img :src="c.badge" alt="" draggable="false">
+      </div>
+    </div>
+    <div class="sx-fsi-content">
+      <div class="sx-fsi-kicker-row">
+        <span class="sx-fsi-kicker">
+          <span class="material-symbols-outlined" aria-hidden="true" x-text="c.kickerIcon"></span>
+          <span x-text="c.kicker"></span>
+        </span>
+        <span class="sx-fsi-coin-pill" x-show="c.pill" x-text="c.pill"></span>
+      </div>
+      <h2 class="sx-fsi-title">
+        <span class="d" x-text="c.title1"></span>
+        <span class="a" x-text="c.title2"></span>
+      </h2>
+      <p class="sx-fsi-subtitle" :class="c.warn && 'is-warn'">
+        <span class="sx-fsi-subtitle-ico material-symbols-outlined" aria-hidden="true" x-text="c.textIcon"></span>
+        <span x-text="c.text"></span>
+      </p>
+      <div class="sx-fsi-actions">
+        <button type="button" class="sx-fsi-cta is-play" @click="primary()" :disabled="busy">
+          <span x-text="busy ? 'One moment...' : c.primary"></span>
+          <span class="sx-fsi-cta-arrow" aria-hidden="true"><span class="material-symbols-outlined">arrow_forward</span></span>
+        </button>
+        <button type="button" class="sx-fsi-cta is-next" x-show="c.secondary" @click="close()">
+          <span x-text="c.secondary"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<script>
+  window.sxStagePopup = window.sxStagePopup || function (firstName, tutor) {
+    const BADGE = {
+      practice: '/static/images/saxaz_web/badge_practice_exam_idle.webp?v=1',
+      real: '/static/images/saxaz_web/badge_real_exam_idle.webp?v=541',
+      summary: '/static/images/saxaz_web/badge_chapter_summary_idle.webp?v=541'
+    };
+    const NO_BACK = "Once you go, you can't come back. To come back, you must restart the chapter and do everything again.";
+    const KINDS = {
+      'go-practice': {
+        bubble: 'Well done, ' + firstName + '!', kicker: 'Introduction done', kickerIcon: 'check_circle',
+        title1: 'Practice exam', title2: 'unlocked!', text: NO_BACK, textIcon: 'warning', warn: true,
+        primary: 'Go to the practice exam', secondary: 'Not yet', badge: BADGE.practice,
+        voice: "Well done, buddy! The practice exam is unlocked. Do you want to go to the practice exam? Once you go, you can't come back. To come back, you must restart the chapter."
+      },
+      'go-real': {
+        bubble: '100%! Amazing, ' + firstName + '!', kicker: 'Practice exam passed', kickerIcon: 'check_circle', pill: '100%',
+        title1: 'Real exam', title2: 'unlocked!', text: NO_BACK, textIcon: 'warning', warn: true,
+        primary: 'Go to the real exam', secondary: 'Not yet', badge: BADGE.real,
+        voice: "Amazing, buddy! You got one hundred percent. The real exam is unlocked. Do you want to go to the real exam? Once you go, you can't come back. To come back, you must restart the chapter."
+      },
+      'practice-retry': {
+        bubble: 'Keep going, ' + firstName + '!', kicker: 'Practice exam', kickerIcon: 'quiz',
+        title1: 'Get 100%', title2: 'to unlock the real exam', textIcon: 'info',
+        text: 'Read the key points for the questions you missed, then try the practice exam again.',
+        primary: 'Try again', secondary: 'Look at my answers', badge: BADGE.practice,
+        voice: "Good try, buddy! Get one hundred percent in the practice exam to unlock the real exam. Look at the key points, then try again."
+      },
+      'real-retry': {
+        bubble: 'Nearly there, ' + firstName + '!', kicker: 'Real exam', kickerIcon: 'workspace_premium',
+        title1: 'Get 100%', title2: 'to complete the chapter', textIcon: 'info',
+        text: 'Look at the questions you missed, then take the real exam again.',
+        primary: 'Back to the chapter', secondary: 'Look at my answers', badge: BADGE.real,
+        voice: "Nearly there, buddy! Get one hundred percent in the real exam to complete the chapter. Look at what you missed, then try again."
+      },
+      'chapter-done': {
+        bubble: 'You did it, ' + firstName + '!', kicker: 'Real exam passed', kickerIcon: 'workspace_premium', pill: '100%',
+        title1: 'Chapter', title2: 'complete!', textIcon: 'military_tech',
+        text: 'You finished the introduction, the practice exam and the real exam. Brilliant work!',
+        primary: 'Back to my subjects', secondary: '', badge: BADGE.real,
+        voice: "You did it, buddy! You got one hundred percent in the real exam. This chapter is complete. Brilliant work!"
+      }
+    };
+    return {
+      open: false, busy: false, speaking: false, pcm: null, tutor: tutor || 'bella',
+      d: {}, c: KINDS['go-practice'],
+      show(detail) {
+        const k = KINDS[(detail || {}).kind];
+        if (!k) return;
+        this.d = detail || {}; this.c = Object.assign({}, k, this.d.pill ? { pill: this.d.pill } : {});
+        this.busy = false; this.open = true;
+        document.documentElement.classList.add('sx-fs-lock');
+        if (!['0', 'off'].includes(String(window.__saxazUserTtsMode || '').toLowerCase()) && window.saxazStreamPcm) {
+          if (this.pcm && this.pcm.cancel) this.pcm.cancel();
+          this.pcm = window.saxazStreamPcm(this.c.voice, { emotion: 'celebrating', speed: 0.94, persist: true, onPlay: () => { this.speaking = true; } });
+          if (this.pcm) this.pcm.donePromise.then(() => { this.speaking = false; });
+        }
+      },
+      close() {
+        if (this.pcm && this.pcm.cancel) this.pcm.cancel();
+        this.speaking = false; this.open = false;
+        document.documentElement.classList.remove('sx-fs-lock');
+        if (typeof this.d.onClose === 'function') this.d.onClose();
+      },
+      async primary() {
+        const kind = this.d.kind, cid = this.d.chapterId;
+        if (kind === 'go-practice' || kind === 'go-real') {
+          this.busy = true;
+          try {
+            const r = await fetch('/student/chapters/' + cid + '/path/' + (kind === 'go-practice' ? 'intro-done' : 'go-real'), { method: 'POST', credentials: 'same-origin' });
+            if (r.ok) { if (this.pcm && this.pcm.cancel) this.pcm.cancel(); window.location.href = this.d.url; return; }
+          } catch (e) {}
+          this.busy = false;
+          return;
+        }
+        if (this.pcm && this.pcm.cancel) this.pcm.cancel();
+        window.location.href = this.d.url || '/student/exams';
+      }
+    };
+  };
+</script>
+{% endmacro %}

@@ -49,12 +49,12 @@
     <div class="sx-rx-locked">
       <span class="sx-rx-ico is-dark material-symbols-outlined" aria-hidden="true">lock</span>
       <div>
-        <div class="sx-rx-locked-title">Score {{ required_mock_pct or 80 }}% in a mock test to unlock this exam</div>
+        <div class="sx-rx-locked-title">Get 100% in the practice exam to unlock this exam</div>
         <div class="sx-rx-locked-sub">Your best so far: {{ best_mock_pct or 0 }}%</div>
       </div>
     </div>
     <a href="{{ '/student/exams/' ~ first_mock_id if first_mock_id else ('/student/chapters/' ~ paper.chapter_id) }}" class="sx-rx-start">
-      Practice a mock test &rarr;
+      Go to the practice exam &rarr;
     </a>
     {% else %}
     <form method="POST" action="/student/real-exams/{{ paper.id }}/start">

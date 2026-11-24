@@ -130,7 +130,7 @@
         {% else %}
         <span class="sx-chip" style="background:#231f20;border:1px solid #231f20;color:#f7b317;font-size:0.7rem;font-weight:800;">
           {{ icon('bolt', 13, 'sx-ico-inline') }}
-          <span>Practice Mock Exam</span>
+          <span>Practice Exam</span>
         </span>
         {% endif %}
 
@@ -211,83 +211,42 @@
     </div>
   </section>
 
-  <!-- 3. Next-Step Chapter Progression Card (80% Unlock Gate + Mock Test 1/2/3 Scores) -->
-  {% if real_exam_info or sibling_mocks %}
-  <section style="padding:18px 20px;border-radius:20px;background:#ffffff;border:2px solid #231f20;display:flex;flex-direction:column;gap:14px;">
-    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;">
-      <div style="display:flex;align-items:flex-start;gap:12px;min-width:0;flex:1 1 260px;">
-        <span style="width:42px;height:42px;border-radius:12px;background:{{ '#f7b317' if (real_exam_info and not real_exam_info.is_locked) else '#231f20' }};border:1.5px solid #231f20;color:{{ '#231f20' if (real_exam_info and not real_exam_info.is_locked) else '#f7b317' }};display:grid;place-items:center;flex-shrink:0;">
-          <span class="material-symbols-outlined" style="font-size:22px;">{{ 'verified' if (real_exam_info and not real_exam_info.is_locked) else 'lock' }}</span>
-        </span>
-        <div style="min-width:0;">
-          {% if real_exam_info and not real_exam_info.is_locked %}
-          <h2 class="sx-display" style="margin:0;font-size:1.05rem;font-weight:900;color:#231f20;">
-            Official Real Exam Unlocked! (80%+ Achieved)
-          </h2>
-          <p style="margin:3px 0 0;font-size:0.82rem;color:rgba(35,31,32,0.75);font-weight:600;line-height:1.45;">
-            {% if attempt.exam_type == 'real' %}
-              Want to sharpen weak areas before retaking the Real Exam? Practice any Mock Test below and get feedback on every answer!
-            {% else %}
-              Awesome work! You have achieved {{ real_exam_info.best_mock_pct }}% in Mock Practice and unlocked the timed, proctored Official Real Exam.
-            {% endif %}
-          </p>
-          {% else %}
-          <h2 class="sx-display" style="margin:0;font-size:1.05rem;font-weight:900;color:#231f20;">
-            Score 80% (24/30 Marks) to Unlock Official Real Exam
-          </h2>
-          <p style="margin:3px 0 0;font-size:0.82rem;color:rgba(35,31,32,0.75);font-weight:600;line-height:1.45;">
-            Current Best Mock Score: <strong>{{ real_exam_info.best_mock_pct if real_exam_info else 0 }}%</strong>. Retry missed questions below or practice the next Mock Test to reach 80%!
-          </p>
-          {% endif %}
-        </div>
-      </div>
-
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0;">
-        {% if real_exam_info and not real_exam_info.is_locked %}
-          {% if attempt.exam_type == 'real' %}
-          <a href="/student/exams/{{ ns.next_mock_id }}"
-             class="sx-ext-cta-soft"
-             style="min-height:40px;padding:8px 16px;font-size:0.82rem;text-decoration:none;">
-            <span>Practice {{ ns.next_mock_title }} &rarr;</span>
-          </a>
-          <a href="/student/real-exams/{{ real_exam_info.id }}/intro"
-             class="sx-ext-cta-yellow"
-             style="min-height:40px;padding:8px 18px;font-size:0.82rem;text-decoration:none;">
-            <span>Start Real Exam &rarr;</span>
-          </a>
-          {% else %}
-          <a href="/student/real-exams/{{ real_exam_info.id }}/intro"
-             class="sx-ext-cta-yellow"
-             style="min-height:42px;padding:9px 20px;font-size:0.85rem;text-decoration:none;">
-            <span>Start Real Exam &rarr;</span>
-          </a>
-          {% endif %}
-        {% else %}
-        <a href="/student/exams/{{ ns.next_mock_id }}?fresh=1"
-           class="sx-ext-cta-yellow"
-           style="min-height:42px;padding:9px 18px;font-size:0.84rem;text-decoration:none;">
-          <span>Practice {{ ns.next_mock_title }} &rarr;</span>
-        </a>
-        {% endif %}
-      </div>
-    </div>
-
-    {% if sibling_mocks and sibling_mocks|length > 0 %}
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-top:12px;border-top:1px solid rgba(35,31,32,0.12);">
-      <span style="font-size:0.7rem;font-weight:900;text-transform:uppercase;letter-spacing:0.06em;color:rgba(35,31,32,0.68);margin-right:2px;">
-        Chapter Mock Tests:
+  <!-- 3. Where you are in the chapter (strict order: introduction > practice exam > real exam) -->
+  {% if attempt.chapter_id and path_state %}
+  {% set is_real = attempt.exam_type == 'real' %}
+  {% set best_mock = real_exam_info.best_mock_pct if real_exam_info else 0 %}
+  <section style="padding:18px 20px;border-radius:20px;background:#ffffff;border:2px solid #231f20;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;">
+    <div style="display:flex;align-items:flex-start;gap:12px;min-width:0;flex:1 1 260px;">
+      {% set good = (is_real and init_pct >= 100) or ((not is_real) and path_state.can_go_real) %}
+      <span style="width:42px;height:42px;border-radius:12px;background:{{ '#f7b317' if good else '#231f20' }};border:1.5px solid #231f20;color:{{ '#231f20' if good else '#f7b317' }};display:grid;place-items:center;flex-shrink:0;">
+        <span class="material-symbols-outlined" style="font-size:22px;">{{ 'verified' if good else 'lock' }}</span>
       </span>
-      {% for sm in sibling_mocks %}
-      <a href="/student/exams/{{ sm.id }}"
-         style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;text-decoration:none;font-size:0.76rem;font-weight:800;border:1.5px solid #231f20;background:{{ '#f7b317' if sm.id == attempt.exam_paper_id else '#ffffff' }};color:#231f20;">
-        <span>{{ sm.title }}</span>
-        <span style="padding:1px 7px;border-radius:999px;font-size:0.68rem;font-weight:900;background:#231f20;color:{{ '#f7b317' if sm.best_pct is not none else '#ffffff' }};">
-          {{ (sm.best_pct ~ '%') if sm.best_pct is not none else 'Try' }}
-        </span>
-      </a>
-      {% endfor %}
+      <div style="min-width:0;">
+        <h2 class="sx-display" style="margin:0;font-size:1.05rem;font-weight:900;color:#231f20;">
+          {% if is_real and init_pct >= 100 %}Chapter complete!
+          {% elif is_real %}Get 100% to complete the chapter
+          {% elif path_state.can_go_real or path_state.stage == 'real' %}Real exam unlocked!
+          {% else %}Get 100% to unlock the real exam{% endif %}
+        </h2>
+        <p style="margin:3px 0 0;font-size:0.84rem;color:rgba(35,31,32,0.75);font-weight:600;line-height:1.45;">
+          {% if is_real and init_pct >= 100 %}You got 100% in the real exam. Brilliant work!
+          {% elif is_real %}Look at the questions you missed below, then take the real exam again from your chapter.
+          {% elif path_state.can_go_real or path_state.stage == 'real' %}You got 100% in the practice exam. Go to your chapter to move on to the real exam.
+          {% else %}Your best so far: <strong>{{ best_mock }}%</strong>. Read the key points for the questions you missed, then try again.{% endif %}
+        </p>
+      </div>
     </div>
-    {% endif %}
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0;">
+      {% if (not is_real) and path_state.stage == 'mock' and not path_state.can_go_real %}
+      <a href="/student/exams/{{ attempt.exam_paper_id }}?fresh=1" class="sx-ext-cta-yellow" style="min-height:42px;padding:9px 20px;font-size:0.85rem;text-decoration:none;">
+        <span>Try again &rarr;</span>
+      </a>
+      {% else %}
+      <a href="/student/chapters/{{ attempt.chapter_id }}" class="sx-ext-cta-yellow" style="min-height:42px;padding:9px 20px;font-size:0.85rem;text-decoration:none;">
+        <span>Back to the chapter &rarr;</span>
+      </a>
+      {% endif %}
+    </div>
   </section>
   {% endif %}
 
@@ -729,79 +688,34 @@
   </div>
 </div>
 
-{# Just finished a practice test with 80%+: "Are you ready for the real exam?" (same look as the game popup) #}
-{% set show_real_ready = (request.query_params.get('finished') == '1') and attempt.exam_type != 'real' and real_exam_info and (not real_exam_info.is_locked) and init_pct >= 80 %}
-{% if show_real_ready %}
-{% set rr_tutor = {'af_bella': 'bella', 'af_sarah': 'sarah', 'am_adam': 'adam', 'am_michael': 'michael'}.get(user.tts_voice or 'af_bella', 'bella') %}
-{% set rr_first = (user.name or 'Friend').strip().split(' ')[0] | capitalize %}
-<link rel="stylesheet" href="/static/css/summary-games.css?v=27">
-<link rel="stylesheet" href="/static/css/saxaz-pages.css?v=12">
-<div class="sxc">
-<div class="sx-fullscreen-invite-modal"
-     x-data="{
-       open: false, speaking: false, pcm: null,
-       show() {
-         this.open = true;
-         document.documentElement.classList.add('sx-fs-lock');
-         try { history.replaceState(null, '', location.pathname); } catch (e) {}
-         if (!['0', 'off'].includes(String(window.__saxazUserTtsMode || '').toLowerCase()) && window.saxazStreamPcm) {
-           this.pcm = window.saxazStreamPcm('Amazing, buddy! You passed the practice test. Are you ready for the real exam?', {
-             emotion: 'celebrating', speed: 0.94, persist: true, onPlay: () => { this.speaking = true; }
-           });
-           if (this.pcm) this.pcm.donePromise.then(() => { this.speaking = false; });
-         }
-       },
-       close() {
-         if (this.pcm && this.pcm.cancel) this.pcm.cancel();
-         this.speaking = false; this.open = false;
-         document.documentElement.classList.remove('sx-fs-lock');
-       }
-     }"
-     x-init="setTimeout(() => show(), 1400)"
-     x-show="open" x-cloak
-     @click.self="close()" @keydown.escape.window="open && close()">
-  <div class="sx-fsi-dialog sx-game-invite-card" role="dialog" aria-modal="true" aria-label="Are you ready for the real exam?">
-    <button type="button" class="sx-fsi-close" @click="close()" aria-label="Close">
-      <span class="material-symbols-outlined" aria-hidden="true">close</span>
-    </button>
-    <div class="sx-fsi-poster">
-      <div class="sx-fsi-speech">You passed, {{ rr_first }}!</div>
-      <div class="sx-fsi-tutor-wrap">
-        <img :src="'/static/images/avatars/{{ rr_tutor }}_' + (speaking ? 'talking' : 'laughing') + '.webp?v=543'" alt="">
-      </div>
-      <div class="sx-fsi-mascot-pill">
-        <img src="/static/images/saxaz_web/badge_real_exam_idle.webp?v=541" alt="" draggable="false">
-      </div>
-    </div>
-    <div class="sx-fsi-content">
-      <div class="sx-fsi-kicker-row">
-        <span class="sx-fsi-kicker">
-          <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
-          <span>Practice test passed</span>
-        </span>
-        <span class="sx-fsi-coin-pill">{{ "%.0f"|format(init_pct) }}%</span>
-      </div>
-      <h2 class="sx-fsi-title">
-        <span class="d">Ready for the</span>
-        <span class="a">real exam?</span>
-      </h2>
-      <p class="sx-fsi-subtitle">
-        <span class="sx-fsi-subtitle-ico material-symbols-outlined" aria-hidden="true">workspace_premium</span>
-        <span>On your own, no tutor. Read the rules, then start.</span>
-      </p>
-      <div class="sx-fsi-actions">
-        <a href="/student/real-exams/{{ real_exam_info.id }}/intro" class="sx-fsi-cta is-play" style="text-decoration:none;">
-          <span>Go to the real exam</span>
-          <span class="sx-fsi-cta-arrow" aria-hidden="true"><span class="material-symbols-outlined">arrow_forward</span></span>
-        </a>
-        <button type="button" class="sx-fsi-cta is-next" @click="close()">
-          <span>Not yet</span>
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-</div>
+{# Straight after finishing an exam: the chapter path popup tells the student what happens next #}
+{% if request.query_params.get('finished') == '1' and attempt.chapter_id and path_state %}
+{% set sp_tutor = {'af_bella': 'bella', 'af_sarah': 'sarah', 'am_adam': 'adam', 'am_michael': 'michael'}.get(user.tts_voice or 'af_bella', 'bella') %}
+{% set sp_first = (user.name or 'Friend').strip().split(' ')[0] | capitalize %}
+{% if attempt.exam_type == 'real' %}
+  {% set sp_kind = 'chapter-done' if init_pct >= 100 else 'real-retry' %}
+  {% set sp_url = '/student/exams' if init_pct >= 100 else ('/student/chapters/' ~ attempt.chapter_id) %}
+{% elif path_state.can_go_real and real_exam_info %}
+  {% set sp_kind = 'go-real' %}
+  {% set sp_url = '/student/real-exams/' ~ real_exam_info.id ~ '/intro' %}
+{% elif path_state.stage == 'mock' %}
+  {% set sp_kind = 'practice-retry' %}
+  {% set sp_url = '/student/exams/' ~ attempt.exam_paper_id ~ '?fresh=1' %}
+{% else %}
+  {% set sp_kind = '' %}
+{% endif %}
+{% if sp_kind %}
+{% from "student/partials/stage_popup.html" import stage_popup %}
+{{ stage_popup(sp_first, sp_tutor) }}
+<script>
+  document.addEventListener('alpine:initialized', () => {
+    try { history.replaceState(null, '', location.pathname); } catch (e) {}
+    setTimeout(() => window.dispatchEvent(new CustomEvent('sx-stage-popup', { detail: {
+      kind: {{ sp_kind | tojson }}, chapterId: {{ attempt.chapter_id | tojson }}, url: {{ sp_url | tojson }}, pill: {{ ('%.0f' | format(init_pct) ~ '%') | tojson }}
+    } })), 1200);
+  });
+</script>
+{% endif %}
 {% endif %}
 
 <script>

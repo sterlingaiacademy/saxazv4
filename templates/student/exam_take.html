@@ -47,19 +47,9 @@
           <span>Back to Chapter</span>
         </a>
         {% if real_exam_info %}
-          {% if not real_exam_info.is_locked %}
-          <a href="/student/real-exams/{{ real_exam_info.id }}/intro"
-             data-confirm="Leave this practice exam and open the proctored Official Real Exam?"
-             data-confirm-title="Open Official Real Exam?"
-             data-confirm-btn="Open Real Exam"
-             style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;background:#f7b317;color:#231f20;font-size:0.74rem;font-weight:900;text-decoration:none;">
-            <span>Real Exam Unlocked &rarr;</span>
-          </a>
-          {% else %}
-          <span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:999px;background:#ffffff;color:#231f20;font-size:0.72rem;font-weight:800;">
-            <span>Goal: 80% Unlocks Real Exam{% if real_exam_info.best_mock_pct > 0 %} (Best: {{ real_exam_info.best_mock_pct }}%){% endif %}</span>
+          <span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:999px;background:{{ '#f7b317' if not real_exam_info.is_locked else '#ffffff' }};color:#231f20;font-size:0.72rem;font-weight:800;">
+            <span>{% if not real_exam_info.is_locked %}100% done: finish the exam to go on{% else %}Goal: 100% unlocks the real exam{% if real_exam_info.best_mock_pct > 0 %} (Best: {{ real_exam_info.best_mock_pct }}%){% endif %}{% endif %}</span>
           </span>
-          {% endif %}
         {% endif %}
       </div>
       {% endif %}
@@ -74,19 +64,19 @@
         </div>
         {% if sibling_mocks is defined and sibling_mocks|length > 1 %}
         <div class="sx-quiz-switch-wrap">
-          <span class="sx-quiz-switch-label">Mock test</span>
-          <nav class="sx-quiz-switch" aria-label="Mock tests">
+          <span class="sx-quiz-switch-label">Practice exam</span>
+          <nav class="sx-quiz-switch" aria-label="Practice exams">
             {% for sm in sibling_mocks %}
             <a href="/student/exams/{{ sm.id }}"
                {% if sm.id != paper.id %}
                data-confirm="Switch to {{ sm.title }}? Your submitted answers and drafts in {{ paper.title }} stay saved."
                data-confirm-title="Switch to {{ sm.title }}?"
-               data-confirm-btn="Switch Mock Test"
+               data-confirm-btn="Switch practice exam"
                {% endif %}
                {% if sm.best_pct is not none %}title="Best score {{ sm.best_pct }}%"{% endif %}
                class="sx-quiz-switch-btn {% if sm.id == paper.id %}is-active{% endif %}"
                {% if sm.id == paper.id %}aria-current="page"{% endif %}>
-              {% if sm.title.startswith('Mock ') %}{{ sm.title[5:] }}{% else %}{{ sm.title }}{% endif %}{% if sm.best_pct is not none %}<small>{{ sm.best_pct }}%</small>{% endif %}
+              {% if sm.title.startswith('Practice Exam ') %}{{ 'Exam ' ~ sm.title[14:] }}{% elif sm.title.startswith('Mock ') %}{{ sm.title[5:] }}{% else %}{{ sm.title }}{% endif %}{% if sm.best_pct is not none %}<small>{{ sm.best_pct }}%</small>{% endif %}
             </a>
             {% endfor %}
           </nav>
@@ -639,7 +629,7 @@
             </div>
             <div>
               <h2 class="text-2xl sm:text-3xl font-black text-[#231f20]"
-                  x-text="paper.is_digi_library ? 'Practice Summary' : 'Ready to Finish Mock Exam?'"></h2>
+                  x-text="paper.is_digi_library ? 'Practice Summary' : 'Ready to finish the practice exam?'"></h2>
               <p class="text-sm sm:text-base text-[#231f20]/75 font-semibold mt-1">
                 You submitted <strong class="text-[#231f20]" x-text="`${totalAnswered} of ${totalQuestions}`"></strong> questions<span x-show="!paper.is_digi_library" x-text="` in ${formattedElapsed}`"></span>.
               </p>

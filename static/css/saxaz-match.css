@@ -1112,3 +1112,8 @@ body .sx-exam-hub.is-compact .sx-mock-tab.is-active { box-shadow: none !importan
 }
 .sx-stage-restart-btn:hover { background: #f7b317; }
 .sx-stage-restart-btn .material-symbols-outlined { font-size: 18px; }
+
+/* Chapter stages: the exam badge sits in the middle of the page */
+.sxc :is(#chapter-exams, #chapter-real) .sx-issue-badges-row.is-single { justify-content: center; }
+/* Chapter path popup: the "you can't come back" warning stands out */
+.sxc .sx-stage-popup .sx-fsi-subtitle.is-warn { background: #fff3cf; color: #231f20; }

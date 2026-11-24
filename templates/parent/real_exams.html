@@ -12,7 +12,7 @@
     </div>
     <div class="sx-p-hero-pills">
       <a href="/parent/dashboard" class="sx-p-pill sx-p-pill-white">&larr; Overview</a>
-      <a href="/parent/mock-exams" class="sx-p-pill sx-p-pill-white">Mock Exams &rarr;</a>
+      <a href="/parent/mock-exams" class="sx-p-pill sx-p-pill-white">Practice Exams &rarr;</a>
       <a href="/auth/switch-to-student" class="sx-p-pill sx-p-pill-black">Switch to Student View &rarr;</a>
     </div>
   </div>
@@ -222,7 +222,7 @@
         {{ 'Unlocked (80%+ Mock)' if is_real_unlocked else 'Needs 80% in Mock' }}
       </div>
       <div class="sx-p-stat-sub">
-        {% if best_mock_pct is not none %}Best Mock Score: {{ best_mock_pct }}%{% else %}Complete a chapter Mock Test first{% endif %}
+        {% if best_mock_pct is not none %}Best Practice Exam Score: {{ best_mock_pct }}%{% else %}Complete a chapter Practice Exam first{% endif %}
       </div>
     </div>
   </div>

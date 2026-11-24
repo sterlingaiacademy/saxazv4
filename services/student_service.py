@@ -717,6 +717,9 @@ def get_available_exams(conn, chapter_id: int, student_id: int):
       req_mock = real.get('required_mock_percent') or max(((m.get('unlock_threshold_percent') or 0) for m in mock_exams), default=None)
       if req_mock == 0:
         req_mock = None
+      # Strict chapter path: the real exam unlocks only with 100% in a practice exam
+      if mock_exams:
+        req_mock = 100.0
       if req_mock is not None:
         real['required_mock_percent'] = float(req_mock)
       real['best_mock_pct'] = min(100, int(round(highest_mock_score))) if highest_mock_score > 0 else 0
@@ -2545,18 +2548,22 @@ def _ensure_chapter_path(conn):
       chapter_id INTEGER NOT NULL,
       started_at TEXT,
       intro_done_at TEXT,
+      mock_done_at TEXT,
       PRIMARY KEY (student_id, chapter_id)
     )
   """)
+  cols = {r[1] for r in conn.execute("PRAGMA table_info(chapter_path)").fetchall()}
+  if "mock_done_at" not in cols:
+    conn.execute("ALTER TABLE chapter_path ADD COLUMN mock_done_at TEXT")
 
 
 def get_chapter_path_row(conn, student_id: int, chapter_id: int):
   _ensure_chapter_path(conn)
   r = conn.execute(
-    "SELECT started_at, intro_done_at FROM chapter_path WHERE student_id = ? AND chapter_id = ?",
+    "SELECT started_at, intro_done_at, mock_done_at FROM chapter_path WHERE student_id = ? AND chapter_id = ?",
     (student_id, chapter_id),
   ).fetchone()
-  return {"started_at": r[0], "intro_done_at": r[1]} if r else None
+  return {"started_at": r[0], "intro_done_at": r[1], "mock_done_at": r[2]} if r else None
 
 
 def chapter_path_since(conn, student_id: int, chapter_id: int):
@@ -2587,10 +2594,15 @@ def chapter_path_state(conn, student_id: int, chapter_id: int, exams=None) -> di
   scores = [float(e["highest_score"]) for e in mocks if e.get("highest_score") is not None]
   best_mock = max(scores) if scores else None
   real_unlocked = bool(reals) and not reals[0].get("is_locked")
-  mock_passed = (not mocks) or real_unlocked or (best_mock is not None and best_mock >= 80)
+  mock_passed = (not mocks) or real_unlocked or (best_mock is not None and best_mock >= 100)
+  real_scores = [float(e["highest_score"]) for e in reals if e.get("highest_score") is not None]
+  best_real = max(real_scores) if real_scores else None
+  # On to the real exam only after the student confirmed it in the popup (a row records it);
+  # students without a row (never restarted) keep their old progress.
+  went_to_real = bool(row.get("mock_done_at")) if row else mock_passed
   if not intro_done:
     stage = "intro"
-  elif mocks and not mock_passed:
+  elif mocks and not went_to_real:
     stage = "mock"
   elif reals:
     stage = "real"
@@ -2602,6 +2614,9 @@ def chapter_path_state(conn, student_id: int, chapter_id: int, exams=None) -> di
     "mock_passed": bool(mock_passed),
     "real_unlocked": real_unlocked,
     "restarted": bool(row and row.get("started_at")),
+    "can_go_real": bool(intro_done and mocks and not went_to_real and real_unlocked),
+    # the chapter is complete with 100% in the real exam
+    "chapter_complete": bool(stage == "real" and best_real is not None and best_real >= 100),
   }
 
 
@@ -2616,13 +2631,29 @@ def mark_chapter_intro_done(conn, student_id: int, chapter_id: int):
   conn.commit()
 
 
+def mark_chapter_went_to_real(conn, student_id: int, chapter_id: int) -> bool:
+  """The student confirmed "go to the real exam" (only allowed after passing the practice exam)."""
+  st = chapter_path_state(conn, student_id, chapter_id)
+  if not st.get("can_go_real"):
+    return st.get("stage") == "real"
+  _ensure_chapter_path(conn)
+  conn.execute(
+    """INSERT INTO chapter_path (student_id, chapter_id, started_at, intro_done_at, mock_done_at)
+       VALUES (?, ?, NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+       ON CONFLICT(student_id, chapter_id) DO UPDATE SET mock_done_at = CURRENT_TIMESTAMP""",
+    (student_id, chapter_id),
+  )
+  conn.commit()
+  return True
+
+
 def restart_chapter_path(conn, student_id: int, chapter_id: int):
   """Start the chapter again from the introduction. Scores, answers and coins are kept."""
   _ensure_chapter_path(conn)
   conn.execute(
     """INSERT INTO chapter_path (student_id, chapter_id, started_at, intro_done_at)
        VALUES (?, ?, CURRENT_TIMESTAMP, NULL)
-       ON CONFLICT(student_id, chapter_id) DO UPDATE SET started_at = CURRENT_TIMESTAMP, intro_done_at = NULL""",
+       ON CONFLICT(student_id, chapter_id) DO UPDATE SET started_at = CURRENT_TIMESTAMP, intro_done_at = NULL, mock_done_at = NULL""",
     (student_id, chapter_id),
   )
   conn.commit()

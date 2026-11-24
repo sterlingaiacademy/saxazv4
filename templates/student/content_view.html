@@ -66,7 +66,7 @@
         <a href="/student/exams/{{ mock_exam.id }}"
            style="display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:999px;font-family:var(--sx-display);font-size:0.78rem;font-weight:800;text-decoration:none;background:rgba(2,132,199,0.12);color:#0284c7;border:1.5px solid rgba(2,132,199,0.35);">
           <span class="material-symbols-outlined" style="font-size:15px;">quiz</span>
-          <span>Practice Mock Exam</span>
+          <span>Practice Exam</span>
         </a>
       {% endif %}
     </div>
@@ -149,7 +149,7 @@
                       onclick="fetch('/student/content/{{ item.id }}/complete', {method:'POST'}).finally(() => { window.location.href='/student/exams/{{ mock_exam.id }}'; });"
                       class="sx-btn sx-btn-gold"
                       style="padding:9px 18px;font-size:0.86rem;">
-                <span>Proceed to Practice Mock Exam</span>
+                <span>Proceed to the Practice Exam</span>
                 <span class="material-symbols-outlined">arrow_forward</span>
               </button>
             {% endif %}

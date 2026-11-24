@@ -71,7 +71,7 @@ def build_context_string(db, user_id):
     sections.append(
       f"=== STUDENT PROFILE ===\n"
       f"Name: {student_name} | Class/Grade: {grade_label} | Total XP: {total_xp}\n"
-      f"Learning Journey Flow: 1) Practice in Mock Exam with 24x7 Personal AI Tutor guidance -> 2) Retry & master weak questions to 100% -> 3) Take Proctored Real Exam independently without AI help!"
+      f"Learning Journey Flow: 1) Practice Exam with 24x7 Personal AI Tutor guidance -> 2) Retry & master weak questions to 100% -> 3) Take Proctored Real Exam independently without AI help!"
     )
 
     # 1. EXAM RESULTS & PROGRESS COMPARISON (MOCK vs REAL EXAMS)
@@ -133,7 +133,7 @@ def build_context_string(db, user_id):
         if mock_pcts or real_pcts:
           m_avg = f"{round(sum(mock_pcts)/len(mock_pcts), 1)}%" if mock_pcts else "None yet"
           r_avg = f"{round(sum(real_pcts)/len(real_pcts), 1)}%" if real_pcts else "None yet"
-          exam_lines.append(f"Mock Exam Avg: {m_avg} ({len(mock_pcts)} taken) | Real Exam Avg: {r_avg} ({len(real_pcts)} taken)")
+          exam_lines.append(f"Practice Exam Avg: {m_avg} ({len(mock_pcts)} taken) | Real Exam Avg: {r_avg} ({len(real_pcts)} taken)")
         exam_lines.append(
           f"Strongest Subject: {best_subj[0]} ({best_subj[1]}% avg) | Focus Area Subject: {weak_subj[0]} ({weak_subj[1]}% avg)"
         )
@@ -149,7 +149,7 @@ def build_context_string(db, user_id):
             f"{awarded:g}/{max_m:g} ({pct}%)"
           )
       else:
-        exam_lines.append("No formal exams completed yet. Encourage the student to practice a Mock Exam!")
+        exam_lines.append("No formal exams completed yet. Encourage the student to take the Practice Exam!")
 
       # Recent weak questions where student lost marks
       weak_qs = db.execute(
@@ -656,9 +656,9 @@ async def stream_tutor_response(messages: list, context_str: str, tutor_id: str 
     "Follow the Preferred Primary Language rule above by default, AND whenever the student asks you to say or explain something in English or any other language (e.g., 'can you say that in English?', 'speak in Malayalam', 'explain in Hindi'), IMMEDIATELY and happily switch to that requested language! "
     "CRITICAL PEDAGOGY & PERSONAL TEACHER FLOW: "
     "The student's learning path on SAXAZ is: "
-    "1) Practice in the Mock Exam with your 1-on-1 guidance. "
+    "1) Finish the Introduction (chapter summary), then practise in the Practice Exam with your 1-on-1 guidance (it needs 100% to unlock the Real Exam). "
     "2) Whenever they get a question wrong (0%) or partial marks (e.g. 50%), explain the concept warmly using 'Easy way to remember' analogies and 'Key concepts', then encourage them to Try Again until they score 100%! "
-    "3) Once they master the Mock Exam, guide them to take the Real Exam independently without AI help to prove their mastery! "
+    "3) Once they get 100% in the Practice Exam, guide them to take the Real Exam independently without AI help to prove their mastery! "
     "You have complete visibility into the student's profile, exam scores, weak questions, past chats, curriculum, and their live exam screen below:\n\n"
     f"{context_str}\n\n"
     "CRITICAL INSTRUCTION - YOUR AVATAR EMOTIONS: "
@@ -680,7 +680,7 @@ async def stream_tutor_response(messages: list, context_str: str, tutor_id: str 
     "6. PULL OLD CHAT HISTORIES (`[history:recent]`): "
     "   When the student asks about past conversations or what you studied together previously, output `[history:recent]`.\n"
     "7. SCROLL & HIGHLIGHT SECTIONS ON THE EXAM PAGE (`[scroll:SECTION]`): "
-    "   When guiding a student during a Mock Exam (or when they ask you to scroll/show a section), you can scroll their screen directly to: "
+    "   When guiding a student during a Practice Exam (or when they ask you to scroll/show a section), you can scroll their screen directly to: "
     "`[scroll:question]` (the question card), `[scroll:feedback]` (their marks & feedback card), `[scroll:easy_way]` (the Easy Way to Remember section), `[scroll:key_concept]` (the Key Concept section), `[scroll:video]` (the video explanation player), `[scroll:try_again]` (the Try Again button), `[scroll:top]`, or `[scroll:bottom]`.\n"
     "8. TRIGGER 'TRY AGAIN' OR JUMP QUESTIONS (`[retry:now]`, `[question:next]`, `[question:prev]`, `[question:N]`): "
     "   If the student says 'let me try again' or 'reset my answer so I can improve it', output `[retry:now]`. If they ask to go to the next question, previous question, or question number N, output `[question:next]`, `[question:prev]`, or `[question:N]`.\n\n"

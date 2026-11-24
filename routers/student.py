@@ -457,6 +457,19 @@ async def chapter_path_intro_done(request: Request, chapter_id: int):
     conn.close()
 
 
+@router.post("/chapters/{chapter_id}/path/go-real", response_class=JSONResponse)
+async def chapter_path_go_real(request: Request, chapter_id: int):
+  conn = get_db_connection()
+  try:
+    user = require_student(request, conn)
+    ok = student_service.mark_chapter_went_to_real(conn, user['id'], chapter_id)
+    if not ok:
+      return JSONResponse({"success": False, "error": "Pass the practice exam first"}, status_code=409)
+    return JSONResponse({"success": True})
+  finally:
+    conn.close()
+
+
 @router.post("/chapters/{chapter_id}/path/restart", response_class=JSONResponse)
 async def chapter_path_restart(request: Request, chapter_id: int):
   conn = get_db_connection()
@@ -1362,7 +1375,7 @@ async def submit_real_exam(request: Request, attempt_id: int):
     student_service.recalculate_user_xp(conn, user['id'], notify=True)
     student_service.complete_attempt(conn, attempt_id, time_taken_seconds=time_taken_seconds)
 
-    redir_url = f"/student/attempts/{attempt_id}"
+    redir_url = f"/student/attempts/{attempt_id}?finished=1"
     redir_resp = RedirectResponse(url=redir_url, status_code=303)
     if not penalty_active:
       att_row = conn.execute(
@@ -1376,7 +1389,7 @@ async def submit_real_exam(request: Request, attempt_id: int):
           paper_title=str(paper.get('title') or 'Official Real Exam'), request=request, response=redir_resp
         )
         if rw_real.get("coins_added", 0) > 0:
-          redir_resp.headers["location"] = f"/student/attempts/{attempt_id}?coins_added={rw_real['coins_added']}"
+          redir_resp.headers["location"] = f"/student/attempts/{attempt_id}?finished=1&coins_added={rw_real['coins_added']}"
     return redir_resp
   finally:
     conn.close()
@@ -1447,12 +1460,19 @@ async def view_attempt(request: Request, attempt_id: int):
           "best_mock_pct": min(100, int(round(best_mock_raw))) if best_mock_raw > 0 else 0,
         }
 
+    path_state = None
+    if attempt.get('chapter_id'):
+      try:
+        path_state = student_service.chapter_path_state(conn, user['id'], attempt['chapter_id'])
+      except Exception:
+        path_state = None
     return templates.TemplateResponse(request=request, name="student/exam_results.html", context={
       "request": request,
       "user": user,
       "attempt": attempt,
       "sibling_mocks": sibling_mocks,
       "real_exam_info": real_exam_info,
+      "path_state": path_state,
     })
   finally:
     conn.close()

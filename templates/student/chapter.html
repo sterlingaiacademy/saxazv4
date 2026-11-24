@@ -15,7 +15,7 @@
     </h1>
     <p class="sx-ext-hero-copy">
       {{ chapter.subject_name or 'Biology' }}. Three steps, one at a time:<br>
-      introduction, practice test, real exam.
+      introduction, practice exam, real exam.
     </p>
   </div>
 </section>
@@ -144,9 +144,9 @@
       stage: null,            // the stage shown below the steps: 'intro' | 'mock' | 'real' (null = the next step)
       introJustFinished: false,
       introDone: {{ 'true' if (path_state is defined and path_state and path_state.intro_done) else 'false' }},
+      canGoReal: {{ 'true' if (path_state is defined and path_state and path_state.can_go_real) else 'false' }},
+      chapterComplete: {{ 'true' if (path_state is defined and path_state and path_state.chapter_complete) else 'false' }},
       serverStage: {{ ((path_state.stage if (path_state is defined and path_state) else '') or '') | tojson }},
-      readyPrompt: false,     // "Are you ready for the practice test?" popup after the introduction
-      readySpeaking: false,
       slidesMeta: {{ (
         [
           {'idx': 0,  'label': 'Intro',             'ttsEmotion': 'friendly_greeting', 'game': none,      'gameTitle': ''},
@@ -247,6 +247,12 @@
         // Pick the open stage once, when the page loads. It must not change by itself while the student is in it
         // (the introduction counts as done after its first part, but the story keeps playing).
         this.stage = this.serverStage || this.currentStage();
+        setTimeout(() => {
+          let ended = false;
+          try { ended = localStorage.getItem('sxIntroEnded:' + chId) === '1'; } catch (e) {}
+          if (this.serverStage === 'intro' && ended && this.firstMockExamId) this.askStage('go-practice');
+          else if (this.serverStage === 'mock' && this.canGoReal && this.firstRealExamId) this.askStage('go-real');
+        }, 900);
         const h = window.location.hash || '';
         if (h === '#heart-activity' && this.slidesMeta.length > 6) {
           this.nutshellExpanded = true;
@@ -416,36 +422,18 @@
         }
       },
 
-      // The whole introduction has been played: leave full screen and ask if they are ready for the practice test
+      // The whole introduction has been played: leave full screen and ask (popup) to go on to the practice exam
       onIntroFinished() {
         this.introJustFinished = true;
+        try { localStorage.setItem('sxIntroEnded:' + chId, '1'); } catch (e) {}
         if (this.summaryFs) this.toggleSummaryFullscreen(false);
-        if (this.firstMockExamId) setTimeout(() => this.openReadyPrompt(), 350);
+        if (this.firstMockExamId && this.serverStage === 'intro') setTimeout(() => this.askStage('go-practice'), 350);
       },
-      openReadyPrompt() {
-        this.readyPrompt = true;
-        document.documentElement.classList.add('sx-fs-lock');
-        if (!['0', 'off'].includes(String(window.__saxazUserTtsMode || '').toLowerCase()) && window.saxazStreamPcm) {
-          this.cancelSideVoices();
-          // same words every time: recorded once, then replayed with no tokens
-          const s = window.saxazStreamPcm('Well done, buddy! You finished the introduction. Are you ready for the practice test?', {
-            emotion: 'friendly_greeting', speed: 0.94, persist: true,
-            onPlay: () => { this.readySpeaking = true; }
-          });
-          if (s) { window.__readyPromptPcm = s; s.donePromise.then(() => { this.readySpeaking = false; }); }
-        }
-      },
-      closeReadyPrompt() {
-        if (window.__readyPromptPcm && window.__readyPromptPcm.cancel) window.__readyPromptPcm.cancel();
-        this.readySpeaking = false;
-        this.readyPrompt = false;
-        if (!this.summaryFs && !this.activeGameModal && !this.gamePromptActive) {
-          document.documentElement.classList.remove('sx-fs-lock');
-        }
-      },
-      startPracticeTest() {
-        this.closeReadyPrompt();
-        window.location.href = '/student/exams/' + this.firstMockExamId;
+      askStage(kind) {
+        const url = kind === 'go-practice'
+          ? '/student/exams/' + this.firstMockExamId
+          : '/student/real-exams/' + this.firstRealExamId + '/intro';
+        window.dispatchEvent(new CustomEvent('sx-stage-popup', { detail: { kind: kind, chapterId: chId, url: url } }));
       },
 
       callGame(id) {
@@ -1116,8 +1104,6 @@
               this.playSlideBeat(sIdx, clampedBeat + 1, 0);
               return;
             }
-            // The introduction counts as done once the first part is finished (also the +10 coins moment)
-            this.markIntroDone();
             // Award +10 Coins milestone once student completes at least 1 slide
             const rKey = 'nutshell:ch:' + chId;
             if (!this.hasClaimed(rKey) && window.saxazClaimMilestone) {
@@ -1214,8 +1200,8 @@
         }
         if (ev) ev.preventDefault();
         const res = window.saxazConfirm
-          ? await window.saxazConfirm({ title: 'Real exam is locked', text: 'Score 80% in the practice test first. Open the practice test now?', confirmButtonText: 'Open practice test' })
-          : { isConfirmed: window.confirm('Score 80% in the practice test first. Open the practice test now?') };
+          ? await window.saxazConfirm({ title: 'Real exam is locked', text: 'Get 100% in the practice exam first. Open the practice exam now?', confirmButtonText: 'Open practice exam' })
+          : { isConfirmed: window.confirm('Get 100% in the practice exam first. Open the practice exam now?') };
         if (res && res.isConfirmed) {
           const mock = this.pathSteps().find(s => s.key === 'mock');
           this.showStage(mock && mock.state === 'locked' ? 'intro' : 'mock');
@@ -1232,11 +1218,11 @@
         const steps = [
           { key: 'intro', label: 'Introduction', done: introDone,
             hint: introDone ? 'Done' : 'Start here' },
-          { key: 'mock', label: 'Practice test', done: bestMock !== null && bestMock >= 80,
+          { key: 'mock', label: 'Practice exam', done: this.serverStage === 'real' || (bestMock !== null && bestMock >= 100),
             locked: !introDone,
-            hint: bestMock === null ? (introDone ? 'Score 80% to pass' : 'After the introduction') : ('Best ' + bestMock + '%' + (bestMock >= 80 ? '' : ' · need 80%')) },
-          { key: 'real', label: 'Real exam', done: bestReal !== null, locked: !this.realUnlocked,
-            hint: bestReal !== null ? ('Best ' + bestReal + '%') : (this.realUnlocked ? 'Unlocked' : 'After the practice test') },
+            hint: bestMock === null ? (introDone ? 'Get 100% to pass' : 'After the introduction') : ('Best ' + bestMock + '%' + (bestMock >= 100 ? '' : ' · need 100%')) },
+          { key: 'real', label: 'Real exam', done: this.chapterComplete, locked: this.serverStage !== 'real',
+            hint: this.chapterComplete ? 'Chapter complete' : (bestReal !== null ? ('Best ' + bestReal + '% · need 100%') : (this.serverStage === 'real' ? 'Get 100% to finish' : 'After the practice exam')) },
         ].filter(s => s.key !== 'mock' || this.firstMockExamId)
          .filter(s => s.key !== 'real' || this.firstRealExamId);
         let nextSet = false;
@@ -1257,14 +1243,9 @@
         const done = steps.filter(s => s.state === 'done');
         return done.length ? done[done.length - 1].key : 'intro';
       },
-      markIntroDone() {
-        if (this.introDone) return;
-        this.introDone = true;
-        try { fetch('/student/chapters/' + chId + '/path/intro-done', { method: 'POST', credentials: 'same-origin' }); } catch (e) {}
-      },
       async restartChapter() {
         const res = window.saxazConfirm
-          ? await window.saxazConfirm({ title: 'Restart this chapter?', text: 'You will start again from the introduction, then the practice test, then the real exam. Your scores and coins stay.', confirmButtonText: 'Restart chapter', icon: 'warning' })
+          ? await window.saxazConfirm({ title: 'Restart this chapter?', text: 'You will start again from the introduction, then the practice exam, then the real exam. Your scores and coins stay.', confirmButtonText: 'Restart chapter', icon: 'warning' })
           : { isConfirmed: window.confirm('Restart this chapter from the introduction?') };
         if (!res || !res.isConfirmed) return;
         try {
@@ -1395,7 +1376,7 @@
     </a>
   </div>
 
-  <!-- Learning path: a strict order (introduction > practice test > real exam). The steps only show progress;
+  <!-- Learning path: a strict order (introduction > practice exam > real exam). The steps only show progress;
        the page always opens on the step the student is on, and moves on with the Next buttons / popups. -->
   <nav class="sx-path" aria-label="Your steps for this chapter" role="list">
     <template x-for="(st, i) in pathSteps()" :key="st.key">
@@ -1834,61 +1815,12 @@
       </div>
       {% endif %}
 
-      <!-- Introduction finished: the way on to the practice test -->
-      {% if ns.first_mock_id %}
-      <div class="sx-stage-next" x-show="introDone" x-cloak :class="introJustFinished && 'is-glow'" @click.stop>
-        <span class="sx-stage-next-text"><strong>Introduction done.</strong> Next: the practice test.</span>
-        <button type="button" class="sx-stage-next-btn" @click="showStage('mock')">Next: Practice test &rarr;</button>
-      </div>
-      {% endif %}
-
     </div>
   </section>
 
-  <!-- "Are you ready for the practice test?" popup (same look as the game popup) -->
-  {% if ns.first_mock_id %}
-  <div class="sx-fullscreen-invite-modal" x-show="readyPrompt" x-cloak @click.self="closeReadyPrompt()" @keydown.escape.window="readyPrompt && closeReadyPrompt()">
-    <div class="sx-fsi-dialog sx-game-invite-card" role="dialog" aria-modal="true" aria-label="Are you ready for the practice test?">
-      <button type="button" class="sx-fsi-close" @click="closeReadyPrompt()" aria-label="Close">
-        <span class="material-symbols-outlined" aria-hidden="true">close</span>
-      </button>
-      <div class="sx-fsi-poster">
-        <div class="sx-fsi-speech">Well done, {{ first_name }}!</div>
-        <div class="sx-fsi-tutor-wrap">
-          <img :src="'/static/images/avatars/' + tutorName + '_' + (readySpeaking ? 'talking' : 'laughing') + '.webp?v=543'" :alt="tutorDisplay">
-        </div>
-        <div class="sx-fsi-mascot-pill">
-          <img src="/static/images/saxaz_web/badge_mock_exam_idle.webp?v=541" alt="" draggable="false">
-        </div>
-      </div>
-      <div class="sx-fsi-content">
-        <div class="sx-fsi-kicker-row">
-          <span class="sx-fsi-kicker">
-            <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
-            <span>Introduction done</span>
-          </span>
-        </div>
-        <h2 class="sx-fsi-title">
-          <span class="d">Ready for the</span>
-          <span class="a">practice test?</span>
-        </h2>
-        <p class="sx-fsi-subtitle">
-          <span class="sx-fsi-subtitle-ico material-symbols-outlined" aria-hidden="true">quiz</span>
-          <span>Score 80% to unlock the real exam.</span>
-        </p>
-        <div class="sx-fsi-actions">
-          <button type="button" class="sx-fsi-cta is-play" @click="startPracticeTest()">
-            <span>Start the practice test</span>
-            <span class="sx-fsi-cta-arrow" aria-hidden="true"><span class="material-symbols-outlined">arrow_forward</span></span>
-          </button>
-          <button type="button" class="sx-fsi-cta is-next" @click="closeReadyPrompt()">
-            <span>Not yet</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-  {% endif %}
+  <!-- The chapter path popup: practice exam unlocked / real exam unlocked (shared component) -->
+  {% from "student/partials/stage_popup.html" import stage_popup %}
+  {{ stage_popup(first_name, active_tutor) }}
 
   <!-- Theater Video Modal (Clear Active Title + Part Switcher + Previous / Next Video Controls) -->
   <template x-if="activeVideo">
@@ -1945,27 +1877,20 @@
     </div>
   </template>
 
-  <!-- Stage 2: practice test (score 80% to unlock the real exam) -->
+  <!-- Stage 2: practice exam (100% unlocks the real exam) -->
   <section id="chapter-exams" class="sx-stage" style="margin-bottom:28px;" x-show="currentStage() === 'mock'" x-cloak>
-    <h2 class="sxp-h2">Practice test<small>Tap to start. Score 80% to unlock the real exam.</small></h2>
+    <h2 class="sxp-h2">Practice exam<small>Tap to start. Get 100% to unlock the real exam.</small></h2>
     <div class="sx-issue-badges-row is-single">
       <a href="{{ '/student/exams/' ~ ns.first_mock_id if ns.first_mock_id else '#chapter-exams' }}"
-         aria-label="Mock Exam ({% if ns.best_mock is not none %}Best {{ ns.best_mock }}%{% else %}0%{% endif %})"
+         aria-label="Practice exam ({% if ns.best_mock is not none %}Best {{ ns.best_mock }}%{% else %}0%{% endif %})"
          data-sx-surf-badge
          class="sx-issue-badge-card">
         <span class="sx-badge-stage">
-          <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_mock_exam_idle.webp?v=541" alt="Mock Exam">
-          <canvas class="sx-badge-canvas" width="340" height="340" data-sx-sheet="/static/images/saxaz_web/badge_mock_exam_sheet.webp?v=541"></canvas>
+          <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_practice_exam_idle.webp?v=1" alt="Practice exam">
         </span>
         <span class="sx-subject-pct-pill">{% if ns.best_mock is not none %}Best: {{ ns.best_mock }}%{% else %}0%{% endif %}</span>
       </a>
     </div>
-    {% if ns.first_real_id and real_unlocked %}
-    <div class="sx-stage-next">
-      <span class="sx-stage-next-text"><strong>Practice test passed.</strong> Next: the real exam.</span>
-      <button type="button" class="sx-stage-next-btn" @click="showStage('real')">Next: Real exam &rarr;</button>
-    </div>
-    {% endif %}
     <div class="sx-stage-restart">
       <span>Want to go through the introduction again? Restart the chapter and go in order.</span>
       <button type="button" class="sx-stage-restart-btn" @click="restartChapter()">
@@ -1977,7 +1902,7 @@
   {% if ns.first_real_id %}
   <!-- Stage 3: real exam -->
   <section id="chapter-real" class="sx-stage" style="margin-bottom:28px;" x-show="currentStage() === 'real'" x-cloak>
-    <h2 class="sxp-h2">Real exam<small>{% if real_unlocked %}On your own, no tutor. Read the rules, then start.{% else %}Score 80% in the practice test to unlock it.{% endif %}</small></h2>
+    <h2 class="sxp-h2">Real exam<small>{% if path_state is defined and path_state and path_state.chapter_complete %}You got 100%. This chapter is complete!{% elif real_unlocked %}On your own, no tutor. Get 100% to complete the chapter.{% else %}Get 100% in the practice exam to unlock it.{% endif %}</small></h2>
     <div class="sx-issue-badges-row is-single">
       {% if real_unlocked %}
       <a href="/student/real-exams/{{ ns.first_real_id }}/intro"
@@ -1992,7 +1917,7 @@
       </a>
       {% else %}
       <a href="#chapter-exams"
-         aria-label="Real Exam locked — score 80% to unlock"
+         aria-label="Real exam locked: get 100% in the practice exam to unlock"
          @click.prevent="handleRealExamClick($event)"
          data-sx-surf-badge
          class="sx-issue-badge-card is-soon">
@@ -2001,7 +1926,7 @@
           <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_real_exam_idle.webp?v=541" alt="Real Exam">
           <canvas class="sx-badge-canvas" width="340" height="340" data-sx-sheet="/static/images/saxaz_web/badge_real_exam_sheet.webp?v=541"></canvas>
         </span>
-        <span class="sx-subject-pct-pill is-soon"><span class="material-symbols-outlined" aria-hidden="true">lock</span>Score 80% to unlock</span>
+        <span class="sx-subject-pct-pill is-soon"><span class="material-symbols-outlined" aria-hidden="true">lock</span>Get 100% to unlock</span>
       </a>
       {% endif %}
     </div>

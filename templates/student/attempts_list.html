@@ -116,9 +116,9 @@
         <span class="sxp-stat-sub">{{ completed_real_count }} done</span>
       </div>
       <div class="sxp-stat">
-        <span class="sxp-stat-label">Mock test</span>
+        <span class="sxp-stat-label">Practice exam</span>
         <span class="sxp-stat-num">{{ ns.best_mock_pct }}%</span>
-        <span class="sxp-stat-sub">{{ completed_mock_count }} done{{ ' · real exam unlocked' if ns.best_mock_pct >= 80 else ' · 80% unlocks the real exam' }}</span>
+        <span class="sxp-stat-sub">{{ completed_mock_count }} done{{ ' · real exam unlocked' if ns.best_mock_pct >= 100 else ' · 100% unlocks the real exam' }}</span>
       </div>
       <a class="sxp-stat" href="/student/chapters/3#chapter-videos">
         <span class="sxp-stat-label">Videos</span>
@@ -136,7 +136,7 @@
   <!-- 4. Badges -->
   {% set medals = [
     ('First steps', 'Finish your first test', 'rocket_launch', 'b-orange', (completed_mock_count + completed_real_count) >= 1),
-    ('Mock master', 'Score 80% in a mock test', 'verified', 'b-blue', ns.best_mock_pct >= 80),
+    ('Practice master', 'Get 100% in a practice exam', 'verified', 'b-blue', ns.best_mock_pct >= 100),
     ('Board topper', 'Score 85% in the real exam', 'workspace_premium', 'b-purple', ns.best_real_pct >= 85),
     ('Video learner', 'Watch 2 videos', 'smart_display', 'b-red', vid_done >= 2),
     ('Silver star', 'Reach 500 quiz points', 'military_tech', 'b-teal', earned_xp >= 500)
@@ -165,7 +165,7 @@
     <div class="sxp-filters" role="tablist" aria-label="Filter tests">
       <button type="button" role="tab" class="sxp-filter" :class="filterType === 'all' && 'is-active'" @click="filterType = 'all'">All ({{ attempts|length }})</button>
       <button type="button" role="tab" class="sxp-filter" :class="filterType === 'real' && 'is-active'" @click="filterType = 'real'">Real exams ({{ real_attempts|length }})</button>
-      <button type="button" role="tab" class="sxp-filter" :class="filterType === 'mock' && 'is-active'" @click="filterType = 'mock'">Mock tests ({{ mock_attempts|length }})</button>
+      <button type="button" role="tab" class="sxp-filter" :class="filterType === 'mock' && 'is-active'" @click="filterType = 'mock'">Practice exams ({{ mock_attempts|length }})</button>
     </div>
     <div class="sxp-rows">
       {% for att in attempts %}
@@ -181,7 +181,7 @@
         <span>
           <span class="sxp-row-title">{{ att.exam_title }}</span>
           <span class="sxp-row-sub" style="display:block;">
-            {{ 'Real exam' if is_real else 'Mock test' }} &middot; {{ att.date_str }}{% if is_done %} &middot; {{ att.total_marks_awarded }}/{{ att.total_max_marks }} marks{% else %} &middot; not finished{% endif %}
+            {{ 'Real exam' if is_real else 'Practice exam' }} &middot; {{ att.date_str }}{% if is_done %} &middot; {{ att.total_marks_awarded }}/{{ att.total_max_marks }} marks{% else %} &middot; not finished{% endif %}
           </span>
         </span>
         <span class="sxp-pill">{{ 'See answers' if is_done else 'Carry on' }}<span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></span>
