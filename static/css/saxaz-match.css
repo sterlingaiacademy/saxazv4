@@ -1153,3 +1153,28 @@ body .sx-exam-hub.is-compact .sx-mock-tab.is-active { box-shadow: none !importan
   .sx-issue-redeem-input { flex: 1 1 100%; }
   .sx-issue-redeem-btn { flex: 1 1 100%; }
 }
+
+/* Chapter summary card: one clear "Start Summary" button; the card fills more of the screen
+   with a bigger title and tutor (the whole card also starts the summary) */
+.sx-start-summary-wrap { margin-top: 28px; }
+.sxc .sx-start-summary-btn { min-height: 60px; padding: 14px 34px; font-size: 1.15rem; gap: 10px; white-space: nowrap; flex-shrink: 0; }
+.sxc .sx-start-summary-btn .material-symbols-outlined { font-size: 26px; }
+@media (min-width: 721px) {
+  .sxc .sx-nutshell-hero-band {
+    display: grid; grid-template-rows: 1fr;
+    min-height: clamp(440px, 64vh, 700px);
+    padding: 40px 48px 0;
+  }
+  .sxc .sx-nutshell-hero-band > .sx-nutshell-grid { align-items: end; }
+  .sxc .sx-nutshell-hero-copy { align-self: center; padding-bottom: 24px; }
+  .sxc .sx-nutshell-hero-title { font-size: clamp(2.5rem, 3.7vw, 4rem) !important; }
+  .sxc .sx-nutshell-hero-title > span { white-space: nowrap; }
+  /* bubble sits above the tutor's head, so the button and title keep their room */
+  .sxc .sx-tutor-pop { flex-direction: column; align-items: center; justify-content: flex-end; }
+  .sxc .sx-tutor-pop-avatar { height: clamp(300px, 44vh, 500px); width: auto; aspect-ratio: 0.95; }
+  .sxc .sx-tutor-speech-bubble { max-width: 250px; font-size: 1rem; padding: 12px 18px; margin: 0 0 12px 0; }
+  .sxc .sx-tutor-speech-bubble::after { right: auto; left: 50%; bottom: -9px; transform: translateX(-50%) rotate(45deg); }
+}
+@media (max-width: 720px) {
+  .sxc .sx-start-summary-btn { width: 100%; }
+}

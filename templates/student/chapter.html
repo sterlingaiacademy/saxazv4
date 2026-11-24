@@ -1444,26 +1444,14 @@
               <span class="is-white">in a Nutshell!</span>
             </h1>
 
-            <div style="margin-top:24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <!-- One clear button (the whole card also starts the summary) -->
+            <div class="sx-start-summary-wrap">
               <button type="button"
                       data-confetti
                       @click.stop="openStoryFullscreen(true)"
-                      class="sx-fun-btn-dark">
-                <span class="material-symbols-outlined" style="font-size:20px;">play_circle</span>
-                <span x-text="hasClaimed('nutshell:ch:{{ chapter.id }}') ? ('Play Story with ' + tutorDisplay) : ('Play Story (+10 Coins)')"></span>
-              </button>
-
-              <button type="button"
-                      @click.stop="openStoryFullscreen(false)"
-                      class="sx-nutshell-viewall-btn"
-                      :aria-expanded="nutshellExpanded ? 'true' : 'false'">
-                <span>View All</span>
-                <span class="material-symbols-outlined sx-nutshell-viewall-chev">expand_more</span>
-              </button>
-
-              <button type="button" class="sx-fs-btn is-icon" @click.stop="toggleSummaryFullscreen(true)"
-                      aria-label="Open the summary full screen" title="Full screen">
-                <span class="material-symbols-outlined" aria-hidden="true">open_in_full</span>
+                      class="sx-fun-btn-dark sx-start-summary-btn">
+                <span class="material-symbols-outlined" aria-hidden="true">play_circle</span>
+                <span>Start Summary</span>
               </button>
             </div>
           </div>
@@ -1471,7 +1459,7 @@
           <!-- Giant Borderless Cutout Tutor + Playful Comic Speech Bubble -->
           <div class="sx-tutor-pop" data-confetti>
             <div class="sx-tutor-speech-bubble">
-              Hey {{ first_name }}! Tap anywhere for a fun 2-min tour!
+              Hey {{ first_name }}! Tap Start Summary for a fun 2-min tour!
             </div>
             <div class="sx-tutor-pop-avatar">
               <img :src="'/static/images/avatars/' + tutorName + '_' + (nutshellHover ? 'cheer' : idlePose) + '.webp?v=543'"
