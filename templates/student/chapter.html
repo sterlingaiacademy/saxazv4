@@ -142,6 +142,8 @@
       summaryFs: false,
       stage: null,            // the stage shown below the steps: 'intro' | 'mock' | 'real' (null = the next step)
       introJustFinished: false,
+      readyPrompt: false,     // "Are you ready for the practice test?" popup after the introduction
+      readySpeaking: false,
       slidesMeta: {{ (
         [
           {'idx': 0,  'label': 'Intro',             'ttsEmotion': 'friendly_greeting', 'game': none,      'gameTitle': ''},
@@ -249,10 +251,6 @@
           this.goToSlide(6, false);
           setTimeout(() => { this.openFullscreenGame('heart'); }, 180);
         } else if (h === '#chapter-videos' || h === '#chapter-exams' || h === '#chapter-nutshell' || h === '#chapter-real') {
-          // old links (shop "ways to earn", exam pages) open the matching stage
-          const st = { '#chapter-exams': 'mock', '#chapter-real': 'real', '#chapter-nutshell': 'intro', '#chapter-videos': 'intro' }[h];
-          const step = this.pathSteps().find(s => s.key === st);
-          if (step && step.state !== 'locked') this.stage = st;
           setTimeout(() => {
             const el = document.getElementById(h.slice(1));
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -411,8 +409,40 @@
           this.goToSlide(this.activeSlide + 1, resumeVoice);
         } else {
           this.stopNutshellVoice();
-          if (this.summaryFs) this.toggleSummaryFullscreen(false);
+          this.onIntroFinished();
         }
+      },
+
+      // The whole introduction has been played: leave full screen and ask if they are ready for the practice test
+      onIntroFinished() {
+        this.introJustFinished = true;
+        if (this.summaryFs) this.toggleSummaryFullscreen(false);
+        if (this.firstMockExamId) setTimeout(() => this.openReadyPrompt(), 350);
+      },
+      openReadyPrompt() {
+        this.readyPrompt = true;
+        document.documentElement.classList.add('sx-fs-lock');
+        if (!['0', 'off'].includes(String(window.__saxazUserTtsMode || '').toLowerCase()) && window.saxazStreamPcm) {
+          this.cancelSideVoices();
+          // same words every time: recorded once, then replayed with no tokens
+          const s = window.saxazStreamPcm('Well done, buddy! You finished the introduction. Are you ready for the practice test?', {
+            emotion: 'friendly_greeting', speed: 0.94, persist: true,
+            onPlay: () => { this.readySpeaking = true; }
+          });
+          if (s) { window.__readyPromptPcm = s; s.donePromise.then(() => { this.readySpeaking = false; }); }
+        }
+      },
+      closeReadyPrompt() {
+        if (window.__readyPromptPcm && window.__readyPromptPcm.cancel) window.__readyPromptPcm.cancel();
+        this.readySpeaking = false;
+        this.readyPrompt = false;
+        if (!this.summaryFs && !this.activeGameModal && !this.gamePromptActive) {
+          document.documentElement.classList.remove('sx-fs-lock');
+        }
+      },
+      startPracticeTest() {
+        this.closeReadyPrompt();
+        window.location.href = '/student/exams/' + this.firstMockExamId;
       },
 
       callGame(id) {
@@ -1103,8 +1133,7 @@
               this.nutshellLit = false;
               this.nutshellPaused = false;
               this.wasVoiceReading = false;
-              this.introJustFinished = true;
-              if (this.summaryFs) this.toggleSummaryFullscreen(false);
+              this.onIntroFinished();
               this.triggerTutorReaction('cheer', 3000);
               this.tutorScale = 1;
               this.clearWordHighlights(sIdx);
@@ -1222,17 +1251,6 @@
         if (nxt) return nxt.key;
         const done = steps.filter(s => s.state === 'done');
         return done.length ? done[done.length - 1].key : 'intro';
-      },
-      async goPathStep(st) {
-        if (st.state === 'locked') {
-          if (st.key === 'real') { this.handleRealExamClick(null); return; }
-          const res = window.saxazConfirm
-            ? await window.saxazConfirm({ title: 'Introduction first', text: 'Finish the introduction, then the practice test opens.', confirmButtonText: 'Go to introduction' })
-            : { isConfirmed: window.confirm('Finish the introduction first.') };
-          if (res && res.isConfirmed) this.showStage('intro');
-          return;
-        }
-        this.showStage(st.key);
       },
       showStage(key) {
         this.stage = key;
@@ -1356,13 +1374,13 @@
     </a>
   </div>
 
-  <!-- Learning path: 3 stages in order (introduction, practice test, real exam); only the open stage is shown below -->
-  <nav class="sx-path" aria-label="Your steps for this chapter">
+  <!-- Learning path: a strict order (introduction > practice test > real exam). The steps only show progress;
+       the page always opens on the step the student is on, and moves on with the Next buttons / popups. -->
+  <nav class="sx-path" aria-label="Your steps for this chapter" role="list">
     <template x-for="(st, i) in pathSteps()" :key="st.key">
-      <button type="button" class="sx-path-step"
-              :class="'is-' + st.state + (currentStage() === st.key ? ' is-open' : '')"
-              :aria-current="st.state === 'next' ? 'step' : null"
-              @click="goPathStep(st)">
+      <div class="sx-path-step" role="listitem"
+           :class="'is-' + st.state + (currentStage() === st.key ? ' is-open' : '')"
+           :aria-current="currentStage() === st.key ? 'step' : null">
         <span class="sx-path-num" aria-hidden="true">
           <span class="material-symbols-outlined" x-show="st.state === 'done'">check</span>
           <span class="material-symbols-outlined" x-show="st.state === 'locked'">lock</span>
@@ -1372,7 +1390,7 @@
           <strong x-text="st.label"></strong>
           <small x-text="st.hint"></small>
         </span>
-      </button>
+      </div>
     </template>
   </nav>
 
@@ -1805,6 +1823,51 @@
 
     </div>
   </section>
+
+  <!-- "Are you ready for the practice test?" popup (same look as the game popup) -->
+  {% if ns.first_mock_id %}
+  <div class="sx-fullscreen-invite-modal" x-show="readyPrompt" x-cloak @click.self="closeReadyPrompt()" @keydown.escape.window="readyPrompt && closeReadyPrompt()">
+    <div class="sx-fsi-dialog sx-game-invite-card" role="dialog" aria-modal="true" aria-label="Are you ready for the practice test?">
+      <button type="button" class="sx-fsi-close" @click="closeReadyPrompt()" aria-label="Close">
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+      </button>
+      <div class="sx-fsi-poster">
+        <div class="sx-fsi-speech">Well done, {{ first_name }}!</div>
+        <div class="sx-fsi-tutor-wrap">
+          <img :src="'/static/images/avatars/' + tutorName + '_' + (readySpeaking ? 'talking' : 'laughing') + '.webp?v=543'" :alt="tutorDisplay">
+        </div>
+        <div class="sx-fsi-mascot-pill">
+          <img src="/static/images/saxaz_web/badge_mock_exam_idle.webp?v=541" alt="" draggable="false">
+        </div>
+      </div>
+      <div class="sx-fsi-content">
+        <div class="sx-fsi-kicker-row">
+          <span class="sx-fsi-kicker">
+            <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+            <span>Introduction done</span>
+          </span>
+        </div>
+        <h2 class="sx-fsi-title">
+          <span class="d">Ready for the</span>
+          <span class="a">practice test?</span>
+        </h2>
+        <p class="sx-fsi-subtitle">
+          <span class="sx-fsi-subtitle-ico material-symbols-outlined" aria-hidden="true">quiz</span>
+          <span>Score 80% to unlock the real exam.</span>
+        </p>
+        <div class="sx-fsi-actions">
+          <button type="button" class="sx-fsi-cta is-play" @click="startPracticeTest()">
+            <span>Start the practice test</span>
+            <span class="sx-fsi-cta-arrow" aria-hidden="true"><span class="material-symbols-outlined">arrow_forward</span></span>
+          </button>
+          <button type="button" class="sx-fsi-cta is-next" @click="closeReadyPrompt()">
+            <span>Not yet</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 
   <!-- Theater Video Modal (Clear Active Title + Part Switcher + Previous / Next Video Controls) -->
   <template x-if="activeVideo">

@@ -1094,3 +1094,8 @@ body .sx-exam-hub.is-compact .sx-mock-tab.is-active { box-shadow: none !importan
   .sxc .sx-path .sx-path-step.is-open::after { display: none; }
   .sx-stage-next-btn { width: 100%; }
 }
+
+/* The steps are a progress bar, not buttons */
+.sxc .sx-path .sx-path-step { cursor: default; }
+.sxc .sx-path .sx-path-step:hover { transform: none; }
+.sxc .sx-path .sx-path-step:not(.is-next):hover { box-shadow: none; }

@@ -2132,7 +2132,11 @@ document.addEventListener('alpine:init', () => {
             localStorage.removeItem('saxaz_exam_pos_v2_' + (this.paper?.id || '0'));
           } catch (e) {}
           setTimeout(() => {
-            window.location.href = data.redirect;
+            // "just finished" marker: the results page may ask "ready for the real exam?" (only this once)
+            const to = String(data.redirect || '');
+            window.location.href = (!this.paper?.is_digi_library && to.startsWith('/student/attempts/'))
+              ? to + (to.includes('?') ? '&' : '?') + 'finished=1'
+              : to;
           }, 400);
         }
       } catch (e) {
