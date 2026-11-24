@@ -1059,3 +1059,38 @@ body .sx-exam-hub.is-compact .sx-mock-tab.is-active { box-shadow: none !importan
      a long form (sign-up) simply grows and scrolls */
   #stitch-tailwind-root .saxaz-login-panel { min-height: 100vh; min-height: 100dvh; }
 }
+
+/* Chapter: 3 stages in order (introduction, practice test, real exam), one shown at a time */
+.sxc .sx-path { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sxc .sx-path-step { position: relative; }
+.sxc .sx-path-step.is-open { outline: 3px solid #231f20; outline-offset: 3px; }
+.sxc .sx-path-step.is-open::after {
+  content: ""; position: absolute; left: 50%; bottom: -14px; transform: translateX(-50%);
+  border: 8px solid transparent; border-top-color: #231f20; border-bottom: 0;
+}
+.sxc .sx-stage .sxp-h2 { margin-top: 6px; }
+.sxc .sx-stage .sx-issue-badges-row.is-single { justify-content: center; }
+.sx-stage-next {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  margin-top: 18px; padding: 14px 16px; border-radius: 4px; background: #eef0f3; color: #231f20;
+}
+.sx-stage-next-text { font-size: 0.98rem; font-weight: 600; }
+.sx-stage-next-text strong { font-weight: 900; }
+.sx-stage-next-btn {
+  min-height: 44px; padding: 10px 20px; border-radius: 999px; border: 0; cursor: pointer;
+  background: #231f20; color: #ffffff; font: inherit; font-size: 0.95rem; font-weight: 800;
+}
+.sx-stage-next-btn:hover { background: #f7b317; color: #231f20; }
+.sx-stage-next.is-glow { background: #f7b317; }
+.sx-stage-next.is-glow .sx-stage-next-btn { animation: sx-path-nudge 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .sx-stage-next.is-glow .sx-stage-next-btn { animation: none; } }
+@media (max-width: 640px) {
+  /* phones: the three stages as compact rows, top to bottom */
+  .sxc .sx-path { grid-template-columns: 1fr; gap: 6px; }
+  .sxc .sx-path .sx-path-step { flex-direction: row; align-items: center; min-height: 48px; padding: 8px 12px; gap: 10px; }
+  .sxc .sx-path .sx-path-text { flex-direction: row; align-items: baseline; flex-wrap: wrap; gap: 2px 8px; }
+  .sxc .sx-path .sx-path-text strong { font-size: 0.98rem; }
+  .sxc .sx-path .sx-path-text small { margin-top: 0; font-size: 0.76rem; }
+  .sxc .sx-path .sx-path-step.is-open::after { display: none; }
+  .sx-stage-next-btn { width: 100%; }
+}

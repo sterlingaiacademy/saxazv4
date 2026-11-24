@@ -63,7 +63,7 @@ html {
   height: auto !important;
   overflow-x: clip !important;
   overflow-y: auto !important;
-  overscroll-behavior-y: auto !important;
+  overscroll-behavior-y: none !important; /* no rubber-band bounce: no white strip above the header or below the footer */
   -webkit-font-smoothing: antialiased;
 }
 
@@ -77,7 +77,7 @@ body {
   min-height: 100dvh;
   height: auto !important;
   overflow: visible !important;
-  overscroll-behavior-y: auto !important;
+  overscroll-behavior-y: none !important; /* no rubber-band bounce: no white strip above the header or below the footer */
   -webkit-font-smoothing: antialiased;
 }
 

@@ -14,15 +14,15 @@
       {% endif %}
     </h1>
     <p class="sx-ext-hero-copy">
-      {{ chapter.subject_name or 'Biology' }}. Do the steps in order.<br>
-      The black box is your next step.
+      {{ chapter.subject_name or 'Biology' }}. Three steps, one at a time:<br>
+      introduction, practice test, real exam.
     </p>
   </div>
 </section>
 {% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="/static/css/saxaz-pages.css?v=11">
+<link rel="stylesheet" href="/static/css/saxaz-pages.css?v=12">
 {% from "student/partials/summary_games.html" import molecule_defs, game_leaf, game_food, game_breathe, game_blood, game_pump, game_kidney, game_team %}
 {{ molecule_defs() }}
 <link rel="stylesheet" href="/static/css/summary-games.css?v=27">
@@ -140,6 +140,8 @@
       gamePromptMode: {{ ((user.game_prompt_mode if user is defined and user.game_prompt_mode else 'always'))|tojson }},
       voiceError: false,
       summaryFs: false,
+      stage: null,            // the stage shown below the steps: 'intro' | 'mock' | 'real' (null = the next step)
+      introJustFinished: false,
       slidesMeta: {{ (
         [
           {'idx': 0,  'label': 'Intro',             'ttsEmotion': 'friendly_greeting', 'game': none,      'gameTitle': ''},
@@ -243,7 +245,11 @@
           this.ensureSlideWordsInitialized();
           this.goToSlide(6, false);
           setTimeout(() => { this.openFullscreenGame('heart'); }, 180);
-        } else if (h === '#chapter-videos' || h === '#chapter-exams' || h === '#chapter-nutshell') {
+        } else if (h === '#chapter-videos' || h === '#chapter-exams' || h === '#chapter-nutshell' || h === '#chapter-real') {
+          // old links (shop "ways to earn", exam pages) open the matching stage
+          const st = { '#chapter-exams': 'mock', '#chapter-real': 'real', '#chapter-nutshell': 'intro', '#chapter-videos': 'intro' }[h];
+          const step = this.pathSteps().find(s => s.key === st);
+          if (step && step.state !== 'locked') this.stage = st;
           setTimeout(() => {
             const el = document.getElementById(h.slice(1));
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1094,6 +1100,8 @@
               this.nutshellLit = false;
               this.nutshellPaused = false;
               this.wasVoiceReading = false;
+              this.introJustFinished = true;
+              if (this.summaryFs) this.toggleSummaryFullscreen(false);
               this.triggerTutorReaction('cheer', 3000);
               this.tutorScale = 1;
               this.clearWordHighlights(sIdx);
@@ -1168,12 +1176,12 @@
           return;
         }
         if (ev) ev.preventDefault();
-        const promptMsg = 'Score 80% or higher in any Mock Test first to unlock the Official 40-Minute Real Exam! Start Mock Test 1 now?';
-        const confirmed = window.saxazConfirm
-          ? await window.saxazConfirm(promptMsg)
-          : window.confirm(promptMsg);
-        if (confirmed && this.firstMockExamId) {
-          window.location.href = '/student/exams/' + this.firstMockExamId;
+        const res = window.saxazConfirm
+          ? await window.saxazConfirm({ title: 'Real exam is locked', text: 'Score 80% in the practice test first. Open the practice test now?', confirmButtonText: 'Open practice test' })
+          : { isConfirmed: window.confirm('Score 80% in the practice test first. Open the practice test now?') };
+        if (res && res.isConfirmed) {
+          const mock = this.pathSteps().find(s => s.key === 'mock');
+          this.showStage(mock && mock.state === 'locked' ? 'intro' : 'mock');
         }
       },
 
@@ -1183,17 +1191,16 @@
       pathSteps() {
         const bestMock = {{ ns.best_mock | tojson }};
         const bestReal = {{ ns.best_real | tojson }};
+        const introDone = this.hasClaimed('nutshell:ch:' + chId);
         const steps = [
-          { key: 'summary', label: 'Summary', done: this.hasClaimed('nutshell:ch:' + chId),
-            hint: this.hasClaimed('nutshell:ch:' + chId) ? 'Done' : 'Listen to ' + this.tutorDisplay },
-          { key: 'videos', label: 'Videos', done: this.videos.length > 0 && this.completedVideosCount() >= this.videos.length,
-            hint: this.completedVideosCount() + ' of ' + this.videos.length + ' watched' },
-          { key: 'mock', label: 'Mock test', done: bestMock !== null && bestMock >= 80,
-            hint: bestMock === null ? 'Score 80% to pass' : ('Best ' + bestMock + '%' + (bestMock >= 80 ? '' : ' · need 80%')) },
+          { key: 'intro', label: 'Introduction', done: introDone,
+            hint: introDone ? 'Done' : 'Start here' },
+          { key: 'mock', label: 'Practice test', done: bestMock !== null && bestMock >= 80,
+            locked: !introDone && bestMock === null,
+            hint: bestMock === null ? (introDone ? 'Score 80% to pass' : 'After the introduction') : ('Best ' + bestMock + '%' + (bestMock >= 80 ? '' : ' · need 80%')) },
           { key: 'real', label: 'Real exam', done: bestReal !== null, locked: !this.realUnlocked,
-            hint: bestReal !== null ? ('Best ' + bestReal + '%') : (this.realUnlocked ? 'Unlocked' : 'Pass a mock test first') },
-        ].filter(s => s.key !== 'videos' || this.videos.length > 0)
-         .filter(s => s.key !== 'mock' || this.firstMockExamId)
+            hint: bestReal !== null ? ('Best ' + bestReal + '%') : (this.realUnlocked ? 'Unlocked' : 'After the practice test') },
+        ].filter(s => s.key !== 'mock' || this.firstMockExamId)
          .filter(s => s.key !== 'real' || this.firstRealExamId);
         let nextSet = false;
         steps.forEach(s => {
@@ -1204,17 +1211,32 @@
         });
         return steps;
       },
-      goPathStep(st) {
-        if (st.key === 'summary') {
-          this.openStoryFullscreen(true);
-        } else if (st.key === 'videos') {
-          this.openSummaryVideos();
-        } else if (st.key === 'mock') {
-          window.location.href = '/student/exams/' + this.firstMockExamId;
-        } else if (st.key === 'real') {
-          if (this.realUnlocked) window.location.href = '/student/real-exams/' + this.firstRealExamId + '/intro';
-          else this.handleRealExamClick(null);
+      // The stage shown below the steps: the one the student tapped, otherwise the next step to do
+      currentStage() {
+        if (this.stage) return this.stage;
+        const steps = this.pathSteps();
+        const nxt = steps.find(s => s.state === 'next');
+        if (nxt) return nxt.key;
+        const done = steps.filter(s => s.state === 'done');
+        return done.length ? done[done.length - 1].key : 'intro';
+      },
+      async goPathStep(st) {
+        if (st.state === 'locked') {
+          if (st.key === 'real') { this.handleRealExamClick(null); return; }
+          const res = window.saxazConfirm
+            ? await window.saxazConfirm({ title: 'Introduction first', text: 'Finish the introduction, then the practice test opens.', confirmButtonText: 'Go to introduction' })
+            : { isConfirmed: window.confirm('Finish the introduction first.') };
+          if (res && res.isConfirmed) this.showStage('intro');
+          return;
         }
+        this.showStage(st.key);
+      },
+      showStage(key) {
+        this.stage = key;
+        this.$nextTick(() => {
+          const el = document.querySelector('.sx-path');
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
       },
       completedVideosCount() {
         return this.videos.filter(v => this.isDone(v.id)).length;
@@ -1331,11 +1353,11 @@
     </a>
   </div>
 
-  <!-- Learning path: 4 steps in order, the next one glows so a child always knows where to go -->
+  <!-- Learning path: 3 stages in order (introduction, practice test, real exam); only the open stage is shown below -->
   <nav class="sx-path" aria-label="Your steps for this chapter">
     <template x-for="(st, i) in pathSteps()" :key="st.key">
       <button type="button" class="sx-path-step"
-              :class="'is-' + st.state"
+              :class="'is-' + st.state + (currentStage() === st.key ? ' is-open' : '')"
               :aria-current="st.state === 'next' ? 'step' : null"
               @click="goPathStep(st)">
         <span class="sx-path-num" aria-hidden="true">
@@ -1352,7 +1374,7 @@
   </nav>
 
   <!-- UNIFIED CHAPTER SUMMARY CARD (Notes + Voice + 4 Summary Videos in ONE Simple Card) -->
-  <section id="chapter-nutshell" class="sx-nutshell-wrap" style="margin-bottom:26px;">
+  <section id="chapter-nutshell" class="sx-nutshell-wrap" style="margin-bottom:26px;" x-show="currentStage() === 'intro'">
     <div class="sx-nutshell-card"
          :class="[nutshellLit && 'is-lit', summaryFs && 'is-fullscreen']"
          @mouseenter="nutshellHover = true"
@@ -1770,36 +1792,11 @@
       </div>
       {% endif %}
 
-      <!-- Part B: Playful 4-Episode Video Strip (Zero Text Clutter — Moving 3D Badge + 4 Tactile Episode Pills) -->
-      {% if ns.videos %}
-      <div id="chapter-videos" class="sx-summary-vid-strip" @click.stop>
-        <button type="button"
-                @click="openSummaryVideos()"
-                data-sx-surf-badge
-                class="sx-issue-badge-card sx-summary-vid-badge">
-          <span class="sx-badge-stage" style="max-width:126px;">
-            <img class="sx-badge-idle" src="/static/images/saxaz_web/badge_chapter_summary_idle.webp?v=541" alt="Chapter Summary">
-            <canvas class="sx-badge-canvas" width="340" height="340" data-sx-sheet="/static/images/saxaz_web/badge_chapter_summary_sheet.webp?v=541"></canvas>
-          </span>
-        </button>
-
-        <div class="sx-summary-vid-pills">
-          <template x-for="vp in videos" :key="'vid-pill-' + vp.id">
-            <button type="button"
-                    @click="playBrief(vp, true)"
-                    class="sx-summary-vid-pill"
-                    :class="isDone(vp.id) && 'is-watched'">
-              <span class="sx-summary-vid-play" :class="isDone(vp.id) && 'is-watched'">
-                <span class="material-symbols-outlined" style="font-size:16px;" x-text="isDone(vp.id) ? 'check' : 'play_arrow'"></span>
-              </span>
-              <span style="display:flex;flex-direction:column;align-items:flex-start;min-width:0;">
-                <strong style="font-size:0.88rem;font-weight:800;color:#231f20;line-height:1.15;" x-text="'Video ' + vp.part"></strong>
-                <span style="font-size:0.75rem;font-weight:800;color:rgba(35,31,32,0.72);margin-top:2px;"
-                      x-text="vp.duration_str + (isDone(vp.id) ? ' · Watched' : ' · +5 Coins')"></span>
-              </span>
-            </button>
-          </template>
-        </div>
+      <!-- Introduction finished: the way on to the practice test -->
+      {% if ns.first_mock_id %}
+      <div class="sx-stage-next" x-show="hasClaimed('nutshell:ch:{{ chapter.id }}')" x-cloak :class="introJustFinished && 'is-glow'" @click.stop>
+        <span class="sx-stage-next-text"><strong>Introduction done.</strong> Next: the practice test.</span>
+        <button type="button" class="sx-stage-next-btn" @click="showStage('mock')">Next: Practice test &rarr;</button>
       </div>
       {% endif %}
 
@@ -1861,10 +1858,10 @@
     </div>
   </template>
 
-  <!-- PRACTICE MOCK TESTS & OFFICIAL REAL EXAM (Standalone 3D Emblem Buttons — Zero Card Background) -->
-  <section id="chapter-exams" style="margin-bottom:28px;">
-    <h2 class="sxp-h2">Tests<small>Practise with mock tests. Score 80% to unlock the real exam.</small></h2>
-    <div class="sx-issue-badges-row">
+  <!-- Stage 2: practice test (score 80% to unlock the real exam) -->
+  <section id="chapter-exams" class="sx-stage" style="margin-bottom:28px;" x-show="currentStage() === 'mock'" x-cloak>
+    <h2 class="sxp-h2">Practice test<small>Tap to start. Score 80% to unlock the real exam.</small></h2>
+    <div class="sx-issue-badges-row is-single">
       <a href="{{ '/student/exams/' ~ ns.first_mock_id if ns.first_mock_id else '#chapter-exams' }}"
          aria-label="Mock Exam ({% if ns.best_mock is not none %}Best {{ ns.best_mock }}%{% else %}0%{% endif %})"
          data-sx-surf-badge
@@ -1875,8 +1872,21 @@
         </span>
         <span class="sx-subject-pct-pill">{% if ns.best_mock is not none %}Best: {{ ns.best_mock }}%{% else %}0%{% endif %}</span>
       </a>
+    </div>
+    {% if ns.first_real_id and real_unlocked %}
+    <div class="sx-stage-next">
+      <span class="sx-stage-next-text"><strong>Practice test passed.</strong> Next: the real exam.</span>
+      <button type="button" class="sx-stage-next-btn" @click="showStage('real')">Next: Real exam &rarr;</button>
+    </div>
+    {% endif %}
+  </section>
 
-      {% if ns.first_real_id and real_unlocked %}
+  {% if ns.first_real_id %}
+  <!-- Stage 3: real exam -->
+  <section id="chapter-real" class="sx-stage" style="margin-bottom:28px;" x-show="currentStage() === 'real'" x-cloak>
+    <h2 class="sxp-h2">Real exam<small>{% if real_unlocked %}On your own, no tutor. Read the rules, then start.{% else %}Score 80% in the practice test to unlock it.{% endif %}</small></h2>
+    <div class="sx-issue-badges-row is-single">
+      {% if real_unlocked %}
       <a href="/student/real-exams/{{ ns.first_real_id }}/intro"
          aria-label="Real Exam ({% if ns.best_real is not none %}Best {{ ns.best_real }}%{% else %}0%{% endif %})"
          data-sx-surf-badge
@@ -1902,8 +1912,8 @@
       </a>
       {% endif %}
     </div>
-
   </section>
+  {% endif %}
 
 
 </div>

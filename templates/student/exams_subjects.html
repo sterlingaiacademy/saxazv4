@@ -194,11 +194,6 @@
                 <a href="/student/chapters/{{ ch.id }}" class="sx-ext-cta-yellow" style="min-height:40px;padding:8px 18px;font-size:0.86rem;">
                   {{ 'Review Chapter' if done else ('Continue Chapter' if ch_pct > 0 else 'Start Chapter') }} &rarr;
                 </a>
-                {% if ch.mock_exam_id %}
-                <a href="/student/exams/{{ ch.mock_exam_id }}" class="sx-ext-cta-soft" style="min-height:38px;padding:7px 15px;font-size:0.82rem;">
-                  Practice Mock
-                </a>
-                {% endif %}
               </div>
             </div>
             {% endfor %}
