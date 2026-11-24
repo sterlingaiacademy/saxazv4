@@ -239,6 +239,9 @@
             }
           }
         });
+        // Pick the open stage once, when the page loads. It must not change by itself while the student is in it
+        // (the introduction counts as done after its first part, but the story keeps playing).
+        this.stage = this.currentStage();
         const h = window.location.hash || '';
         if (h === '#heart-activity' && this.slidesMeta.length > 6) {
           this.nutshellExpanded = true;
