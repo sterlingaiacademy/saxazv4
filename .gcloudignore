@@ -17,3 +17,4 @@ __pycache__/
 yt-dlp.exe
 *.zip
 *.log
+models/
