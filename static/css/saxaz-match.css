@@ -1117,3 +1117,7 @@ body .sx-exam-hub.is-compact .sx-mock-tab.is-active { box-shadow: none !importan
 .sxc :is(#chapter-exams, #chapter-real) .sx-issue-badges-row.is-single { justify-content: center; }
 /* Chapter path popup: the "you can't come back" warning stands out */
 .sxc .sx-stage-popup .sx-fsi-subtitle.is-warn { background: #fff3cf; color: #231f20; }
+
+/* Summary parts: a progress strip (not buttons); parts not reached yet are dimmed */
+.sxc .sx-slide-tab.is-static { cursor: default; pointer-events: none; }
+.sxc .sx-slide-tab.is-locked { opacity: 0.5; }

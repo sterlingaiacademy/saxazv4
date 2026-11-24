@@ -99,6 +99,7 @@
       nutshellBuffering: false,
       nutshellBeatIdx: -1,
       activeSlide: 0,
+      introReached: (() => { try { return Math.max(0, parseInt(localStorage.getItem('sxIntroReached:{{ chapter.id }}') || '0', 10) || 0); } catch (e) { return 0; } })(),
       nutshellEmotion: 'base',
       idlePose: 'base',
       tutorScale: 1,
@@ -254,7 +255,7 @@
           else if (this.serverStage === 'mock' && this.canGoReal && this.firstRealExamId) this.askStage('go-real');
         }, 900);
         const h = window.location.hash || '';
-        if (h === '#heart-activity' && this.slidesMeta.length > 6) {
+        if (h === '#heart-activity' && this.slidesMeta.length > 6 && this.serverStage === 'intro' && this.canOpenPart(6)) {
           this.nutshellExpanded = true;
           this.ensureSlideWordsInitialized();
           this.goToSlide(6, false);
@@ -369,7 +370,25 @@
         }
       },
 
+      // The introduction is watched in order: parts can't be skipped before the tutor has read them
+      voiceOff() {
+        return Boolean(this.voiceError) || (typeof window.isTtsMuted === 'function' && window.isTtsMuted());
+      },
+      markPartWatched(sIdx) {
+        if (sIdx + 1 > this.introReached) {
+          this.introReached = sIdx + 1;
+          try { localStorage.setItem('sxIntroReached:' + chId, String(this.introReached)); } catch (e) {}
+        }
+      },
+      canOpenPart(sIdx) {
+        return sIdx <= this.introReached || this.voiceOff();
+      },
+      listenFirst() {
+        if (window.saxazConfirm) window.saxazConfirm({ toast: true, icon: 'headphones', title: 'Listen to this part first', text: 'The next part opens when ' + this.tutorDisplay + ' finishes this one.' });
+        if (!this.nutshellLit && !this.voiceOff()) this.toggleNutshellLightbulb && this.toggleNutshellLightbulb();
+      },
       handlePartNextClick(sIdx) {
+        if (!this.canOpenPart(sIdx + 1)) { this.listenFirst(); return; }
         const sm = this.slidesMeta[sIdx];
         if (sm && sm.game && this.promptDismissedSlide !== sIdx && this.shouldAskGame(sIdx)
             && (this.gamePromptMode === 'always' || !this.gamePassed.includes(sm.game))) {
@@ -424,6 +443,7 @@
 
       // The whole introduction has been played: leave full screen and ask (popup) to go on to the practice exam
       onIntroFinished() {
+        if (this.introReached < this.slidesMeta.length && !this.voiceOff()) return;
         this.introJustFinished = true;
         try { localStorage.setItem('sxIntroEnded:' + chId, '1'); } catch (e) {}
         if (this.summaryFs) this.toggleSummaryFullscreen(false);
@@ -914,6 +934,7 @@
       },
 
       goToSlide(sIdx, autoPlay = null) {
+        if (sIdx > this.activeSlide && !this.canOpenPart(sIdx)) { this.listenFirst(); return; }
         this.cancelSideVoices();
         const maxIdx = this.slidesMeta.length - 1;
         const target = Math.max(0, Math.min(maxIdx, sIdx));
@@ -1104,6 +1125,7 @@
               this.playSlideBeat(sIdx, clampedBeat + 1, 0);
               return;
             }
+            this.markPartWatched(sIdx);
             // Award +10 Coins milestone once student completes at least 1 slide
             const rKey = 'nutshell:ch:' + chId;
             if (!this.hasClaimed(rKey) && window.saxazClaimMilestone) {
@@ -1250,7 +1272,10 @@
         if (!res || !res.isConfirmed) return;
         try {
           const r = await fetch('/student/chapters/' + chId + '/path/restart', { method: 'POST', credentials: 'same-origin' });
-          if (r.ok) { window.location.href = '/student/chapters/' + chId; return; }
+          if (r.ok) {
+            try { localStorage.removeItem('sxIntroEnded:' + chId); localStorage.removeItem('sxIntroReached:' + chId); } catch (e) {}
+            window.location.href = '/student/chapters/' + chId; return;
+          }
         } catch (e) {}
         window.saxazConfirm && window.saxazConfirm({ toast: true, title: 'Could not restart', text: 'Please try again.' });
       },
@@ -1471,13 +1496,11 @@
         <div class="sx-sync-topbar">
           <div class="sx-slide-tabs" role="tablist" aria-label="Chapter Summary Cards" x-ref="slideTabs">
             <template x-for="sm in slidesMeta" :key="'tab-' + sm.idx">
-              <button type="button"
-                      role="tab"
-                      class="sx-slide-tab"
-                      :class="activeSlide === sm.idx && 'is-active'"
-                      :aria-selected="activeSlide === sm.idx ? 'true' : 'false'"
-                      @click="goToSlide(sm.idx)"
-                      x-text="sm.label"></button>
+              <span role="tab"
+                    class="sx-slide-tab is-static"
+                    :class="activeSlide === sm.idx ? 'is-active' : (sm.idx > introReached ? 'is-locked' : '')"
+                    :aria-selected="activeSlide === sm.idx ? 'true' : 'false'"
+                    x-text="sm.label"></span>
             </template>
           </div>
 
