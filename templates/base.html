@@ -2572,7 +2572,7 @@
   <link rel="stylesheet" href="/static/css/saxaz-fun.css?v=542">
   <link rel="stylesheet" href="/static/css/sx3.css?v=542">
   <link rel="stylesheet" href="/static/css/saxaz-ext.css?v=546">
-  <link rel="stylesheet" href="/static/css/saxaz-match.css?v=21">
+  <link rel="stylesheet" href="/static/css/saxaz-match.css?v=22">
   <link rel="stylesheet" href="/static/css/saxaz-cursor.css?v=5">
   <script src="/static/js/fun.js?v=543" defer></script>
   <script>
@@ -2658,8 +2658,7 @@
   {% set sx_nav = [] %}
   {% if is_student %}
     {% set sx_nav = [
-      ('/student/dashboard', 'Dashboard', 'grid', _p.startswith('/student/dashboard')),
-      ('/student/exams', 'Subjects & Exams', 'exams', (_p.startswith('/student/exams') or _p.startswith('/student/subjects') or _p.startswith('/student/chapters') or _p.startswith('/student/real-exams'))),
+      ('/student/dashboard', 'Dashboard', 'grid', (_p.startswith('/student/dashboard') or _p.startswith('/student/issues') or _p.startswith('/student/exams') or _p.startswith('/student/subjects') or _p.startswith('/student/chapters') or _p.startswith('/student/real-exams'))),
       ('/student/attempts', 'Quiz Points', 'trophy', _p.startswith('/student/attempts')),
       ('/student/shop', 'Rewards & Shop', 'shop', _p.startswith('/student/shop')),
       ('/student/profile', 'Profile & Voice', 'user', (_p.startswith('/student/profile') or _p.startswith('/student/settings'))),

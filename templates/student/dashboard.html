@@ -5,13 +5,14 @@
 {% block hero_banner %}
 <section class="sx-ext-hero">
   <div class="sx-ext-hero-inner">
+    {% set hero_parts = issue_parts if (issue_parts is defined and issue_parts) else [1] %}
     <h1 class="sx-ext-hero-title">
-      <span class="is-dark">Welcome back,</span>
-      <span class="is-white">{{ (user.name or 'Student').split(' ')[0] | capitalize }}</span>
+      <span class="is-dark">Welcome to the</span>
+      <span class="is-white">Part {{ hero_parts[-1] }}</span>
     </h1>
     <p class="sx-ext-hero-copy">
-      Pick up right where you left off.<br>
-      Your next lesson is one tap away.
+      Study sessions, now with a whole new vibe!<br>
+      {{ hero_parts|length }} unlocked issue{{ '' if hero_parts|length == 1 else 's' }} ready for your next lesson.
     </p>
   </div>
 </section>
@@ -55,6 +56,40 @@
        }
      }">
 
+  <!-- 0. ADD NEW ISSUE (redeem the password printed in the magazine) -->
+  <section class="sx-ext-dash-section sx-issue-redeem"
+           x-data="{
+             code: '', busy: false, msg: '', ok: false,
+             async redeem() {
+               if (this.busy) return;
+               this.msg = ''; this.ok = false;
+               if ((this.code || '').trim().length < 4) { this.msg = 'Type the password from the first page of your magazine.'; return; }
+               this.busy = true;
+               try {
+                 const fd = new FormData(); fd.append('code', this.code.trim());
+                 const r = await fetch('/student/issues/redeem', { method: 'POST', body: fd, credentials: 'same-origin' });
+                 const d = await r.json().catch(() => ({}));
+                 if (r.ok && d.success) {
+                   this.ok = true; this.msg = 'Part ' + d.part + ' is added to My Issues!';
+                   setTimeout(() => { window.location.href = '/student/dashboard#my-issues'; window.location.reload(); }, 900);
+                 } else { this.msg = d.error || 'That password did not work. Please check it and try again.'; }
+               } catch (e) { this.msg = 'Could not reach SAXAZ. Please try again.'; }
+               this.busy = false;
+             }
+           }">
+    <h2 class="sx-ext-section-h2">Add New Issue</h2>
+    <form class="sx-issue-redeem-row" @submit.prevent="redeem()">
+      <input type="text" class="sx-issue-redeem-input" x-model="code" maxlength="64" autocomplete="off"
+             placeholder="Enter unique issue Password" aria-label="Unique issue password">
+      <button type="submit" class="sx-issue-redeem-btn" :disabled="busy" x-text="busy ? 'Redeeming...' : 'Redeem'">Redeem</button>
+    </form>
+    <p class="sx-issue-redeem-hint">
+      <span class="sx-issue-redeem-i" aria-hidden="true">i</span>
+      <span>Password is given in the first page of the magazine</span>
+    </p>
+    <p class="sx-issue-redeem-msg" x-show="msg" x-cloak :class="ok ? 'is-ok' : 'is-err'" x-text="msg" role="status" aria-live="polite"></p>
+  </section>
+
   <!-- 1. RESUME / START LESSON YELLOW BLOCK + ACCURATE SVG PROGRESS RING -->
   <section class="sx-ext-dash-section">
     <div class="sx-ext-resume-row">
@@ -90,76 +125,27 @@
     </div>
   </section>
 
-  <!-- 2. MY SUBJECTS — CLEAN SAXAZ.COM EDITORIAL MAGAZINE COVER CARDS -->
-  <section class="sx-ext-dash-section sx-dash-subjects" style="margin-bottom: 18px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-      <h2 class="sx-ext-section-h2" style="margin-bottom: 14px;">My Subjects</h2>
-      <div x-show="soonSubject"
-           x-cloak
-           class="sx-subject-soon-pill"
-           role="status"
-           aria-live="polite">
-        <span class="material-symbols-outlined" style="font-size:18px;color:#f7b317;" aria-hidden="true">lock</span>
-        <span x-text="soonSubject + ' is coming soon!'"></span>
-        <a href="{{ ns.bio_href }}" class="sx-subject-soon-cta">Open Biology &rarr;</a>
-      </div>
-    </div>
-
-    {% set showcase_subjects = [
-      {'key': 'biology',   'label': 'Biology',        'short': 'BIOLOGY',   'match': 'bio'},
-      {'key': 'physics',   'label': 'Physics',        'short': 'PHYSICS',   'match': 'phys'},
-      {'key': 'chemistry', 'label': 'Chemistry',      'short': 'CHEMISTRY', 'match': 'chem'},
-      {'key': 'maths',     'label': 'Maths',          'short': 'MATHS',     'match': 'math'},
-      {'key': 'social',    'label': 'Social Science', 'short': 'SOCIAL',    'match': 'social'},
-      {'key': 'english',   'label': 'English',        'short': 'ENGLISH',   'match': 'eng'}
-    ] %}
-
-    <div class="sx-mag-grid" id="my-subjects">
-      {% for item in showcase_subjects %}
-        {% set m = namespace(live=false, href='#my-subjects', pct=0) %}
-        {% for s in subjects %}
-          {% if item.match in (s.name or '')|lower %}
-            {% set m.pct = (s.progress_pct or 0)|round|int %}
-            {% if (s.chapters or [])|length > 0 %}
-              {% set m.live = true %}
-              {% set ch_list = s.chapters or [] %}
-              {% set m.href = ('/student/chapters/' ~ ch_list[0].id) if ch_list|length == 1 else ('/student/exams?subject=' ~ s.id) %}
-            {% endif %}
-          {% endif %}
-        {% endfor %}
-
-        {% if m.live %}
-        <a href="{{ m.href }}"
-           data-sx-keep
-           aria-label="{{ item.label }} ({{ m.pct }}% complete)"
-           class="sx-mag-card">
-          <img class="sx-mag-photo" src="/static/images/saxaz_web/cover_sub_{{ item.key }}.webp?v=546" alt="{{ item.label }}" loading="eager" decoding="async">
-          <div class="sx-mag-masthead">
-            <div class="sx-mag-class">
-              <strong>CLASS 10</strong>
-              <span>CBSE</span>
-            </div>
-            <strong class="sx-mag-subject">{{ item.short }}</strong>
+  <!-- 2. MY ISSUES (magazine parts); the subjects are inside each issue -->
+  <section class="sx-ext-dash-section sx-dash-subjects" id="my-issues" style="margin-bottom: 18px;">
+    <h2 class="sx-ext-section-h2" style="margin-bottom: 14px;">My Issues</h2>
+    {% set issue_covers = ['biology', 'physics', 'chemistry', 'maths', 'social', 'english'] %}
+    <div class="sx-mag-grid">
+      {% for part in (issue_parts if (issue_parts is defined and issue_parts) else [1]) %}
+      {% set part_pct = pct_clamped if part == 1 else 0 %}
+      <a href="/student/issues/{{ part }}"
+         data-sx-keep
+         aria-label="Class 10 Part {{ part }} ({{ part_pct }}% complete)"
+         class="sx-mag-card">
+        <img class="sx-mag-photo" src="/static/images/saxaz_web/cover_sub_{{ issue_covers[(part - 1) % 6] }}.webp?v=546" alt="Class 10 Part {{ part }}" loading="eager" decoding="async">
+        <div class="sx-mag-masthead">
+          <div class="sx-mag-class">
+            <strong>CLASS 10</strong>
+            <span>CBSE</span>
           </div>
-          <span class="sx-mag-pill">{{ m.pct }}% complete</span>
-        </a>
-        {% else %}
-        <a href="#my-subjects"
-           data-sx-keep
-           @click.prevent="notifySubjectSoon({{ item.label | tojson | forceescape }})"
-           aria-label="{{ item.label }} — Coming soon"
-           class="sx-mag-card is-soon">
-          <img class="sx-mag-photo" src="/static/images/saxaz_web/cover_sub_{{ item.key }}.webp?v=546" alt="{{ item.label }}" loading="lazy" decoding="async">
-          <div class="sx-mag-masthead">
-            <div class="sx-mag-class">
-              <strong>CLASS 10</strong>
-              <span>CBSE</span>
-            </div>
-            <strong class="sx-mag-subject">{{ item.short }}</strong>
-          </div>
-          <span class="sx-mag-pill is-soon"><span class="material-symbols-outlined" aria-hidden="true">lock</span>Coming soon</span>
-        </a>
-        {% endif %}
+          <strong class="sx-mag-subject">PART {{ part }}</strong>
+        </div>
+        <span class="sx-mag-pill">{{ part_pct }}% complete</span>
+      </a>
       {% endfor %}
     </div>
   </section>

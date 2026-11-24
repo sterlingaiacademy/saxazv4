@@ -2657,3 +2657,47 @@ def restart_chapter_path(conn, student_id: int, chapter_id: int):
     (student_id, chapter_id),
   )
   conn.commit()
+
+# ---------------------------------------------------------------------------
+# Issues (magazine parts), like saxaz.com: every student has Part 1; redeeming the password printed in a
+# magazine adds the next part. The real password format is not known yet, so for now any password the
+# student types adds the next part (dummy redeem).
+# ---------------------------------------------------------------------------
+MAX_ISSUE_PARTS = 12
+
+
+def _ensure_student_issues(conn):
+  conn.execute("""
+    CREATE TABLE IF NOT EXISTS student_issues (
+      student_id INTEGER NOT NULL,
+      part_no INTEGER NOT NULL,
+      code TEXT,
+      redeemed_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (student_id, part_no)
+    )
+  """)
+
+
+def get_student_issue_parts(conn, student_id: int) -> list[int]:
+  _ensure_student_issues(conn)
+  rows = conn.execute("SELECT part_no FROM student_issues WHERE student_id = ?", (student_id,)).fetchall()
+  parts = {1} | {int(r[0]) for r in rows if r and r[0]}
+  return sorted(parts)
+
+
+def redeem_issue(conn, student_id: int, code: str) -> dict:
+  """Dummy redeem: a password (any, 4+ characters) adds the next issue part."""
+  code = (code or "").strip()
+  if len(code) < 4:
+    return {"success": False, "error": "Type the password from the first page of your magazine."}
+  _ensure_student_issues(conn)
+  parts = get_student_issue_parts(conn, student_id)
+  nxt = max(parts) + 1
+  if nxt > MAX_ISSUE_PARTS:
+    return {"success": False, "error": "You already have every issue."}
+  conn.execute(
+    "INSERT OR IGNORE INTO student_issues (student_id, part_no, code) VALUES (?, ?, ?)",
+    (student_id, nxt, code[:64]),
+  )
+  conn.commit()
+  return {"success": True, "part": nxt}

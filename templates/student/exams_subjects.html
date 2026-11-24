@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Subjects &amp; Chapters | SAXAZ{% endblock %}
+{% block title %}Class 10 Part {{ issue_part or 1 }} | SAXAZ{% endblock %}
 
 {% block content %}
 {% set ns_bio = namespace(sub=none, first_ch_href='/student/chapters/3') %}
@@ -125,7 +125,17 @@
   {% endif %}
 {% endmacro %}
 
-<div class="sx-issue-wrap" x-data="{ openSub: '{{ init_open }}' }">
+{% set issue_live = (issue_part or 1) == 1 %}
+<div class="sx-issue-wrap" x-data="{ openSub: '{{ init_open if issue_live else '' }}' }">
+
+  <!-- Back to the issues (subjects are opened from an issue on the dashboard) -->
+  <div class="sx-ext-back-bar" style="margin-bottom:22px;">
+    <a href="/student/dashboard#my-issues" class="sx-ext-back-link">
+      <span class="material-symbols-outlined" style="font-size:20px;" aria-hidden="true">arrow_back</span>
+      <span>Back to My Issues</span>
+    </a>
+    <span class="sx-issue-part-pill">Class 10 &middot; Part {{ issue_part or 1 }}</span>
+  </div>
 
   <div class="sx-issue-bottom-grid">
     <!-- LEFT COLUMN: 11 Alternating Subject Accordion Bars (Exact saxaz.com/dashboard/part Order) -->
@@ -133,7 +143,7 @@
       {% for item in all_issue_subjects %}
       {% set is_yellow = (loop.index0 % 2 == 1) %}
       <div>
-        {% set row_live = (item.key == 'biology' and ns_bio.sub and (ns_bio.sub.chapters or [])|length > 0) %}
+        {% set row_live = issue_live and (item.key == 'biology' and ns_bio.sub and (ns_bio.sub.chapters or [])|length > 0) %}
         <div class="sx-issue-acc-bar {% if is_yellow %}is-yellow{% endif %} {% if not row_live %}has-soon{% endif %}"
              role="button"
              tabindex="0"
@@ -156,7 +166,7 @@
         </div>
 
         <div class="sx-issue-acc-body" x-show="openSub === '{{ item.key }}'" x-cloak>
-          {% if item.key == 'biology' and ns_bio.sub and (ns_bio.sub.chapters or [])|length > 0 %}
+          {% if issue_live and item.key == 'biology' and ns_bio.sub and (ns_bio.sub.chapters or [])|length > 0 %}
             {% for ch in ns_bio.sub.chapters %}
             {% set done = (ch.state == 'completed' or ch.is_completed) %}
             {% set ch_pct = ch.progress_pct if ch.progress_pct is not none else (100 if done else 0) %}

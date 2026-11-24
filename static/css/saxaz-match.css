@@ -1121,3 +1121,35 @@ body .sx-exam-hub.is-compact .sx-mock-tab.is-active { box-shadow: none !importan
 /* Summary parts: a progress strip (not buttons); parts not reached yet are dimmed */
 .sxc .sx-slide-tab.is-static { cursor: default; pointer-events: none; }
 .sxc .sx-slide-tab.is-locked { opacity: 0.5; }
+
+/* Dashboard: Add New Issue (like saxaz.com) */
+.sx-issue-redeem { margin-bottom: 28px; }
+.sx-issue-redeem .sx-ext-section-h2 { margin-bottom: 14px; }
+.sx-issue-redeem-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sx-issue-redeem-input {
+  flex: 0 1 300px; min-width: 0; min-height: 46px; padding: 10px 18px; border-radius: 999px;
+  border: 1.5px solid rgba(35, 31, 32, 0.22); background: #ffffff; color: #231f20; font: inherit; font-size: 1rem;
+}
+.sx-issue-redeem-input:focus { outline: none; border-color: #231f20; }
+.sx-issue-redeem-btn {
+  min-height: 46px; padding: 10px 24px; border-radius: 999px; border: 0; background: #231f20; color: #ffffff;
+  font: inherit; font-size: 1.05rem; font-weight: 800; cursor: pointer;
+}
+.sx-issue-redeem-btn:hover { background: #f7b317; color: #231f20; }
+.sx-issue-redeem-btn:disabled { opacity: 0.6; cursor: wait; }
+.sx-issue-redeem-hint { display: flex; align-items: center; gap: 8px; margin: 12px 0 0; font-size: 0.98rem; color: #231f20; }
+.sx-issue-redeem-i {
+  width: 24px; height: 24px; border-radius: 50%; border: 1.8px solid #231f20; display: grid; place-items: center;
+  font-size: 0.8rem; font-weight: 900; font-family: Georgia, serif; flex: none;
+}
+.sx-issue-redeem-msg { margin: 10px 0 0; font-weight: 800; font-size: 0.95rem; }
+.sx-issue-redeem-msg.is-ok { color: #15803d; }
+.sx-issue-redeem-msg.is-err { color: #dc2626; }
+.sx-issue-part-pill {
+  margin-left: auto; padding: 6px 14px; border-radius: 999px; background: #f7b317; color: #231f20;
+  font-size: 0.82rem; font-weight: 900; letter-spacing: 0.02em; white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .sx-issue-redeem-input { flex: 1 1 100%; }
+  .sx-issue-redeem-btn { flex: 1 1 100%; }
+}

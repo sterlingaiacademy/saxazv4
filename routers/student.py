@@ -205,7 +205,9 @@ async def dashboard(request: Request):
     cookie_cont = _read_continue_cookie(request, user['id'])
     continue_state = student_service.get_student_continue_state(conn, user['id'], subjects, cookie_cont)
     
+    issue_parts = student_service.get_student_issue_parts(conn, user['id'])
     return templates.TemplateResponse(request=request, name="student/dashboard.html", context={
+      "issue_parts": issue_parts,
       "request": request, 
       "user": user, 
       "subjects": subjects,
@@ -222,10 +224,38 @@ async def dashboard(request: Request):
 
 @router.get("/exams", response_class=HTMLResponse)
 @router.get("/subjects", response_class=HTMLResponse)
-async def exams_subjects_hub(request: Request, subject: Optional[str] = None):
+async def exams_subjects_redirect(request: Request, subject: Optional[str] = None):
+  # Subjects are opened from an issue on the dashboard (like saxaz.com); old links open Part 1
+  from fastapi.responses import RedirectResponse
+  from urllib.parse import quote
+  q = f"?subject={quote(str(subject))}" if subject else ""
+  return RedirectResponse(url=f"/student/issues/1{q}", status_code=302)
+
+
+@router.post("/issues/redeem", response_class=JSONResponse)
+async def redeem_issue_route(request: Request):
   conn = get_db_connection()
   try:
     user = require_student(request, conn)
+    try:
+      form = await request.form()
+      code = str(form.get("code") or "")
+    except Exception:
+      code = ""
+    res = student_service.redeem_issue(conn, user['id'], code)
+    return JSONResponse(res, status_code=200 if res.get("success") else 400)
+  finally:
+    conn.close()
+
+
+@router.get("/issues/{part}", response_class=HTMLResponse)
+async def exams_subjects_hub(request: Request, part: int = 1, subject: Optional[str] = None):
+  conn = get_db_connection()
+  try:
+    user = require_student(request, conn)
+    if part not in student_service.get_student_issue_parts(conn, user['id']):
+      from fastapi.responses import RedirectResponse
+      return RedirectResponse(url="/student/dashboard", status_code=302)
     class_id = user.get('class_id') or 1
     subjects = student_service.get_student_subjects(conn, class_id, user['id'])
     for s in subjects:
@@ -243,6 +273,7 @@ async def exams_subjects_hub(request: Request, subject: Optional[str] = None):
       "overall_progress_pct": overall_progress_pct,
       "selected_subject_id": selected_subject_id,
       "raw_subject_query": raw_sub_param,
+      "issue_part": part,
     })
   finally:
     conn.close()

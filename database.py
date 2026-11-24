@@ -396,6 +396,17 @@ def auto_migrate():
         )
     """)
 
+    # Issues (magazine parts) a student has redeemed; Part 1 is always available
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS student_issues (
+            student_id INTEGER NOT NULL,
+            part_no INTEGER NOT NULL,
+            code TEXT,
+            redeemed_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (student_id, part_no)
+        )
+    """)
+
     # Strict chapter path (introduction > practice test > real exam); a restart starts the path again
     c.execute("""
         CREATE TABLE IF NOT EXISTS chapter_path (
