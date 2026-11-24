@@ -291,6 +291,7 @@ async def view_chapter(request: Request, chapter_id: int):
         item['next_part_number'] = None
 
     available_exams = student_service.get_available_exams(conn, chapter_id, user['id'])
+    path_state = student_service.chapter_path_state(conn, user['id'], chapter_id, available_exams)
     completed_content_ids = student_service.get_completed_content_ids(conn, user['id'], chapter_id)
     chapter_attempts = student_service.get_recent_attempts(conn, user['id'], limit=20, chapter_id=chapter_id)
     claimed_keys = sorted(reward_service.get_claimed_keys(conn, user['id']))
@@ -306,6 +307,7 @@ async def view_chapter(request: Request, chapter_id: int):
       "chapter_attempts": chapter_attempts,
       "claimed_keys": claimed_keys,
       "tutor_name": tutor_name,
+      "path_state": path_state,
     })
     existing_cont = _read_continue_cookie(request, user['id'])
     existing_exam_cont = existing_cont.get("exam") if isinstance(existing_cont.get("exam"), dict) else {}
@@ -444,6 +446,28 @@ from fastapi import Form
 from starlette.responses import RedirectResponse
 import services.grading_service as grading_service
 
+@router.post("/chapters/{chapter_id}/path/intro-done", response_class=JSONResponse)
+async def chapter_path_intro_done(request: Request, chapter_id: int):
+  conn = get_db_connection()
+  try:
+    user = require_student(request, conn)
+    student_service.mark_chapter_intro_done(conn, user['id'], chapter_id)
+    return JSONResponse({"success": True})
+  finally:
+    conn.close()
+
+
+@router.post("/chapters/{chapter_id}/path/restart", response_class=JSONResponse)
+async def chapter_path_restart(request: Request, chapter_id: int):
+  conn = get_db_connection()
+  try:
+    user = require_student(request, conn)
+    student_service.restart_chapter_path(conn, user['id'], chapter_id)
+    return JSONResponse({"success": True})
+  finally:
+    conn.close()
+
+
 @router.get("/chapters/{chapter_id}/exams", response_class=HTMLResponse)
 async def chapter_exams(request: Request, chapter_id: int):
   conn = get_db_connection()
@@ -461,6 +485,12 @@ async def take_exam(request: Request, exam_id: int):
     paper = student_service.get_exam_paper_full(conn, exam_id)
     if not paper or paper['status'] != 'published':
       return HTMLResponse("Exam not available", status_code=404)
+
+    # Strict order: a practice test opens only on the practice-test stage (introduction first;
+    # once passed, the student moves on to the real exam, or restarts the chapter)
+    if paper.get('chapter_id') and paper.get('type') == 'mock':
+      if student_service.chapter_path_state(conn, user['id'], paper['chapter_id'])['stage'] != 'mock':
+        return RedirectResponse(url=f"/student/chapters/{paper['chapter_id']}", status_code=303)
 
     if paper.get('chapter_id'):
       cur_meta = conn.cursor()
@@ -994,6 +1024,8 @@ async def real_exam_intro(request: Request, exam_id: int):
     paper = student_service.get_exam_paper_full(conn, exam_id)
     if not paper or paper['status'] != 'published' or paper['type'] != 'real':
       return HTMLResponse("Real Exam not available", status_code=404)
+    if paper.get('chapter_id') and student_service.chapter_path_state(conn, user['id'], paper['chapter_id'])['stage'] != 'real':
+      return RedirectResponse(url=f"/student/chapters/{paper['chapter_id']}", status_code=303)
 
     cursor = conn.cursor()
     if paper.get('chapter_id'):
@@ -1063,7 +1095,10 @@ async def start_real_exam(request: Request, exam_id: int):
     paper = student_service.get_exam_paper_full(conn, exam_id)
     if not paper or paper.get('status') != 'published':
         return JSONResponse({"error": "Exam not available"}, status_code=404)
-    
+    # Strict order: the real exam starts only on the real-exam stage of the chapter
+    if paper.get('chapter_id') and paper.get('type') == 'real' and student_service.chapter_path_state(conn, user['id'], paper['chapter_id'])['stage'] != 'real':
+        return RedirectResponse(url=f"/student/chapters/{paper['chapter_id']}", status_code=303)
+
     cursor = conn.cursor()
     # Resume an existing in_progress attempt if one exists
     cursor.execute(

@@ -643,6 +643,9 @@ def get_mock_speed_stats(conn, exam_paper_id: int, student_id: int) -> dict:
 
 def get_available_exams(conn, chapter_id: int, student_id: int):
   cursor = conn.cursor()
+  # Strict chapter path: after a "Restart chapter", only attempts finished since the restart count
+  # towards best scores and the real-exam unlock (attempt limits still count every attempt).
+  since = chapter_path_since(conn, student_id, chapter_id)
   # 1. Fetch all published exams
   cursor.execute("SELECT * FROM exam_papers WHERE chapter_id = ? AND status = 'published' ORDER BY id", (chapter_id,))
   exams = [dict(row) for row in cursor.fetchall()]
@@ -665,11 +668,12 @@ def get_available_exams(conn, chapter_id: int, student_id: int):
         JOIN exam_papers e ON a.exam_paper_id = e.id
         LEFT JOIN answers ans ON a.id = ans.attempt_id AND ans.is_latest = 1
         WHERE a.student_id = ? AND e.chapter_id = ? AND a.status = 'completed'
+          AND (? IS NULL OR a.completed_at >= ?)
         GROUP BY a.id, a.exam_paper_id
     ) sub
     WHERE sub.total_max_marks > 0
     GROUP BY sub.exam_paper_id
-  """, (student_id, chapter_id))
+  """, (student_id, chapter_id, since, since))
   
   exam_scores = {row['exam_paper_id']: row['highest_pct'] for row in cursor.fetchall()}
   
@@ -718,8 +722,8 @@ def get_available_exams(conn, chapter_id: int, student_id: int):
       real['best_mock_pct'] = min(100, int(round(highest_mock_score))) if highest_mock_score > 0 else 0
 
       cursor.execute(
-        "SELECT COUNT(*), COALESCE(SUM(CASE WHEN COALESCE(tab_switch_count, 0) < 99 THEN 1 ELSE 0 END), 0) FROM attempts WHERE student_id = ? AND exam_paper_id = ? AND status = 'completed'",
-        (student_id, real['id'])
+        "SELECT COUNT(*), COALESCE(SUM(CASE WHEN COALESCE(tab_switch_count, 0) < 99 AND (? IS NULL OR completed_at >= ?) THEN 1 ELSE 0 END), 0) FROM attempts WHERE student_id = ? AND exam_paper_id = ? AND status = 'completed'",
+        (since, since, student_id, real['id'])
       )
       att_cnt_row = cursor.fetchone()
       attempts_count = int(att_cnt_row[0] or 0) if att_cnt_row else 0
@@ -2529,3 +2533,96 @@ def get_digi_attempt_full(conn, attempt_id: int):
   attempt['answers'] = [dict(r) for r in cursor.fetchall()]
   return attempt
 
+# ---------------------------------------------------------------------------
+# Strict chapter path: introduction > practice test > real exam, in that order.
+# One row per student + chapter: when the path (re)started and when the introduction was finished.
+# No row = the student never restarted: all their history counts (existing progress is kept).
+# ---------------------------------------------------------------------------
+def _ensure_chapter_path(conn):
+  conn.execute("""
+    CREATE TABLE IF NOT EXISTS chapter_path (
+      student_id INTEGER NOT NULL,
+      chapter_id INTEGER NOT NULL,
+      started_at TEXT,
+      intro_done_at TEXT,
+      PRIMARY KEY (student_id, chapter_id)
+    )
+  """)
+
+
+def get_chapter_path_row(conn, student_id: int, chapter_id: int):
+  _ensure_chapter_path(conn)
+  r = conn.execute(
+    "SELECT started_at, intro_done_at FROM chapter_path WHERE student_id = ? AND chapter_id = ?",
+    (student_id, chapter_id),
+  ).fetchone()
+  return {"started_at": r[0], "intro_done_at": r[1]} if r else None
+
+
+def chapter_path_since(conn, student_id: int, chapter_id: int):
+  try:
+    row = get_chapter_path_row(conn, student_id, chapter_id)
+  except Exception:
+    return None
+  return (row or {}).get("started_at") or None
+
+
+def chapter_path_state(conn, student_id: int, chapter_id: int, exams=None) -> dict:
+  """Which stage the student is on: 'intro', 'mock' or 'real' (the only one they may open)."""
+  row = get_chapter_path_row(conn, student_id, chapter_id)
+  if row:
+    intro_done = bool(row.get("intro_done_at"))
+  else:
+    try:
+      intro_done = conn.execute(
+        "SELECT 1 FROM coin_ledger WHERE student_id = ? AND reward_key = ? LIMIT 1",
+        (student_id, f"nutshell:ch:{chapter_id}"),
+      ).fetchone() is not None
+    except Exception:
+      intro_done = False
+  if exams is None:
+    exams = get_available_exams(conn, chapter_id, student_id)
+  mocks = [e for e in exams if e.get("type") == "mock"]
+  reals = [e for e in exams if e.get("type") == "real"]
+  scores = [float(e["highest_score"]) for e in mocks if e.get("highest_score") is not None]
+  best_mock = max(scores) if scores else None
+  real_unlocked = bool(reals) and not reals[0].get("is_locked")
+  mock_passed = (not mocks) or real_unlocked or (best_mock is not None and best_mock >= 80)
+  if not intro_done:
+    stage = "intro"
+  elif mocks and not mock_passed:
+    stage = "mock"
+  elif reals:
+    stage = "real"
+  else:
+    stage = "mock" if mocks else "intro"
+  return {
+    "stage": stage,
+    "intro_done": intro_done,
+    "mock_passed": bool(mock_passed),
+    "real_unlocked": real_unlocked,
+    "restarted": bool(row and row.get("started_at")),
+  }
+
+
+def mark_chapter_intro_done(conn, student_id: int, chapter_id: int):
+  _ensure_chapter_path(conn)
+  conn.execute(
+    """INSERT INTO chapter_path (student_id, chapter_id, started_at, intro_done_at)
+       VALUES (?, ?, NULL, CURRENT_TIMESTAMP)
+       ON CONFLICT(student_id, chapter_id) DO UPDATE SET intro_done_at = COALESCE(intro_done_at, CURRENT_TIMESTAMP)""",
+    (student_id, chapter_id),
+  )
+  conn.commit()
+
+
+def restart_chapter_path(conn, student_id: int, chapter_id: int):
+  """Start the chapter again from the introduction. Scores, answers and coins are kept."""
+  _ensure_chapter_path(conn)
+  conn.execute(
+    """INSERT INTO chapter_path (student_id, chapter_id, started_at, intro_done_at)
+       VALUES (?, ?, CURRENT_TIMESTAMP, NULL)
+       ON CONFLICT(student_id, chapter_id) DO UPDATE SET started_at = CURRENT_TIMESTAMP, intro_done_at = NULL""",
+    (student_id, chapter_id),
+  )
+  conn.commit()

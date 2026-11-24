@@ -396,6 +396,17 @@ def auto_migrate():
         )
     """)
 
+    # Strict chapter path (introduction > practice test > real exam); a restart starts the path again
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS chapter_path (
+            student_id INTEGER NOT NULL,
+            chapter_id INTEGER NOT NULL,
+            started_at TEXT,
+            intro_done_at TEXT,
+            PRIMARY KEY (student_id, chapter_id)
+        )
+    """)
+
     # MCQ "Why?" explanations: written once per question + choice, then reused (and their audio is saved once)
     c.execute("""
         CREATE TABLE IF NOT EXISTS mcq_why_cache (

@@ -1099,3 +1099,16 @@ body .sx-exam-hub.is-compact .sx-mock-tab.is-active { box-shadow: none !importan
 .sxc .sx-path .sx-path-step { cursor: default; }
 .sxc .sx-path .sx-path-step:hover { transform: none; }
 .sxc .sx-path .sx-path-step:not(.is-next):hover { box-shadow: none; }
+
+/* Restart chapter: the only way back to the introduction (then practice test, then real exam again) */
+.sx-stage-restart {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px 14px;
+  margin-top: 22px; padding-top: 16px; border-top: 1px solid rgba(35, 31, 32, 0.12);
+  font-size: 0.9rem; font-weight: 600; color: rgba(35, 31, 32, 0.72);
+}
+.sx-stage-restart-btn {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 8px 16px; border-radius: 999px;
+  border: 1.5px solid #231f20; background: #ffffff; color: #231f20; font: inherit; font-size: 0.88rem; font-weight: 800; cursor: pointer;
+}
+.sx-stage-restart-btn:hover { background: #f7b317; }
+.sx-stage-restart-btn .material-symbols-outlined { font-size: 18px; }

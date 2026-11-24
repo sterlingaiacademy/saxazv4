@@ -54,6 +54,7 @@
   {% endif %}
 {% endfor %}
 {% set real_unlocked = (ns.best_mock is not none and ns.best_mock >= 80) or (ns.best_real is not none) or (ns.mocks|length == 0) %}
+{% if path_state is defined and path_state %}{% set real_unlocked = path_state.real_unlocked and path_state.intro_done %}{% endif %}
 {% set ns.real_unlocked = real_unlocked %}
 
 {% for item in content_list %}
@@ -142,6 +143,8 @@
       summaryFs: false,
       stage: null,            // the stage shown below the steps: 'intro' | 'mock' | 'real' (null = the next step)
       introJustFinished: false,
+      introDone: {{ 'true' if (path_state is defined and path_state and path_state.intro_done) else 'false' }},
+      serverStage: {{ ((path_state.stage if (path_state is defined and path_state) else '') or '') | tojson }},
       readyPrompt: false,     // "Are you ready for the practice test?" popup after the introduction
       readySpeaking: false,
       slidesMeta: {{ (
@@ -243,7 +246,7 @@
         });
         // Pick the open stage once, when the page loads. It must not change by itself while the student is in it
         // (the introduction counts as done after its first part, but the story keeps playing).
-        this.stage = this.currentStage();
+        this.stage = this.serverStage || this.currentStage();
         const h = window.location.hash || '';
         if (h === '#heart-activity' && this.slidesMeta.length > 6) {
           this.nutshellExpanded = true;
@@ -1113,6 +1116,8 @@
               this.playSlideBeat(sIdx, clampedBeat + 1, 0);
               return;
             }
+            // The introduction counts as done once the first part is finished (also the +10 coins moment)
+            this.markIntroDone();
             // Award +10 Coins milestone once student completes at least 1 slide
             const rKey = 'nutshell:ch:' + chId;
             if (!this.hasClaimed(rKey) && window.saxazClaimMilestone) {
@@ -1223,12 +1228,12 @@
       pathSteps() {
         const bestMock = {{ ns.best_mock | tojson }};
         const bestReal = {{ ns.best_real | tojson }};
-        const introDone = this.hasClaimed('nutshell:ch:' + chId);
+        const introDone = this.introDone;
         const steps = [
           { key: 'intro', label: 'Introduction', done: introDone,
             hint: introDone ? 'Done' : 'Start here' },
           { key: 'mock', label: 'Practice test', done: bestMock !== null && bestMock >= 80,
-            locked: !introDone && bestMock === null,
+            locked: !introDone,
             hint: bestMock === null ? (introDone ? 'Score 80% to pass' : 'After the introduction') : ('Best ' + bestMock + '%' + (bestMock >= 80 ? '' : ' · need 80%')) },
           { key: 'real', label: 'Real exam', done: bestReal !== null, locked: !this.realUnlocked,
             hint: bestReal !== null ? ('Best ' + bestReal + '%') : (this.realUnlocked ? 'Unlocked' : 'After the practice test') },
@@ -1251,6 +1256,22 @@
         if (nxt) return nxt.key;
         const done = steps.filter(s => s.state === 'done');
         return done.length ? done[done.length - 1].key : 'intro';
+      },
+      markIntroDone() {
+        if (this.introDone) return;
+        this.introDone = true;
+        try { fetch('/student/chapters/' + chId + '/path/intro-done', { method: 'POST', credentials: 'same-origin' }); } catch (e) {}
+      },
+      async restartChapter() {
+        const res = window.saxazConfirm
+          ? await window.saxazConfirm({ title: 'Restart this chapter?', text: 'You will start again from the introduction, then the practice test, then the real exam. Your scores and coins stay.', confirmButtonText: 'Restart chapter', icon: 'warning' })
+          : { isConfirmed: window.confirm('Restart this chapter from the introduction?') };
+        if (!res || !res.isConfirmed) return;
+        try {
+          const r = await fetch('/student/chapters/' + chId + '/path/restart', { method: 'POST', credentials: 'same-origin' });
+          if (r.ok) { window.location.href = '/student/chapters/' + chId; return; }
+        } catch (e) {}
+        window.saxazConfirm && window.saxazConfirm({ toast: true, title: 'Could not restart', text: 'Please try again.' });
       },
       showStage(key) {
         this.stage = key;
@@ -1815,7 +1836,7 @@
 
       <!-- Introduction finished: the way on to the practice test -->
       {% if ns.first_mock_id %}
-      <div class="sx-stage-next" x-show="hasClaimed('nutshell:ch:{{ chapter.id }}')" x-cloak :class="introJustFinished && 'is-glow'" @click.stop>
+      <div class="sx-stage-next" x-show="introDone" x-cloak :class="introJustFinished && 'is-glow'" @click.stop>
         <span class="sx-stage-next-text"><strong>Introduction done.</strong> Next: the practice test.</span>
         <button type="button" class="sx-stage-next-btn" @click="showStage('mock')">Next: Practice test &rarr;</button>
       </div>
@@ -1945,6 +1966,12 @@
       <button type="button" class="sx-stage-next-btn" @click="showStage('real')">Next: Real exam &rarr;</button>
     </div>
     {% endif %}
+    <div class="sx-stage-restart">
+      <span>Want to go through the introduction again? Restart the chapter and go in order.</span>
+      <button type="button" class="sx-stage-restart-btn" @click="restartChapter()">
+        <span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>Restart chapter
+      </button>
+    </div>
   </section>
 
   {% if ns.first_real_id %}
@@ -1977,6 +2004,12 @@
         <span class="sx-subject-pct-pill is-soon"><span class="material-symbols-outlined" aria-hidden="true">lock</span>Score 80% to unlock</span>
       </a>
       {% endif %}
+    </div>
+    <div class="sx-stage-restart">
+      <span>Want to go through the introduction again? Restart the chapter and go in order.</span>
+      <button type="button" class="sx-stage-restart-btn" @click="restartChapter()">
+        <span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>Restart chapter
+      </button>
     </div>
   </section>
   {% endif %}
