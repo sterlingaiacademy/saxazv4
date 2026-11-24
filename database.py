@@ -396,6 +396,12 @@ def auto_migrate():
         )
     """)
 
+    # Dark mode was removed (PNG artwork looked bad inverted): anyone who chose it is back on normal mode
+    try:
+        c.execute("UPDATE users SET theme_preference = 'light' WHERE theme_preference = 'dark'")
+    except Exception as e:
+        print(f"theme reset notice: {e}")
+
     # Issues (magazine parts) a student has redeemed; Part 1 is always available
     c.execute("""
         CREATE TABLE IF NOT EXISTS student_issues (

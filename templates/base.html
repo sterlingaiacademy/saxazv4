@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 {% from "partials/mode_toggle.html" import mode_toggle %}
-{% set sx_server_mode = (user.theme_preference if (user is defined and user and user.theme_preference in ['light', 'dark', 'reading']) else '') %}
+{% set sx_server_mode = (user.theme_preference if (user is defined and user and user.theme_preference in ['light', 'reading']) else '') %}
 <html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <!-- Display mode (light / dark / reading): saved per account, remembered per device -->
   <script>
     (function () {
-      var ok = { light: 1, dark: 1, reading: 1 };
+      var ok = { light: 1, reading: 1 };  // normal + reading (dark mode removed)
       var server = "{{ sx_server_mode }}";
       var local = null;
       try { local = localStorage.getItem('sxMode'); } catch (e) {}
@@ -27,8 +27,7 @@
       };
     })();
   </script>
-  <link rel="stylesheet" href="/static/css/saxaz-modes.css?v=5">
-  <script defer src="/static/js/sx-modes.js?v=4"></script>
+  <link rel="stylesheet" href="/static/css/saxaz-modes.css?v=6">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
   <meta name="theme-color" content="#151515">
   <meta name="mobile-web-app-capable" content="yes">

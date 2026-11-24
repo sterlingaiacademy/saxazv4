@@ -562,7 +562,7 @@ async def logout(request: Request, response: Response):
 @router.post("/set-theme")
 async def set_theme(request: Request, theme: str = Form(...)):
     """Save the display mode (light / dark / reading) on the signed-in account."""
-    if theme not in ("light", "dark", "reading"):
+    if theme not in ("light", "reading"):
         return Response(status_code=status.HTTP_400_BAD_REQUEST)
     conn = get_db_connection()
     try:

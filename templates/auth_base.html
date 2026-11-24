@@ -6,7 +6,7 @@
   <!-- Display mode (light / dark / reading): saved per account, remembered per device -->
   <script>
     (function () {
-      var ok = { light: 1, dark: 1, reading: 1 };
+      var ok = { light: 1, reading: 1 };  // normal + reading (dark mode removed)
       var server = "";
       var local = null;
       try { local = localStorage.getItem('sxMode'); } catch (e) {}
@@ -26,8 +26,7 @@
       };
     })();
   </script>
-  <link rel="stylesheet" href="/static/css/saxaz-modes.css?v=5">
-  <script defer src="/static/js/sx-modes.js?v=4"></script>
+  <link rel="stylesheet" href="/static/css/saxaz-modes.css?v=6">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
   <title>{% block title %}SAXAZ{% endblock %}</title>
   <link rel="icon" href="/static/images/saxaz_web/favicon-saxaz-x-v1.png" type="image/png" sizes="64x64">
