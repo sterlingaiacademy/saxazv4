@@ -2571,7 +2571,7 @@
   <link rel="stylesheet" href="/static/css/saxaz-fun.css?v=542">
   <link rel="stylesheet" href="/static/css/sx3.css?v=542">
   <link rel="stylesheet" href="/static/css/saxaz-ext.css?v=546">
-  <link rel="stylesheet" href="/static/css/saxaz-match.css?v=26">
+  <link rel="stylesheet" href="/static/css/saxaz-match.css?v=28">
   <link rel="stylesheet" href="/static/css/saxaz-cursor.css?v=5">
   <script src="/static/js/fun.js?v=543" defer></script>
   <script>
@@ -3118,7 +3118,8 @@
           const toast = document.createElement('div');
           toast.className = 'sx-toast-pill';
           toast.innerHTML = `<span style="color:#f7b317;display:flex;">${getIconSvg(opts.icon || 'warning')}</span><div><div style="font-weight:900;">${opts.title || ''}</div>${opts.text ? `<div style="opacity:0.8;font-size:0.78rem;">${opts.text}</div>` : ''}</div>`;
-          document.body.appendChild(toast);
+          // in full screen only the full-screen element is visible, so show it there
+          (document.fullscreenElement || document.body).appendChild(toast);
           requestAnimationFrame(() => toast.classList.add('sx-open'));
           setTimeout(() => {
             toast.classList.remove('sx-open');
@@ -3184,7 +3185,7 @@
           }
         });
 
-        document.body.appendChild(backdrop);
+        (document.fullscreenElement || document.body).appendChild(backdrop);
         requestAnimationFrame(() => {
           backdrop.classList.add('sx-open');
           const confirmBtn = backdrop.querySelector('[data-sx-act="confirm"]');

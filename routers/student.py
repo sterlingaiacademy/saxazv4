@@ -1439,7 +1439,9 @@ async def list_attempts(request: Request):
     if not subjects:
       completed_ch3 = student_service.get_completed_content_ids(conn, user['id'], 3)
       watched_videos = len(completed_ch3 or [])
+    stickers = student_service.get_student_stickers(conn, user['id'], attempts=attempts, streak_days=(stats or {}).get('streak_days') or 0)
     return templates.TemplateResponse(request=request, name="student/attempts_list.html", context={
+      "stickers": stickers,
       "request": request, 
       "user": user,
       "attempts": attempts,
@@ -2313,6 +2315,7 @@ async def student_rewards_shop(request: Request):
     wallet = reward_service.get_wallet_details(conn, user['id'])
     user['coin_balance'] = wallet['coin_balance']
     user['coin_inr'] = wallet['inr_value']
+    shop_lock = student_service.shop_unlock_state(conn, user['id'])
     return templates.TemplateResponse(
       request=request,
       name="student/shop.html",
@@ -2320,6 +2323,7 @@ async def student_rewards_shop(request: Request):
         "request": request,
         "user": user,
         "wallet": wallet,
+        "shop_lock": shop_lock,
       },
     )
   finally:
@@ -2331,6 +2335,14 @@ async def redeem_from_shop(request: Request, item_code: str = Form(...)):
   conn = get_db_connection()
   try:
     user = require_student(request, conn)
+    # Redeeming opens only after all 3 practice exams are completed
+    lock = student_service.shop_unlock_state(conn, user['id'])
+    if not lock["unlocked"]:
+      msg = f"Finish all {lock['total']} practice exams to unlock redeeming ({lock['done']} of {lock['total']} done)."
+      if "application/json" in (request.headers.get("accept") or "").lower():
+        return JSONResponse({"success": False, "error": msg}, status_code=403)
+      from urllib.parse import quote
+      return RedirectResponse(url=f"/student/shop?error={quote(msg)}", status_code=303)
     if "application/json" in (request.headers.get("accept") or "").lower():
       resp = JSONResponse({"success": True})
       out = reward_service.redeem_shop_item(conn, user['id'], item_code, request=request, response=resp)

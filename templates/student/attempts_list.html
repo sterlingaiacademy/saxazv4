@@ -133,30 +133,34 @@
     </div>
   </section>
 
-  <!-- 4. Badges -->
-  {% set medals = [
-    ('First steps', 'Finish your first test', 'rocket_launch', 'b-orange', (completed_mock_count + completed_real_count) >= 1),
-    ('Practice master', 'Get 100% in a practice exam', 'verified', 'b-blue', ns.best_mock_pct >= 100),
-    ('Board topper', 'Score 85% in the real exam', 'workspace_premium', 'b-purple', ns.best_real_pct >= 85),
-    ('Video learner', 'Watch 2 videos', 'smart_display', 'b-red', vid_done >= 2),
-    ('Silver star', 'Reach 500 quiz points', 'military_tech', 'b-teal', earned_xp >= 500)
-  ] %}
-  {% set m_ns = namespace(cnt=0) %}
-  {% for m in medals %}{% if m[4] %}{% set m_ns.cnt = m_ns.cnt + 1 %}{% endif %}{% endfor %}
-  <section class="sxp-sec">
-    <h2 class="sxp-h2">Badges<small>{{ m_ns.cnt }} of {{ medals|length }} unlocked</small></h2>
-    <div class="sxp-badges">
-      {% for m_title, m_desc, m_icon, m_color, m_ok in medals %}
-      <div class="sxp-badge {{ 'is-unlocked' if m_ok else 'is-locked' }}" style="animation-delay: {{ loop.index0 * 80 }}ms;">
-        <span class="sxp-bubble {{ m_color if m_ok else '' }}" style="animation-delay: {{ loop.index0 * 80 }}ms;">
-          <span class="material-symbols-outlined" aria-hidden="true">{{ m_icon if m_ok else 'lock' }}</span>
-        </span>
-        <span class="sxp-badge-name">{{ m_title }}</span>
-        <span class="sxp-badge-sub">{{ m_desc }}</span>
+  <!-- 4. Sticker book: one sticker for each thing the student has done (achievements) -->
+  {% set st_list = stickers if stickers is defined and stickers else [] %}
+  {% set st_have = st_list | selectattr('earned') | list | length %}
+  {% if st_list %}
+  <section class="sxp-sec" id="sticker-book">
+    <h2 class="sxp-h2">Sticker Book<small>{{ st_have }} of {{ st_list|length }} collected. Each sticker is for something you did.</small></h2>
+    <div class="sx-scrapbook">
+      <span class="sx-scrap-tape is-left" aria-hidden="true"></span>
+      <span class="sx-scrap-tape is-right" aria-hidden="true"></span>
+      <div class="sx-scrap-head">
+        <strong>{{ first_name }}&rsquo;s stickers</strong>
+        <span class="sx-scrap-count">{{ st_have }}/{{ st_list|length }}</span>
       </div>
-      {% endfor %}
+      <ul class="sx-scrap-grid">
+        {% set tilts = [-5, 3, -2, 4, -3, 2, -4, 5] %}
+        {% for s in st_list %}
+        <li class="sx-scrap-slot {{ 'is-earned' if s.earned else 'is-empty' }}" style="--tilt: {{ tilts[loop.index0 % 8] }}deg;">
+          <span class="sx-scrap-pic">
+            <img src="/static/images/stickers/sticker_{{ s.key }}.webp?v=1" alt="{{ s.name if s.earned else '' }}" loading="lazy" decoding="async" width="120" height="120">
+          </span>
+          <span class="sx-scrap-name">{{ s.name }}</span>
+          <span class="sx-scrap-how">{{ 'Collected!' if s.earned else s.how }}</span>
+        </li>
+        {% endfor %}
+      </ul>
     </div>
   </section>
+  {% endif %}
 
   <!-- 5. Tests you took -->
   <section class="sxp-sec">

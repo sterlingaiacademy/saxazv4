@@ -154,6 +154,15 @@
       {% if store_items %}<button type="button" role="tab" class="sx-store-tab" :class="tab === 'kits' && 'is-active'" :aria-selected="tab === 'kits'" @click="tab = 'kits'">Kits &amp; Vouchers</button>{% endif %}
     </div>
     <h2 class="sx-store-title">Spend your coins here. Tap an item to see what is inside.</h2>
+    {% if shop_lock is defined and shop_lock and not shop_lock.unlocked %}
+    <div class="sx-shop-lock" role="status">
+      <span class="sx-shop-lock-ico material-symbols-outlined" aria-hidden="true">lock</span>
+      <div>
+        <strong>Redeeming unlocks after all {{ shop_lock.total }} practice exams</strong>
+        <span>{{ shop_lock.done }} of {{ shop_lock.total }} done{% if shop_lock.missing %} &middot; still to do: {{ shop_lock.missing | join(', ') }}{% endif %}. You can still look at every item.</span>
+      </div>
+    </div>
+    {% endif %}
     {% if ebook_items %}
     <div class="sx-store-grid" x-show="tab === 'books'">
       {% for it in ebook_items %}
@@ -297,6 +306,12 @@
                 <span style="font-size:0.92rem;font-weight:900;color:#f7b317;" x-text="'Cost: ' + selectedItem.cost_coins + ' Coins'"></span>
               </div>
 
+              {% if shop_lock is defined and shop_lock and not shop_lock.unlocked %}
+              <div style="display:flex;align-items:center;gap:10px;font-size:0.86rem;font-weight:700;color:rgba(255,255,255,0.88);">
+                <span class="material-symbols-outlined" style="color:#f7b317;" aria-hidden="true">lock</span>
+                <span>Finish all {{ shop_lock.total }} practice exams to unlock redeeming ({{ shop_lock.done }} of {{ shop_lock.total }} done).</span>
+              </div>
+              {% else %}
               <template x-if="{{ bal }} >= selectedItem.cost_coins">
                 <form method="POST" action="/student/shop/redeem">
                   <input type="hidden" name="item_code" :value="selectedItem.code">
@@ -315,6 +330,7 @@
                   </a>
                 </div>
               </template>
+              {% endif %}
             </div>
           </div>
         </div>

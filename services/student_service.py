@@ -2701,3 +2701,85 @@ def redeem_issue(conn, student_id: int, code: str) -> dict:
   )
   conn.commit()
   return {"success": True, "part": nxt}
+
+# ---------------------------------------------------------------------------
+# Shop: redeeming coins unlocks only after all 3 practice exams of the chapter are completed
+# ---------------------------------------------------------------------------
+SHOP_PRACTICE_CHAPTER_ID = 3  # Biology Chapter 5 (the chapter with live content)
+
+
+def shop_unlock_state(conn, student_id: int) -> dict:
+  mocks = conn.execute(
+    "SELECT id, title FROM exam_papers WHERE chapter_id = ? AND type = 'mock' AND status = 'published' ORDER BY id",
+    (SHOP_PRACTICE_CHAPTER_ID,),
+  ).fetchall()
+  done_ids = {
+    int(r[0]) for r in conn.execute(
+      "SELECT DISTINCT exam_paper_id FROM attempts WHERE student_id = ? AND status = 'completed'",
+      (student_id,),
+    ).fetchall()
+  }
+  total = len(mocks)
+  done = [m for m in mocks if int(m[0]) in done_ids]
+  missing = [str(m[1]) for m in mocks if int(m[0]) not in done_ids]
+  return {"unlocked": total == 0 or len(done) >= total, "done": len(done), "total": total, "missing": missing}
+
+# ---------------------------------------------------------------------------
+# Sticker book (achievements): every sticker is different and is earned by doing something real.
+# Images: static/images/stickers/sticker_<key>.webp
+# ---------------------------------------------------------------------------
+STICKERS = [
+  # key, name, how to get it
+  ("story_finished",   "Story Finished",   "Finish the chapter introduction"),
+  ("plant_chef",       "Plant Chef",       "Win the plant food game"),
+  ("food_explorer",    "Food Explorer",    "Win the food journey game"),
+  ("deep_breather",    "Deep Breather",    "Win the breathing game"),
+  ("blood_crew",       "Blood Crew",       "Win the blood crew game"),
+  ("super_pump",       "Super Pump",       "Win the heart super-pump game"),
+  ("clean_filter",     "Clean Filter",     "Win the kidney filter game"),
+  ("team_hero",        "Team Hero",        "Win the life-process heroes game"),
+  ("heart_builder",    "Heart Builder",    "Build the heart in the heart activity"),
+  ("blood_flow_pro",   "Blood Flow Pro",   "Trace the blood flow in the heart activity"),
+  ("first_steps",      "First Steps",      "Finish your first exam"),
+  ("practice_perfect", "Practice Perfect", "Get 100% in a practice exam"),
+  ("practice_pro",     "Practice Pro",     "Finish all 3 practice exams"),
+  ("chapter_champion", "Chapter Champion", "Get 100% in the real exam"),
+  ("coin_collector",   "Coin Collector",   "Earn 100 coins"),
+  ("on_fire",          "On Fire",          "Study 3 days in a row"),
+]
+
+
+def get_student_stickers(conn, student_id: int, attempts=None, streak_days: int = 0, chapter_id: int = 3) -> list[dict]:
+  try:
+    claimed = {str(r[0]) for r in conn.execute("SELECT reward_key FROM coin_ledger WHERE student_id = ?", (student_id,)).fetchall()}
+    coins_earned = int(conn.execute("SELECT COALESCE(SUM(coins), 0) FROM coin_ledger WHERE student_id = ? AND coins > 0", (student_id,)).fetchone()[0] or 0)
+  except Exception:
+    claimed, coins_earned = set(), 0
+  try:
+    intro_done = bool(chapter_path_state(conn, student_id, chapter_id).get("intro_done"))
+  except Exception:
+    intro_done = f"nutshell:ch:{chapter_id}" in claimed
+  if attempts is None:
+    attempts = get_recent_attempts(conn, student_id, limit=200)
+  done = [a for a in attempts if a.get("status") == "completed"]
+  best_mock = max([int(a.get("overall_pct") or 0) for a in done if a.get("exam_type") != "real"] or [0])
+  best_real = max([int(a.get("overall_pct") or 0) for a in done if a.get("exam_type") == "real"] or [0])
+  try:
+    all_practice = bool(shop_unlock_state(conn, student_id).get("unlocked"))
+  except Exception:
+    all_practice = False
+  g = lambda name: f"game:ch:{chapter_id}:{name}" in claimed
+  earned = {
+    "story_finished": intro_done,
+    "plant_chef": g("leaf"), "food_explorer": g("food"), "deep_breather": g("breathe"), "blood_crew": g("blood"),
+    "super_pump": g("pump"), "clean_filter": g("kidney"), "team_hero": g("team"),
+    "heart_builder": f"heart_s1:ch:{chapter_id}" in claimed,
+    "blood_flow_pro": f"heart_s2:ch:{chapter_id}" in claimed,
+    "first_steps": len(done) >= 1,
+    "practice_perfect": best_mock >= 100,
+    "practice_pro": all_practice,
+    "chapter_champion": best_real >= 100,
+    "coin_collector": coins_earned >= 100,
+    "on_fire": int(streak_days or 0) >= 3,
+  }
+  return [{"key": k, "name": n, "how": h, "earned": bool(earned.get(k))} for k, n, h in STICKERS]

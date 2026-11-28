@@ -48,7 +48,7 @@
         </a>
         {% if real_exam_info %}
           <span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:999px;background:{{ '#f7b317' if not real_exam_info.is_locked else '#ffffff' }};color:#231f20;font-size:0.72rem;font-weight:800;">
-            <span>{% if not real_exam_info.is_locked %}100% done: finish the exam to go on{% else %}Goal: 100% unlocks the real exam{% if real_exam_info.best_mock_pct > 0 %} (Best: {{ real_exam_info.best_mock_pct }}%){% endif %}{% endif %}</span>
+            <span>{% if not real_exam_info.is_locked %}Real exam unlocked{% else %}Goal: 100% unlocks the real exam{% if real_exam_info.best_mock_pct > 0 %} (Best: {{ real_exam_info.best_mock_pct }}%){% endif %}{% endif %}</span>
           </span>
         {% endif %}
       </div>
@@ -591,13 +591,14 @@
                   <button id="exam-try-again-btn"
                       x-show="feedback?.marks < feedback?.max_marks"
                       type="button"
-                      class="sx-ext-cta-yellow w-full sm:w-auto min-h-[46px] px-6"
+                      class="sx-ext-cta-yellow sx-try-again-hl w-full sm:w-auto min-h-[46px] px-6"
                       @click="tryAgain()">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                     <span>Try Again</span>
                   </button>
                   <button type="button"
                       class="sx-ext-cta-dark w-full sm:w-auto min-h-[46px] px-7"
+                      :class="(feedback?.marks < feedback?.max_marks) && 'sx-next-quiet'"
                       @click="nextQuestion()">
                     <span x-text="currentFlatQuestionNumber >= totalQuestions ? 'Review Summary →' : 'Next Question →'"></span>
                   </button>
